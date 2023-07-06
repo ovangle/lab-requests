@@ -1,0 +1,69 @@
+
+<style>
+    .general-info-container {
+        display: flex;
+        flex-direction: column;
+    }
+</style>
+
+
+<form [formGroup]="form">
+    <div class="general-info-container">
+        <h2>General information</h2>
+
+        <mat-form-field>
+            <mat-label for="project-title" >
+                Project title
+            </mat-label>
+
+            <input matInput type="text"
+                   id="project-title"
+                   formControlName="title" />
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-label> Project Summary </mat-label>
+            <textarea matInput
+                      id="project-summary"
+                      formControlName="projectSummary">
+            </textarea>
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-label>Experimental Plan Summary</mat-label>
+            <textarea matInput
+                      id="experimental-plan-summary"
+                      formControlName="experimentalPlanSummary">
+            </textarea>
+        </mat-form-field>
+
+        <div class="project-duration-container">
+            <div class="date-from-to-container">
+                <mat-form-field>
+                    <mat-label>Project from</mat-label>
+
+                    <input matInput type="date" formControlName="projectFrom" />
+                </mat-form-field>
+
+                <mat-form-field>
+                    <mat-label>Project To</mat-label>
+
+                    <input matInput type="date" formControlName="projectTo" />
+                </mat-form-field>
+            </div>
+        </div>
+
+        <div class="project-researchers-container" formArrayName="additionalResearchers">
+            <h3>Additional researchers</h3>
+
+            <mat-form-field *ngFor="let researcher of form.controls['additionalResearchers'].value; let index = index">
+                <mat-label>Email</mat-label>
+                <input matInput type="email"
+                    id="additional-research-{{index}}-email"
+                    form/>
+
+            </mat-form-field>
+
+        </div>
+    </div>
+</form>
