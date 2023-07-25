@@ -1,30 +1,30 @@
 import { CommonModule } from "@angular/common";
 import { Component, Input, OnInit, Optional, Self } from "@angular/core";
-import { AbstractControl, FormControl, FormGroup, NgControl, ReactiveFormsModule, Validators } from "@angular/forms";
-
+import { AbstractControl, FormControl, FormGroup, FormGroupDirective, NgControl, ReactiveFormsModule, Validators } from "@angular/forms";
+import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 
-export const CAMPUS_LOCATION_CODES = ['CNS', 'BDG', 'GLD', 'MEL', 'MKY', 'PTH', 'ROK', 'SYD', 'OTH'] as const;
+export const CAMPUS_CODES = ['CNS', 'BDG', 'GLD', 'MEL', 'MKY', 'PTH', 'ROK', 'SYD', 'OTH'] as const;
 
-export type CampusLocationCode = typeof CAMPUS_LOCATION_CODES[number];
-export function isOtherCampusLocationCode(code: CampusLocationCode) {
+export type CampusCode = typeof CAMPUS_CODES[number];
+export function isOtherCampusCode(code: CampusCode | null | undefined) {
     return code === 'OTH';
 }
 
 export interface Campus {
-    readonly code: CampusLocationCode;
+    readonly code: CampusCode;
     readonly otherDescription: string;
 }
 
 export type CampusForm = FormGroup<{ [K in keyof Campus]: FormControl<Campus[K] | null> }>;
 
-function campusFormValidator(f: AbstractControl<any, any>): {[k: string]: any} | null {
+export function campusFormValidator(f: AbstractControl<any, any>): {[k: string]: any} | null {
     const g = f as CampusForm;
     if (g.controls['code'].errors != null) {
         return {'code': g.controls['code'].errors};
     }
-    if (isOtherCampusLocationCode(g.controls['code'].value!)) {
+    if (isOtherCampusCode(g.controls['code'].value!)) {
         if (g.controls['otherDescription'].value == null) {
             return {
                 'otherDescriptionRequired': 'A description is required'
@@ -36,10 +36,10 @@ function campusFormValidator(f: AbstractControl<any, any>): {[k: string]: any} |
 
 export function createCampusForm(): CampusForm {
     return new FormGroup({
-        code: new FormControl<CampusLocationCode | null>(null, [Validators.required]),
+        code: new FormControl<CampusCode | null>(null, [Validators.required]),
         otherDescription: new FormControl<string | null>(null)
     }, {
-        validators: campusFormValidator
+        validators: [Validators.required, campusFormValidator]
     })
 }
 
@@ -62,57 +62,51 @@ export const CAMPUS_LOCATIONS = Object.fromEntries([
     imports: [
         CommonModule,
         ReactiveFormsModule,
+        MatFormFieldModule,
         MatInputModule,
         MatSelectModule
     ],
     template: `
-        <div [formGroup] = "formGroup">
+        <div [formGroup]="form">
             <mat-form-field>
-                <label for="{{id}}-code">Campus</label>
-
-                <mat-select id="{{id}}-code"
-                            formControlName="code">
-                    <mat-option *ngFor="let locationCode of campusLocationCodes">{{campusLocations[locationCode]}}</mat-option>
+                <mat-label>Campus</mat-label>
+                <mat-select id="{{id}}-code" formControlName="code">
+                    <mat-option *ngFor="let locationCode of campusCodes" [value]="locationCode">{{campuses[locationCode]}}</mat-option>
                 </mat-select>
             </mat-form-field>
 
             <div class="other-spec-container">
                 <mat-form-field *ngIf="isOtherCodeSelected">
-                    <label for="{{id}}-other-description">
-                        Please specify
-                    </label>
-
-                    <input matNativeControl id="{{id}}-other-description"
-                            formControlName="otherDescription"
-                            required />
+                    <mat-label>Please specify</mat-label>
+                    <input matInput required
+                           id="{{id}}-other-description"
+                           formControlName="otherDescription">
                 </mat-form-field>
             </div>
         </div>
     `
 })
 export class CampusSelectComponent {
-    readonly campusLocationCodes = CAMPUS_LOCATION_CODES;
-    readonly campusLocations = CAMPUS_LOCATIONS;
+    readonly campusCodes = CAMPUS_CODES;
+    readonly campuses = CAMPUS_LOCATIONS;
 
     @Input()
     id: string;
 
-    constructor(
-        @Self() @Optional() readonly ngControl: NgControl
-    ) { }
-
-    get formGroup(): CampusForm {
-        const formGroup = this.ngControl.control;
-        if (!(formGroup instanceof FormGroup)) {
-            throw new Error('Expected a form group');
+    @Input()
+    get form(): CampusForm {
+        return this._form;
+    }
+    set form(value: AbstractControl<any, any>) {
+        if (!(value instanceof FormGroup)) {
+            throw new Error('Expected campus form group')
         }
-        return formGroup;
+        this._form = value;
     }
 
+    private _form: CampusForm;
+
     get isOtherCodeSelected(): boolean {
-        if (this.formGroup.controls['code']?.value == null) {
-            return false;
-        }
-        return isOtherCampusLocationCode(this.formGroup.controls['code'].value);
+        return isOtherCampusCode(this.form.value['code']);
     }
 }

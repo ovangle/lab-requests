@@ -4,6 +4,11 @@
         display: flex;
         flex-direction: column;
     }
+
+    :host form {
+        padding: 0px 2em;
+    }
+
 </style>
 
 
@@ -42,28 +47,107 @@
                 <mat-form-field>
                     <mat-label>Project from</mat-label>
 
-                    <input matInput type="date" formControlName="projectFrom" />
+                    <input matInput
+                           id="project-from"
+                           formControlName="projectFrom"
+                           [matDatepicker]="projectFromDatepicker"/>
+
+                    <mat-datepicker-toggle matIconSuffix [for]="projectFromDatepicker"></mat-datepicker-toggle>
+                    <mat-datepicker #projectFromDatepicker></mat-datepicker>
                 </mat-form-field>
 
                 <mat-form-field>
                     <mat-label>Project To</mat-label>
 
-                    <input matInput type="date" formControlName="projectTo" />
+                    <input matInput
+                           id="project-to"
+                           formControlName="projectTo"
+                           [matDatepicker]="projectToDatepicker"/>
+
+                    <mat-datepicker-toggle matIconSuffix [for]="projectToDatepicker"></mat-datepicker-toggle>
+                    <mat-datepicker #projectToDatepicker></mat-datepicker>
                 </mat-form-field>
             </div>
         </div>
 
-        <div class="project-researchers-container" formArrayName="additionalResearchers">
-            <h3>Additional researchers</h3>
+        <mat-form-field>
+            <mat-label>Additional researchers</mat-label>
+            <textarea matInput
+                        id="additional-researchers"
+                        formControlName="additionalResearchers"
+                        placeholder="enter additional researcher emails, separated by whitespace">
+            </textarea>
+            <!--
+            <input matInput type="email"
+                id="additional-research-{{index}}-email"
+                form/>
+            -->
+        </mat-form-field>
 
-            <mat-form-field *ngFor="let researcher of form.controls['additionalResearchers'].value; let index = index">
-                <mat-label>Email</mat-label>
-                <input matInput type="email"
-                    id="additional-research-{{index}}-email"
-                    form/>
+        <mat-form-field>
+            <mat-label>Supervisors</mat-label>
+            <textarea matInput
+                      id="supervisors"
+                      formControlName="supervisors"
+                      placeholder="Enter supervisors emails, separated by whitespace">
+            </textarea>
+        </mat-form-field>
 
-            </mat-form-field>
 
+        <div class="project-locations">
+            <lab-req-project-location-form *ngFor="let location of form.controls['locations'].controls; let index = index"
+                                            [form]="location"
+                                            [locationIndex]="index">
+            </lab-req-project-location-form>
+            <button mat-button (click)="addSecondaryProjectLocation()">+ Add secondary location</button>
+        </div>
+
+        <h2>Required resources</h2>
+
+        <div class="project-equipments">
+            <h3>Required Equipment <button mat-button (click)="addRequiredEquipment()">+ Add Equipment</button></h3>
+
+            <div *ngIf="form.controls['equipments'].length === 0"
+                 class="required-equipment-empty">
+                 There is no required equipment for this experimental plan
+            </div>
+
+            <lab-req-equipment-form
+                *ngFor="let equipmentForm of form.controls['equipments'].controls; let equipmentIndex = index"
+                [form]="equipmentForm"
+                [equipmentIndex]="equipmentIndex">
+            </lab-req-equipment-form>
+        </div>
+
+        <div class="project-softwares">
+            <h3>Required Software <button mat-button (click)="addRequiredSoftware()">+ Add Software</button></h3>
+
+            <div *ngIf="form.controls['softwares'].length === 0"
+                 class="required-software-empty" >
+                There is no required software for this experimental plan
+            </div>
+
+            <lab-req-software-resource-form *ngFor="let software of form.controls['softwares'].controls; let index = index"
+                [form]="software"
+                [softwareIndex]="index">
+            </lab-req-software-resource-form>
+        </div>
+
+        <div class="project-consumables">
+            <h3>
+                Required consumables
+                <button mat-button (click)="addRequiredConsumable()">+ Add consumable</button>
+            </h3>
+
+            <div *ngIf="form.controls['consumables'].length === 0">
+                There are no consumables required for this experimental plan.
+            </div>
+
+            <lab-req-consumable-resource-form
+                *ngFor="let consumableForm of form.controls['consumables'].controls; let consumableIndex = index"
+                [form]="consumableForm"
+                [consumableIndex]="consumableIndex">
+            </lab-req-consumable-resource-form>
         </div>
     </div>
 </form>

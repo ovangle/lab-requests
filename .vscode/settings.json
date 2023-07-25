@@ -1,0 +1,7 @@
+{
+    "mypy.debugLogging": true,
+    "mypy.dmypyExecutable": "${workspaceFolder}/src/api/.venv/bin/dmypy",
+    "python.linting.mypyPath": "${workspaceFolder}/src/api/.venv/bin/mypy",
+    "python.linting.mypyEnabled": true,
+    "python.linting.enabled": true
+}
