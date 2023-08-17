@@ -1,19 +1,31 @@
 import { DOCUMENT } from "@angular/common";
-import { Inject, Provider } from "@angular/core";
+import { Injectable, Inject, Provider } from "@angular/core";
 
-export class LocalStorage extends Proxy<Storage> {
-    constructor(
-        @Inject(DOCUMENT)
-        _document: Document
-    ) {
-        const window = _document.defaultView;
-        if (window == null) {
-            throw new Error('No access to local storage from platform');
-        }
-        super(window.localStorage, {});
+@Injectable()
+export abstract class LocalStorage implements Storage {
+    [name: string]: any;
+    length: number;
+    abstract clear(): void;
+    abstract getItem(key: string): string | null;
+    abstract key(index: number): string | null;
+    abstract removeItem(key: string): void;
+    abstract setItem(key: string, value: string): void;
+}
+function localStorageFactory(document: Document) {
+    const window = document.defaultView;
+    if (window == null) {
+        throw new Error('No defaultView on document');
     }
+    return window.localStorage;
 }
 
 export function provideLocalStorage(): Provider[] {
-    return [LocalStorage];
+    return [
+        {
+            provide: LocalStorage,
+            useFactory: localStorageFactory,
+            deps: [DOCUMENT]
+        }
+    ]
+
 }

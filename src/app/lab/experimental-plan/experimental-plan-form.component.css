@@ -1,0 +1,40 @@
+.main {
+    position: relative;
+}
+
+.right-pane {
+    position: absolute;
+    top: 0;
+    right: -16px;
+    height: 100%;
+    max-width: 40vw;
+    background-color: white;
+    z-index: 100;
+}
+
+.right-pane .form-container {
+    width: 100%;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+}
+
+mat-card + mat-card {
+    margin-top: 1em;
+}
+
+mat-form-field,
+lab-req-discipline-select {
+    width: 100%;
+}
+
+lab-req-discipline-select {
+    padding-left: 1em;
+    box-sizing: border-box;
+}
+
+
+.supervisor-discipline,
+.project-from-to {
+    display: flex;
+}

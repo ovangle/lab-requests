@@ -1,0 +1,115 @@
+<style>
+    .general-info-container {
+        display: flex;
+        flex-direction: column;
+    }
+
+    :host form {
+        padding: 0px 2em;
+    }
+</style>
+
+
+<div class="main">
+    <form [formGroup]="form">
+        <div class="general-info-container">
+            <h2>General information</h2>
+
+            <mat-form-field>
+                <mat-label for="project-title">
+                    Project title
+                </mat-label>
+
+                <input matInput type="text" id="project-title" formControlName="title" />
+            </mat-form-field>
+
+            <lab-req-experimental-plan-type-select formControlName="planType">
+            </lab-req-experimental-plan-type-select>
+
+            <mat-form-field>
+                <mat-label>Experimental Plan Summary</mat-label>
+                <textarea matInput id="process-summary" formControlName="processSummary">
+                </textarea>
+            </mat-form-field>
+
+            <div class="supervisor-discipline">
+                <mat-form-field>
+                    <mat-label>Supervisor email</mat-label>
+                    <input matInput formControlName="supervisor" />
+                </mat-form-field>
+
+                <lab-req-discipline-select formControlName="discipline">
+                </lab-req-discipline-select>
+            </div>
+
+            <mat-form-field>
+                <mat-label>Duration</mat-label>
+                <mat-date-range-input [rangePicker]="picker">
+                    <input matStartDate placehoder="Start" formControlName="startDate">
+                    <input matEndDate placeholder="End" formControlName="endDate">
+                </mat-date-range-input>
+                <mat-hint>DD/MM/YYYY - DD/MM/YYYY</mat-hint>
+
+                <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                <mat-date-range-picker #picker></mat-date-range-picker>
+            </mat-form-field>
+
+            <div class="project-duration-container">
+                <div class="date-from-to-container">
+                    <mat-form-field>
+                        <mat-label>Project from</mat-label>
+
+                        <input matInput id="start-date" formControlName="startDate" [matDatepicker]="startDatepicker" />
+
+                        <mat-datepicker-toggle matIconSuffix [for]="startDatepicker"></mat-datepicker-toggle>
+                        <mat-datepicker #startDatepicker></mat-datepicker>
+                    </mat-form-field>
+
+                    <mat-form-field>
+                        <mat-label>Project To</mat-label>
+
+                        <input matInput id="end-date" formControlName="endDate" [matDatepicker]="endDatepicker" />
+
+                        <mat-datepicker-toggle matIconSuffix [for]="endDatepicker"></mat-datepicker-toggle>
+                        <mat-datepicker #endDatepicker></mat-datepicker>
+                    </mat-form-field>
+                </div>
+            </div>
+
+            <h2>Required resources</h2>
+
+            <mat-card>
+                <mat-card-content>
+                    <lab-req-equipment-resource-table></lab-req-equipment-resource-table>
+                </mat-card-content>
+            </mat-card>
+
+            <mat-card>
+                <mat-card-content>
+                    <lab-req-software-resource-table></lab-req-software-resource-table>
+
+                </mat-card-content>
+            </mat-card>
+
+            <mat-card>
+                <mat-card-content>
+                    <lab-req-input-material-resource-table></lab-req-input-material-resource-table>
+
+                </mat-card-content>
+            </mat-card>
+
+            <mat-card>
+                <mat-card-content>
+                    <lab-req-output-material-resource-table></lab-req-output-material-resource-table>
+
+                </mat-card-content>
+            </mat-card>
+        </div>
+    </form>
+
+    <div class="right-pane">
+        <div class="form-container">
+        <router-outlet name="form"></router-outlet>
+        </div>
+    </div>
+</div>

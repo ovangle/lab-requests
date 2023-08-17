@@ -1,11 +1,9 @@
-import { InteractivityChecker } from "@angular/cdk/a11y";
-import { APP_BASE_HREF, Location } from "@angular/common";
-import { HttpClient } from "@angular/common/http";
+import { APP_BASE_HREF, Location, PlatformLocation } from "@angular/common";
+import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { Inject, Injectable, InjectionToken, Provider } from "@angular/core";
-import { DateSelectionModelChange } from "@angular/material/datepicker";
-import { ActivatedRoute, NavigationEnd, Router, RouterEvent } from "@angular/router";
-import { add, differenceInSeconds, isBefore, parse, parseISO } from "date-fns";
-import { Subscription, filter, firstValueFrom, map, tap, timeout } from "rxjs";
+import { ActivatedRoute, Router } from "@angular/router";
+import { add, differenceInSeconds, isBefore, parseISO } from "date-fns";
+import { Subscription, catchError, firstValueFrom, map, of, timeout } from "rxjs";
 import { LocalStorage } from "../utils/local-storage";
 import { ExternalNavigation } from "../utils/router-utils";
 
@@ -26,14 +24,14 @@ interface OauthParams {
     authorizeUrl: string;
     tokenUrl: string;
     clientId: string;
-    requiredScope: string;
+    requiredScope: string[];
 }
 
 interface MicrosoftOauthParams {
     readonly provider: 'microsoft';
-    readonly tenantId: string;
+    readonly tenantId: 'common' | 'organizations' | string /* uuid */;
     readonly clientId: string;
-    readonly requiredScope: string;
+    readonly requiredScope: string[];
 }
 
 function msOauthParamsAsOauthParams(msOauthParams: MicrosoftOauthParams): OauthParams {
@@ -48,15 +46,17 @@ function msOauthParamsAsOauthParams(msOauthParams: MicrosoftOauthParams): OauthP
 
 const OAUTH_PARAMS = new InjectionToken<OauthParams>('MS_OAUTH_PARAMS');
 
-function provideLoginContext(): Provider[] {
+export function provideLoginContext(): Provider[] {
     return [
         {
             provide: OAUTH_PARAMS,
             useValue: msOauthParamsAsOauthParams({
                 provider: 'microsoft',
-                tenantId: '6742fb94-e226-487c-8107-f07af7674594',
-                clientId: 'f7983f22-12f2-4c9c-919b-cd80027c190c',
-                requiredScope: 'https://graph.microsoft.com mail.read offline_access openid'
+                tenantId: '3caa9ec8-40fb-44d2-bcc1-0bd4f2f47bec',
+                clientId: '7d6b1a60-1f68-4df8-85ca-45c8d3d5e31c',
+                requiredScope: [
+                    'https://graph.microsoft.com/User.Read'
+                ]
             }),
             multi: true
         },
@@ -70,8 +70,29 @@ interface AccessTokenResponse {
     readonly refresh_token: string | null;
 }
 
-interface AccessTokenData extends AccessTokenResponse {
+export function isAccessTokenResponse(obj: any): obj is AccessTokenResponse {
+    return Object.keys(obj).includes('access_token');
+}
+
+interface AccessTokenErrorResponse {
+    readonly error: string;
+    readonly error_description: string;
+}
+
+interface AccessTokenData {
     readonly provider: OauthProvider;
+    readonly accessToken: string;
+    readonly expiresAt: Date;
+    readonly refreshToken: string | null;
+}
+
+function fromAccessTokenResponse(provider: OauthProvider, response: AccessTokenResponse): AccessTokenData {
+    return {
+        provider,
+        accessToken: response.access_token,
+        expiresAt: add(new Date(), { seconds: response.expires_in}),
+        refreshToken: response.refresh_token
+    };
 }
 
 interface User {
@@ -81,6 +102,7 @@ interface User {
 @Injectable()
 export class LoginContext {
     constructor(
+        readonly platformLocation: PlatformLocation,
         readonly location: Location,
         readonly router: Router,
         readonly externalNavigation: ExternalNavigation,
@@ -93,18 +115,43 @@ export class LoginContext {
 
     private _saveCurrentNavigation: Subscription;
 
+    get authorizeRedirectUri(): string {
+        let isDefaultPortForProtocol = false;
+        switch (this.platformLocation.protocol) {
+            case 'http:':
+                isDefaultPortForProtocol = (this.platformLocation.port === '80');
+                break;
+            case 'https:':
+                isDefaultPortForProtocol = (this.platformLocation.port === '443');
+                break;
+        }
+
+        const host = this.platformLocation.hostname + (
+            isDefaultPortForProtocol ? '' : `:${this.platformLocation.port}`
+        );
+
+        const baseHref = this.platformLocation.getBaseHrefFromDOM();
+        const baseUrl = `${this.platformLocation.protocol}//${host}`
+        return baseUrl + this.location.prepareExternalUrl('/sso-redirect');
+    }
+
     get currentProvider(): OauthProvider | null {
         return this._currentProviderParams?.provider || null;
     }
     get currentProviderParams(): OauthParams | null {
+        if (this._currentProviderParams === undefined) {
+            throw new Error('Login context uninitialized');
+        }
         return this._currentProviderParams;
     }
-    private _setCurrentProvider(value: OauthProvider | null) {
+    private _setCurrentProvider(value: OauthProvider | null, init=false) {
         if (value == this.currentProvider) {
             return;
         }
-        this.clearLocalStorage();
-        this._currentAccessToken = null;
+        if (!init) {
+            this.clearLocalStorage();
+        }
+        this._currentAccessTokenData = null;
         // this._currentUser = null;
 
         if (value != null) {
@@ -121,25 +168,41 @@ export class LoginContext {
             this._currentProviderParams = null;
         }
     }
-    _currentProviderParams: OauthParams | null;
+    _currentProviderParams: OauthParams | null | undefined;
 
-    get currentAccessToken(): AccessTokenData | null {
-        return this._currentAccessToken;
+    get isInitialized() {
+        return this._currentProviderParams !== undefined;
     }
-    _currentAccessToken: AccessTokenData | null;
+
+    get currentAccessToken(): string | null {
+        return this.currentAccessTokenData?.accessToken || null;
+    }
+
+    get currentAccessTokenData(): AccessTokenData | null {
+        return this._currentAccessTokenData;
+    }
+    _currentAccessTokenData: AccessTokenData | null;
 
     //  get currentUser(): User | null {
     //     return this._currentUser;
     // }
     // _currentUser: User | null;
 
+    get isLoggedIn(): boolean {
+        return this._currentAccessTokenData != null;
+    }
+
     async checkLoggedIn(): Promise<boolean> {
-        let accessTokenData = this.currentAccessToken;
-        if (accessTokenData && accessTokenData.expires_in < 0 && accessTokenData.refresh_token) {
+        let accessTokenData = this.currentAccessTokenData;
+        if (!accessTokenData) return false;
+
+        let isExpired = isBefore(accessTokenData.expiresAt, new Date())
+        if (isExpired && accessTokenData.refreshToken) {
             await this.refreshTokenGrant();
-            accessTokenData = this.currentAccessToken;
+            accessTokenData = this.currentAccessTokenData;
+            isExpired = false;
         }
-        return !!accessTokenData && accessTokenData.expires_in >= 0;
+        return !!accessTokenData && !isExpired;
     }
 
     async init(options?: {
@@ -150,11 +213,12 @@ export class LoginContext {
             this.clearLocalStorage();
         }
 
-        this._setCurrentProvider(
-            this.localStorage.getItem(OAUTH_CURRENT_PROVIDER_KEY) as OauthProvider | null
-        );
+        console.log(this.localStorage, this.localStorage.getItem);
 
-        this._currentAccessToken = this._loadTokenData();
+        const providerKey = this.localStorage.getItem(OAUTH_CURRENT_PROVIDER_KEY) as OauthProvider | null
+        this._setCurrentProvider(providerKey, true);
+
+        this._currentAccessTokenData = this._loadTokenData();
         const isLoggedIn = await this.checkLoggedIn();
 
         console.log(`Login context initialized. User ${isLoggedIn ? 'is' : 'is not'} logged in succesfully`);
@@ -166,8 +230,6 @@ export class LoginContext {
 
         const providerParams = this.currentProviderParams!;
 
-        const redirectUri = this.location.prepareExternalUrl('/sso-redirect');
-
         const stateToken = this._generateStateToken();
         const codeVerifierToken = this._generateCodeVerifierToken();
         const codeChallengeToken = await getCodeChallenge(codeVerifierToken);
@@ -175,15 +237,20 @@ export class LoginContext {
         const authorizeParams = new URLSearchParams();
         authorizeParams.set('client_id', providerParams.clientId);
         authorizeParams.set('response_type', 'code');
-        authorizeParams.set('redirect_uri', redirectUri);
+        authorizeParams.set('redirect_uri', this.authorizeRedirectUri);
         authorizeParams.set('response_mode', 'query');
-        authorizeParams.set('scope', providerParams.requiredScope);
-        authorizeParams.set('state', stateToken);
+        authorizeParams.set('scope', encodeURIComponent(providerParams.requiredScope.join(' ')));
+        authorizeParams.set('state', encodeURIComponent(stateToken));
         authorizeParams.set('code_challenge_method', 'S256');
         authorizeParams.set('code_challenge', codeChallengeToken);
 
         const authorizeUrl = `${providerParams.authorizeUrl}?${authorizeParams}`;
         this.externalNavigation.go(authorizeUrl);
+    }
+
+    logout(): void {
+        this.clearLocalStorage();
+        this.router.navigateByUrl('/public');
     }
 
     /**
@@ -194,10 +261,9 @@ export class LoginContext {
     async finalizeLogin(
         authorizationCode: string,
         state: string
-    ): Promise<any> {
+    ): Promise<AccessTokenResponse | AccessTokenErrorResponse> {
         this._verifyStateToken(state);
-
-        this.authorizationCodeGrant(authorizationCode);
+        return await this.authorizationCodeGrant(authorizationCode);
     }
 
     clearLocalStorage() {
@@ -211,25 +277,25 @@ export class LoginContext {
         if (this.currentProvider != tokenData.provider) {
             throw new Error(`oauth provider mismatch. Expected ${this.currentProvider}, got ${tokenData.provider}`);
         }
-        this.localStorage.setItem(OAUTH_ACCESS_TOKEN_STORAGE_KEY, tokenData.access_token);
+        this.localStorage.setItem(OAUTH_ACCESS_TOKEN_STORAGE_KEY, tokenData.accessToken);
 
-        const expiresAt = add(new Date(), {seconds: tokenData.expires_in});
-        this.localStorage.setItem(OAUTH_ACCESS_TOKEN_EXPIRES_AT_KEY, expiresAt.toISOString());
-        if (tokenData.refresh_token != null) {
-            this.localStorage.setItem(OAUTH_REFRESH_TOKEN_STORAGE_KEY, tokenData.refresh_token);
+        this.localStorage.setItem(OAUTH_ACCESS_TOKEN_EXPIRES_AT_KEY, tokenData.expiresAt.toISOString());
+
+        if (tokenData.refreshToken != null) {
+            this.localStorage.setItem(OAUTH_REFRESH_TOKEN_STORAGE_KEY, tokenData.refreshToken);
         } else {
             this.localStorage.removeItem(OAUTH_REFRESH_TOKEN_STORAGE_KEY);
         }
-        this._currentAccessToken = tokenData;
+        this._currentAccessTokenData = tokenData;
     }
 
     _loadTokenData(): AccessTokenData | null {
         if (this.currentProvider == null) {
-            throw new Error('No current provider');
+            return null;
         }
 
-        const access_token = this.localStorage.getItem(OAUTH_ACCESS_TOKEN_STORAGE_KEY);
-        if (access_token == null) {
+        const accessToken = this.localStorage.getItem(OAUTH_ACCESS_TOKEN_STORAGE_KEY);
+        if (accessToken == null) {
             return null;
         }
         const expiresAt_raw = this.localStorage.getItem(OAUTH_ACCESS_TOKEN_EXPIRES_AT_KEY);
@@ -237,14 +303,14 @@ export class LoginContext {
             throw new Error('oauth access token has no associated expiry');
         }
         const expiresAt = parseISO(expiresAt_raw);
-        const expires_in = differenceInSeconds(expiresAt, new Date());
-        const refresh_token = this.localStorage.getItem(OAUTH_REFRESH_TOKEN_STORAGE_KEY);
+
+        const refreshToken = this.localStorage.getItem(OAUTH_REFRESH_TOKEN_STORAGE_KEY);
 
         return {
             provider: this.currentProvider,
-            access_token,
-            expires_in,
-            refresh_token
+            accessToken,
+            expiresAt,
+            refreshToken
         }
     }
 
@@ -255,27 +321,32 @@ export class LoginContext {
     }
 
 
-    async authorizationCodeGrant(authorizationCode: string): Promise<AccessTokenData | null> {
+    async authorizationCodeGrant(authorizationCode: string): Promise<AccessTokenResponse | AccessTokenErrorResponse> {
         const providerParams = this.currentProviderParams;
         if (providerParams == null) {
             throw new Error('No current oauth provider');
         }
 
         const codeVerifierToken = this._loadCodeVerifierToken();
+        this._clearCodeVerifierToken();
 
         const grantRequest = new URLSearchParams();
         grantRequest.set('client_id', providerParams.clientId);
-        grantRequest.set('scope', providerParams.requiredScope);
+        grantRequest.set('scope', encodeURIComponent(providerParams.requiredScope.join(' ')));
         grantRequest.set('grant_type', 'authorization_code');
         grantRequest.set('code', authorizationCode);
         grantRequest.set('code_verifier', codeVerifierToken);
+        grantRequest.set('redirect_uri', this.authorizeRedirectUri);
 
-        const accessTokenData = await this._requestGrant(grantRequest);
-        this._saveTokenData(accessTokenData);
-        return accessTokenData;
+        const response = await this._requestGrant(grantRequest);
+
+        if (isAccessTokenResponse(response)) {
+            this._saveTokenData(fromAccessTokenResponse(this.currentProvider!, response));
+        }
+        return response;
     }
 
-    async refreshTokenGrant(): Promise<AccessTokenData | null> {
+    async refreshTokenGrant(): Promise<AccessTokenResponse | AccessTokenErrorResponse> {
         const providerParams = this.currentProviderParams;
         if (providerParams == null) {
             throw new Error('No current oauth provider');
@@ -283,17 +354,19 @@ export class LoginContext {
 
         const refreshToken = this.localStorage.getItem(OAUTH_REFRESH_TOKEN_STORAGE_KEY);
         if (refreshToken == null) {
-            return null;
+            throw new Error('No current refresh token');
         }
         const grantRequest = new URLSearchParams();
         grantRequest.set('client_id', providerParams.clientId);
-        grantRequest.set('scope', providerParams.requiredScope);
+        grantRequest.set('scope', encodeURIComponent(providerParams.requiredScope.join(' ')));
         grantRequest.set('grant_type', 'refresh_token');
         grantRequest.set('refresh_token', refreshToken);
 
-        const accessTokenData = await this._requestGrant(grantRequest);
-        this._saveTokenData(accessTokenData);
-        return accessTokenData;
+        const response = await this._requestGrant(grantRequest);
+        if (isAccessTokenResponse(response)) {
+            this._saveTokenData(fromAccessTokenResponse(this.currentProvider!, response));
+        }
+        return response;
     }
 
     saveRestoreRoute(routeToRestore: ActivatedRoute | null | undefined) {
@@ -305,7 +378,7 @@ export class LoginContext {
         }
     }
     restorePreviousRoute(): void {
-        const routeUrlToRestore = this.localStorage.getItem(OAUTH_RESTORE_ROUTE_KEY) || '/home';
+        const routeUrlToRestore = this.localStorage.getItem(OAUTH_RESTORE_ROUTE_KEY) || '/';
         this.router.navigateByUrl(routeUrlToRestore);
     }
     clearRestoreRoute() {
@@ -317,7 +390,10 @@ export class LoginContext {
             throw new Error('Oauth state has already been set');
         }
 
-        const stateToken = generateRandomToken(10);
+        const stateToken = btoa(generateRandomToken(10))
+            .replace(/=/g, '')
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_');
         this.localStorage.setItem(OAUTH_STATE_TOKEN_KEY, stateToken);
         return stateToken;
     }
@@ -364,13 +440,13 @@ export class LoginContext {
         this.localStorage.removeItem(OAUTH_CODE_VERIFIER_KEY);
     }
 
-    private _requestGrant(content: URLSearchParams): Promise<AccessTokenData> {
+    private _requestGrant(content: URLSearchParams): Promise<AccessTokenResponse | AccessTokenErrorResponse> {
         const providerParams = this.currentProviderParams;
         if (providerParams == null) {
             throw new Error('No current oauth provider');
         }
         return firstValueFrom(
-            this.httpClient.post<AccessTokenResponse>(
+            this.httpClient.post<AccessTokenResponse | AccessTokenErrorResponse>(
                 providerParams.tokenUrl,
                 content.toString(),
                 {
@@ -380,10 +456,12 @@ export class LoginContext {
                 }
             ).pipe(
                 timeout(1000),
-                map(accessTokenResponse => ({
-                    ...accessTokenResponse,
-                    provider: providerParams.provider
-                }))
+                catchError(err => {
+                    if (err instanceof HttpErrorResponse) {
+                        return of(err.error);
+                    }
+                    throw err;
+                })
             )
         );
 
@@ -397,13 +475,15 @@ function generateRandomToken(length: number): string {
     const arr = new Uint8Array(length);
     crypto.getRandomValues(arr);
 
-    const chars = arr.map((item) => chars[item % chars.length]);
-    return chars.join();
+    const tokenChars = Array.from(arr).map((item) => chars[item % chars.length]);
+    return tokenChars.join('');
 }
 
 async function getCodeChallenge(verifierToken: string): Promise<string> {
     const tokenBytes = new TextEncoder().encode(verifierToken);
     const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", tokenBytes));
-
-    return btoa(String.fromCharCode(...digest));
+    return btoa(String.fromCharCode(...digest))
+        .replace(/=/g, '')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
 }

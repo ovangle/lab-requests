@@ -2,3 +2,46 @@
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+
+/**
+ * Hiding scrollbars without setting overflow: hidden.
+ * Every browser does it differently :D
+ */
+
+body.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+body.hide-scrollbar {
+    -ms-overflow-style: none;
+    padding-right: 16px;
+}
+html:has(body.hide-scrollbar) {
+    scrollbar-width: 0;
+}
+
+/**
+ * @angular/material global style overrides
+ */
+
+mat-card {
+    margin-bottom: 1em;
+}
+
+mat-card-title, mat-card-footer {
+    padding-left: 1.5em;
+    padding-right: 1.5em;
+}
+
+/**
+ * Utitlity classes
+ */
+.content-centered {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.d-flex {
+    display: flex;
+}

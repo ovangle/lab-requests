@@ -1,0 +1,73 @@
+<div class="table-header">
+    <div>
+        <h3 class="table-title">{{dataSource.resourceTitle}} </h3>
+        <ng-content select="lab-req-resource-table-info-header"></ng-content>
+    </div>
+    <div class="table-actions">
+        <a mat-button [routerLink]="dataSource.getCreateLink()"
+           [disabled]="isActionsDisabled">
+            + Add {{dataSource.resourceTitle}}
+        </a>
+    </div>
+</div>
+
+
+<table mat-table [dataSource]="dataSource" multiTemplateDataRows class="mat-elevation-z2">
+    <ng-content></ng-content>
+
+    <ng-container matColumnDef="element-actions">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let element; let index=dataIndex">
+            <div class="element-actions">
+            <button mat-icon-button
+                    [routerLink]="dataSource.getUpdateLink(index)"
+                    [disabled]="isActionsDisabled">
+                <mat-icon>edit</mat-icon>
+            </button>
+
+            <button mat-icon-button (click)="deleteElementAt(index, $event)"
+                    [disabled]="isActionsDisabled">
+                <mat-icon>delete</mat-icon>
+            </button>
+
+            <button mat-icon-button (click)="expandElementDetail(element, $event)"
+                    [disabled]="isActionsDisabled">
+                <mat-icon *ngIf="element === expandedElement">expand_less</mat-icon>
+                <mat-icon *ngIf="element !== expandedElement">expand_more</mat-icon>
+            </button>
+            </div>
+        </td>
+    </ng-container>
+
+    <ng-container matColumnDef="element-detail">
+        <td mat-cell *matCellDef="let element; let dataIndex=dataIndex"
+            [attr.colspan]="displayedColumnsWithElementActions.length">
+            <div class="element-detail"
+                 [@detailExpand]="element === expandedElement ? 'expanded' : 'collapsed'">
+                <ng-container
+                    [ngTemplateOutlet]="detailTemplate"
+                    [ngTemplateOutletContext]="{$implicit: element, index: dataIndex}">
+                </ng-container>
+            </div>
+        </td>
+
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumnsWithElementActions"></tr>
+    <tr mat-row *matRowDef="let element; let dataIndex=dataIndex; columns: displayedColumnsWithElementActions"
+        class="element-row" [class.expanded-element-row]="expandedElement === element"
+        (click)="expandElementDetail(element, $event)">
+    </tr>
+    <tr mat-row *matRowDef="let element; columns: ['element-detail']"
+        class="detail-row" [class.expanded-detail-row]="expandedElement === element">
+    </tr>
+
+    <tr class="mat-mdc-row mdc-data-table__row" *matNoDataRow>
+        <td class="mat-mdc-cell mdc-data-table__cell" [attr.colspan]="displayedColumnsWithElementActions.length">
+            <div class="no-data-info">
+                <mat-icon>lists</mat-icon>
+                <em>No {{_resourceTypeName(dataSource.resourceType) | lowercase}} required</em>
+            </div>
+        </td>
+    </tr>
+</table>

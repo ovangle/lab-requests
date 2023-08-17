@@ -1,5 +1,5 @@
 import { DOCUMENT } from "@angular/common";
-import { Inject, Provider, inject } from "@angular/core";
+import { Injectable, Inject, Provider, inject, InjectionToken } from "@angular/core";
 import { ActivatedRoute, ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree } from "@angular/router";
 import { LoginContext } from "../oauth/login-context";
 
@@ -8,11 +8,28 @@ export function getResolvedUrl(router: Router, route: ActivatedRoute): string {
     return router.serializeUrl(urlTree);
 }
 
+@Injectable()
 export class ExternalNavigation {
     constructor(
         @Inject(DOCUMENT)
         readonly document: Document
     ) {}
+
+    get protocol(): string {
+        return this.document.location.protocol;
+    }
+
+    get host(): string {
+        return this.document.location.host;
+    }
+
+    get hostname(): string {
+        return this.document.location.hostname;
+    }
+
+    get port(): string {
+        return this.document.location.port;
+    }
 
     go(url: string) {
         this.document.location.href = url;
@@ -29,10 +46,17 @@ export async function requiresAuthorizationGuard(
     next: ActivatedRouteSnapshot,
     state: RouterStateSnapshot
 ): Promise<boolean | UrlTree> {
+    const router = inject(Router);
     const loginContext = inject(LoginContext);
+
+    if (!loginContext.isInitialized) {
+        await loginContext.init();
+    }
 
     const isLoggedIn = await loginContext.checkLoggedIn();
     if (!isLoggedIn) {
-        await loginContext.login();
+        return router.parseUrl('/public')
     }
+    return true;
 }
+
