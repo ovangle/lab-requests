@@ -5,5 +5,14 @@ services:
     ports:
       - "8000:8000"
 
-  mongo:
-    image: "mongo:latest"
+  postgres:
+    image: "postgres:15.4"
+    environment:
+      POSTGRES_PASSWORD: 'secret'
+    volumes:
+      - "pgdata:/var/lib/postgresql/data"
+    ports:
+      - "5432:5432"
+
+volumes:
+  pgdata: {}

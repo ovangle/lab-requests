@@ -5,18 +5,16 @@ import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatInputModule } from "@angular/material/input";
+import { MatTabsModule } from "@angular/material/tabs";
 import { ReactiveFormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { RouterModule } from "@angular/router";
-import { SoftwareResourceTableComponent } from "../resources/software/software-resource-table.component";
-import { EquipmentResourceTableComponent } from "../resources/equipment/equipment-resource-table.component";
-import { InputMaterialResourceTableComponent } from "../resources/material/input/input-material-resource-table.component";
-import { OutputMaterialResourceTableComponent } from "../resources/material/output/output-material-resource-table.component";
-import { MatCardModule } from "@angular/material/card";
 import { EquipmentSchemaService } from "../resources/equipment/schema/equipment-schema";
 import { ExperimentalPlanTypeSelectComponent } from "./type/experimental-plan-type-select.component";
-import { CampusSelectComponent } from "./campus/campus-select.component";
-import { DisciplineSelectComponent } from "./discipline/discipline-select.component";
+import { MatIconModule } from "@angular/material/icon";
+import { CampusModule } from "src/app/uni/campus/campus.module";
+import { DisciplineSelectModule } from "src/app/uni/discipline/discipline-select.module";
+import { MatCardModule } from "@angular/material/card";
 
 
 @NgModule({
@@ -26,21 +24,16 @@ import { DisciplineSelectComponent } from "./discipline/discipline-select.compon
         RouterModule,
 
         MatButtonModule,
+        MatCardModule,
         MatDatepickerModule,
         MatFormFieldModule,
+        MatIconModule,
         MatInputModule,
-        MatSlideToggleModule,
-        MatCardModule,
+        MatTabsModule,
 
+        CampusModule,
+        DisciplineSelectModule,
         ExperimentalPlanTypeSelectComponent,
-        CampusSelectComponent,
-        DisciplineSelectComponent,
-
-        SoftwareResourceTableComponent,
-        EquipmentResourceTableComponent,
-
-        InputMaterialResourceTableComponent,
-        OutputMaterialResourceTableComponent
     ],
     declarations: [
         ExperimentalPlanFormComponent

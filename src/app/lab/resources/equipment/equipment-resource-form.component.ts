@@ -1,19 +1,18 @@
 import { Component, Injectable, Input, ViewChild, inject } from "@angular/core";
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { Equipment, EquipmentForm } from "./equipment";
+import { Equipment, EquipmentForm, createEquipmentResourceForm } from "./equipment";
 import { FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { CommonModule } from "@angular/common";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { RESOURCE_TYPE, ResourceFormComponent } from "../common/resource-form.component";
+import { RESOURCE_FORM_FACTORY, RESOURCE_TYPE, ResourceFormComponent, ResourceFormService } from "../common/resource-form.component";
 import { EquipmentSchemaSearchComponent } from "./schema/equipment-schema-search.component";
 import { EquipmentSchema, EquipmentSchemaService } from "./schema/equipment-schema";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
-import { ProvisionForm } from "../common/provision/provision-form.component";
+import { ProvisionFormComponent } from "../common/provision/provision-form.component";
 import { BehaviorSubject, NEVER, Observable, filter, map, switchMap } from "rxjs";
-import { Campus, campusName } from "../../experimental-plan/campus/campus";
-
+import { Campus, campusName } from "../../../uni/campus/campus";
 
 @Component({
     selector: 'lab-req-equipment-resource-form',
@@ -31,7 +30,7 @@ import { Campus, campusName } from "../../experimental-plan/campus/campus";
         ResourceFormComponent,
         EquipmentSchemaSearchComponent,
 
-        ProvisionForm,
+        ProvisionFormComponent,
     ],
     template: `
     <lab-req-resource-form #resourceForm>
@@ -54,7 +53,6 @@ import { Campus, campusName } from "../../experimental-plan/campus/campus";
 
                 <ng-container *ngIf="isProvisioningRequired$ | async">
                     <lab-req-provision-form
-                        [atCampus]="atCampus"
                         [numAvailableUnits]="numAvailableUnits$ | async"
                         resourceType="equipment"
                         provisioningUnit="per unit"
@@ -94,7 +92,8 @@ import { Campus, campusName } from "../../experimental-plan/campus/campus";
         }
     `],
     providers: [
-        { provide: RESOURCE_TYPE, useValue: 'equipment' }
+        { provide: RESOURCE_TYPE, useValue: 'equipment' },
+        { provide: RESOURCE_FORM_FACTORY, useValue: () => createEquipmentResourceForm({}) }
     ]
 })
 export class EquipmentResourceFormComponent {

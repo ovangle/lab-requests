@@ -16,8 +16,8 @@ export class OutputMaterial extends Material {
 
     numUnitsProduced: number;
 
-    storage: ResourceStorage | null;
-    disposal: ResourceDisposal | null;
+    storage: ResourceStorage;
+    disposal: ResourceDisposal;
 
     hazardClasses: HazardClass[];
 
@@ -29,19 +29,24 @@ export class OutputMaterial extends Material {
 
         this.numUnitsProduced = input.numUnitsProduced || 0;
 
-        this.storage = isResourceStorageType(input.storage?.type)
-            ? new ResourceStorage(input.storage!)
-            : null;
+        this.storage = new ResourceStorage(
+            isResourceStorageType(input.storage?.type)
+            ? input.storage!
+            : {}
+        );
 
-        this.disposal = isResourceDisposalType(input.disposal?.type)
+        this.disposal = new ResourceDisposal(
+            isResourceDisposalType(input.disposal?.type)
             ? new ResourceDisposal(input.disposal!)
-            : null;
+            : {}
+        );
 
         this.hazardClasses = input?.hazardClasses || [];
     }
 }
 
 export type OutputMaterialForm = FormGroup<{
+    type: FormControl<'output-material'>;
     name: FormControl<string>;
     baseUnit: FormControl<string>;
     numUnitsProduced: FormControl<number>;
@@ -53,6 +58,7 @@ export type OutputMaterialForm = FormGroup<{
 
 export function createOutputMaterialForm(output: Partial<OutputMaterial>): OutputMaterialForm {
     return new FormGroup({
+        type: new FormControl('output-material', {nonNullable: true}),
         name: new FormControl(
             output.name || '',
             {nonNullable: true, validators: [Validators.required]}

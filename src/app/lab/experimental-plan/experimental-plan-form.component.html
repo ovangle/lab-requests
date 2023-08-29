@@ -23,6 +23,10 @@
                 <input matInput type="text" id="project-title" formControlName="title" />
             </mat-form-field>
 
+            <!--
+            <lab-req-campus-select formGroupName="campus"></lab-req-campus-select>
+            -->
+
             <lab-req-experimental-plan-type-select formControlName="planType">
             </lab-req-experimental-plan-type-select>
 
@@ -54,54 +58,30 @@
                 <mat-date-range-picker #picker></mat-date-range-picker>
             </mat-form-field>
 
-            <div class="project-duration-container">
-                <div class="date-from-to-container">
-                    <mat-form-field>
-                        <mat-label>Project from</mat-label>
+            <mat-card *ngIf="planService.plan$ | async as plan">
+                <mat-card-header>
+                    <nav mat-tab-nav-bar [tabPanel]="tabPanel"
+                        mat-align-tabs="start"
+                        mat-stretch-tabs="false">
+                        <a mat-tab-link *ngFor="let workUnit of plan.workUnits; let index=index"
+                            [routerLink]="['./', 'work-units', index]" routerLinkActive #linkActive="routerLinkActive"
+                            [active]="linkActive.isActive">
+                            {{_campusName(workUnit.campus)}} - {{workUnit.labType}}
+                        </a>
+                        <a mat-tab-link
+                        [routerLink]="['./', 'work-units', plan.workUnits.length]"
+                        routerLinkActive #linkActive="routerLinkActive"
+                        [active]="linkActive.isActive"
+                        [disabled]="isAddingWorkUnit(plan)">
+                        <mat-icon>+</mat-icon>
+                        </a>
+                    </nav>
+                </mat-card-header>
 
-                        <input matInput id="start-date" formControlName="startDate" [matDatepicker]="startDatepicker" />
-
-                        <mat-datepicker-toggle matIconSuffix [for]="startDatepicker"></mat-datepicker-toggle>
-                        <mat-datepicker #startDatepicker></mat-datepicker>
-                    </mat-form-field>
-
-                    <mat-form-field>
-                        <mat-label>Project To</mat-label>
-
-                        <input matInput id="end-date" formControlName="endDate" [matDatepicker]="endDatepicker" />
-
-                        <mat-datepicker-toggle matIconSuffix [for]="endDatepicker"></mat-datepicker-toggle>
-                        <mat-datepicker #endDatepicker></mat-datepicker>
-                    </mat-form-field>
-                </div>
-            </div>
-
-            <h2>Required resources</h2>
-
-            <mat-card>
                 <mat-card-content>
-                    <lab-req-equipment-resource-table></lab-req-equipment-resource-table>
-                </mat-card-content>
-            </mat-card>
-
-            <mat-card>
-                <mat-card-content>
-                    <lab-req-software-resource-table></lab-req-software-resource-table>
-
-                </mat-card-content>
-            </mat-card>
-
-            <mat-card>
-                <mat-card-content>
-                    <lab-req-input-material-resource-table></lab-req-input-material-resource-table>
-
-                </mat-card-content>
-            </mat-card>
-
-            <mat-card>
-                <mat-card-content>
-                    <lab-req-output-material-resource-table></lab-req-output-material-resource-table>
-
+                <mat-tab-nav-panel #tabPanel>
+                    <router-outlet></router-outlet>
+                </mat-tab-nav-panel>
                 </mat-card-content>
             </mat-card>
         </div>
@@ -109,7 +89,7 @@
 
     <div class="right-pane">
         <div class="form-container">
-        <router-outlet name="form"></router-outlet>
+            <router-outlet name="form"></router-outlet>
         </div>
     </div>
 </div>

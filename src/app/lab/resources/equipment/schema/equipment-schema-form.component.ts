@@ -7,7 +7,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatCardModule } from "@angular/material/card";
 import { MatRadioModule } from "@angular/material/radio";
-import { ProvisionForm } from "../../common/provision/provision-form.component";
+import { ProvisionFormComponent } from "../../common/provision/provision-form.component";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 

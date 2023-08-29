@@ -4,6 +4,7 @@ import { HazardClass } from "../../common/hazardous/hazardous";
 import { ResourceStorage, ResourceStorageForm, createResourceStorageForm, isResourceStorageType } from "../../common/storage/resource-storage";
 import { ResourceStorageFormComponent } from "../../common/storage/resource-storage-form.component";
 import { numberAttribute } from "@angular/core";
+import { HazardClassLabelsComponent } from "../../common/hazardous/hazard-classes-labels.component";
 
 export class InputMaterial extends Material {
     override readonly type = 'input-material';
@@ -17,7 +18,7 @@ export class InputMaterial extends Material {
     /** The estimated cost per base unit */
     estimatedCost: number;
 
-    storage: ResourceStorage | null;
+    storage: ResourceStorage;
     hazardClasses: HazardClass[];
 
     constructor(input: { name: string; baseUnit: string } & Partial<InputMaterial>) {
@@ -30,15 +31,19 @@ export class InputMaterial extends Material {
         this.isUniversitySupplied = !!input?.isUniversitySupplied;
         this.estimatedCost = input?.estimatedCost || 0;
 
-        this.storage = isResourceStorageType(input.storage?.type)
+        this.storage = new ResourceStorage(
+            isResourceStorageType(input.storage?.type)
             ? new ResourceStorage(input.storage!)
-            : null;
+            : {type: 'general'}
+        );
+
 
         this.hazardClasses = input?.hazardClasses || [];
     }
 }
 
 export type InputMaterialForm = FormGroup<{
+    type: FormControl<'input-material'>;
     name: FormControl<string>;
     baseUnit: FormControl<string>;
 
@@ -53,6 +58,7 @@ export type InputMaterialForm = FormGroup<{
 
 export function createInputMaterialForm(input: Partial<InputMaterial>): InputMaterialForm {
     return new FormGroup({
+        type: new FormControl('input-material', {nonNullable: true}),
         name: new FormControl<string>(
             input.name || '',
             {nonNullable: true, validators: [Validators.required]}

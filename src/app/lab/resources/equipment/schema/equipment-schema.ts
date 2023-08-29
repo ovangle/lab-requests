@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { AbstractControl, FormArray, FormControl, FormGroup, Validators } from "@angular/forms";
 import { Observable, of, throwError } from "rxjs";
-import { Campus } from "src/app/lab/experimental-plan/campus/campus";
+import { Campus } from "src/app/uni/campus/campus";
 
 /**
  * An equipment represents a fixture in a lab, thus is statically

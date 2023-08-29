@@ -3,7 +3,7 @@ import { FormControl, FormGroup, Validators } from "@angular/forms";
 
 export const RESOURCE_DISPOSAL_TYPES = [
     'general',
-    'bulk',
+    'bulk/landfill',
     'recyclable',
     'liquids/oil',
     'hazardous',
@@ -20,10 +20,13 @@ export class ResourceDisposal {
     readonly type: ResourceDisposalType;
     readonly otherDescription: string;
 
-    constructor(params: {readonly type: ResourceDisposalType} & Partial<ResourceDisposal>) {
-        this.type = params.type;
+    readonly estimatedCost: number;
+
+    constructor(params: Partial<ResourceDisposal>) {
+        this.type = params.type || 'general';
 
         this.otherDescription = params.otherDescription || '';
+        this.estimatedCost = params.estimatedCost || 0;
     }
 
     get typeName(): string {
@@ -35,8 +38,9 @@ export class ResourceDisposal {
 }
 
 export type ResourceDisposalForm = FormGroup<{
-    type: FormControl<ResourceDisposalType>,
-    otherDescription: FormControl<string>
+    type: FormControl<ResourceDisposalType>;
+    otherDescription: FormControl<string>;
+    estimatedCost: FormControl<number>;
 }>;
 
 export function createResourceDisposalForm(r: Partial<ResourceDisposal>): ResourceDisposalForm {
@@ -47,6 +51,10 @@ export function createResourceDisposalForm(r: Partial<ResourceDisposal>): Resour
         ),
         otherDescription: new FormControl<string>(
             r.otherDescription || '',
+            {nonNullable: true}
+        ),
+        estimatedCost: new FormControl<number>(
+            r.estimatedCost || 0,
             {nonNullable: true}
         )
     });

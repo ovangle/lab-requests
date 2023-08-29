@@ -41,6 +41,7 @@ export class Equipment implements Resource {
 
 
 export type EquipmentForm = FormGroup<{
+    type: FormControl<'equipment'>;
     schema: FormControl<EquipmentSchema | null>,
 
     name: FormControl<string>;
@@ -67,6 +68,7 @@ export function isEquipmentResourceForm(obj: any): obj is EquipmentForm {
 export function createEquipmentResourceForm(r: Partial<Equipment>): EquipmentForm {
     const schema = r?.schema;
     return new FormGroup({
+        type: new FormControl('equipment', {nonNullable: true}),
         schema: new FormControl<EquipmentSchema | null>(null, {
             validators: Validators.required
         }),

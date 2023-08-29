@@ -1,10 +1,10 @@
 import { CommonModule } from "@angular/common";
 import { Component, ViewChild, inject } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
-import { ResourceFormComponent, RESOURCE_TYPE, ResourceFormService } from "../../common/resource-form.component";
+import { ResourceFormComponent, RESOURCE_TYPE, ResourceFormService, RESOURCE_FORM_FACTORY } from "../../common/resource-form.component";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { OutputMaterial, OutputMaterialForm, disableDependentControlsWithBaseUnitValidity } from "./output-material";
+import { OutputMaterial, OutputMaterialForm, createOutputMaterialForm, disableDependentControlsWithBaseUnitValidity } from "./output-material";
 import { ResourceStorageFormComponent } from "../../common/storage/resource-storage-form.component";
 import { ResourceDisposalFormComponent } from "../../common/disposal/resource-disposal-form.component";
 import { HazardClassesSelectComponent } from "../../common/hazardous/hazard-classes-select.component";
@@ -57,7 +57,8 @@ import { HazardClassesSelectComponent } from "../../common/hazardous/hazard-clas
     </lab-req-resource-form>
     `,
     providers: [
-        { provide: RESOURCE_TYPE, useValue: 'output-material' }
+        { provide: RESOURCE_TYPE, useValue: 'output-material' },
+        { provide: RESOURCE_FORM_FACTORY, useValue: () => createOutputMaterialForm({}) }
     ]
 })
 export class OutputMaterialResourceFormComponent {

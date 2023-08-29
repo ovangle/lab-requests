@@ -1,24 +1,20 @@
-import { Injectable, inject } from "@angular/core";
-import { FormGroup } from "@angular/forms";
+import { Inject, Injectable, inject } from "@angular/core";
+import { FormArray, FormGroup } from "@angular/forms";
+import { ActivatedRoute } from "@angular/router";
+import { BehaviorSubject, Observable, combineLatest, firstValueFrom, map } from "rxjs";
+import { InputMaterialResourceFormComponent } from "../material/input/input-material-resource-form.component";
+import { ResourceContainerFormService } from "../resources";
+import { RESOURCE_TYPE } from "./resource-form.component";
 
-export type ResourceType = 'software' | 'equipment' | 'input-material' | 'output-material';
+export type ResourceType = 'software' | 'equipment' | 'service' | 'input-material' | 'output-material';
 
 
 export interface Resource {
-}
-
-@Injectable()
-export abstract class ResourceService<T extends Resource, F extends FormGroup<any>> {
-    abstract ctor(partialResource: Partial<T>): T;
-
-    fromForm(resourceForm: F): T {
-        return this.ctor(resourceForm.value);
-    }
-
-    abstract resourceForm(): F;
+    readonly type: ResourceType;
 }
 
 const RESOURCE_TYPE_NAMES: {[K in ResourceType]: string} = {
+    'service': 'Service',
     'equipment': 'Equipment',
     'software': 'Software',
     'input-material': 'Input material',

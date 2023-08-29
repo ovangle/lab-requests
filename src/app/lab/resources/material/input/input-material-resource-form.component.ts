@@ -1,13 +1,13 @@
 import { CommonModule } from "@angular/common";
 import { Component, ViewChild } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
-import { RESOURCE_TYPE, ResourceFormComponent } from "../../common/resource-form.component";
+import { RESOURCE_FORM_FACTORY, RESOURCE_TYPE, ResourceFormComponent } from "../../common/resource-form.component";
 import { HazardClassesSelectComponent } from "../../common/hazardous/hazard-classes-select.component";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { ResourceStorageFormComponent } from "../../common/storage/resource-storage-form.component";
 import { MatInputModule } from "@angular/material/input";
-import { ProvisionForm } from "../../common/provision/provision-form.component";
-import { InputMaterial, InputMaterialForm } from "./input-material";
+import { ProvisionFormComponent } from "../../common/provision/provision-form.component";
+import { InputMaterial, InputMaterialForm, createInputMaterialForm } from "./input-material";
 
 
 @Component({
@@ -22,7 +22,7 @@ import { InputMaterial, InputMaterialForm } from "./input-material";
 
         HazardClassesSelectComponent,
         ResourceStorageFormComponent,
-        ProvisionForm,
+        ProvisionFormComponent,
         ResourceFormComponent,
     ],
     template: `
@@ -69,7 +69,8 @@ import { InputMaterial, InputMaterialForm } from "./input-material";
     }
     `],
     providers: [
-        { provide: RESOURCE_TYPE, useValue: 'input-material' }
+        { provide: RESOURCE_TYPE, useValue: 'input-material' },
+        { provide: RESOURCE_FORM_FACTORY, useValue: () => createInputMaterialForm({}) }
     ]
 })
 export class InputMaterialResourceFormComponent {

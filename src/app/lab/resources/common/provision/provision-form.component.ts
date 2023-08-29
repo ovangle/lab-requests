@@ -1,10 +1,11 @@
+import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 import { CommonModule } from "@angular/common";
 import { Component, Input } from "@angular/core";
 import { FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatRadioModule } from "@angular/material/radio";
-import { Campus, campusName } from "src/app/lab/experimental-plan/campus/campus";
+import { Campus, campusName } from "src/app/uni/campus/campus";
 
 @Component({
     selector: 'lab-req-provision-form',
@@ -18,23 +19,18 @@ import { Campus, campusName } from "src/app/lab/experimental-plan/campus/campus"
         MatRadioModule,
     ],
     template: `
-
     <ng-container [formGroup]="form">
-
-
-        <div class="is-university-supplied">
+        <div *ngIf="canResearcherSupply" class="is-university-supplied">
             <div>This {{resourceType}} is to be supplied:</div>
-                <mat-radio-group formControlName="isUniversitySupplied">
-                    <mat-radio-button [value]="false">By the researcher</mat-radio-button>
-                    <mat-radio-button [value]="true">By the university</mat-radio-button>
-                </mat-radio-group>
-            </div>
+            <mat-radio-group formControlName="isUniversitySupplied">
+                <mat-radio-button [value]="false">By the researcher</mat-radio-button>
+                <mat-radio-button [value]="true">By the university</mat-radio-button>
+            </mat-radio-group>
+        </div>
 
-
-        <ng-container *ngIf="form.value.isUniversitySupplied">
+        <ng-container *ngIf="isUniversitySupplied">
             <mat-form-field>
                 <mat-label>Estimated cost</mat-label>
-
                 <input matInput type="number" formControlName="estimatedCost">
                 <div matTextPrefix>$</div>
                 <div matTextSuffix>{{provisioningUnit}}</div>
@@ -43,14 +39,7 @@ import { Campus, campusName } from "src/app/lab/experimental-plan/campus/campus"
     </ng-container>
     `
 })
-export class ProvisionForm {
-    @Input()
-    atCampus: Campus | null;
-
-    get atCampusName() {
-        return campusName(this.atCampus);
-    }
-
+export class ProvisionFormComponent {
     @Input()
     numAvailableUnits: number | null;
 
@@ -62,4 +51,25 @@ export class ProvisionForm {
 
     @Input()
     provisioningUnit: string;
+
+    @Input()
+    get canResearcherSupply(): boolean {
+        return this._canResearcherSupply;
+    }
+    set canResearcherSupply(input: BooleanInput) {
+        this._canResearcherSupply = coerceBooleanProperty(input);
+    }
+
+    _canResearcherSupply: boolean = false;
+
+    get isUniversitySupplied() {
+        if (!this.canResearcherSupply) {
+            return true;
+        }
+        const isUniversitySuppliedControl = this.form.get('isUniversitySupplied');
+        if (!isUniversitySuppliedControl) {
+            throw new Error('Missing isUniversitySuppliedControl');
+        }
+        return isUniversitySuppliedControl.value;
+    }
 }

@@ -5,36 +5,81 @@ import { FormArray, FormControlDirective, FormControlName, FormGroup, FormGroupD
 import { ExperimentalPlanService } from "../../experimental-plan/experimental-plan";
 import { CommonModule } from "@angular/common";
 import { ActivatedRoute, Router } from "@angular/router";
-import { BehaviorSubject, Subject, combineLatest, map, takeUntil, tap } from "rxjs";
+import { BehaviorSubject, Connectable, Observable, Subject, Subscription, combineLatest, connect, connectable, map, takeUntil, tap } from "rxjs";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { BodyScrollbarHidingService } from "src/app/utils/body-scrollbar-hiding.service";
+import { ResourceContainer, ResourceContainerForm, ResourceContainerFormService } from "../resources";
+import { isThisWeek } from "date-fns";
+import { WorkUnit } from "../../experimental-plan/work-unit/work-unit";
 
 export const RESOURCE_TYPE = new InjectionToken<ResourceType>('RESOURCE_TYPE');
+export const RESOURCE_FORM_FACTORY = new InjectionToken<() => FormGroup<any>>('RESOURCE_FORM_FACTORY');
 
 @Injectable()
 export class ResourceFormService<T extends Resource, F extends FormGroup<any>> {
-    readonly planService = inject(ExperimentalPlanService);
+    readonly resourceContainerService = inject(ResourceContainerFormService);
     readonly resourceType = inject(RESOURCE_TYPE);
+    readonly createEmptyForm = inject<() => F>(RESOURCE_FORM_FACTORY);
 
-    get formArray(): FormArray<F> {
-        return this.planService.getResourceFormArray(this.resourceType) as FormArray<F>;
+    readonly activatedRoute = inject(ActivatedRoute);
+
+    readonly isCreateForm$ = this.activatedRoute.url.pipe(
+        map(segments => {
+            return segments.some(s => s.path.includes('create'));
+        })
+    );
+
+    readonly _resourceIndexSubject = new BehaviorSubject(-1);
+    readonly resourceIndex$ = connectable(
+        combineLatest([
+            this.isCreateForm$,
+            this.activatedRoute.paramMap
+        ]).pipe(
+            map(([isCreateForm, paramMap]) => {
+                const formIndex = isCreateForm
+                    ? this.getResourceFormArray().length
+                    : Number.parseInt(paramMap.get('index')!);
+                if (Number.isNaN(formIndex)) {
+                    throw new Error('Expected index in update form path');
+                }
+                return [isCreateForm, formIndex] as [boolean, number];
+            }),
+            tap(([isCreateForm, _]) => {
+                if (isCreateForm) {
+                    const formArray = this.getResourceFormArray();
+                    formArray.push(this.createEmptyForm());
+                }
+            }),
+            map(([_, formIndex]) => formIndex)
+        ),
+        {
+            connector: () => this._resourceIndexSubject
+        }
+    )
+
+    get resourceIndex(): number {
+        return this._resourceIndexSubject.value;
     }
 
-    getResourceForm(index: number): F {
-        return this.planService.getResourceForm(this.resourceType, index) as F;
+    connect(): Subscription {
+        return this.resourceIndex$.connect();
     }
 
-    commitFormAt(index: number) {
-        return this.planService.commitResourceFormAt(this.resourceType, index);
+    getResourceFormArray(): FormArray<F> {
+        return this.resourceContainerService.getResourceFormArray(this.resourceType);
     }
 
-    revertFormAt(index: number) {
-        return this.planService.revertResourceFormAt(this.resourceType, index);
+    getResourceForm(): F {
+        return this.resourceContainerService.getResourceForm(this.resourceType, this.resourceIndex) as F;
     }
 
-    pushCreateResourceForm() {
-        return this.planService.pushCreateResourceForm(this.resourceType);
+    commitForm() {
+        return this.resourceContainerService.commitResourceFormAt(this.resourceType, this.resourceIndex);
+    }
+
+    revertForm() {
+        return this.resourceContainerService.revertResourceFormAt(this.resourceType, this.resourceIndex);
     }
 }
 
@@ -70,9 +115,6 @@ export class ResourceFormService<T extends Resource, F extends FormGroup<any>> {
 
         <ng-content></ng-content>
     `,
-    providers: [
-        ResourceFormService
-    ],
     host: {
         'class': 'mat-elevation-z8'
     },
@@ -98,7 +140,11 @@ export class ResourceFormService<T extends Resource, F extends FormGroup<any>> {
     .form-title h2 {
         margin-bottom: 0;
     }
-    `]
+    `],
+    providers: [
+        ResourceFormService
+    ]
+
 })
 export class ResourceFormComponent<T extends Resource, F extends FormGroup<any>> {
     private readonly _destroyRef = inject(DestroyRef);
@@ -106,66 +152,39 @@ export class ResourceFormComponent<T extends Resource, F extends FormGroup<any>>
     readonly bodyScrollbarHiding = inject(BodyScrollbarHidingService);
     readonly router = inject(Router);
     readonly route = inject(ActivatedRoute);
-    readonly formService: ResourceFormService<T, F> = inject(ResourceFormService<T, F>);
+
+    readonly resourceContainerFormService = inject(ResourceContainerFormService);
+    protected _resourceContainerFormServiceConnection: Subscription;
+    readonly resourceFormService = inject(ResourceFormService<T, F>);
+    protected _resourceFormServiceConnection: Subscription;
 
     readonly resourceType = inject(RESOURCE_TYPE);
 
-    readonly isCreateResourceForm$ = this.route.url.pipe(
-        map(segments => {
-            if (!segments.some(s => s.path.includes(this.resourceType))) {
-                throw new Error('Path for resource form must include resource type');
-            }
-            return segments.some(s => s.path.includes('create'));
-        })
-    );
+    readonly isCreateResourceForm$ = this.resourceFormService.isCreateForm$;
 
-    readonly formIndexSubject = new BehaviorSubject<number>(-1);
-    get formIndex(): number {
-        return this.formIndexSubject.value;
-    }
     get form(): F | null {
-        return this.formService.getResourceForm(this.formIndex);
+        return this.resourceFormService.getResourceForm();
     }
-
-    readonly formIndex$ = combineLatest([this.isCreateResourceForm$, this.route.paramMap]).pipe(
-        takeUntilDestroyed(),
-        map(([isCreateForm, paramMap]) => {
-            if (isCreateForm) {
-                if (paramMap.get('index') !== null) {
-                    throw new Error('Resource create path cannot include :index param');
-                }
-                return this.formService.formArray.length;
-            } else {
-                const formIndex = paramMap.get('index');
-                if (formIndex === null) {
-                    throw new Error('Resource update path must include :index param');
-                }
-                return Number.parseInt(formIndex);
-            }
-        }),
-        tap((formIndex) => {
-            if (formIndex === this.formService.formArray.length) {
-                this.formService.pushCreateResourceForm();
-            }
-        })
-    )
 
     ngOnInit() {
-        this.formIndex$.subscribe(this.formIndexSubject);
+        this._resourceContainerFormServiceConnection = this.resourceContainerFormService.connect();
+        this._resourceFormServiceConnection = this.resourceFormService.connect();
         this.bodyScrollbarHiding.hideScrollbar();
     }
 
     ngOnDestroy() {
+        this._resourceContainerFormServiceConnection.unsubscribe();
+        this._resourceFormServiceConnection.unsubscribe();
         this.bodyScrollbarHiding.unhideScrollbar();
     }
 
     saveAndClose() {
-        this.formService.commitFormAt(this.formIndex);
+        this.resourceFormService.commitForm();
         this._close();
     }
 
     cancelAndClose() {
-        this.formService.revertFormAt(this.formIndex);
+        this.resourceFormService.revertForm();
         this._close();
     }
 
@@ -179,8 +198,5 @@ export class ResourceFormComponent<T extends Resource, F extends FormGroup<any>>
     _resourceTypeName(r: ResourceType): string {
         return resourceTypeName(r);
     }
-
-
-
 }
 

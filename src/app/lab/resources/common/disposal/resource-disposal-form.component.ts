@@ -4,6 +4,7 @@ import { ControlContainer, ReactiveFormsModule } from "@angular/forms";
 import { CommonModule } from "@angular/common";
 import { MatSelectModule } from "@angular/material/select";
 import { SelectOtherDescriptionComponent } from "src/app/utils/forms/select-other-description.component";
+import { ProvisionFormComponent } from "../provision/provision-form.component";
 
 
 @Component({
@@ -15,7 +16,9 @@ import { SelectOtherDescriptionComponent } from "src/app/utils/forms/select-othe
 
         MatSelectModule,
 
-        SelectOtherDescriptionComponent
+        SelectOtherDescriptionComponent,
+
+        ProvisionFormComponent,
     ],
     template: `
     <div class="container" [formGroup]="formGroup">
@@ -32,6 +35,11 @@ import { SelectOtherDescriptionComponent } from "src/app/utils/forms/select-othe
             [isOtherSelected]="formGroup.value['type'] === 'other'"
             formControlName="otherDescription">
         </lab-req-select-other-description>
+
+        <lab-req-provision-form [form]="formGroup"
+            [canResearcherSupply]="false">
+        </lab-req-provision-form>
+
     </div>
     `,
     styles: [`

@@ -2,11 +2,11 @@ import { AbstractControl, FormControl, FormGroup, Validators } from "@angular/fo
 import { isThisSecond } from "date-fns";
 
 export const RESOURCE_STORAGE_TYPES = [
+    'general',
     'samples',
     'chemical',
     'dry',
     'biological',
-    'dry',
     'cold (-4 °C)',
     'frozen (-18 °C)',
     'ult (-80 °C)',
@@ -21,12 +21,11 @@ export function isResourceStorageType(obj: any): obj is ResourceStorageType {
 
 export class ResourceStorage {
     type: ResourceStorageType;
-    otherDescription: string;
-    /** The estimated space required to store the resource (in m^2) */
-    estimatedSpace: number;
+    otherDescription: string | null;
 
-    constructor(storage: {readonly type: ResourceStorageType} & Partial<ResourceStorage>) {
-        this.type = storage.type;
+    constructor(storage: Partial<ResourceStorage>) {
+        this.type = storage.type || 'general';
+        this.otherDescription = storage.otherDescription || null;
     }
 }
 
@@ -42,9 +41,8 @@ function otherDescriptionRequired(control: AbstractControl<string>) {
 }
 
 export type ResourceStorageForm = FormGroup<{
-    type: FormControl<ResourceStorageType | null>,
-    otherDescription: FormControl<string>
-    estimatedSpace: FormControl<number | null>
+    type: FormControl<ResourceStorageType>,
+    otherDescription: FormControl<string | null>
 }>;
 
 export function isResourceStorageForm(obj: any): obj is ResourceStorageForm {
@@ -53,11 +51,9 @@ export function isResourceStorageForm(obj: any): obj is ResourceStorageForm {
 
 export function createResourceStorageForm(storage: Partial<ResourceStorage>): ResourceStorageForm {
     return new FormGroup({
-        type: new FormControl<ResourceStorageType | null>(storage?.type || null),
-        otherDescription: new FormControl(storage?.otherDescription || '', {
-            nonNullable: true,
+        type: new FormControl<ResourceStorageType>(storage?.type || 'general', {nonNullable: true}),
+        otherDescription: new FormControl(storage?.otherDescription || null, {
             validators: [otherDescriptionRequired]
-        }),
-        estimatedSpace: new FormControl(storage?.estimatedSpace || null)
+        })
     })
 }

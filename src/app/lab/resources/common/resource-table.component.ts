@@ -9,16 +9,18 @@ import { MatIconModule } from "@angular/material/icon";
 import { animate, state, style, transition, trigger } from "@angular/animations";
 import { MatButtonModule } from "@angular/material/button";
 import { ExperimentalPlanService } from "../../experimental-plan/experimental-plan";
+import { ResourceContainerFormService } from "../resources";
 
 @Injectable()
 export abstract class ResourceTableDataSource<T extends Resource> extends DataSource<T> {
     readonly resourceType: ResourceType;
     readonly resourceTitle: string;
 
-    readonly planService = inject(ExperimentalPlanService);
+    readonly resourceContainerService = inject(ResourceContainerFormService);
+
 
     getCreateLink(): any[] {
-        return ['./', {outlets: {form: [this.resourceType, 'create']}}]
+        return ['../../', {outlets: {form: [this.resourceType, 'create']}}]
     }
 
     getUpdateLink(elementIndex: number): any[] {
@@ -26,11 +28,11 @@ export abstract class ResourceTableDataSource<T extends Resource> extends DataSo
     }
 
     deleteElementAt(elementIndex: number): void {
-        this.planService.deleteResourceAt(this.resourceType, elementIndex);
+        this.resourceContainerService.deleteResourceAt(this.resourceType, elementIndex);
     }
 
     override connect(collectionViewer: CollectionViewer): Observable<readonly T[]> {
-        return this.planService.getResources(this.resourceType);
+        return this.resourceContainerService.getResources$(this.resourceType);
     }
 
     override disconnect(collectionViewer: CollectionViewer): void {

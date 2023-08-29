@@ -12,6 +12,7 @@ import { EquipmentResourceFormComponent } from './lab/resources/equipment/equipm
 import { InputMaterialResourceFormComponent } from './lab/resources/material/input/input-material-resource-form.component';
 import { resourceFormRoutes } from './lab/resources/resource-form-routing';
 import { OutputMaterialResourceFormComponent } from './lab/resources/material/output/output-material-resource-form.component';
+import { WorkUnitFormComponent, workUnitFormRoutes } from './lab/experimental-plan/work-unit/work-unit-form.component';
 
 const routes: Routes = [
   {
@@ -50,6 +51,7 @@ const routes: Routes = [
         path: 'experimental-plan',
         component: ExperimentalPlanFormComponent,
         children: [
+          ...workUnitFormRoutes(),
           ...resourceFormRoutes('software', SoftwareResourceFormComponent),
           ...resourceFormRoutes('equipment', EquipmentResourceFormComponent),
           ...resourceFormRoutes('input-material', InputMaterialResourceFormComponent),

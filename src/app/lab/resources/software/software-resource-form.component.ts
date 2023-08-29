@@ -1,16 +1,13 @@
-import { NumberInput, coerceNumberProperty } from "@angular/cdk/coercion";
 import { CommonModule } from "@angular/common";
-import { Component, HostBinding, Injectable, Input, OnInit, inject } from "@angular/core";
-import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
-import { MatCardModule } from "@angular/material/card";
+import { Component, Injectable, ViewChild } from "@angular/core";
+import { ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
+import { RESOURCE_FORM_FACTORY, RESOURCE_TYPE, ResourceFormComponent, ResourceFormService } from "../common/resource-form.component";
 import { Software, SoftwareForm, createSoftwareForm } from "./software";
-import { ResourceTableDataSource } from "../common/resource-table.component";
-import { ActivatedRoute, Router } from "@angular/router";
-import { RESOURCE_TYPE, ResourceFormComponent } from "../common/resource-form.component";
-
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { ProvisionFormComponent } from "../common/provision/provision-form.component";
 
 @Component({
     selector: 'lab-req-software-resource-form',
@@ -19,10 +16,12 @@ import { RESOURCE_TYPE, ResourceFormComponent } from "../common/resource-form.co
         CommonModule,
         ReactiveFormsModule,
 
+        MatCheckboxModule,
         MatFormFieldModule,
         MatInputModule,
         MatSelectModule,
 
+        ProvisionFormComponent,
         ResourceFormComponent,
     ],
     template: `
@@ -50,6 +49,15 @@ import { RESOURCE_TYPE, ResourceFormComponent } from "../common/resource-form.co
                         id="software-min-version"
                         formControlName="minVersion" />
             </mat-form-field>
+
+            <mat-checkbox formControlName="isLicenseRequired">
+                This software requires a licence seat
+            </mat-checkbox>
+
+            <lab-req-provision-form *ngIf="isLicenseRequired" [form]="resourceForm.form"
+                [canResearcherSupply]="false"
+                provisioningUnit="per license">
+            </lab-req-provision-form>
         </form>
     </lab-req-resource-form>
     `,
@@ -62,7 +70,15 @@ import { RESOURCE_TYPE, ResourceFormComponent } from "../common/resource-form.co
         }
     `],
     providers: [
-        { provide: RESOURCE_TYPE, useValue: 'software' }
+        { provide: RESOURCE_TYPE, useValue: 'software' },
+        { provide: RESOURCE_FORM_FACTORY, useValue: () => createSoftwareForm({}) }
     ]
 })
-export class SoftwareResourceFormComponent {}
+export class SoftwareResourceFormComponent {
+    @ViewChild(ResourceFormComponent, {static: true})
+    resourceForm: ResourceFormComponent<Software, SoftwareForm>;
+
+    get isLicenseRequired() {
+        return !!this.resourceForm.form?.value.isLicenseRequired;
+    }
+}
