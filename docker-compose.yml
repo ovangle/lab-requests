@@ -1,7 +1,12 @@
 
 services:
+  app:
+    build: './app'
+    ports:
+      - "4200:4200"
+
   api:
-    build: './src/api'
+    build: './api'
     ports:
       - "8000:8000"
 

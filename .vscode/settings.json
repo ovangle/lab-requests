@@ -6,5 +6,6 @@
     "python.linting.enabled": true,
     "mypy.targets": [
         "./src"
-    ]
+    ],
+    "mypy-type-checker.importStrategy": "fromEnvironment"
 }
