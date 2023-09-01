@@ -14,3 +14,4 @@ async def list_plans():
 @app.get('/plans/{plan_id}')
 async def fetch_plan(plan_id: UUID):
     return {}
+

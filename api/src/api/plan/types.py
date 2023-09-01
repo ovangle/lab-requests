@@ -8,4 +8,8 @@ class ExperimentalPlanType(Enum):
 
     OTHER = 'other'
 
-
+class LabType(Enum):
+    ELECTRICAL = 'Electrical'
+    MECHANICAL = 'Mechanical'
+    CIVIL = 'Civil'
+    ICT = 'ict'

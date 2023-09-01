@@ -1,16 +1,15 @@
-from dataclasses import field
-from pydantic.dataclasses import dataclass
+from types import FunctionType
+from typing import List, Optional
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.orm import Mapped, mapped_column
+from api.base.models import Base
 
-from .equipment.models import Equipment
-from .software.models import Software
-from .service.models import Service
-from .input_material.models import InputMaterial
-from .output_material.models import OutputMaterial
+class ResourceContainer(Base):
+    __abstract__ = True
 
-@dataclass(kw_only=True)
-class ResourceContainer:
-    equipments: list[Equipment]
-    input_materials: list[InputMaterial]
-    output_materials: list[OutputMaterial]
-    services: list[Service]
-    softwares: list[Software]
+    equipments: Mapped[List[dict]] = mapped_column(ARRAY(JSONB), server_default="{}")
+    input_materials: Mapped[List[dict]] = mapped_column(ARRAY(JSONB), server_default="{}")
+    output_materials: Mapped[List[dict]] = mapped_column(ARRAY(JSONB), server_default="{}")
+    services: Mapped[List[dict]] = mapped_column(ARRAY(JSONB), server_default="{}")
+    softwares: Mapped[List[dict]] = mapped_column(ARRAY(JSONB), server_default="{}")
+

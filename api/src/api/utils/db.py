@@ -1,8 +1,10 @@
 import os
+from typing import Annotated
 from sqlalchemy import MetaData, schema, Column
+from sqlalchemy.orm import mapped_column, sessionmaker
 from sqlalchemy.sql import expression
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.types import DateTime, VARCHAR, TIMESTAMP
 
 from sqlalchemy.dialects.postgresql import dialect as pg_dialect
@@ -21,27 +23,30 @@ db_engine = create_async_engine(
     f'postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
 )
 
-async def init_db():
-    import api.uni.db_models
-    import api.plan.db_models
+Session = async_sessionmaker(db_engine)
+
+async def initdb_async():
+    import api.uni.models
+    import api.plan.models
 
     async with db_engine.begin() as conn:
         await conn.run_sync(db_metadata.create_all)
+        await api.uni.models.seed_campuses()
 
-def run_init_db():
+def initdb():
     import asyncio; loop = asyncio.get_event_loop()
-    loop.run_until_complete(init_db())
+    loop.run_until_complete(initdb_async())
 
-async def teardown_db():
-    import api.uni.db_models
-    import api.plan.db_models
+async def teardown_db_async():
+    import api.uni.models
+    import api.plan.models
 
     async with db_engine.begin() as conn:
         await conn.run_sync(db_metadata.drop_all)
 
-def run_teardown_db():
+def teardowndb():
     import asyncio; loop = asyncio.get_event_loop()
-    loop.run_until_complete(teardown_db())
+    loop.run_until_complete(teardown_db_async())
 
 def row_metadata_columns() -> list[Column]:
     return [
@@ -72,3 +77,4 @@ def pg_gen_random_uuid(element, compiler, **kw):
     return 'gen_random_uuid()'
 
 
+uuid_pk = Annotated[UUID, mapped_column(primary_key=True, server_default=gen_random_uuid())]

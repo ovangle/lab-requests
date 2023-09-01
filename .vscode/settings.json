@@ -1,11 +1,7 @@
 {
-    "mypy.debugLogging": true,
-    "mypy.dmypyExecutable": "${workspaceFolder}/.venv/bin/dmypy",
-    "python.linting.mypyPath": "${workspaceFolder}/src/api/.venv/bin/mypy",
-    "python.linting.mypyEnabled": true,
-    "python.linting.enabled": true,
-    "mypy.targets": [
-        "./src"
+    "mypy-type-checker.importStrategy": "fromEnvironment",
+    "mypy-type-checker.args": [
+        "--config-file \"./api/src/mypy.ini\""
     ],
-    "mypy-type-checker.importStrategy": "fromEnvironment"
+    "python.analysis.typeCheckingMode": "basic"
 }

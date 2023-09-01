@@ -19,5 +19,15 @@ services:
     ports:
       - "5432:5432"
 
+  pg_admin:
+    image: "dpage/pgadmin4:7"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: 'tom@ovangle.com'
+      PGADMIN_DEFAULT_PASSWORD: 'secret'
+    ports:
+      - "5433:80"
+
+      
+
 volumes:
   pgdata: {}
