@@ -1,50 +1,71 @@
-from typing import Optional
+from __future__ import annotations
+
+from uuid import UUID
+
+from typing import Iterable, Optional
 from sqlalchemy import Table, Column, insert, Engine, select
 from sqlalchemy.orm import mapped_column, Mapped
 from sqlalchemy.types import VARCHAR, CHAR
-from sqlalchemy.dialects.postgresql import UUID, ENUM
+from sqlalchemy.dialects.postgresql import ENUM
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.base.models import Base
 from api.utils.db import uuid_pk, Session
 
-from .types import CampusCode
+from .types import CampusCode, campus_code
+
+
+class CampusDoesNotExist(Exception):
+    pass
+
 
 class Campus(Base):
-    __table_name__ = 'campuses'
-    id: uuid_pk
-    code: Mapped[CampusCode] = mapped_column(ENUM(CampusCode))
-    description: Mapped[str] = mapped_column(VARCHAR(64), unique=True)
+    __tablename__ = 'campuses'
 
+    id: Mapped[uuid_pk]
+    code: Mapped[campus_code]
+    name: Mapped[str] = mapped_column(VARCHAR(64))
 
-async def seed_campuses():
-    to_seed_campuses = {
-        campus.code: campus
-        for campus in [
-            Campus(code=CampusCode.BNG, description='Bundaberg'),
-            Campus(code=CampusCode.CNS, description='Cairns'),
-            Campus(code=CampusCode.GLD, description='Gold Coast'),
-            Campus(code=CampusCode.MEL, description='Melbourne'),
-            Campus(code=CampusCode.MKY, description='Mackay'),
-            Campus(code=CampusCode.PTH, description='Perth'),
-            Campus(code=CampusCode.ROK, description='Rockhampton'),
-            Campus(code=CampusCode.SYD, description='Sydney'),
-        ]
-    }
-
-    async with Session() as session:
-        to_seed_codes = [code for code in CampusCode if code != CampusCode.OTH]
-        seeded_code_results = await session.execute(
-            select(Campus.code).where(Campus.code.in_(to_seed_codes))
+    @classmethod
+    async def get_by_id(cls, db: AsyncSession, id: UUID) -> Campus:
+        result = await db.execute(
+            select(Campus).where(Campus.id == id)
         )
+        raise NotImplementedError
 
-        seeded_codes = [c[0] for c in seeded_code_results]
-        missing_codes = [
-            code for code in CampusCode 
-            if code not in seeded_codes and code != CampusCode.OTH]
+    @classmethod
+    async def get_by_code(cls, db: AsyncSession, code: str | CampusCode, other_code_description: Optional[str] = None) -> Campus:
+        result = await db.execute(
+            select(Campus).where(Campus.code == code)
+        )
+        raise NotImplementedError
 
-        session.add_all([
-            to_seed_campuses[code]
-            for code in missing_codes
-       ])
-        await session.commit()
+    @classmethod
+    async def get_all_by_codes(cls, db: AsyncSession, codes: Iterable[str | CampusCode]) -> list[Campus]:
+        results = await db.execute(
+            select(Campus).where(Campus.code.in_(map(CampusCode, codes)))
+        )
+        return [Campus(**result) for result in results]
+
+async def seed_campuses(db: AsyncSession):
+    all_known_campuses = [
+        Campus(code=CampusCode('BNG'), name='Bundaberg'),
+        Campus(code=CampusCode('CNS'), name='Cairns'),
+        Campus(code=CampusCode('GLD'), name='Gold Coast'),
+        Campus(code=CampusCode('MEL'), name='Melbourne'),
+        Campus(code=CampusCode('MKY'), name='Mackay'),
+        Campus(code=CampusCode('PTH'), name='Perth'),
+        Campus(code=CampusCode('ROK'), name='Rockhampton'),
+        Campus(code=CampusCode('SYD'), name='Sydney')
+    ]
+    existing_campuses = await Campus.get_all_by_codes(db, (c.code for c in all_known_campuses))
+    existing_campus_codes = {
+        campus.code: campus 
+        for campus in existing_campuses
+    }
+    db.add_all(campus for campus in all_known_campuses if campus.code not in existing_campus_codes)
+
+    await db.commit()
+    
 

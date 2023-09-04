@@ -1,18 +1,17 @@
 from datetime import datetime
 from sqlalchemy import TIMESTAMP, ForeignKey
 from sqlalchemy.orm import (
-    DeclarativeBase,
+    declarative_base,
     Mapped,
     mapped_column
 )
 from uuid import UUID
 
-from api.utils.db import gen_random_uuid, utcnow
+from api.utils.db import gen_random_uuid, utcnow, db_metadata
 
-class Base(DeclarativeBase):
-    id: Mapped[UUID] = mapped_column(
-        primary_key=True, 
-        server_default=gen_random_uuid())
+class Base(declarative_base(metadata=db_metadata)):
+    __abstract__ = True
+
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), 
         server_default=utcnow())

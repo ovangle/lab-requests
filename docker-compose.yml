@@ -9,9 +9,12 @@ services:
     build: './api'
     ports:
       - "8000:8000"
+    environment:
+      DB_HOST: postgres
+      DB_PASSWORD: secret
 
   postgres:
-    image: "postgres:15.4"
+    build: './postgres'
     environment:
       POSTGRES_PASSWORD: 'secret'
     volumes:

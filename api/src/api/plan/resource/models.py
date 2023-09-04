@@ -12,4 +12,3 @@ class ResourceContainer(Base):
     output_materials: Mapped[List[dict]] = mapped_column(ARRAY(JSONB), server_default="{}")
     services: Mapped[List[dict]] = mapped_column(ARRAY(JSONB), server_default="{}")
     softwares: Mapped[List[dict]] = mapped_column(ARRAY(JSONB), server_default="{}")
-
