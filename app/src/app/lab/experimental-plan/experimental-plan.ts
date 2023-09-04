@@ -2,7 +2,7 @@ import { Injectable } from "@angular/core";
 import { FormArray, FormControl, FormGroup, Validators } from "@angular/forms";
 import { BehaviorSubject, Observable, Subject, Subscription, connectable, filter, map } from "rxjs";
 import { __runInitializers } from "tslib";
-import { Campus, CampusCode, CampusForm, createCampusForm } from "../../uni/campus/campus";
+import { Campus, CampusCode, CampusForm, campusForm } from "../../uni/campus/campus";
 import { Discipline } from "../../uni/discipline/discipline";
 import { ExperimentalPlanType } from "./type/experimental-plan-type";
 import { WorkUnit, WorkUnitForm, workUnitForm } from "./work-unit/work-unit";
@@ -65,7 +65,7 @@ export function experimentalPlanForm(plan: Partial<ExperimentalPlan>): Experimen
         title: new FormControl(plan.title || '', { nonNullable: true , validators: [Validators.required]}),
         supervisor: new FormControl(plan.supervisor || '', {nonNullable: true, validators: [Validators.email]}),
         discipline: new FormControl(plan.discipline || null),
-        campus: createCampusForm(plan.campus || {}),
+        campus: campusForm(plan.campus || {}),
         workUnits: new FormArray(
             (plan.workUnits || []).map((e) => workUnitForm(e))
         ),

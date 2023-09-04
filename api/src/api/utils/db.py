@@ -1,8 +1,9 @@
 
 
 import os
+import re
 from typing import Annotated
-from uuid import UUID as PyUUID
+from uuid import UUID 
 from sqlalchemy import MetaData, schema, Column
 from sqlalchemy.orm import mapped_column, sessionmaker, Mapped
 from sqlalchemy.sql import expression
@@ -71,4 +72,13 @@ def pg_gen_random_uuid(element, compiler, **kw):
     return 'gen_random_uuid()'
 
 
-uuid_pk = Annotated[PyUUID, mapped_column(pg_dialect.UUID, primary_key=True, server_default=gen_random_uuid())]
+uuid_pk = Annotated[UUID, mapped_column(pg_dialect.UUID, primary_key=True, server_default=gen_random_uuid())]
+
+# email field
+
+EMAIL_DOMAIN = pg_dialect.DOMAIN(
+    'email',
+    pg_dialect.CITEXT(128),
+    check=r"value ~ '^[a-z0-9].!#$%&''*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$'", 
+)
+
