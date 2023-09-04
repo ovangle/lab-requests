@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
+from pydantic import TypeAdapter
 from pydantic.dataclasses import dataclass
 
 from .types import CampusCode
@@ -7,7 +10,7 @@ from .types import CampusCode
 if TYPE_CHECKING:
     from . import models
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, config={'from_attributes': True, 'arbitrary_types_allowed': True})
 class CampusBase:
     name: str
 

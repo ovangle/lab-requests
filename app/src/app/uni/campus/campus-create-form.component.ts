@@ -1,10 +1,13 @@
 import { Component, EventEmitter, Input, Output, inject } from "@angular/core";
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgIf } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { Campus, CampusService, campusForm } from "./campus";
-import { firstValueFrom } from "rxjs";
-import { ReactiveFormsModule } from "@angular/forms";
+import { Campus, CampusForm, CampusFormValidationErrors, CampusService, campusForm, campusServiceProviders } from "./campus";
+import { Observable, filter, firstValueFrom, map } from "rxjs";
+import { Form, FormGroup, ReactiveFormsModule, ValidationErrors } from "@angular/forms";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { ErrorStateMatcher } from "@angular/material/core";
+
 
 
 @Component({
@@ -13,22 +16,60 @@ import { ReactiveFormsModule } from "@angular/forms";
     imports: [
         CommonModule,
         ReactiveFormsModule,
-        MatFormFieldModule,
-        MatInputModule
+        MatFormFieldModule
     ],
     template: `
-    <ng-container [formGroup]="formGroup">
+    <form [formGroup]="formGroup">
+        <mat-form-field>
+            <mat-label>Code</mat-label>
+            <input matInput formControlName="code"> 
+
+            <mat-error *ngIf="(codeErrors$ | async)?.required"> 
+                A value is required
+            </mat-error>
+            <mat-error *ngIf="(codeErrors$ | async)?.pattern as pattern">
+                {{pattern}} must match pattern
+            </mat-error>
+            <mat-error *ngIf="(codeErrors$ | async)?.notUnique">
+                Value is not unique
+            </mat-error>
+        </mat-form-field>
+    
         <mat-form-field>
             <mat-label>Name</mat-label>
             <input matInput type="text" formControlName="name"/>
-        </mat-form-field>
-    </ng-container>
 
-    `
+            <mat-error *ngIf="(nameErrors$ | async)?.required">
+                A name is required
+            </mat-error>
+        </mat-form-field>
+
+        <div class="form-actions">
+            <button mat-button (click)="commit()">Save</button>
+            <button mat-butgton (click)="cancel()">Cancel</button>
+        </div>
+    </form>
+    `,
+    providers: [
+        ...campusServiceProviders()
+    ]
 })
 export class CampusCreateFormComponent {
     readonly campusService = inject(CampusService);
-    readonly formGroup = campusForm({});
+    readonly formGroup: CampusForm = campusForm({});
+
+    readonly errors$: Observable<CampusFormValidationErrors | null> = this.formGroup.statusChanges.pipe(
+        filter(status => ['INVALID'].includes(status) ),
+        map(() => this.formGroup.errors as CampusFormValidationErrors || null)
+    );
+    
+    readonly codeErrors$ = this.errors$.pipe(
+        map((errors => errors?.code))
+    );
+
+    readonly nameErrors$ = this.errors$.pipe(
+        map(errors => errors?.name)
+    );
 
     @Input()
     get name(): string {
@@ -48,4 +89,9 @@ export class CampusCreateFormComponent {
         const campus = await firstValueFrom(this.campusService.commitForm(this.formGroup));
         this.committed.next(campus);
     }
+    
+    async cancel() {
+        this.cancelled.next();
+    }
+    
 }

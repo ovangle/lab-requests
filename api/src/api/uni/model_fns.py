@@ -15,6 +15,13 @@ async def get_campus(db: AsyncSession, code_or_id: CampusCode | UUID) -> schemas
 
     return schemas.Campus.from_model(campus)
 
+async def list_campuses_by_name(db: AsyncSession, name_prefix: str = '') -> list[schemas.Campus]:
+    campuses = await db.execute(
+        select(models.Campus)
+            .where(models.Campus.name.istartswith(name_prefix))
+    )
+    return [schemas.Campus.from_model(models.Campus(c)) for c in campuses]
+
 
 async def get_or_create_campus(db: AsyncSession, params: Optional[schemas.CampusCreate] = None, /, **kwargs):
     params = params or schemas.CampusCreate(**kwargs)

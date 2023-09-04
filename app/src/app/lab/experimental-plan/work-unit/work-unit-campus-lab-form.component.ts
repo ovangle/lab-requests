@@ -6,7 +6,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { WorkUnitFormService } from "./work-unit-form.component";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
-import { CampusModule } from "../../../uni/campus/campus.module";
+import { CampusSearchModule } from "../../../uni/campus/campus-search.module";
 import { DisciplineSelectModule } from "../../../uni/discipline/discipline-select.module";
 
 
@@ -31,14 +31,16 @@ import { DisciplineSelectModule } from "../../../uni/discipline/discipline-selec
         MatIconModule,
         MatInputModule,
 
-        CampusModule,
+        CampusSearchModule,
         DisciplineSelectModule
     ],
     template: `
     <ng-container [formGroup]="formGroup">
-        <lab-req-campus-select formControlName="campus">
-            <lab-req-campus-select-label>Campus</lab-req-campus-select-label>
-        </lab-req-campus-select>
+        <app-uni-campus-search formControlName="campus" required>
+            <app-uni-campus-search-label>
+                Lab campus
+            </app-uni-campus-search-label>
+        </app-uni-campus-search>
 
         <lab-req-discipline-select formControlName="labType">
             <lab-req-discipline-select-label>Lab type</lab-req-discipline-select-label>
@@ -48,7 +50,6 @@ import { DisciplineSelectModule } from "../../../uni/discipline/discipline-selec
             <mat-label>Lab Technician</mat-label>
             <input matInput formControlName="technician">
         </mat-form-field>
-
 
 
         <div class="controls">

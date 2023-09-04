@@ -14,26 +14,26 @@ from .model_fns import (
     get_experimental_plan_by_id
 )
 
-router = APIRouter()
+plans = APIRouter()
 
-@router.get("/")
+@plans.get("/")
 async def list_plans() -> list[ExperimentalPlan]:
     raise NotImplementedError()
 
-@router.post(
+@plans.post(
     "/",
 )
 async def create_plan(plan: ExperimentalPlanCreate) -> ExperimentalPlan:
     raise NotImplementedError()
 
-@router.get(
+@plans.get(
     "/{plan_id}",
 )
 async def get_plan(plan_id: UUID, db = Depends(Session)) -> ExperimentalPlan:
     return await get_experimental_plan_by_id(db, plan_id)
 
 
-@router.get(
+@plans.get(
     "/{plan_id}/work_units/"
 )
 async def list_plan_work_units(
@@ -42,15 +42,15 @@ async def list_plan_work_units(
 ) -> list[WorkUnit]:
     return await list_plan_work_units(db, plan_id)
 
-@router.post(
-    "/{plan_id}/work_units/",
+@plans.post(
+    "/{plan_id}/work_units/{index}",
 )
 async def create_work_unit(plan_id: UUID, work_unit: WorkUnitCreate) -> WorkUnit:
     raise NotImplementedError
     plan = await ExperimentalPlan.get_plan_by_id(plan_id)
     work_unit = await create_work_unit(work_unit)
 
-@router.get(
+@plans.get(
     "/work_units/{work_unit_id}",
 )
 async def get_work_unit(work_unit_id: UUID) -> WorkUnit:

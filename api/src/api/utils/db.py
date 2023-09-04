@@ -28,20 +28,18 @@ db_engine = create_async_engine(
 Session = async_sessionmaker(db_engine)
 
 async def initdb_async():
-    from api.base.models import Base
-    import api.uni.models
-    import api.plan.models
+    import api.main
 
     async with db_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(db_metadata.create_all)
 
 
-async def teardown_db_async():
-    import api.uni.models
-    import api.plan.models
+async def teardowndb_async():
+    import api.main
 
     async with db_engine.begin() as conn:
         await conn.run_sync(db_metadata.drop_all)
+
 
 def row_metadata_columns() -> list[Column]:
     return [

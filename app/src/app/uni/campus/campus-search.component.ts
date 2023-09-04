@@ -1,36 +1,37 @@
-import { Component, NgModule, inject } from "@angular/core";
+import { Component, HostBinding, Input, NgModule, inject } from "@angular/core";
 import { Campus, CampusService, campusServiceProviders, isCampus } from "./campus";
-import { ControlValueAccessor, FormControl, ReactiveFormsModule } from "@angular/forms";
+import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from "@angular/forms";
 import { CommonModule } from "@angular/common";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { Observable, of, switchMap } from "rxjs";
+import { BehaviorSubject, Observable, filter, of, switchMap } from "rxjs";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
 import { CampusCreateFormComponent } from "./campus-create-form.component";
+import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 
 @Component({
     selector: 'app-uni-campus-search-label',
-    standalone: true,
     template: `
     <ng-content></ng-content>
     `
 })
 export class CampusSearchLabelComponent {}
 
+@Component({
+    selector: 'app-uni-campus-search-option',
+    template: `
+    <span class="campus-code">{{campus.code}}</span> 
+    - <span class="campus-name">{{campus.name}}</span> 
+    `
+})
+export class CampusSearchOptionComponent {
+    @Input()
+    campus: Campus;
+}
 
 @Component({
     selector: 'app-uni-campus-search',
-    standalone: true,
-    imports: [
-        CommonModule, 
-        ReactiveFormsModule,
-
-        MatFormFieldModule,
-        MatAutocompleteModule,
-
-        CampusCreateFormComponent
-    ],
     template: `
     <mat-form-field>
         <mat-label>
@@ -38,31 +39,26 @@ export class CampusSearchLabelComponent {}
         </mat-label>
 
         <input matInput [matAutocomplete]="autocomplete" 
-                        [formControl]="searchControl" />
+                        [formControl]="searchControl" 
+                        [required]="required" />
+                    
+        <mat-error *ngIf="required && !hasSelectedValue">
+            A value is required
+        </mat-error>
     </mat-form-field>
 
 
     <mat-autocomplete #autocomplete>
-        <ng-container *ngIf="searchResults$ | async as searchResults">
-            <mat-option *ngFor="let campus of searchResults" [value]="campus">
-                {{campus.name}}
-            </mat-option>
-
-            <mat-option (onSelectionChange)="this._noSelectableOption.next(true)">
-                Other...
-            </mat-option>
-        </ng-container>
+        <mat-option *ngFor="let campus of (searchResults$ | async)" [value]="campus">
+            <app-uni-campus-search-option 
+                 [campus]="campus">
+            </app-uni-campus-search-option>
+        </mat-option>
     </mat-autocomplete>
-
-    <ng-container *ngIf="noSelectedCampus$ | async">
-        <app-uni-campus-create-form [name]="searchControl.value"
-            (committed)="this.searchControl.setValue($event); this._noSelectableOption.next(false)"
-            (cancelled)="this._noSelectableOption.next(false)>
-        </app-uni-campus-create-form>
-    </ng-container>
     `,
     providers: [
-        ...campusServiceProviders()
+        ...campusServiceProviders(),
+        { provide: NG_VALUE_ACCESSOR, useExisting: CampusSearchComponent }
     ]
 })
 export class CampusSearchComponent implements ControlValueAccessor {
@@ -81,10 +77,33 @@ export class CampusSearchComponent implements ControlValueAccessor {
         })
     );
 
-    readonly _noSelectableOption = new BehaviorSubject<boolean>(false);
+    get hasSelectedValue() {
+        return !isCampus(this.searchControl.value);
+    }
 
-    writeValue(value: Campus | string): void {
-        this.searchControl.setValue(value);
+    @HostBinding('[attr].required')
+    get required(): boolean {
+        return this._required;
+    }
+    set required(value: BooleanInput) {
+        this._required = coerceBooleanProperty(value);
+    }
+    _required: boolean;
+
+    reset() {
+        this.searchControl.setValue('');
+        this._onChange(null);
+    }
+
+    constructor() {
+        this.searchControl.valueChanges.pipe(
+            takeUntilDestroyed(),
+            filter((value): value is Campus => value instanceof Campus),
+        ).subscribe(this._onChange)
+    }
+
+    writeValue(value: Campus | string | null): void {
+        this.searchControl.setValue(value || '');
     }
     _onChange = (value: any) => {}
     registerOnChange(fn: any): void {

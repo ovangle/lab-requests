@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import field
 from typing import TYPE_CHECKING, Type, TypeVar, Any, cast
 from pydantic.dataclasses import dataclass
@@ -15,12 +17,11 @@ T = TypeVar('T', bound='ResourceContainer')
 
 @dataclass(kw_only=True)
 class ResourceContainer:
-    equipments: list[Equipment] = field(default_factory=list)
-    input_materials: list[InputMaterial] = field(default_factory=list)
-    output_materials: list[OutputMaterial] = field(default_factory=list)
-    services: list[Service] = field(default_factory=list)
-    softwares: list[Software] = field(default_factory=list)
-
+    equipments: list['Equipment'] = field(default_factory=list)
+    input_materials: list['InputMaterial'] = field(default_factory=list)
+    output_materials: list['OutputMaterial'] = field(default_factory=list)
+    services: list['Service'] = field(default_factory=list)
+    softwares: list['Software'] = field(default_factory=list)
 
     @classmethod
     def _init_from_model(cls: Type[T], instance: T, model: models.ResourceContainer) -> T:

@@ -12,7 +12,7 @@ import { RouterModule } from "@angular/router";
 import { EquipmentSchemaService } from "../resources/equipment/schema/equipment-schema";
 import { ExperimentalPlanTypeSelectComponent } from "./type/experimental-plan-type-select.component";
 import { MatIconModule } from "@angular/material/icon";
-import { CampusModule } from "src/app/uni/campus/campus.module";
+import { CampusSearchModule } from "src/app/uni/campus/campus-search.module";
 import { DisciplineSelectModule } from "src/app/uni/discipline/discipline-select.module";
 import { MatCardModule } from "@angular/material/card";
 
@@ -31,7 +31,7 @@ import { MatCardModule } from "@angular/material/card";
         MatInputModule,
         MatTabsModule,
 
-        CampusModule,
+        CampusSearchModule,
         DisciplineSelectModule,
         ExperimentalPlanTypeSelectComponent,
     ],

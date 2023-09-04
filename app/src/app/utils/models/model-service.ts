@@ -2,43 +2,45 @@ import { HttpClient } from "@angular/common/http";
 import { InjectionToken, inject } from "@angular/core";
 import { Observable, map } from "rxjs";
 
+import urlJoin from "url-join";
+
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL');
-export const MODEL_BASE_PATH = new InjectionToken<string>('MODEL_BASE_PATH');
-export const MODEL_FACTORY = new InjectionToken<(json: object) => any>('MODEL_FACTORY');
 
 export abstract class ModelService<T> {
     httpClient = inject(HttpClient);
-    apiBaseUrl = inject(API_BASE_URL);
+    readonly apiBaseUrl = inject(API_BASE_URL);
 
-    modelFactory: (json: object) => T = inject(MODEL_FACTORY);
+    // the base of the api path to this resource route
+    abstract readonly servicePath: string;
+    abstract modelFromJson(json: object): T;
 
-    _modelPath(path: string) {
-        return this.apiBaseUrl + path;
+    resourceUrl(path: string) {
+        return urlJoin(this.apiBaseUrl, this.servicePath, path);
     }
 
     protected get(path: string, options?: {
         params?: {[k: string]: any}
     }): Observable<T> {
-        return this.httpClient.get<object>(this._modelPath(path), {
+        return this.httpClient.get<object>(this.resourceUrl(path), {
             params: options?.params
         }).pipe(
-            map(result => this.modelFactory(result))
+            map(result => this.modelFromJson(result))
         )
     }
 
     protected list(path: string, options?: {
         params?: {[k: string]: any}
     }): Observable<T[]> {
-        return this.httpClient.get<{items: object[]}>(this._modelPath(path), {
+        return this.httpClient.get<{items: object[]}>(this.resourceUrl(path), {
             params: options?.params
         }).pipe(
-            map(result => result.items.map(item => this.modelFactory(item)))
+            map(result => result.items.map(item => this.modelFromJson(item)))
         )
     }
 
     protected create(path: string, params: {[k: string]: any}): Observable<T> {
-        return this.httpClient.post(this._modelPath(path), params).pipe(
-            map((result) => this.modelFactory(result))
+        return this.httpClient.post(this.resourceUrl(path), params).pipe(
+            map((result) => this.modelFromJson(result))
         )
     }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from "@angular/core";
+import { Injectable, Provider } from "@angular/core";
 import { FormArray, FormControl, FormGroup, Validators } from "@angular/forms";
 import { BehaviorSubject, Observable, Subject, Subscription, connectable, filter, map } from "rxjs";
 import { __runInitializers } from "tslib";
@@ -6,6 +6,7 @@ import { Campus, CampusCode, CampusForm, campusForm } from "../../uni/campus/cam
 import { Discipline } from "../../uni/discipline/discipline";
 import { ExperimentalPlanType } from "./type/experimental-plan-type";
 import { WorkUnit, WorkUnitForm, workUnitForm } from "./work-unit/work-unit";
+import { MODEL_FACTORY, ModelService } from "src/app/utils/models/model-service";
 
 export class ExperimentalPlan {
     title: string;
@@ -120,4 +121,16 @@ export class ExperimentalPlanService {
             this.current.complete()
         });
     }
+}
+
+
+@Injectable()
+export class ExperimentalPlanService extends ModelService<ExperimentalPlan> {
+
+}
+
+export function experimentalPlanServiceProviders(): Provider[] {
+    return [
+        {provide: MODEL_FACTORY, useValue: (args: any) => new ExperimentalPlan(args)}
+    ]
 }

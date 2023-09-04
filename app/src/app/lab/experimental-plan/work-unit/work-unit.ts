@@ -6,6 +6,7 @@ import { InputMaterialForm, createInputMaterialForm } from "../../resources/mate
 import { OutputMaterialForm, createOutputMaterialForm } from "../../resources/material/output/output-material";
 import { ResourceContainer } from "../../resources/resources";
 import { SoftwareForm, createSoftwareForm } from "../../resources/software/software";
+import { LabType } from "../../type/lab-type";
 
 /**
  * A WorkUnit is a portion of an experimental plan which is conducted
@@ -16,7 +17,7 @@ import { SoftwareForm, createSoftwareForm } from "../../resources/software/softw
 export class WorkUnit extends ResourceContainer {
     readonly campus: Campus;
 
-    readonly labType: Discipline;
+    readonly labType: LabType;
     readonly technician: string;
 
     readonly summary: string;

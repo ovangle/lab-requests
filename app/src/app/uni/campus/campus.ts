@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from "@angular/common/http";
 import { Injectable, InjectionToken, inject } from "@angular/core";
-import { AbstractControl, FormControl, FormGroup, Validators } from "@angular/forms";
+import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { Observable, catchError, map, switchMap } from "rxjs";
 
 import { MODEL_BASE_PATH, MODEL_FACTORY, ModelService } from "src/app/utils/models/model-service";
@@ -43,21 +43,31 @@ export type CampusForm = FormGroup<{
     name: FormControl<string>;
 }>;
 
+export interface CampusFormValidationErrors extends ValidationErrors {
+    code: Readonly<{
+        required: string;
+        pattern: string
+        notUnique: string;
+    }>
+    name: Readonly<{required: string}>
+}
 
 class CampusDoesNotExist extends Error {}
 
 @Injectable()
 export class CampusService extends ModelService<Campus> {
-    searchCampuses(searchString: string): Observable<Campus[]> {
-        return this.list('/campuses', { 
-            params: { name: searchString }
-        });
+    override readonly servicePath = '/uni/campuses'
+    override modelFromJson(json: object): Campus {
+        return new Campus(json);
+    }
+
+    searchCampuses(name: string): Observable<Campus[]> {
+        return this.list('', {params: { name: name }});
     }
 
     getCampusesByCode(code: string): Observable<Campus[]> {
-        return this.list(`/campuses`, {params: {code}});
+        return this.list(`/`, {params: {code}});
     }
-
 
     protected _validateCodeUnique(control: AbstractControl<string>): Observable<{[k: string]: any} | null> {
         return control.valueChanges.pipe(
@@ -103,8 +113,6 @@ export class CampusService extends ModelService<Campus> {
 
 export function campusServiceProviders() {
     return [
-        { provide: MODEL_FACTORY, useValue: (json: object) => new Campus(json)},
-        { provide: MODEL_BASE_PATH, useValue: '/uni' },
         CampusService
     ]
 }

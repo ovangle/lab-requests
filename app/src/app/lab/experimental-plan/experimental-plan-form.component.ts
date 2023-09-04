@@ -7,7 +7,7 @@ import { InputMaterial } from "../resources/material/input/input-material";
 import { hazardClassByDivision } from "../resources/common/hazardous/hazardous";
 import { ActivatedRoute } from "@angular/router";
 import { WorkUnit, WorkUnitForm } from "./work-unit/work-unit";
-import { Campus, CampusCode, campusName } from "src/app/uni/campus/campus";
+import { Campus } from "src/app/uni/campus/campus";
 import { WorkUnitFormService, WorkUnitResourceContainerFormService } from "./work-unit/work-unit-form.component";
 import { ResourceContainerFormService } from "../resources/resources";
 
@@ -67,10 +67,6 @@ export class ExperimentalPlanFormComponent {
 
     get workUnitForms(): WorkUnitForm[] {
         return this.form.controls['workUnits'].controls;
-    }
-
-    _campusName(campus: Campus) {
-        return campusName(campus);
     }
 
     /**

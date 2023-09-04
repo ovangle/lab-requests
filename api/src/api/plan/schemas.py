@@ -14,6 +14,55 @@ from .resource.schemas import ResourceContainer
 from . import models
 
 @dataclass(kw_only=True)
+class WorkUnitBase(ResourceContainer):
+    lab_type: LabType
+    technician_email: str
+
+    process_summary: str
+
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+
+
+@dataclass(kw_only=True)
+class WorkUnitCreate(WorkUnitBase):
+    plan_id: Optional[UUID] = None
+    id: Optional[UUID] = None
+
+    campus: CampusCode | CampusCreate
+
+
+@dataclass(kw_only=True)
+class WorkUnit(WorkUnitBase, RecordMetadata):
+    plan_id: UUID
+    id: UUID
+
+    index: int
+    campus: Campus
+
+    @classmethod
+    def from_model(cls, model: models.WorkUnit):
+        instance = cls(
+            plan_id=model.plan_id,
+            id=model.id,
+            index=model.index,
+            campus=Campus.from_model(model.campus),
+            lab_type=model.lab_type,
+            technician_email=model.technician_email,
+            process_summary=model.process_summary,
+            start_date=model.start_date,
+            end_date=model.end_date,
+            created_at=model.created_at,
+            updated_at=model.updated_at
+        )
+        instance = super()._init_from_model(instance, model)
+        return instance
+
+class WorkUnitPatch(WorkUnitBase):
+    id: UUID
+
+ 
+@dataclass(kw_only=True)
 class ExperimentalPlanBase:
     funding_type: FundingType
 
@@ -62,53 +111,4 @@ class ExperimentalPlan(ExperimentalPlanBase, RecordMetadata):
             updated_at=model.updated_at
         )
 
-
-@dataclass(kw_only=True)
-class WorkUnitBase(ResourceContainer):
-    lab_type: LabType
-    technician_email: str
-
-    process_summary: str
-
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-
-
-@dataclass(kw_only=True)
-class WorkUnitCreate(WorkUnitBase):
-    plan_id: Optional[UUID] = None
-    id: Optional[UUID] = None
-
-    campus: CampusCode | CampusCreate
-
-
-@dataclass(kw_only=True)
-class WorkUnit(WorkUnitBase, RecordMetadata):
-    plan_id: UUID
-    id: UUID
-
-    index: int
-    campus: Campus
-
-    @classmethod
-    def from_model(cls, model: models.WorkUnit):
-        instance = cls(
-            plan_id=model.plan_id,
-            id=model.id,
-            index=model.index,
-            campus=Campus.from_model(model.campus),
-            lab_type=model.lab_type,
-            technician_email=model.technician_email,
-            process_summary=model.process_summary,
-            start_date=model.start_date,
-            end_date=model.end_date,
-            created_at=model.created_at,
-            updated_at=model.updated_at
-        )
-        instance = super()._init_from_model(instance, model)
-        return instance
-
-class WorkUnitPatch(WorkUnitBase):
-    id: UUID
-
-    
+   

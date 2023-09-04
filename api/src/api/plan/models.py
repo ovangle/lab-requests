@@ -38,7 +38,7 @@ class ExperimentalPlan(Base):
         server_default=''
     )
 
-    work_units: Mapped[list['WorkUnit']] = relationship(
+    work_units: Mapped[list[WorkUnit]] = relationship(
         back_populates='plan'
     )
 

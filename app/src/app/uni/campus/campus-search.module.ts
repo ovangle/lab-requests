@@ -6,7 +6,10 @@ import { ReactiveFormsModule } from "@angular/forms";
 import { SelectOtherDescriptionComponent } from "src/app/utils/forms/select-other-description.component";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
 
+import { CampusSearchComponent, CampusSearchLabelComponent, CampusSearchOptionComponent } from "./campus-search.component";
+import { CampusInfoComponent } from "./campus-info.component";
 
 @NgModule({
     imports: [
@@ -15,18 +18,19 @@ import { MatInputModule } from "@angular/material/input";
 
         MatFormFieldModule,
         MatInputModule,
-        MatSelectModule,
+        MatAutocompleteModule,
 
-        SelectOtherDescriptionComponent
+        CampusInfoComponent
     ],
     declarations: [
-        CampusSelectComponent,
-        CampusSelectLabelComponent
+        CampusSearchComponent,
+        CampusSearchOptionComponent,
+        CampusSearchLabelComponent
     ],
     exports: [
-        CampusSelectComponent,
-        CampusSelectLabelComponent
+        CampusSearchComponent,
+        CampusSearchLabelComponent,
+        CampusInfoComponent,
     ]
-
 })
-export class CampusModule {}
+export class CampusSearchModule {}

@@ -3,5 +3,6 @@
     "mypy-type-checker.args": [
         "--config-file \"./api/src/mypy.ini\""
     ],
-    "python.analysis.typeCheckingMode": "basic"
+    "python.analysis.typeCheckingMode": "basic",
+    "angular.forceStrictTemplates": true
 }
