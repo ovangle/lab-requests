@@ -1,9 +1,9 @@
 from uuid import UUID
-from pydantic.dataclasses import dataclass
+from api.base.schemas import api_dataclass
 from ..common.types import ResourceType
 
 
-@dataclass()
+@api_dataclass()
 class Software:
     type: ResourceType
     id: UUID

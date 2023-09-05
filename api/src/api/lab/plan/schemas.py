@@ -5,16 +5,17 @@ from uuid import UUID
 from datetime import date, datetime
 from typing import Optional
 from pydantic.dataclasses import dataclass
-from api.base.schemas import RecordMetadata
+from api.base.schemas import Record, RecordCreateRequest, RecordUpdateRequest, api_dataclass
 
-from api.uni.schemas import Campus, CampusCode, CampusCreate
-from .types import FundingType, LabType
-from .resource.schemas import ResourceContainer
+from api.uni.schemas import Campus, CampusCode
+from api.lab.types import LabType
+from api.lab.resource.schemas import ResourceContainer, ResourceContainerPatch
+from .types import FundingType
 
 from . import models
 
-@dataclass(kw_only=True)
-class WorkUnitBase(ResourceContainer):
+@api_dataclass()
+class WorkUnitPatch(ResourceContainerPatch):
     lab_type: LabType
     technician_email: str
 
@@ -23,17 +24,28 @@ class WorkUnitBase(ResourceContainer):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
 
+    def apply(self, model: models.WorkUnit):
+        model.lab_type = self.lab_type
+        model.technician_email = self.technician_email
+        model.process_summary = self.process_summary
+        model.start_date = self.start_date
+        model.end_date = self.end_date
 
-@dataclass(kw_only=True)
-class WorkUnitCreate(WorkUnitBase):
-    plan_id: Optional[UUID] = None
-    id: Optional[UUID] = None
+@api_dataclass()
+class CreateWorkUnitRequest(WorkUnitPatch, RecordCreateRequest):
+    plan_id: UUID
 
-    campus: CampusCode | CampusCreate
+    def create(self) -> models.WorkUnit:
+        instance = models.WorkUnit(plan_id=self.plan_id)
+        self.apply(instance)
+        return instance
 
+@api_dataclass()
+class UpdateWorkUnitRequest(WorkUnitPatch, RecordUpdateRequest):
+    id: UUID
 
-@dataclass(kw_only=True)
-class WorkUnit(WorkUnitBase, RecordMetadata):
+@api_dataclass()
+class WorkUnit(WorkUnitPatch, Record):
     plan_id: UUID
     id: UUID
 
@@ -57,9 +69,6 @@ class WorkUnit(WorkUnitBase, RecordMetadata):
         )
         instance = super()._init_from_model(instance, model)
         return instance
-
-class WorkUnitPatch(WorkUnitBase):
-    id: UUID
 
  
 @dataclass(kw_only=True)

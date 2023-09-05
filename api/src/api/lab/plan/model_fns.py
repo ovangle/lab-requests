@@ -1,4 +1,4 @@
-from typing import Generic, Type, TypeVar, Union
+from typing import Generic, Optional, Type, TypeVar, Union
 from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -92,12 +92,14 @@ async def list_experimental_plans_for_supervisor(
 
 async def create_work_unit(
     db: AsyncSession,
-    params: schemas.WorkUnitCreate
+    params: Optional[schemas.CreateWorkUnitRequest] = None,
+    /,
+    **kwargs
 ) -> schemas.WorkUnit:
-    raise NotImplementedError
+    params = params or schemas.CreateWorkUnitRequest(**kwargs)
+
     campus = await resolve_campus(params.campus)
     
-
 async def get_work_unit_by_id(
     db: AsyncSession,
     id: UUID

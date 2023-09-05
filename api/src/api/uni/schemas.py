@@ -5,24 +5,25 @@ from uuid import UUID
 from pydantic import ConfigDict, TypeAdapter
 from pydantic.dataclasses import dataclass
 
+from api.base.schemas import SCHEMA_CONFIG, RecordCreateRequest, RecordMetadata, api_dataclass
+
 from .types import CampusCode
 
 if TYPE_CHECKING:
     from . import models
 
-@dataclass(kw_only=True, config={'arbitrary_types_allowed': True})
+@api_dataclass()
 class CampusBase:
+    code: CampusCode
     name: str
 
-@dataclass(kw_only=True)
-class CampusCreate(CampusBase):
-    id: Optional[UUID] = None
-    code: CampusCode
+@api_dataclass()
+class CampusCreateRequest(CampusBase, RecordCreateRequest):
+    pass
 
-@dataclass(kw_only=True, config=ConfigDict(arbitrary_types_allowed=True))
-class Campus(CampusBase):
+@api_dataclass()
+class Campus(CampusBase, RecordMetadata):
     id: UUID
-    code: CampusCode
 
     @classmethod
     def from_model(cls, model: models.Campus):
@@ -30,6 +31,8 @@ class Campus(CampusBase):
             id=model.id,
             code=model.code,
             name=model.name,
+            created_at=model.created_at,
+            updated_at=model.updated_at
         )
 
 @dataclass(kw_only=True)

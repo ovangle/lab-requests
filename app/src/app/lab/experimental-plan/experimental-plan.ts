@@ -1,3 +1,4 @@
+
 import { Injectable, Provider, inject } from "@angular/core";
 import { ValidationErrors, FormArray, FormControl, FormGroup, Validators } from "@angular/forms";
 import { BehaviorSubject, Observable, Subject, Subscription, connectable, filter, map } from "rxjs";
@@ -67,7 +68,7 @@ export interface ExperimentalPlanPatch {
     researcherDiscipline: Discipline;
 
     fundingType: ExperimentalPlanType;
-    supervisor: FormControl<string>;
+    supervisor: string | null;
     processSummary: string;
 }
 
@@ -86,18 +87,12 @@ export type ExperimentalPlanControls = {
 
 export type ExperimentalPlanForm = FormGroup<ExperimentalPlanControls>;
 
-export function experimentalFormPatchFromForm(form: ExperimentalPlanForm): ExperimentalPlanPatch {
+export function experimentalPlanPatchFromForm(form: ExperimentalPlanForm): ExperimentalPlanPatch {
     if (!form.valid) {
         throw new Error('Form contains errors');
     }
-    return {
-        title: form.value.title!,
-        researcher: form.value.researcher!,
-        researcherBaseCampus: form.value.researcherBaseCampus!,
-        fundingType: form.value.fundingType,
-        supervisor: form.value.supervisor || null
-
-    }
+    // If the form is valid, then it is assignable to the patch.
+    return form.value as any;
 }
 
 export type ExperimentalPlanFormValidationErrors = ValidationErrors & {
@@ -116,10 +111,13 @@ export type ExperimentalPlanFormValidationErrors = ValidationErrors & {
 
 
 @Injectable()
-export class ExperimentalPlanModelService extends ModelService<ExperimentalPlan> {
-    override readonly servicePath = '/lab/experimental-plans'
+export class ExperimentalPlanModelService extends ModelService<ExperimentalPlan, ExperimentalPlanPatch> {
+    override readonly resourcePath = '/lab/experimental-plans'
     override modelFromJson(json: object) {
         return new ExperimentalPlan(json as any);
+    }
+    override patchToJson(patch: ExperimentalPlanPatch) {
+        return {...patch};
     }
 
     experimentalPlanForm(plan?: ExperimentalPlan): ExperimentalPlanForm {
@@ -153,6 +151,10 @@ export class ExperimentalPlanModelService extends ModelService<ExperimentalPlan>
                 { nonNullable: true }
             )
         });
+    }
+
+    updatePlan(plan: ExperimentalPlan, patch: ExperimentalPlanPatch): Observable<ExperimentalPlan> {
+        return this.update(plan.id, patch)
     }
 
 

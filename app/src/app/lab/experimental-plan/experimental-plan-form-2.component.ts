@@ -1,6 +1,6 @@
 import { CommonModule } from "@angular/common";
 import { Component, OnDestroy, OnInit, inject } from "@angular/core";
-import { ExperimentalPlan, ExperimentalPlanModelService, experimentalPlanForm } from "./experimental-plan";
+import { ExperimentalPlan, ExperimentalPlanModelService } from "./experimental-plan";
 import { BehaviorSubject } from "rxjs";
 import { Campus } from "src/app/uni/campus/campus";
 import { WorkUnit } from "./work-unit/work-unit";
@@ -63,5 +63,9 @@ export class CreateExperimentalPlanFormComponent implements OnInit, OnDestroy{
             throw new Error('Cannot commit invalid form');
         }
         const currentId = this.committedSubject.value?.id;
+
+        if (currentId) {
+            const patch = patfh
+        }
     }
 }

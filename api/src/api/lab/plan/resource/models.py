@@ -1,4 +1,6 @@
+
 from types import FunctionType
+from uuid import UUID
 from typing import Any, List, Optional
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -12,3 +14,7 @@ class ResourceContainer(Base):
     output_materials: Mapped[List[dict[str, Any]]] = mapped_column(ARRAY(JSONB), server_default="{}")
     services: Mapped[List[dict[str, Any]]] = mapped_column(ARRAY(JSONB), server_default="{}")
     softwares: Mapped[List[dict[str, Any]]] = mapped_column(ARRAY(JSONB), server_default="{}")
+
+class Resource(dict[str, Any]):
+    plan_id: UUID 
+    work_unit_id: UUID
