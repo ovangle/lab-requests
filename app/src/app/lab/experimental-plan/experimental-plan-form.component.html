@@ -66,14 +66,15 @@
                         <a mat-tab-link *ngFor="let workUnit of plan.workUnits; let index=index"
                             [routerLink]="['./', 'work-units', index]" routerLinkActive #linkActive="routerLinkActive"
                             [active]="linkActive.isActive">
-                            {{_campusName(workUnit.campus)}} - {{workUnit.labType}}
+                            {{workUnit.campus.name}} - {{workUnit.labType}}
                         </a>
+                        <div class="spacer" [style.flex-grow]="1"></div>
                         <a mat-tab-link
-                        [routerLink]="['./', 'work-units', plan.workUnits.length]"
-                        routerLinkActive #linkActive="routerLinkActive"
-                        [active]="linkActive.isActive"
-                        [disabled]="isAddingWorkUnit(plan)">
-                        <mat-icon>+</mat-icon>
+                            [routerLink]="['./', 'work-units', plan.workUnits.length]"
+                            routerLinkActive #linkActive="routerLinkActive"
+                            [active]="linkActive.isActive"
+                            [disabled]="isAddingWorkUnit(plan)">
+                            <mat-icon>+</mat-icon>
                         </a>
                     </nav>
                 </mat-card-header>

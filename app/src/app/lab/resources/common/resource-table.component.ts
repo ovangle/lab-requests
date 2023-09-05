@@ -8,7 +8,7 @@ import { ActivatedRoute, RouterLink, RouterModule } from "@angular/router";
 import { MatIconModule } from "@angular/material/icon";
 import { animate, state, style, transition, trigger } from "@angular/animations";
 import { MatButtonModule } from "@angular/material/button";
-import { ExperimentalPlanService } from "../../experimental-plan/experimental-plan";
+import { ExperimentalPlanModelService } from "../../experimental-plan/experimental-plan";
 import { ResourceContainerFormService } from "../resources";
 
 @Injectable()

@@ -10,7 +10,7 @@ import { ReactiveFormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { RouterModule } from "@angular/router";
 import { EquipmentSchemaService } from "../resources/equipment/schema/equipment-schema";
-import { ExperimentalPlanTypeSelectComponent } from "./type/experimental-plan-type-select.component";
+import { ExperimentalPlanTypeSelectComponent } from "./funding-type/experimental-plan-type-select.component";
 import { MatIconModule } from "@angular/material/icon";
 import { CampusSearchModule } from "src/app/uni/campus/campus-search.module";
 import { DisciplineSelectModule } from "src/app/uni/discipline/discipline-select.module";

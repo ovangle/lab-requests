@@ -2,7 +2,7 @@ import { Component, inject } from "@angular/core";
 import { AbstractControl, FormArray, FormControl, FormGroup, Validators } from "@angular/forms";
 import { Software } from "../resources/software/software";
 import { isAfter } from "date-fns";
-import { ExperimentalPlan, ExperimentalPlanForm, ExperimentalPlanService, experimentalPlanForm } from "./experimental-plan";
+import { ExperimentalPlan, ExperimentalPlanForm, ExperimentalPlanModelService, experimentalPlanForm } from "./experimental-plan";
 import { InputMaterial } from "../resources/material/input/input-material";
 import { hazardClassByDivision } from "../resources/common/hazardous/hazardous";
 import { ActivatedRoute } from "@angular/router";
@@ -12,10 +12,10 @@ import { WorkUnitFormService, WorkUnitResourceContainerFormService } from "./wor
 import { ResourceContainerFormService } from "../resources/resources";
 
 const experimentalPlanFixture = new ExperimentalPlan({
-    campus: new Campus({code: 'ROK'}),
+    campus: new Campus({code: 'ROK', name: 'Rockhampton'}),
     workUnits: [
         new WorkUnit({
-            campus: new Campus({code: 'ROK'}),
+            campus: new Campus({code: 'ROK', name: 'Rockhampton'}),
             labType: 'ICT',
             technician: 'hello@world.com',
             softwares: [
@@ -44,7 +44,7 @@ const experimentalPlanFixture = new ExperimentalPlan({
         './experimental-plan-form.component.css'
     ],
     providers: [
-        ExperimentalPlanService,
+        ExperimentalPlanModelService,
         WorkUnitFormService,
         {
             provide: ResourceContainerFormService,
@@ -53,7 +53,7 @@ const experimentalPlanFixture = new ExperimentalPlan({
     ]
 })
 export class ExperimentalPlanFormComponent {
-    readonly planService = inject(ExperimentalPlanService);
+    readonly planService = inject(ExperimentalPlanModelService);
 
     readonly currentUser: string = 't.stephenson@cqu.edu.au';
 

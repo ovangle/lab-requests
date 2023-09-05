@@ -14,10 +14,8 @@ from api.base.models import Base
 from api.utils.db import uuid_pk, Session
 
 from .types import CampusCode, campus_code
+from .errors import CampusDoesNotExist
 
-
-class CampusDoesNotExist(Exception):
-    pass
 
 
 class Campus(Base):
@@ -28,25 +26,33 @@ class Campus(Base):
     name: Mapped[str] = mapped_column(VARCHAR(64))
 
     @classmethod
-    async def get_by_id(cls, db: AsyncSession, id: UUID) -> Campus:
-        result = await db.execute(
+    async def get_for_id(cls, db: AsyncSession, id: UUID) -> Campus:
+        result = (await db.execute(
             select(Campus).where(Campus.id == id)
-        )
-        raise NotImplementedError
+        )).first()
+
+        if not result:
+            raise CampusDoesNotExist.for_id(id)
+        return result[0]
+
 
     @classmethod
-    async def get_by_code(cls, db: AsyncSession, code: str | CampusCode, other_code_description: Optional[str] = None) -> Campus:
-        result = await db.execute(
+    async def get_for_campus_code(cls, db: AsyncSession, code: str | CampusCode, other_code_description: Optional[str] = None) -> Campus:
+        code = CampusCode(code)
+        result = (await db.execute(
             select(Campus).where(Campus.code == code)
-        )
-        raise NotImplementedError
+        )).first()
+        if not result:
+            raise CampusDoesNotExist.for_code(code)
+        return result[0]
 
     @classmethod
-    async def get_all_by_codes(cls, db: AsyncSession, codes: Iterable[str | CampusCode]) -> list[Campus]:
+    async def get_all_for_campus_codes(cls, db: AsyncSession, codes: Iterable[str | CampusCode]) -> list[Campus]:
         results = await db.execute(
             select(Campus).where(Campus.code.in_(map(CampusCode, codes)))
         )
-        return [Campus(**result) for result in results]
+        return [result[0] for result in results]
+
 
 async def seed_campuses(db: AsyncSession):
     all_known_campuses = [
@@ -59,7 +65,7 @@ async def seed_campuses(db: AsyncSession):
         Campus(code=CampusCode('ROK'), name='Rockhampton'),
         Campus(code=CampusCode('SYD'), name='Sydney')
     ]
-    existing_campuses = await Campus.get_all_by_codes(db, (c.code for c in all_known_campuses))
+    existing_campuses = await Campus.get_all_for_campus_codes(db, (c.code for c in all_known_campuses))
     existing_campus_codes = {
         campus.code: campus 
         for campus in existing_campuses

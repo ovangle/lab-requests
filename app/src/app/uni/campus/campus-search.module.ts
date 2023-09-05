@@ -1,5 +1,4 @@
 import { NgModule } from "@angular/core";
-import { CampusSelectComponent, CampusSelectLabelComponent } from "./campus-select.component";
 import { CommonModule } from "@angular/common";
 import { MatSelectModule } from "@angular/material/select";
 import { ReactiveFormsModule } from "@angular/forms";

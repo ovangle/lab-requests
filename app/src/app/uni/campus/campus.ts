@@ -3,7 +3,7 @@ import { Injectable, InjectionToken, inject } from "@angular/core";
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { Observable, catchError, map, switchMap } from "rxjs";
 
-import { MODEL_BASE_PATH, MODEL_FACTORY, ModelService } from "src/app/utils/models/model-service";
+import { ModelService } from "src/app/utils/models/model-service";
 
 
 export type CampusCode = string;
@@ -55,14 +55,15 @@ export interface CampusFormValidationErrors extends ValidationErrors {
 class CampusDoesNotExist extends Error {}
 
 @Injectable()
-export class CampusService extends ModelService<Campus> {
+export class CampusModelService extends ModelService<Campus> {
     override readonly servicePath = '/uni/campuses'
     override modelFromJson(json: object): Campus {
         return new Campus(json);
     }
 
-    searchCampuses(name: string): Observable<Campus[]> {
-        return this.list('', {params: { name: name }});
+    searchCampuses(name: string | null): Observable<Campus[]> {
+        console.log(`searching campuses where name starts with ${name}`)
+        return this.list('', {params: { name_startswith: name || '' }});
     }
 
     getCampusesByCode(code: string): Observable<Campus[]> {
@@ -111,8 +112,3 @@ export class CampusService extends ModelService<Campus> {
     }
 }
 
-export function campusServiceProviders() {
-    return [
-        CampusService
-    ]
-}

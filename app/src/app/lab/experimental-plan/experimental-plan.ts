@@ -1,99 +1,179 @@
-import { Injectable, Provider } from "@angular/core";
-import { FormArray, FormControl, FormGroup, Validators } from "@angular/forms";
+import { Injectable, Provider, inject } from "@angular/core";
+import { ValidationErrors, FormArray, FormControl, FormGroup, Validators } from "@angular/forms";
 import { BehaviorSubject, Observable, Subject, Subscription, connectable, filter, map } from "rxjs";
 import { __runInitializers } from "tslib";
-import { Campus, CampusCode, CampusForm, campusForm } from "../../uni/campus/campus";
+import { Campus, CampusCode, CampusForm } from "../../uni/campus/campus";
 import { Discipline } from "../../uni/discipline/discipline";
-import { ExperimentalPlanType } from "./type/experimental-plan-type";
+import { ExperimentalPlanType } from "./funding-type/experimental-plan-type";
 import { WorkUnit, WorkUnitForm, workUnitForm } from "./work-unit/work-unit";
-import { MODEL_FACTORY, ModelService } from "src/app/utils/models/model-service";
+import { ModelService } from "src/app/utils/models/model-service";
 
-export class ExperimentalPlan {
+
+export interface ExperimentalPlanBase {
     title: string;
-    planType: ExperimentalPlanType | null;
+
+    researcher: string;
+
+    researcherDiscipline: Discipline | null;
+    researcherBaseCampus: Campus;
+
+    fundingType: ExperimentalPlanType;
+    supervisor: string | null;
+
+    processSummary: string;
+}
+
+export class ExperimentalPlan implements ExperimentalPlanBase {
+    id: string;
+
+    researcher: string;
+    researcherDiscipline: Discipline | null;
+    researcherBaseCampus: Campus;
+
+    title: string;
+    fundingType: ExperimentalPlanType;
+
+    supervisor: string | null;
     processSummary: string;
 
     workUnits: WorkUnit[];
 
-    campus: Campus;
-    supervisor: string;
-    discipline: Discipline | null;
+    createdAt: Date;
+    updatedAt: Date;
 
-    startDate: Date | null;
-    endDate: Date | null;
+    constructor(plan: Partial<ExperimentalPlan>) {
+        this.id = plan.id!;
+        this.title = plan.title!;
+        this.researcher = plan.researcher!;
+        this.researcherDiscipline = plan.researcherDiscipline!;
+        this.researcherBaseCampus = plan.researcherBaseCampus!;
 
-    submittedBy: string;
-    submittedAt: Date | null;
-
-    constructor(plan: { submittedBy: string} & Partial<ExperimentalPlan>) {
-        this.title = plan?.title || '';
-        this.planType = plan.planType || null;
+        this.fundingType = plan.fundingType!;
+        this.supervisor = plan.supervisor || null;
 
         this.processSummary = plan?.processSummary || '';
 
-        this.workUnits = plan.workUnits || [];
-        this.campus = new Campus(plan.campus || {});
-        this.supervisor = plan.supervisor || '';
-        this.discipline = plan.discipline || null;
+        this.workUnits = (plan.workUnits || []).map(workUnit => new WorkUnit(workUnit));
 
-        this.startDate = plan.startDate || null;
-        this.endDate = plan.endDate || null;
-
-        this.submittedBy = plan.submittedBy;
-        this.submittedAt = plan.submittedAt || null;
+        this.createdAt = plan.createdAt!;
+        this.updatedAt = plan.updatedAt!
     }
 }
 
-export type ExperimentalPlanForm = FormGroup<{
-    title: FormControl<string>;
+export interface ExperimentalPlanPatch {
+    title: string;
+    researcher: string;
+    researcherBaseCampus: Campus;
+    researcherDiscipline: Discipline;
+
+    fundingType: ExperimentalPlanType;
     supervisor: FormControl<string>;
-    discipline: FormControl<Discipline | null>;
-    campus: CampusForm;
+    processSummary: string;
+}
 
-    workUnits: FormArray<WorkUnitForm>;
-    planType: FormControl<ExperimentalPlanType | null>;
 
+export type ExperimentalPlanControls = {
+    title: FormControl<string>;
+
+    researcher: FormControl<string>;
+    researcherBaseCampus: FormControl<Campus | null>;
+    researcherDiscipline: FormControl<Discipline | null>;
+    fundingType: FormControl<ExperimentalPlanType | null>;
+
+    supervisor: FormControl<string | null>;
     processSummary: FormControl<string>;
-    startDate: FormControl<Date | null>;
-    endDate: FormControl<Date | null>;
+}
 
-    submittedBy: FormControl<string>;
-    submittedAt: FormControl<Date | null>;
-}>;
+export type ExperimentalPlanForm = FormGroup<ExperimentalPlanControls>;
 
-export function experimentalPlanForm(plan: Partial<ExperimentalPlan>): ExperimentalPlanForm {
-    return new FormGroup({
-        title: new FormControl(plan.title || '', { nonNullable: true , validators: [Validators.required]}),
-        supervisor: new FormControl(plan.supervisor || '', {nonNullable: true, validators: [Validators.email]}),
-        discipline: new FormControl(plan.discipline || null),
-        campus: campusForm(plan.campus || {}),
-        workUnits: new FormArray(
-            (plan.workUnits || []).map((e) => workUnitForm(e))
-        ),
-        planType: new FormControl<ExperimentalPlanType | null>(plan.planType || null, [Validators.required]),
-        processSummary: new FormControl(plan?.processSummary || '', { nonNullable: true }),
+export function experimentalFormPatchFromForm(form: ExperimentalPlanForm): ExperimentalPlanPatch {
+    if (!form.valid) {
+        throw new Error('Form contains errors');
+    }
+    return {
+        title: form.value.title!,
+        researcher: form.value.researcher!,
+        researcherBaseCampus: form.value.researcherBaseCampus!,
+        fundingType: form.value.fundingType,
+        supervisor: form.value.supervisor || null
 
-        startDate: new FormControl<Date | null>(null),
-        endDate: new FormControl<Date | null>(null),
+    }
+}
 
-        submittedBy: new FormControl<string>('', {nonNullable: true}),
-        submittedAt: new FormControl<Date | null>(null)
-    });
+export type ExperimentalPlanFormValidationErrors = ValidationErrors & {
+    title?: { required: string | null };
+    researcher?: {
+        email: string | null;
+        required: string | null;
+    };
+    researcherBaseCampus?: { required: string | null; };
+    researcherDiscipline?: { required: string | null; };
+    fundingType: { required: string | null; };
+    supervisor?: {
+        email: string | null;
+    }
+}
+
+
+@Injectable()
+export class ExperimentalPlanModelService extends ModelService<ExperimentalPlan> {
+    override readonly servicePath = '/lab/experimental-plans'
+    override modelFromJson(json: object) {
+        return new ExperimentalPlan(json as any);
+    }
+
+    experimentalPlanForm(plan?: ExperimentalPlan): ExperimentalPlanForm {
+        return new FormGroup({
+            title: new FormControl<string>(
+                plan?.title || '', 
+                {nonNullable: true, validators: [Validators.required]}
+            ),
+            researcher: new FormControl<string>(
+                plan?.researcher || '',
+                {nonNullable: true, validators: [Validators.required, Validators.email]}
+            ),
+            researcherBaseCampus: new FormControl<Campus | null>(
+                plan?.researcherBaseCampus || null,
+                { validators: [Validators.required]}
+            ),
+            researcherDiscipline: new FormControl<Discipline | null>(
+                plan?.researcherDiscipline || null,
+                { validators: [Validators.required] }
+            ),
+            fundingType: new FormControl(
+                plan?.fundingType || null,
+                { validators: [Validators.required]}
+            ),
+            supervisor: new FormControl(
+                plan?.supervisor || null,
+                { validators: [Validators.email]}
+            ),
+            processSummary: new FormControl(
+                plan?.processSummary || '',
+                { nonNullable: true }
+            )
+        });
+    }
+
+
 }
 
 @Injectable()
-export class ExperimentalPlanService {
+export class ExperimentalPlanContextService {
+    readonly modelService = inject(ExperimentalPlanModelService)
+
     current = new BehaviorSubject<ExperimentalPlan | null>(null);
 
-    patchExperimentalPlan(params: Partial<ExperimentalPlan>): void {
-        const submittedBy = this.plan!.submittedBy;
-        if (params.submittedBy != undefined && submittedBy != params.submittedBy) {
-            throw new Error('Cannot patch `submittedBy`');
+    async patchExperimentalPlan(params: Partial<ExperimentalPlan>): Promise<ExperimentalPlan> {
+        const currentCommitted = this.current.value;
+        if (currentCommitted == null) {
+            this.modelService.createExperimentalPlan(params);
         }
+
+
         this.current.next(new ExperimentalPlan({
             ...this.plan,
             ...params,
-            submittedBy
         }));
     }
 
@@ -121,16 +201,4 @@ export class ExperimentalPlanService {
             this.current.complete()
         });
     }
-}
-
-
-@Injectable()
-export class ExperimentalPlanService extends ModelService<ExperimentalPlan> {
-
-}
-
-export function experimentalPlanServiceProviders(): Provider[] {
-    return [
-        {provide: MODEL_FACTORY, useValue: (args: any) => new ExperimentalPlan(args)}
-    ]
 }

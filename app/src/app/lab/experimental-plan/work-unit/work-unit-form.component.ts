@@ -9,7 +9,7 @@ import { InputMaterialResourceTableComponent } from "../../resources/material/in
 import { OutputMaterialResourceTableComponent } from "../../resources/material/output/output-material-resource-table.component";
 import { ResourceContainer, ResourceContainerFormService } from "../../resources/resources";
 import { SoftwareResourceTableComponent } from "../../resources/software/software-resource-table.component";
-import { ExperimentalPlanService } from "../experimental-plan";
+import { ExperimentalPlanModelService } from "../experimental-plan";
 import { WorkUnit, WorkUnitForm, workUnitForm } from "./work-unit";
 import { WorkUnitCampusLabFormComponent } from "./work-unit-campus-lab-form.component";
 import { WorkUnitCampusLabInfoComponent } from "./work-unit-campus-lab-info.component";
@@ -30,9 +30,6 @@ export function workUnitFormRoutes(): Routes {
         {
             path: 'work-units/:work_unit_id',
             component: WorkUnitFormComponent,
-            children: [
-
-            ]
         }
     ];
 }
@@ -51,7 +48,7 @@ export function injectWorkUnitRoute(): ActivatedRoute {
 
 @Injectable()
 export class WorkUnitFormService {
-    readonly planService = inject(ExperimentalPlanService);
+    readonly planService = inject(ExperimentalPlanModelService);
 
     readonly activatedRoute = injectWorkUnitRoute();
 

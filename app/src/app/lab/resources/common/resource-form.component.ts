@@ -2,7 +2,7 @@ import { Component, ContentChild, ContentChildren, DestroyRef, Inject, Injectabl
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { Resource, ResourceType, resourceTypeName } from "./resource";
 import { FormArray, FormControlDirective, FormControlName, FormGroup, FormGroupDirective, ReactiveFormsModule } from "@angular/forms";
-import { ExperimentalPlanService } from "../../experimental-plan/experimental-plan";
+import { ExperimentalPlanModelService } from "../../experimental-plan/experimental-plan";
 import { CommonModule } from "@angular/common";
 import { ActivatedRoute, Router } from "@angular/router";
 import { BehaviorSubject, Connectable, Observable, Subject, Subscription, combineLatest, connect, connectable, map, takeUntil, tap } from "rxjs";

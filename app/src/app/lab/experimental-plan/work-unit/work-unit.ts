@@ -7,6 +7,7 @@ import { OutputMaterialForm, createOutputMaterialForm } from "../../resources/ma
 import { ResourceContainer } from "../../resources/resources";
 import { SoftwareForm, createSoftwareForm } from "../../resources/software/software";
 import { LabType } from "../../type/lab-type";
+import { Service, ServiceForm } from "../../resources/service/service";
 
 /**
  * A WorkUnit is a portion of an experimental plan which is conducted
@@ -59,6 +60,7 @@ export type WorkUnitForm = FormGroup<{
 
     equipments: FormArray<EquipmentForm>;
     softwares: FormArray<SoftwareForm>;
+    services: FormArray<ServiceForm>;
 
     inputMaterials: FormArray<InputMaterialForm>;
     outputMaterials: FormArray<OutputMaterialForm>;
@@ -86,6 +88,9 @@ export function workUnitForm(params: Partial<WorkUnit>): WorkUnitForm {
         softwares: new FormArray(
             (params.softwares || []).map((e) => createSoftwareForm(e))
         ),
+        services: new FormArray(
+            (params.services || []).map((e) => createServiceForm(e))
+        ),
         inputMaterials: new FormArray(
             (params.inputMaterials || []).map(e => createInputMaterialForm(e))
         ),
@@ -94,3 +99,7 @@ export function workUnitForm(params: Partial<WorkUnit>): WorkUnitForm {
         )
     });
 }
+function createServiceForm(e: Service): any {
+    throw new Error("Function not implemented.");
+}
+

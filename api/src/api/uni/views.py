@@ -3,34 +3,35 @@ from typing import Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends
 
-from api.src.api.utils.db import Session
+from api.utils.db import get_db
+from api.base.schemas import PagedResultList
 
 from .schemas import Campus
 from .types import CampusCode
-from .model_fns import get_campus, list_campuses_by_name
+from .model_fns import get_campus, list_campuses
 
-campuses = APIRouter()
-
-@campuses.get(
-    '/campus/{code_or_id}'
+uni_campuses = APIRouter(
+    prefix="/uni/campuses",
+    tags=["campuses"]
 )
-async def read_campus(code_or_id: CampusCode | UUID, db = Depends(Session)):
+
+@uni_campuses.get(
+    '/{code_or_id}'
+)
+async def read_campus(code_or_id: CampusCode | UUID, db = Depends(get_db)):
     if code_or_id:
         return await get_campus(db, code_or_id)
 
-@campuses.get('/')
+@uni_campuses.get('/')
 async def search_campuses(
-    code: Optional[CampusCode] = None,
-    name: Optional[str] = '',
-    db = Depends(Session)
-) -> list[Campus]:
-    if code: 
-        campus = await get_campus(db, code)
-        return [campus]
-
-    if name:
-        return await list_campuses_by_name(db, name)
-    
-    raise ValueError('Must provide either code or name query params')
+    name_startswith: Optional[str] = None,
+    db = Depends(get_db)
+) -> PagedResultList[Campus]:
+    campuses = await list_campuses(db, name_startswith=name_startswith)
+    return PagedResultList(
+        items=campuses,
+        total_item_count=len(campuses),
+        page_index=0
+    )
         
 

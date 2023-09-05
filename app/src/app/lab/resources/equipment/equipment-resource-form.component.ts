@@ -12,7 +12,7 @@ import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
 import { ProvisionFormComponent } from "../common/provision/provision-form.component";
 import { BehaviorSubject, NEVER, Observable, filter, map, switchMap } from "rxjs";
-import { Campus, campusName } from "../../../uni/campus/campus";
+import { Campus } from "../../../uni/campus/campus";
 
 @Component({
     selector: 'lab-req-equipment-resource-form',
@@ -101,10 +101,6 @@ export class EquipmentResourceFormComponent {
 
     @Input()
     atCampus: Campus;
-
-    get atCampusName() {
-        return campusName(this.atCampus)
-    }
 
     @ViewChild(ResourceFormComponent, {static: true})
     readonly resourceForm: ResourceFormComponent<Equipment, EquipmentForm>;

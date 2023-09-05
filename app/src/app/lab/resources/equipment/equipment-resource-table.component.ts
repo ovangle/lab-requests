@@ -9,7 +9,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { EquipmentResourceDetailsComponent } from "./equipment-resource-details.component";
 import { Observable, switchMap } from "rxjs";
 import { EquipmentSchemaService } from "./schema/equipment-schema";
-import { ExperimentalPlanService } from "../../experimental-plan/experimental-plan";
+import { ExperimentalPlanModelService } from "../../experimental-plan/experimental-plan";
 import { ResourceTableInfoHeaderComponent } from "../common/resource-table-info-header.component";
 
 @Injectable()
@@ -102,6 +102,6 @@ export class EquipmentResourceTableDataSource extends ResourceTableDataSource<Eq
     ]
 })
 export class EquipmentResourceTableComponent {
-    experimentalPlanService = inject(ExperimentalPlanService)
+    experimentalPlanService = inject(ExperimentalPlanModelService)
     schemaService = inject(EquipmentSchemaService);
 }

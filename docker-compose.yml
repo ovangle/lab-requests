@@ -12,6 +12,8 @@ services:
     environment:
       DB_HOST: postgres
       DB_PASSWORD: secret
+    volumes:
+      - './api:/srv/api'
 
   postgres:
     build: './postgres'

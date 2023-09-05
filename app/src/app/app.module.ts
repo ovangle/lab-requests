@@ -15,6 +15,7 @@ import { APP_BASE_HREF, PlatformLocation } from '@angular/common';
 import { BASE_API_MATCHERS, authorizationInterceptorProviders } from './oauth/auth-interceptor';
 import { MatButtonModule } from '@angular/material/button';
 import { BodyScrollbarHidingService } from './utils/body-scrollbar-hiding.service';
+import { API_BASE_URL } from './utils/models/model-service';
 
 /**
  * This function is used internal to get a string instance of the `<base href="" />` value from `index.html`.
@@ -28,7 +29,7 @@ import { BodyScrollbarHidingService } from './utils/body-scrollbar-hiding.servic
  * @return a string instance of the `<base href="" />` value from `index.html`
  */
 export function getBaseHref(platformLocation: PlatformLocation): string {
-    return platformLocation.getBaseHrefFromDOM();
+  return platformLocation.getBaseHrefFromDOM();
 }
 
 @NgModule({
@@ -45,11 +46,15 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
     MatDateFnsModule
   ],
   providers: [
-     {
-            provide: APP_BASE_HREF,
-            useFactory: getBaseHref,
-            deps: [PlatformLocation]
-        },
+    {
+      provide: APP_BASE_HREF,
+      useFactory: getBaseHref,
+      deps: [PlatformLocation]
+    },
+    {
+      provide: API_BASE_URL,
+      useValue: 'http://127.0.0.1:8000'
+    },
     ...provideLocalStorage(),
     ...provideExternalNavigation(),
     { provide: MAT_DATE_LOCALE, useValue: enAU },

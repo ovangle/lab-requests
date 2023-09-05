@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, Output, inject } from "@angular/core";
 import { CommonModule, NgIf } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { Campus, CampusForm, CampusFormValidationErrors, CampusService, campusForm, campusServiceProviders } from "./campus";
+import { Campus, CampusForm, CampusFormValidationErrors, CampusModelService} from "./campus";
 import { Observable, filter, firstValueFrom, map } from "rxjs";
 import { Form, FormGroup, ReactiveFormsModule, ValidationErrors } from "@angular/forms";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
@@ -24,24 +24,28 @@ import { ErrorStateMatcher } from "@angular/material/core";
             <mat-label>Code</mat-label>
             <input matInput formControlName="code"> 
 
-            <mat-error *ngIf="(codeErrors$ | async)?.required"> 
-                A value is required
-            </mat-error>
-            <mat-error *ngIf="(codeErrors$ | async)?.pattern as pattern">
-                {{pattern}} must match pattern
-            </mat-error>
-            <mat-error *ngIf="(codeErrors$ | async)?.notUnique">
-                Value is not unique
-            </mat-error>
+            <ng-container *ngIf="codeErrors$ | async as codeErrors">
+                <mat-error *ngIf="codeErrors.required"> 
+                    A value is required
+                </mat-error>
+                <mat-error *ngIf="codeErrors.pattern as pattern">
+                    {{pattern}} must match pattern
+                </mat-error>
+                <mat-error *ngIf="codeErrors.notUnique">
+                    Value is not unique
+                </mat-error>
+            </ng-container>
         </mat-form-field>
     
         <mat-form-field>
             <mat-label>Name</mat-label>
             <input matInput type="text" formControlName="name"/>
 
-            <mat-error *ngIf="(nameErrors$ | async)?.required">
-                A name is required
-            </mat-error>
+            <ng-container *ngIf="nameErrors$ | async as nameErrors">
+                <mat-error *ngIf="nameErrors.required">
+                    A name is required
+                </mat-error>
+            </ng-container>
         </mat-form-field>
 
         <div class="form-actions">
@@ -51,12 +55,12 @@ import { ErrorStateMatcher } from "@angular/material/core";
     </form>
     `,
     providers: [
-        ...campusServiceProviders()
+        CampusModelService
     ]
 })
 export class CampusCreateFormComponent {
-    readonly campusService = inject(CampusService);
-    readonly formGroup: CampusForm = campusForm({});
+    readonly campusService = inject(CampusModelService);
+    readonly formGroup: CampusForm = this.campusService.campusForm({});
 
     readonly errors$: Observable<CampusFormValidationErrors | null> = this.formGroup.statusChanges.pipe(
         filter(status => ['INVALID'].includes(status) ),

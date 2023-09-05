@@ -1,10 +1,10 @@
 import { Component, HostBinding, Input, NgModule, inject } from "@angular/core";
-import { Campus, CampusService, campusServiceProviders, isCampus } from "./campus";
+import { Campus, CampusModelService, isCampus } from "./campus";
 import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from "@angular/forms";
 import { CommonModule } from "@angular/common";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { BehaviorSubject, Observable, filter, of, switchMap } from "rxjs";
+import { BehaviorSubject, Observable, filter, map, of, startWith, switchMap } from "rxjs";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
 import { CampusCreateFormComponent } from "./campus-create-form.component";
@@ -47,8 +47,7 @@ export class CampusSearchOptionComponent {
         </mat-error>
     </mat-form-field>
 
-
-    <mat-autocomplete #autocomplete>
+    <mat-autocomplete #autocomplete [displayWith]="_displayCampusInfo">
         <mat-option *ngFor="let campus of (searchResults$ | async)" [value]="campus">
             <app-uni-campus-search-option 
                  [campus]="campus">
@@ -57,25 +56,31 @@ export class CampusSearchOptionComponent {
     </mat-autocomplete>
     `,
     providers: [
-        ...campusServiceProviders(),
-        { provide: NG_VALUE_ACCESSOR, useExisting: CampusSearchComponent }
+        CampusModelService,
+        { provide: NG_VALUE_ACCESSOR, multi: true, useExisting: CampusSearchComponent }
     ]
 })
 export class CampusSearchComponent implements ControlValueAccessor {
     
-    readonly campusService = inject(CampusService);
+    readonly campusService = inject(CampusModelService);
 
     readonly searchControl = new FormControl<Campus | string>('', {nonNullable: true});
     readonly searchResults$: Observable<Campus[]> = this.searchControl.valueChanges.pipe(
         takeUntilDestroyed(),
+        startWith(null),
         switchMap(nameOrCampus => {
             if (isCampus(nameOrCampus)) {
                 return of([nameOrCampus]);
             } else {
-                return this.campusService.searchCampuses(nameOrCampus);
+                return this.campusService.searchCampuses(nameOrCampus); 
             }
         })
     );
+
+    readonly selectedCampus$: Observable<Campus | null> = this.searchControl.valueChanges.pipe(
+        takeUntilDestroyed(),
+        map(value => isCampus(value) ? value : null)
+    )
 
     get hasSelectedValue() {
         return !isCampus(this.searchControl.value);
@@ -100,6 +105,13 @@ export class CampusSearchComponent implements ControlValueAccessor {
             takeUntilDestroyed(),
             filter((value): value is Campus => value instanceof Campus),
         ).subscribe(this._onChange)
+    }
+
+    _displayCampusInfo(campus: Campus) {
+        if (isCampus(campus)) {
+            return `${campus.code} - ${campus.name}`
+        }
+        return campus;
     }
 
     writeValue(value: Campus | string | null): void {

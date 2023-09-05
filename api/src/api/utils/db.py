@@ -1,9 +1,11 @@
 
 
+import asyncio
 import os
 import re
+from asyncio import AbstractEventLoop
 from typing import Annotated
-from uuid import UUID 
+from uuid import UUID
 from sqlalchemy import MetaData, schema, Column
 from sqlalchemy.orm import mapped_column, sessionmaker, Mapped
 from sqlalchemy.sql import expression
@@ -26,6 +28,17 @@ db_engine = create_async_engine(
 )
 
 Session = async_sessionmaker(db_engine)
+async def get_db():
+    """
+    Provides an injectable context manager for the session, which will attempt
+    to close any remaining connections when disposing of the session.
+    """
+    db = Session()
+    try:
+        yield db
+    finally:
+        await db.close() 
+    
 
 async def initdb_async():
     import api.main

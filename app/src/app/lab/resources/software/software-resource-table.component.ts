@@ -4,7 +4,7 @@ import { Resource } from "../common/resource";
 import { ResourceTableComponent, ResourceTableDataSource } from "../common/resource-table.component";
 import { Software } from "./software";
 import { Component, Injectable, inject } from "@angular/core";
-import { ExperimentalPlanService } from "../../experimental-plan/experimental-plan";
+import { ExperimentalPlanModelService } from "../../experimental-plan/experimental-plan";
 import { MatTableModule } from "@angular/material/table";
 import { ResourceTableInfoHeaderComponent } from "../common/resource-table-info-header.component";
 import { CommonModule } from "@angular/common";
