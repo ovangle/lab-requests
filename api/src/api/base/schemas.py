@@ -1,9 +1,14 @@
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Generic, Optional, TypeVar, dataclass_transform
 from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
 
 from humps import camelize
+
+from . import models 
 
 SCHEMA_CONFIG = ConfigDict(
     alias_generator=camelize
@@ -21,18 +26,36 @@ def api_dataclass(
         config=config
     )
 
-@api_dataclass()
-class RecordCreateRequest:
-    pass
+TModel = TypeVar('TModel', bound=models.Base)
 
 @api_dataclass()
-class RecordUpdateRequest:
-    pass
-
-@api_dataclass()
-class Record:
+class ApiModel(Generic[TModel], ABC):
     created_at: datetime
     updated_at: datetime
+
+    def __new__(cls, model: Optional[TModel] = None, **kwargs):
+        if model is not None:
+            return cls.from_model(model)
+        return super().__new__(cls, **kwargs)
+
+    @abstractmethod
+    @classmethod
+    def from_model(cls, model: TModel) -> ApiModel:
+        raise NotImplementedError
+
+class ModelPatch(Generic[TModel], ABC):
+    @abstractmethod
+    async def apply_to_model(self, model: TModel):
+        raise NotImplementedError
+
+class ModelCreate(Generic[TModel], ABC):
+    @abstractmethod
+    async def create_model(self) -> models.TModel:
+
+
+
+
+
 
 T = TypeVar('T')
 

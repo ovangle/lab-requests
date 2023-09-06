@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from uuid import UUID
-from api.base.schemas import api_dataclass, Record
+from api.base.schemas import api_dataclass, ApiModel
 
 from ..types import LabType
 
@@ -20,7 +20,7 @@ class EquipmentPatch:
     training_descriptions: list[str]
 
 @api_dataclass()
-class Equipment(EquipmentPatch, Record):
+class Equipment(EquipmentPatch, ApiModel):
     id: UUID
 
     @classmethod

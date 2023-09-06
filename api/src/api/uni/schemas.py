@@ -5,7 +5,7 @@ from uuid import UUID
 from pydantic import ConfigDict, TypeAdapter
 from pydantic.dataclasses import dataclass
 
-from api.base.schemas import SCHEMA_CONFIG, Record, RecordCreateRequest, api_dataclass
+from api.base.schemas import SCHEMA_CONFIG, ApiModel, RecordCreateRequest, api_dataclass
 
 from .types import CampusCode
 
@@ -22,7 +22,7 @@ class CampusCreate(CampusBase, RecordCreateRequest):
     pass
 
 @api_dataclass()
-class Campus(CampusBase, Record):
+class Campus(CampusBase, ApiModel):
     id: UUID
 
     @classmethod

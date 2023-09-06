@@ -7,8 +7,8 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic.dataclasses import dataclass
+from api.base.schemas import ApiModel, RecordCreateRequest, RecordUpdateRequest, api_dataclass
 
-from api.base.schemas import Record, RecordCreateRequest, RecordUpdateRequest, api_dataclass, PagedResultList
 from api.uni.errors import CampusDoesNotExist
 from api.uni.schemas import Campus, CampusCode
 from api.lab.types import LabType
@@ -50,7 +50,7 @@ class UpdateWorkUnitRequest(WorkUnitPatch, RecordUpdateRequest):
     id: UUID
 
 @api_dataclass()
-class WorkUnit(WorkUnitBase, ResourceContainer, Record):
+class WorkUnit(WorkUnitBase, ResourceContainer, ApiModel):
     plan_id: UUID
     id: UUID
 
