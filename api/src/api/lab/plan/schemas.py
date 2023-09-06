@@ -4,18 +4,20 @@ from uuid import UUID
 
 from datetime import date, datetime
 from typing import Optional
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic.dataclasses import dataclass
-from api.base.schemas import Record, RecordCreateRequest, RecordUpdateRequest, api_dataclass
 
+from api.base.schemas import Record, RecordCreateRequest, RecordUpdateRequest, api_dataclass, PagedResultList
+from api.uni.errors import CampusDoesNotExist
 from api.uni.schemas import Campus, CampusCode
 from api.lab.types import LabType
-from api.lab.resource.schemas import ResourceContainer, ResourceContainerPatch
-from .types import FundingType
 
+from .resource.schemas import ResourceContainer, ResourceContainerPatch
 from . import models
 
 @api_dataclass()
-class WorkUnitPatch(ResourceContainerPatch):
+class WorkUnitBase:
     lab_type: LabType
     technician_email: str
 
@@ -24,7 +26,10 @@ class WorkUnitPatch(ResourceContainerPatch):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
 
-    def apply(self, model: models.WorkUnit):
+
+@api_dataclass()
+class WorkUnitPatch(ResourceContainerPatch):
+    async def apply(self, db: AsyncSession, model: models.WorkUnit):
         model.lab_type = self.lab_type
         model.technician_email = self.technician_email
         model.process_summary = self.process_summary
@@ -45,10 +50,11 @@ class UpdateWorkUnitRequest(WorkUnitPatch, RecordUpdateRequest):
     id: UUID
 
 @api_dataclass()
-class WorkUnit(WorkUnitPatch, Record):
+class WorkUnit(WorkUnitBase, ResourceContainer, Record):
     plan_id: UUID
     id: UUID
 
+    # The index of the work unit in the parent plan
     index: int
     campus: Campus
 
@@ -70,10 +76,13 @@ class WorkUnit(WorkUnitPatch, Record):
         instance = super()._init_from_model(instance, model)
         return instance
 
+    @classmethod
+    async def 
+
  
 @dataclass(kw_only=True)
 class ExperimentalPlanBase:
-    funding_type: FundingType
+    funding_type: models.FundingType
 
     process_summary: str
 
@@ -82,27 +91,71 @@ class ExperimentalPlanBase:
 
            
 @dataclass(kw_only=True)
-class ExperimentalPlanCreate(ExperimentalPlanBase):
-    id: Optional[UUID] = None
-    campus: CampusCode | UUID
-    work_units: list[WorkUnitCreate] = field(default_factory=list)
-
-    def __post_init__(self):
-        for work_unit in self.work_units:
-            if work_unit.plan_id and work_unit.plan_id != self.id:
-                raise ValueError(f"Cannot create nested work unit for {self.id}: work unit already exists for plan ${work_unit.plan_id}")
-
-@dataclass(kw_only=True)
 class ExperimentalPlanPatch(ExperimentalPlanBase):
-    id: UUID
+    campus: CampusCode | UUID
+
+    async def __call__(self, db: AsyncSession, instance: models.ExperimentalPlan) -> ExperimentalPlan:
+        if isinstance(self.campus, CampusCode):
+            if instance.campus.code != self.campus:
+                campus_id = (await db.execute(
+                    select(models.Campus.id).where(models.Campus.code == self.campus)
+                )).first()
+                if not campus_id:
+                    raise CampusDoesNotExist.for_code(self.campus)
+
+                instance.campus_id = campus_id[0]
+                db.add(instance)
+
+        if isinstance(self.campus, UUID):
+            if self.campus != instance.campus_id:
+                instance.campus_id = self.campus
+                db.add(instance)
+
+        if self.funding_type != instance.funding_type:
+            instance.funding_type = self.funding_type
+            db.add(instance)
+
+        if self.process_summary != instance.process_summary:
+            instance.process_summary = self.process_summary
+            db.add(instance)
+        
+        if self.researcher_email != instance.researcher_email:
+            instance.researcher_email = self.researcher_email
+            db.add(instance)
+        
+        if self.supervisor_email != instance.supervisor_email:
+            instance.supervisor_email = self.supervisor_email
+            db.add(instance)
+
+        return ExperimentalPlan.from_model(instance)
 
 @dataclass(kw_only=True)
-class ExperimentalPlan(ExperimentalPlanBase, RecordMetadata):
+class ExperimentalPlanCreate(ExperimentalPlanPatch):
+    # Work units can be provided on plan create but not on other 
+    work_units: list[WorkUnitPatch] = field(default_factory=list)
+
+    async def __call__(self, db: AsyncSession) -> ExperimentalPlan: 
+        instance = models.ExperimentalPlan()
+
+        if not list(instance.work_units):
+            raise ValueError('Can not be applied after work units created')
+
+        work_units = [
+            models.WorkUnit(plan_id=instance.id, index=i, **patch) 
+            for (i, patch) in enumerate(self.work_units)
+        ]
+
+        db.add_all(work_units)
+        db.add(instance)
+
+        return await super().__call__(db, instance)
+
+@dataclass(kw_only=True)
+class ExperimentalPlan(ExperimentalPlanBase, Record):
     id: UUID
 
     campus: Campus
     work_units: list[WorkUnit]
-
 
     @classmethod
     def from_model(cls, model: models.ExperimentalPlan) -> ExperimentalPlan:
@@ -119,5 +172,22 @@ class ExperimentalPlan(ExperimentalPlanBase, RecordMetadata):
             created_at=model.created_at,
             updated_at=model.updated_at
         )
+
+    @classmethod
+    async def get_by_id(cls, db: AsyncSession, id: UUID):
+        return cls.from_model(await models.ExperimentalPlan.get_by_id(db, id))
+
+    @classmethod
+    async def list_for_researcher(cls, db: AsyncSession, researcher_email: str) -> list[ExperimentalPlan]:
+        instances = await models.ExperimentalPlan.list_for_researcher(db, researcher_email)
+        return list(map(cls.from_model, instances))
+
+    @classmethod
+    async def list_for_supervisor(cls, db: AsyncSession, supervisor_email: str) -> list[ExperimentalPlan]:
+        instances = await models.ExperimentalPlan.list_for_supervisor(db, supervisor_email)
+        return list(map(cls.from_model, instances))
+
+
+
 
    

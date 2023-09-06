@@ -43,6 +43,7 @@ class PagedResultList(Generic[T]):
     total_item_count: int
     page_index: int = 0
 
+
 @api_dataclass()
 class CursorResultList(Generic[T]):
     items: list[T]
