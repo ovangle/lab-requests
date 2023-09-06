@@ -24,3 +24,14 @@ const RESOURCE_TYPE_NAMES: {[K in ResourceType]: string} = {
 export function resourceTypeName(r: ResourceType) {
     return RESOURCE_TYPE_NAMES[r];
 }
+
+export interface CostEstimate {
+    isUniversitySupplied: boolean;
+    estimatedCost: number;
+}
+
+export type CostEstimateForm = FormGroup<{}>;
+
+export function costEstimateForm(costEstimate?: CostEstimate | null): CostEstimateForm {
+    return new FormGroup({}); 
+}

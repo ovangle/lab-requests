@@ -1,5 +1,4 @@
 import { FormArray, FormGroup } from "@angular/forms";
-import { Equipment, EquipmentForm, createEquipmentResourceForm } from "./equipment/equipment";
 import { Software, SoftwareForm, createSoftwareForm } from "./software/software";
 import { InputMaterial, InputMaterialForm, createInputMaterialForm } from "./material/input/input-material";
 import { OutputMaterial, OutputMaterialForm, createOutputMaterialForm } from "./material/output/output-material";
@@ -7,10 +6,11 @@ import { Resource, ResourceType } from "./common/resource";
 import { Injectable, inject } from "@angular/core";
 import { BehaviorSubject, Observable, Subscription, filter, firstValueFrom, map } from "rxjs";
 import { Service, ServiceForm, serviceForm } from "./service/service";
+import { EquipmentLease, EquipmentLeaseForm } from "./equipment/equipment-lease";
 
 
 export class ResourceContainer {
-    equipments: Equipment[];
+    equipments: EquipmentLease[];
     services: Service[];
     softwares: Software[];
 
@@ -19,7 +19,7 @@ export class ResourceContainer {
 
     constructor(params: Partial<ResourceContainer>) {
         this.equipments = (params.equipments || [])
-            .map(e => new Equipment(e));
+            .map(e => new EquipmentLease(e));
         this.services = (params.services || [])
             .map(s => new Service(s));
         this.softwares = (params.softwares || [])
@@ -56,30 +56,141 @@ export class ResourceContainer {
     }
 }
 
-function createContainerPatch(resourceType: ResourceType, resources: Resource[]): Partial<ResourceContainer> {
-    switch (resourceType) {
-        case 'equipment':
-            return { equipments: resources as Equipment[] };
-        case 'service':
-            return { services: resources as Service[] };
-        case 'software':
-            return { softwares: resources as Software[] };
-        case 'input-material':
-            return { inputMaterials: resources as InputMaterial[] };
-        case 'output-material':
-            return { outputMaterials: resources as OutputMaterial[] };
+export class ResourceContainerPatch {
+    addEquipments: EquipmentLease[];
+    replaceEquipments: {[k: number]: EquipmentLease | null};
+
+    addServices: Service[];
+    replaceServices: {[k: number]: Service | null};
+
+    addSoftwares: Software[];
+    replaceSoftwares: {[k: number]: Software | null}
+
+    addInputMaterials: InputMaterial[]; 
+    replaceInputMaterials: {[k: number]: InputMaterial | null};
+
+    addOutputMaterials: OutputMaterial[];
+    replaceOutputMaterials: {[k: number]: OutputMaterial | null};
+}
+
+export function resourceContainerPatchFromContainer(container: ResourceContainer): ResourceContainerPatch {
+    return {
+        addEquipments: [],
+        replaceEquipments: {},
+        addServices: [],
+        replaceServices: {},
+        addSoftwares: [],
+        replaceSoftwares: {},
+        addInputMaterials: [],
+        replaceInputMaterials: {},
+        addOutputMaterials: [],
+        replaceOutputMaterials: {}
     }
 }
 
-type ResourceContainerControls = {
-    equipments: FormArray<EquipmentForm>;
-    services: FormArray<ServiceForm>;
-    softwares: FormArray<SoftwareForm>;
-    inputMaterials: FormArray<InputMaterialForm>;
-    outputMaterials: FormArray<OutputMaterialForm>;
+type ResourceContainerFormControls = {
+    addEquipments: FormArray<EquipmentLeaseForm>;
+    replaceEquipments: FormGroup<{[k: number]: EquipmentLeaseForm}>;
+
+    addServices: FormArray<ServiceForm>;
+    replaceServices: FormGroup<{[k: number]: ServiceForm}>;
+
+    addSoftwares: FormArray<SoftwareForm>;
+    replaceSoftwares: FormGroup<{[k: number]: SoftwareForm}>;
+
+    addInputMaterials: FormArray<InputMaterialForm>;
+    replaceInputMaterials: FormGroup<{[k: number]: InputMaterialForm}>;
+
+    addOutputMaterials: FormArray<OutputMaterialForm>;
+    replaceOutputMaterials: FormGroup<{[k: number]: OutputMaterialForm}>;
 };
 
-export type ResourceContainerForm<T extends ResourceContainerControls> = FormGroup<T>;
+export function resourceContainerFormControls(): ResourceContainerFormControls {
+    return {
+        addEquipments: new FormArray<EquipmentLeaseForm>([]),
+        replaceEquipments: new FormGroup<{[k: string]: EquipmentLeaseForm}>({}),
+
+        addServices: new FormArray<ServiceForm>([]),
+        replaceServices: new FormGroup<{[k: string]: ServiceForm}>({}),
+
+        addSoftwares: new FormArray<SoftwareForm>([]),
+        replaceSoftwares: new FormGroup<{[k: string]: SoftwareForm}>({}),
+
+        addInputMaterials: new FormArray<InputMaterialForm>([]),
+        replaceInputMaterials: new FormGroup<{[k: string]: InputMaterialForm}>({}),
+
+        addOutputMaterials: new FormArray<OutputMaterialForm>([]),
+        replaceOutputMaterials: new FormGroup<{[k: string]: OutputMaterialForm}>({})
+    }
+}
+
+export type ResourceContainerForm<T extends ResourceContainerFormControls> = FormGroup<T>;
+
+export function containerPatchFromForm(form: ResourceContainerForm<any>): ResourceContainerPatch {
+    return { ...form.value };
+}
+
+function getResourceAddArray(form: ResourceContainerForm<any>, resourceType: ResourceType): FormArray<any> {
+    switch (resourceType) {
+        case 'equipment':
+            return form.controls['addEquipments'] as FormArray<any>;
+        case 'software':
+            return form.controls['addSoftwares'] as FormArray<any>;
+        case 'service':
+            return form.controls['addServices'] as FormArray<any>;
+        case 'input-material': 
+            return form.controls['addInputMaterials'] as FormArray<any>;
+        case 'output-material':
+            return form.controls['addOutputMaterials'] as FormArray<any>;
+    }
+}
+
+function getResourceReplaceGroup(form: ResourceContainerForm<any>, resourceType: ResourceType): FormGroup<{[k: string]: FormGroup<any>}> {
+    switch (resourceType) {
+        case 'equipment':
+            return form.controls['replaceEquipments'] as FormGroup<{[k: string]: FormGroup<any>}>;
+        case 'software':
+            return form.controls['replaceSoftwares']  as FormGroup<{[k: string]: FormGroup<any>}>;
+        case 'service':
+            return form.controls['.replaceServices']  as FormGroup<{[k: string]: FormGroup<any>}>;
+        case 'input-material':
+            return form.controls['replaceInputMaterials'] as FormGroup<{[k: string]: FormGroup<any>}>;
+        case 'output-material':
+            return form.controls['replaceOutputMaterials'] as FormGroup<{[k: string]: FormGroup<any>}>;
+    }
+}
+
+export function addResource(
+    containerForm: ResourceContainerForm<any>, 
+    resourceType: ResourceType, 
+    resourceFormFactory: (resource?: Resource) => FormGroup<any>
+) {
+    const addArray = getResourceAddArray(containerForm, resourceType);
+    addArray.push(resourceFormFactory());
+}
+
+export function cancelAddResource(
+    containerForm: ResourceContainerForm<any>,
+    resourceType: ResourceType
+) {
+    const addArray = getResourceAddArray(containerForm, resourceType);
+    addArray.removeAt(addArray.length - 1)
+}
+
+export function replaceResourceAt(
+    committedContainer: ResourceContainer,
+    patchForm: ResourceContainerForm<any>,
+    resourceType: ResourceType,
+    index: number,
+    resourceFormFactory: (resource?: Resource) => FormGroup<any>
+) {
+    const resource = committedContainer.getResourceAt(resourceType, index);
+    const replaceGroup = getResourceReplaceGroup(patchForm, resourceType);
+
+    const resourceForm = resourceFormFactory(resource);
+    replaceGroup.setControl(`${index}`, resourceForm);
+
+}
 
 function getResourceFormArray<F extends FormGroup<any>>(form: ResourceContainerForm<any>, resourceType: ResourceType): FormArray<F> {
     switch (resourceType) {
@@ -93,21 +204,6 @@ function getResourceFormArray<F extends FormGroup<any>>(form: ResourceContainerF
             return form.controls['input-materials'] as FormArray<F>;
         case 'output-material':
             return form.controls['output-materials'] as FormArray<F>;
-    }
-}
-
-function resourceFormAsResource(form: FormGroup<any>, resourceType: ResourceType) {
-    switch (resourceType) {
-        case 'equipment':
-            return new Equipment(form.value);
-        case 'software':
-            return new Software(form.value);
-        case 'service':
-            return new Service(form.value);
-        case 'input-material':
-            return new InputMaterial(form.value);
-        case 'output-material':
-            return new OutputMaterial(form.value);
     }
 }
 

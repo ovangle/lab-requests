@@ -1,18 +1,20 @@
-import { Component, inject } from "@angular/core";
-import { AbstractControl, FormArray, FormControl, FormGroup, Validators } from "@angular/forms";
-import { Software } from "../resources/software/software";
-import { isAfter } from "date-fns";
-import { ExperimentalPlan, ExperimentalPlanForm, ExperimentalPlanModelService, experimentalPlanForm } from "./experimental-plan";
-import { InputMaterial } from "../resources/material/input/input-material";
-import { hazardClassByDivision } from "../resources/common/hazardous/hazardous";
-import { ActivatedRoute } from "@angular/router";
-import { WorkUnit, WorkUnitForm } from "./work-unit/work-unit";
+import { Component, Injectable, inject } from "@angular/core";
+import { FormControl, FormGroup, Validators } from "@angular/forms";
+import { Software } from "./resources/software/software";
+import { ExperimentalPlan, ExperimentalPlanPatchErrors, ExperimentalPlanModelService, ExperimentalPlanPatch, injectExperimentalPlanFromContext} from "./experimental-plan";
+import { InputMaterial } from "./resources/material/input/input-material";
+import { hazardClassByDivision } from "./resources/common/hazardous/hazardous";
+import { WorkUnit } from "./work-unit/work-unit";
 import { Campus } from "src/app/uni/campus/campus";
 import { WorkUnitFormService, WorkUnitResourceContainerFormService } from "./work-unit/work-unit-form.component";
-import { ResourceContainerFormService } from "../resources/resources";
+import { ResourceContainerFormService } from "./resources/resources";
+import { BehaviorSubject, Observable, Subscription, map, share, tap } from "rxjs";
+import { Discipline } from "src/app/uni/discipline/discipline";
+import { ExperimentalPlanType } from "./funding-type/experimental-plan-type";
 
 const experimentalPlanFixture = new ExperimentalPlan({
-    campus: new Campus({code: 'ROK', name: 'Rockhampton'}),
+    researcher: 'hello@world.com',
+    researcherBaseCampus: new Campus({code: 'ROK', name: 'Rockhampton'}),
     workUnits: [
         new WorkUnit({
             campus: new Campus({code: 'ROK', name: 'Rockhampton'}),
@@ -34,8 +36,104 @@ const experimentalPlanFixture = new ExperimentalPlan({
             ]
         })
     ],
-    submittedBy: 'hello@world.com'
 });
+
+export type ExperimentalPlanControls = {
+    title: FormControl<string>;
+
+    researcher: FormControl<string>;
+    researcherBaseCampus: FormControl<Campus | null>;
+    researcherDiscipline: FormControl<Discipline | null>;
+    fundingType: FormControl<ExperimentalPlanType | null>;
+
+    supervisor: FormControl<string | null>;
+    processSummary: FormControl<string>;
+}
+
+export type ExperimentalPlanForm = FormGroup<ExperimentalPlanControls>;
+
+function experimentalPlanPatchFromForm(form: ExperimentalPlanForm): ExperimentalPlanPatch | null {
+    if (!form.valid) {
+        return null;
+    }
+    // If the form is valid, then it is assignable to the patch.
+    return form.value as ExperimentalPlanPatch;
+}
+
+function experimentalPlanPatchErrorsFromForm(form: ExperimentalPlanForm): ExperimentalPlanPatchErrors | null {
+    if (form.invalid) {
+        return form.errors as ExperimentalPlanPatchErrors;
+    }
+    return null;
+}
+
+@Injectable()
+export class ExperimentalPlanFormService {
+    readonly model = inject(ExperimentalPlanModelService);
+
+    readonly committedSubject = new BehaviorSubject<ExperimentalPlan | null>(null);
+    readonly committed$ = this.committedSubject.asObservable();
+
+    readonly patchForm: ExperimentalPlanForm = new FormGroup({
+        title: new FormControl<string>('', {nonNullable: true, validators: [Validators.required]}),
+        researcher: new FormControl<string>('', {nonNullable: true, validators: [Validators.required, Validators.email]}),
+        researcherBaseCampus: new FormControl<Campus | null>(null, { validators: [Validators.required]}),
+        researcherDiscipline: new FormControl<Discipline | null>(null, { validators: [Validators.required] }),
+        fundingType: new FormControl<ExperimentalPlanType | null>(null, { validators: [Validators.required]}),
+        supervisor: new FormControl<string | null>(null, { validators: [Validators.email]}),
+        processSummary: new FormControl('', { nonNullable: true })
+    });
+
+    readonly patchErrors$: Observable<ExperimentalPlanPatchErrors | null> = this.patchForm.statusChanges.pipe(
+        map(() => experimentalPlanPatchErrorsFromForm(this.patchForm)),
+        share()
+    );
+    readonly patchValue$: Observable<ExperimentalPlanPatch | null> = this.patchForm.statusChanges.pipe(
+        map(() => experimentalPlanPatchFromForm(this.patchForm)),
+        share()
+    );
+
+    connect(initial: ExperimentalPlan | null): Subscription {
+        // Reverts the patchForm to the committed subject's value whenever a new value is submitted
+        this.committedSubject.subscribe(() => this.revert());
+        this.committedSubject.next(initial);
+
+        const _patchErrorsSubscription = this.patchErrors$.subscribe();
+        const _patchValueSubscription = this.patchValue$.subscribe();
+
+        return new Subscription(() => {
+            _patchErrorsSubscription.unsubscribe();
+            _patchValueSubscription.unsubscribe();
+            this.committedSubject.complete();
+        });
+    }
+
+    commit(): Observable<ExperimentalPlan> {
+        const committed = this.committedSubject.value;
+
+        if (this.patchForm.invalid) {
+            throw new Error('Cannot commit invalid form')
+        }
+        const patch = experimentalPlanPatchFromForm(this.patchForm)!;
+        let _commit: Observable<ExperimentalPlan>;
+        if (committed == null) {
+            _commit = this.model.create(patch);
+        } else {
+            _commit = this.model.update(committed.id, patch);
+        }
+        return _commit.pipe(
+            tap((committed) => this.committedSubject.next(committed))
+        );
+    }
+
+    revert() {
+        if (this.committedSubject.value == null) {
+            this.patchForm.reset();
+        } else {
+            this.patchForm.setValue(this.committedSubject.value);
+        }
+    }
+}
 
 @Component({
     selector: 'lab-request-form',
@@ -44,7 +142,7 @@ const experimentalPlanFixture = new ExperimentalPlan({
         './experimental-plan-form.component.css'
     ],
     providers: [
-        ExperimentalPlanModelService,
+        ExperimentalPlanFormService, 
         WorkUnitFormService,
         {
             provide: ResourceContainerFormService,
@@ -53,20 +151,18 @@ const experimentalPlanFixture = new ExperimentalPlan({
     ]
 })
 export class ExperimentalPlanFormComponent {
-    readonly planService = inject(ExperimentalPlanModelService);
 
     readonly currentUser: string = 't.stephenson@cqu.edu.au';
 
-    get form(): ExperimentalPlanForm {
-        return this.planService.form!;
-    }
+    readonly formService = inject(ExperimentalPlanFormService);
+    private _formServiceConnection: Subscription 
 
+    
     ngOnInit() {
-        this.planService.init(experimentalPlanFixture);
+        this._formServiceConnection = this.formService.connect(experimentalPlanFixture);
     }
-
-    get workUnitForms(): WorkUnitForm[] {
-        return this.form.controls['workUnits'].controls;
+    ngOnDestroy() {
+        this._formServiceConnection.unsubscribe();
     }
 
     /**

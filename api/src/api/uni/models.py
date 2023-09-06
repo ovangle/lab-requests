@@ -53,6 +53,13 @@ class Campus(Base):
         )
         return [result[0] for result in results]
 
+    @classmethod
+    def get_by_max(cls, db: AsyncSession):
+        from sqlalchemy.sql.expression import func
+        return select(Campus).where(
+            Campus.created_at.in_(select(func.max(Campus.id)))
+        )
+
 
 async def seed_campuses(db: AsyncSession):
     all_known_campuses = [

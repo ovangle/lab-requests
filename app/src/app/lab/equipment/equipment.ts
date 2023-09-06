@@ -1,94 +1,63 @@
-import { ResourceStorage, ResourceStorageForm, createResourceStorageForm } from "../common/storage/resource-storage";
-import { FormArray, FormControl, FormGroup, Validators } from "@angular/forms";
-import { ResourceDisposal, ResourceDisposalForm, createResourceDisposalForm } from "../common/disposal/resource-disposal";
-import { Resource } from "../common/resource";
-import { EquipmentSchema } from "./schema/equipment-schema";
+import { FormArray, FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
+import { LabType } from "../type/lab-type";
+import { Injectable } from "@angular/core";
+import { ModelService } from "src/app/utils/models/model-service";
 
-export class Equipment implements Resource {
-    readonly type = 'equipment';
-    schema: EquipmentSchema;
+
+export class Equipment {
+    readonly id: string;
 
     name: string;
-    comments: string;
+    description: string;
 
-    numRequested: number;
+    availableInLabTypes: LabType[];
 
-    // The researcher has previously completed all required training for the equipment
-    hasRequiredTraining: boolean;
+    requiresTraining: boolean;
+    trainingDescriptions: string[]
 
-    // The researcher is requesting additional instruction in the use of this equipment
-    requestsInstruction: boolean;
+    constructor(params: Partial<Equipment>) {
+        this.id = params.id!;
+        this.name = params.name!;
+        this.description = params.description!;
+        this.availableInLabTypes = params.availableInLabTypes!;
+        this.requiresTraining = params.requiresTraining!;
+        this.trainingDescriptions = params.trainingDescriptions!;
+   }
+}
 
-    setupInstructions: string;
+export interface EquipmentPatch {
+    name: string;
+    description: string;
+    availableInLabTypes: LabType[] | 'all';
+    requiresTraining: boolean;
+    trainingDescriptions: string[];
+}
 
-    isUniversitySupplied: boolean;
-
-    constructor(r: {readonly schema: EquipmentSchema} & Partial<Equipment>) {
-        this.schema = r.schema;
-        this.name = r?.name || '';
-        this.comments = r?.comments || '';
-
-        this.numRequested = typeof r.numRequested === 'number' ? r.numRequested : 1;
-
-        this.hasRequiredTraining = r.hasRequiredTraining || false;
-        this.requestsInstruction = r.requestsInstruction || false;
-
-        this.setupInstructions = r.setupInstructions || '';
-
-        this.isUniversitySupplied = !!r.isUniversitySupplied;
+export function equipmentPatchFromEquipment(equipment: Equipment): EquipmentPatch {
+    return {
+        name: equipment.name,
+        description: equipment.description,
+        availableInLabTypes: equipment.availableInLabTypes,
+        requiresTraining: equipment.requiresTraining,
+        trainingDescriptions: equipment.trainingDescriptions
     }
 }
 
+export type EquipmentPatchErrors = ValidationErrors & {
+    name?: {
+        notUnique: string | null;
+        required: string;
+    };
+};
 
-export type EquipmentForm = FormGroup<{
-    type: FormControl<'equipment'>;
-    schema: FormControl<EquipmentSchema | null>,
+@Injectable()
+export class EquipmentModelService extends ModelService<Equipment, EquipmentPatch> {
+    override readonly resourcePath: string = '/lab/equipment'
 
-    name: FormControl<string>;
-    comments: FormControl<string>;
-
-    hasRequiredTraining: FormControl<boolean>;
-    requestsInstruction: FormControl<boolean>;
-
-    numRequested: FormControl<number>;
-    isUniversitySupplied: FormControl<boolean>;
-
-    setupInstructions: FormControl<string>;
-
-    // radioactivity: ResourceRadiationForm;
-    // storage: ResourceStorageForm;
-    // disposal: ResourceDisposalForm;
-    // consumables: FormArray<EquipmentConsumableForm>
-}>
-
-export function isEquipmentResourceForm(obj: any): obj is EquipmentForm {
-    return obj instanceof FormGroup;
-}
-
-export function createEquipmentResourceForm(r: Partial<Equipment>): EquipmentForm {
-    const schema = r?.schema;
-    return new FormGroup({
-        type: new FormControl('equipment', {nonNullable: true}),
-        schema: new FormControl<EquipmentSchema | null>(null, {
-            validators: Validators.required
-        }),
-        name: new FormControl<string>(r.name || '', {nonNullable: true}),
-        comments: new FormControl<string>(r.comments || '', {nonNullable: true}),
-
-        hasRequiredTraining: new FormControl<boolean>(r.hasRequiredTraining || false, {nonNullable: true}),
-        requestsInstruction: new FormControl<boolean>(r.requestsInstruction || false, {nonNullable: true}),
-
-        numRequested: new FormControl<number>(
-            typeof r.numRequested === 'number' ? r.numRequested : 1,
-            {nonNullable: true}
-        ),
-        isUniversitySupplied: new FormControl<boolean>(!!r.isUniversitySupplied, {nonNullable: true}),
-
-        setupInstructions: new FormControl<string>('', {nonNullable: true})
-
-        // radioactivity: createRadioactiveResourceForm(r?.schema?.radioactivity || r?.radioactivity || undefined),
-        // storage: createResourceStorageForm(r?.schema?.storage && r?.storage || undefined),
-        // disposal: createResourceDisposalForm(r?.schema?.disposal && r?.disposal || undefined),
-        // consumables: new FormArray((r?.consumables || []).map(c => createEquipmentConsumableForm(c)))
-    });
+    override modelFromJson(json: object): Equipment {
+        return new Equipment(json);
+    }
+    override patchToJson(patch: EquipmentPatch): object {
+        return patch as object;
+    }
 }

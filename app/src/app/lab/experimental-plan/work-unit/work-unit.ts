@@ -1,13 +1,16 @@
 import { FormArray, FormControl, FormGroup, Validators } from "@angular/forms";
 import { Campus, isCampus } from "../../../uni/campus/campus";
 import { Discipline, isDiscipline } from "../../../uni/discipline/discipline";
-import { EquipmentForm, createEquipmentResourceForm } from "../../resources/equipment/equipment";
-import { InputMaterialForm, createInputMaterialForm } from "../../resources/material/input/input-material";
-import { OutputMaterialForm, createOutputMaterialForm } from "../../resources/material/output/output-material";
-import { ResourceContainer } from "../../resources/resources";
-import { SoftwareForm, createSoftwareForm } from "../../resources/software/software";
+import { EquipmentLeaseForm, equipmentLeaseForm } from "../resources/equipment/equipment-lease";
+import { InputMaterialForm, createInputMaterialForm } from "../resources/material/input/input-material";
+import { OutputMaterialForm, createOutputMaterialForm } from "../resources/material/output/output-material";
+import { ResourceContainer } from "../resources/resources";
+import { SoftwareForm, createSoftwareForm } from "../resources/software/software";
 import { LabType } from "../../type/lab-type";
-import { Service, ServiceForm } from "../../resources/service/service";
+import { Service, ServiceForm } from "../resources/service/service";
+import { ResourceContainerPatch } from "../resources/resources";
+import { ModelService } from "src/app/utils/models/model-service";
+import { injectExperimentalPlanFromContext } from "../experimental-plan";
 
 /**
  * A WorkUnit is a portion of an experimental plan which is conducted
@@ -49,6 +52,11 @@ export class WorkUnit extends ResourceContainer {
    }
 }
 
+export interface WorkUnitPatch extends ResourceContainerPatch {
+
+
+}
+
 export type WorkUnitForm = FormGroup<{
     campus: FormControl<Campus | null>;
     labType: FormControl<Discipline | null>;
@@ -58,7 +66,7 @@ export type WorkUnitForm = FormGroup<{
     startDate: FormControl<Date | null>;
     endDate: FormControl<Date | null>;
 
-    equipments: FormArray<EquipmentForm>;
+    equipments: FormArray<EquipmentLeaseForm>;
     softwares: FormArray<SoftwareForm>;
     services: FormArray<ServiceForm>;
 
@@ -83,7 +91,7 @@ export function workUnitForm(params: Partial<WorkUnit>): WorkUnitForm {
         endDate: new FormControl(params.endDate || null),
 
         equipments: new FormArray(
-            (params.equipments || []).map((e) => createEquipmentResourceForm(e))
+            (params.equipments || []).map((e) => equipmentLeaseForm(e))
         ),
         softwares: new FormArray(
             (params.softwares || []).map((e) => createSoftwareForm(e))
@@ -103,3 +111,23 @@ function createServiceForm(e: Service): any {
     throw new Error("Function not implemented.");
 }
 
+export class WorkUnitModelService extends ModelService<WorkUnit, WorkUnitPatch> {
+    override resourcePath = '/lab/experimental-plans/work-units';
+    override modelFromJson(json: object): WorkUnit {
+        return new WorkUnit(json);
+    }
+    override patchToJson(patch: WorkUnitPatch): object {
+        return patch;
+    }
+
+    experimentalPlan$ = injectExperimentalPlanFromContext();
+
+    readonly resourcePath = this.experimentalPlan$.pipe(
+        map(plan => {
+            if (plan == null) {
+                throw new Error('WorkUnit model service requires an experimental plan context');
+            }
+        })
+    )
+
+}

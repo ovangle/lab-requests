@@ -7,11 +7,11 @@ import { AuthRedirectPageComponent } from './oauth/auth-redirect-page.component'
 import { requiresAuthorizationGuard } from './utils/router-utils';
 import { PublicPageComponent } from './public-page/public-page.component';
 import { IotDeviceCreateFormComponent } from './iot/iot-device-create-form.component';
-import { SoftwareResourceFormComponent } from './lab/resources/software/software-resource-form.component';
-import { EquipmentResourceFormComponent } from './lab/resources/equipment/equipment-resource-form.component';
-import { InputMaterialResourceFormComponent } from './lab/resources/material/input/input-material-resource-form.component';
-import { resourceFormRoutes } from './lab/resources/resource-form-routing';
-import { OutputMaterialResourceFormComponent } from './lab/resources/material/output/output-material-resource-form.component';
+import { SoftwareResourceFormComponent } from './lab/experimental-plan/resources/software/software-resource-form.component';
+import { EquipmentLeaseFormComponent } from './lab/experimental-plan/resources/equipment/equipment-lease-form.component';
+import { InputMaterialResourceFormComponent } from './lab/experimental-plan/resources/material/input/input-material-resource-form.component';
+import { resourceFormRoutes } from './lab/experimental-plan/resources/resource-form-routing';
+import { OutputMaterialResourceFormComponent } from './lab/experimental-plan/resources/material/output/output-material-resource-form.component';
 import { WorkUnitFormComponent, workUnitFormRoutes } from './lab/experimental-plan/work-unit/work-unit-form.component';
 
 const routes: Routes = [
@@ -40,6 +40,17 @@ const routes: Routes = [
     component: PublicPageComponent
   },
   {
+    path: 'lab',
+    children: [
+      {
+        path: 'equipment', 
+        loadChildren: () => import('./lab/equipment/equipment.routes')
+            .then(module => module.equipmentRoutes)
+      }
+    ]
+  },
+
+  {
     path: 'lab-requests',
     children: [
       {
@@ -53,7 +64,7 @@ const routes: Routes = [
         children: [
           ...workUnitFormRoutes(),
           ...resourceFormRoutes('software', SoftwareResourceFormComponent),
-          ...resourceFormRoutes('equipment', EquipmentResourceFormComponent),
+          ...resourceFormRoutes('equipment', EquipmentLeaseFormComponent),
           ...resourceFormRoutes('input-material', InputMaterialResourceFormComponent),
           ...resourceFormRoutes('output-material', OutputMaterialResourceFormComponent)
         ]
