@@ -1,15 +1,12 @@
 import { CommonModule } from "@angular/common";
 import { Component, Injectable, inject } from "@angular/core";
-import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCardModule } from "@angular/material/card";
-import { ActivatedRoute, ParamMap, Routes } from "@angular/router";
-import { BehaviorSubject, Connectable, Observable, Subscription, combineLatest, connectable as createConnectable, distinctUntilChanged, firstValueFrom, map, of, tap, withLatestFrom } from "rxjs";
+import { BehaviorSubject, Observable, Subscription, combineLatest, firstValueFrom, map } from "rxjs";
 import { EquipmentLeaseTableComponent } from "../resources/equipment/equipment-lease-table.component";
 import { InputMaterialResourceTableComponent } from "../resources/material/input/input-material-resource-table.component";
 import { OutputMaterialResourceTableComponent } from "../resources/material/output/output-material-resource-table.component";
-import { ResourceContainer, ResourceContainerFormControls, ResourceContainerFormService, resourceContainerFormControls } from "../resources/resources";
 import { SoftwareResourceTableComponent } from "../resources/software/software-resource-table.component";
-import { ExperimentalPlanModelService } from "../experimental-plan";
 
 import { WorkUnitCampusLabFormComponent } from "./work-unit-campus-lab-form.component";
 import { WorkUnitCampusLabInfoComponent } from "./work-unit-campus-lab-info.component";
@@ -20,12 +17,9 @@ import { MatInputModule } from "@angular/material/input";
 import { WorkUnit, WorkUnitContext, WorkUnitModelService, WorkUnitPatch, WorkUnitPatchErrors } from "./work-unit";
 import { Campus } from "src/app/uni/campus/campus";
 import { Discipline } from "src/app/uni/discipline/discipline";
-import { EquipmentLeaseForm } from "../resources/equipment/equipment-lease";
-import { SoftwareForm } from "../resources/software/software";
-import { ServiceForm } from "../resources/service/service";
-import { InputMaterialForm } from "../resources/material/input/input-material";
-import { OutputMaterialForm } from "../resources/material/output/output-material";
 import { LabType } from "../../type/lab-type";
+import { ResourceContainerFormControls, resourceContainerFormControls } from "../resources/resource-container-form";
+import { ResourceContainerContext } from "../resources/resource-container";
 
 export type WorkUnitForm = FormGroup<{
     campus: FormControl<Campus | null>;
@@ -35,13 +29,14 @@ export type WorkUnitForm = FormGroup<{
 
     startDate: FormControl<Date | null>;
     endDate: FormControl<Date | null>;
-
 } & ResourceContainerFormControls>;
 
 @Injectable()
 export class WorkUnitFormService {
     readonly models = inject(WorkUnitModelService);
-    readonly context: WorkUnitContext = inject(WorkUnitContext);
+    readonly _context: WorkUnitContext = inject(WorkUnitContext);
+
+    readonly committed$ = this._context.committed$;
 
     readonly form = new FormGroup({
         campus: new FormControl<Campus | null>(null, {validators: [Validators.required]}),
@@ -74,35 +69,26 @@ export class WorkUnitFormService {
             throw new Error('Cannot patch: invalid form');
         }
         const patch = await firstValueFrom(this.patch$);
-        return await this.context.commit(patch!);
-    }
-
-    connect() {
-        return new Subscription();
+        return await this._context.commit(patch!);
     }
 }
 
 
-// @Injectable()
-// export class WorkUnitResourceContainerFormService extends ResourceContainerFormService<WorkUnit> {
+@Injectable()
+class WorkUnitFormResourceContainerContext extends ResourceContainerContext<WorkUnit, WorkUnitPatch> {
+    readonly _context = inject(WorkUnitContext);
+    readonly _formService = inject(WorkUnitFormService);
+    override readonly committed$ = this._context.committed$;
 
-//     readonly workUnitService = inject(WorkUnitPatchFormService);
+    override commitContext(patch: WorkUnitPatch): Promise<WorkUnit> {
+        return this._context.commit(patch);
+    }
 
-//     protected override getContainer$(): Observable<WorkUnit> {
-//         return this.workUnitService.workUnit$;
-//     }
-
-//     protected override async patchContainer(params: Partial<ResourceContainer>) {
-//         return this.workUnitService.patchWorkUnit(params);
-//     }
-
-//     protected override getContainerForm(): WorkUnitForm {
-//         return this.workUnitService.form;
-//     }
-// }
+    override readonly form = this._formService.form;
+}
 
 @Component({
-    selector: 'lab-req-experimental-plan-work-unit-form',
+    selector: 'app-lab-experimental-plan-work-unit-form',
     standalone: true,
     imports: [
         CommonModule,
@@ -121,7 +107,7 @@ export class WorkUnitFormService {
         OutputMaterialResourceTableComponent
     ],
     template: `
-    <ng-container *ngIf="workUnitService.form" [formGroup]="workUnitService.form">
+    <form [formGroup]="form">
         <!--
             the work unit data capture process is in two steps.
             First, the campus, lab type and technician are selected using the work-unit-campus-lab-form
@@ -172,23 +158,30 @@ export class WorkUnitFormService {
                 </mat-card-content>
             </mat-card>
         </ng-container>
-    </ng-container>
+    </form>
     `,
+    providers: [
+        WorkUnitFormService,
+        {
+            provide: ResourceContainerContext,
+            useClass: WorkUnitFormResourceContainerContext
+        }
+    ]
 })
 export class WorkUnitFormComponent {
-    readonly workUnitService = inject(WorkUnitFormService);
-    _workUnitServiceConnection: Subscription | null;
+    readonly _formService = inject(WorkUnitFormService);
+    readonly form = this._formService.form;
 
-    ngOnInit() {
-        this._workUnitServiceConnection = this.workUnitService.connect();
-    }
+    readonly formErrors$ = this._formService.formErrors$;
+
+    readonly containerContext = inject(ResourceContainerContext);
+    _containerContextConnection: Subscription;
 
     ngOnDestroy() {
-        this._workUnitServiceConnection!.unsubscribe();
         this.campusLabInfoEditingEnabledSubject.complete();
     }
 
-    readonly workUnit$: Observable<WorkUnit | null> = this.workUnitService.workUnit$.pipe(
+    readonly workUnit$: Observable<WorkUnit | null> = this.workUnitService.committed$.pipe(
         takeUntilDestroyed()
     );
 

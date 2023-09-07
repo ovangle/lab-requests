@@ -29,7 +29,7 @@ class CampusPatch(CampusBase, ModelPatch[models.Campus]):
 class CampusCreate(CampusPatch, ModelCreate[models.Campus]):
     code: CampusCode
 
-    async def create_model(self, db: LocalSession):
+    async def do_create(self, db: LocalSession):
         instance = models.Campus(code=self.code)
         await self.apply_to_model(db, instance)
 

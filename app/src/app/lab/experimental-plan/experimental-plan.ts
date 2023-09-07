@@ -117,7 +117,7 @@ export class ExperimentalPlanContext {
 
     readonly plan$: Observable<ExperimentalPlan | null> = this.activatedRoute.paramMap.pipe(
         map(paramMap => paramMap.get('experimentalPlanId')),
-        switchMap(experimentalPlanId => experimentalPlanId ? this.modelService.read(experimentalPlanId): of(null)),
+        switchMap(experimentalPlanId => experimentalPlanId ? this.modelService.fetch(experimentalPlanId): of(null)),
         shareReplay(1)
     );
 }

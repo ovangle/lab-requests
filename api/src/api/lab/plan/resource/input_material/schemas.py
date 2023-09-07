@@ -1,8 +1,7 @@
 from typing import Literal
 
 from api.base.schemas import api_dataclass
-from ..common.schemas import ResourceCostEstimate
-from ..common.types import HazardClass
+from ..common.schemas import ResourceCostEstimate, HazardClass
 
 @api_dataclass()
 class InputMaterial:

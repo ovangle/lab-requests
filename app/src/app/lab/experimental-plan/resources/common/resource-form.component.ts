@@ -9,7 +9,7 @@ import { BehaviorSubject, Connectable, Observable, Subject, Subscription, combin
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { BodyScrollbarHidingService } from "src/app/utils/body-scrollbar-hiding.service";
-import { ResourceContainer, ResourceContainerForm, ResourceContainerFormService } from "../resources";
+import { ResourceContainer, ResourceContainerForm, ResourceContainerFormService } from "../resource-container";
 import { isThisWeek } from "date-fns";
 import { WorkUnit } from "../../experimental-plan/work-unit/work-unit";
 

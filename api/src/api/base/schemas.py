@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+import dataclasses
 from datetime import datetime
 from typing import Generic, Optional, TypeVar, dataclass_transform
 from pydantic import ConfigDict
@@ -44,15 +45,30 @@ class ApiModel(Generic[TModel], ABC):
     def from_model(cls, model: TModel) -> ApiModel:
         raise NotImplementedError
 
+@api_dataclass()
 class ModelPatch(Generic[TModel], ABC):
+    @classmethod
+    def from_create(cls, create_req: ModelPatch | ModelCreate):
+        return cls(**dataclasses.asdict(create_req))
+
     @abstractmethod
-    async def apply_to_model(self, model: TModel, db: LocalSession):
+    def do_update(self, db: LocalSession, model: TModel):
         raise NotImplementedError
 
+    async def __call__(self, db: LocalSession, model: TModel):
+        await self.do_update(db, model)
+        await db.commit()
+
+@api_dataclass()
 class ModelCreate(Generic[TModel], ABC):
     @abstractmethod
-    async def create_model(self, db: LocalSession) -> TModel:
+    async def do_create(self, db: LocalSession) -> TModel:
         raise NotImplementedError
+
+    async def __call__(self, db: LocalSession):
+        await self.do_create(db)
+        await db.commit()
+
 
 
 

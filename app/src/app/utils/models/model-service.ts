@@ -21,7 +21,7 @@ export abstract class ModelService<T, TPatch, TCreate extends TPatch=TPatch> {
         return this.patchToJson(create);
     }
 
-    read(identifier: string, options?: {
+    fetch(identifier: string, options?: {
         params?: {[k: string]: any},
         resourcePath?: string
     }): Observable<T> {

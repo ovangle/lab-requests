@@ -30,7 +30,7 @@ export type EquipmentLeaseForm = FormGroup<{
     usageCostEstimate: CostEstimateForm
 }>;
 
-export function equipmentLeaseForm(lease?: EquipmentLease): EquipmentLeaseForm {
+export function equipmentLeaseForm(lease?: Partial<EquipmentLease>): EquipmentLeaseForm {
     return new FormGroup({
         equipment: new FormControl(
             lease?.equipment || null, 

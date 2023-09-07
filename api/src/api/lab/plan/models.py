@@ -116,7 +116,7 @@ class WorkUnit(ResourceContainer, Base):
         ))
 
     @staticmethod
-    async def list_by_plan(db: AsyncSession, plan_id: UUID) -> list[WorkUnit]:
+    async def list_for_experimental_plan(db: AsyncSession, plan_id: UUID) -> list[WorkUnit]:
         results = await db.execute(
             select(WorkUnit)
             .where(WorkUnit.plan_id == plan_id)
@@ -124,6 +124,7 @@ class WorkUnit(ResourceContainer, Base):
         )
         return [WorkUnit(record) for record in results]
 
+    
     @staticmethod
     async def list_by_technician(db: AsyncSession, technician_email: str) -> list[WorkUnit]:
         results = await db.execute(

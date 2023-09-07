@@ -1,16 +1,20 @@
 import { Component, Injectable, inject } from "@angular/core";
-import { FormControl, FormGroup, Validators } from "@angular/forms";
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { Software } from "./resources/software/software";
 import { ExperimentalPlan, ExperimentalPlanPatchErrors, ExperimentalPlanModelService, ExperimentalPlanPatch, injectExperimentalPlanFromContext} from "./experimental-plan";
 import { InputMaterial } from "./resources/material/input/input-material";
 import { hazardClassByDivision } from "./resources/common/hazardous/hazardous";
-import { WorkUnit } from "./work-unit/work-unit";
+import { WorkUnit, WorkUnitContext, WorkUnitPatch } from "./work-unit/work-unit";
 import { Campus } from "src/app/uni/campus/campus";
-import { WorkUnitPatchFormService, WorkUnitResourceContainerFormService } from "./work-unit/work-unit-patch-form.component";
-import { ResourceContainerFormService } from "./resources/resources";
 import { BehaviorSubject, Observable, Subscription, map, share, tap } from "rxjs";
 import { Discipline } from "src/app/uni/discipline/discipline";
 import { ExperimentalPlanType } from "./funding-type/experimental-plan-type";
+import { WorkUnitFormService } from "./work-unit/work-unit-patch-form.component";
+import { ResourceContainerContext, ResourceContainerPatch } from "./resources/resource-container";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatInputModule } from "@angular/material/input";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { CommonModule } from "@angular/common";
 
 const experimentalPlanFixture = new ExperimentalPlan({
     researcher: 'hello@world.com',
@@ -135,18 +139,27 @@ export class ExperimentalPlanFormService {
     }
 }
 
+
 @Component({
-    selector: 'lab-request-form',
-    templateUrl: './experimental-plan-form.component.html',
+    selector: 'app-lab-experimental-plan-form',
+    standalone: true,
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatCheckboxModule
+    ],
+    templateUrl: './experiental-plan-form.component.html',
     styleUrls: [
         './experimental-plan-form.component.css'
     ],
     providers: [
         ExperimentalPlanFormService, 
-        WorkUnitPatchFormService,
+        WorkUnitFormService,
         {
-            provide: ResourceContainerFormService,
-            useClass: WorkUnitResourceContainerFormService
+            provide: ResourceContainerContext,
+            useClass: WorkUnitResourceContainerContext
         }
     ]
 })
@@ -155,8 +168,8 @@ export class ExperimentalPlanFormComponent {
     readonly currentUser: string = 't.stephenson@cqu.edu.au';
 
     readonly formService = inject(ExperimentalPlanFormService);
+    readonly form = this.formService.patchForm;
     private _formServiceConnection: Subscription 
-
     
     ngOnInit() {
         this._formServiceConnection = this.formService.connect(experimentalPlanFixture);

@@ -44,8 +44,8 @@ const routes: Routes = [
     children: [
       {
         path: 'equipment', 
-        loadChildren: () => import('./lab/equipment/equipment.routes')
-            .then(module => module.equipmentRoutes)
+        loadChildren: () => import('./lab/equipment/equipment.feature-module')
+            .then(module => module.EquipmentFeatureModule)
       },
       {
         path: 'experimental-plans',
@@ -54,29 +54,13 @@ const routes: Routes = [
       }
     ]
   },
-
   {
-    path: 'lab-requests',
-    children: [
-      {
-        path: '',
-        redirectTo: 'experimental-plan',
-        pathMatch: 'full'
-      },
-      {
-        path: 'experimental-plan',
-        component: ExperimentalPlanFormComponent,
-        children: [
-          ...workUnitFormRoutes(),
-          ...resourceFormRoutes('software', SoftwareResourceFormComponent),
-          ...resourceFormRoutes('equipment', EquipmentLeaseFormComponent),
-          ...resourceFormRoutes('input-material', InputMaterialResourceFormComponent),
-          ...resourceFormRoutes('output-material', OutputMaterialResourceFormComponent)
-        ]
-      },
-    ]
-  },
-];
+    path: 'uni/campuses',
+    loadChildren: () => import('./uni/campus/campus.feature-module')
+      .then(module => module.CampusFeature)
+  }
+]
+
 
 @NgModule({
   imports: [

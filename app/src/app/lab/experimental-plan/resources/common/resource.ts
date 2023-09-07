@@ -3,7 +3,7 @@ import { FormArray, FormGroup } from "@angular/forms";
 import { ActivatedRoute } from "@angular/router";
 import { BehaviorSubject, Observable, combineLatest, firstValueFrom, map } from "rxjs";
 import { InputMaterialResourceFormComponent } from "../material/input/input-material-resource-form.component";
-import { ResourceContainerFormService } from "../resources";
+import { ResourceContainerFormService } from "../resource-container";
 import { RESOURCE_TYPE } from "./resource-form.component";
 
 export type ResourceType = 'software' | 'equipment' | 'service' | 'input-material' | 'output-material';

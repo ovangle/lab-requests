@@ -1,11 +1,11 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.utils.db import Session
+from api.utils.db import LocalSession
 
 async def seed_db():
     from api.uni.models import seed_campuses
-    async with Session() as db:
+    async with LocalSession() as db:
         await seed_campuses(db)
 
 if __name__ == '__main__':

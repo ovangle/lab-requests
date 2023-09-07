@@ -6,7 +6,7 @@ import { Observable, delay, map, of, switchMap, switchMapTo, timer } from "rxjs"
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from "@angular/forms";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { EquipmentForm, LabEquipmentFormComponent } from "./equipment-form.component";
+import { EquipmentForm, LabEquipmentFormComponent } from "./equipment-patch.form";
 import { MatCardModule } from "@angular/material/card";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
 

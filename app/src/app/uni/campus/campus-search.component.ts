@@ -7,7 +7,7 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { BehaviorSubject, Observable, filter, map, of, startWith, switchMap } from "rxjs";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
-import { CampusCreateFormComponent } from "./campus-create-form.component";
+import { CampusFormComponent } from "./campus-patch-form.component";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 
 @Component({

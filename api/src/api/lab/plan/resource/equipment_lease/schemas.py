@@ -3,9 +3,8 @@ from uuid import UUID
 from api.base.schemas import api_dataclass
 from pydantic import Field
 
-from api.src.api.lab.equipment.schemas import EquipmentPatch
-from ..common.types import ResourceType
-from ..common.schemas import Resource, ResourceCostEstimate
+from api.lab.equipment.schemas import EquipmentPatch
+from ..common.schemas import Resource, ResourceType, ResourceCostEstimate
 
 from api.lab.types import LabType
 

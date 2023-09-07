@@ -1,7 +1,9 @@
 import { FormArray, FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { LabType } from "../type/lab-type";
-import { Injectable } from "@angular/core";
+import { Injectable, inject } from "@angular/core";
 import { ModelService } from "src/app/utils/models/model-service";
+import { Context } from "src/app/utils/models/model-context";
+import { Observable, firstValueFrom } from "rxjs";
 
 
 export class Equipment {
@@ -57,7 +59,14 @@ export class EquipmentModelService extends ModelService<Equipment, EquipmentPatc
     override modelFromJson(json: object): Equipment {
         return new Equipment(json);
     }
-    override patchToJson(patch: EquipmentPatch): object {
-        return patch as object;
+}
+
+@Injectable()
+export abstract class EquipmentContext extends Context<Equipment, EquipmentPatch> {
+    override readonly models: EquipmentModelService = inject(EquipmentModelService);
+    readonly equipment$ = this.committed$;
+
+    override create(patch: EquipmentPatch): Promise<Equipment> {
+        return firstValueFrom(this.models.create(patch));
     }
 }

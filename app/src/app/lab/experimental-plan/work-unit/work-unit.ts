@@ -1,17 +1,12 @@
-import { FormArray, FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
+import { ValidationErrors } from "@angular/forms";
 import { Campus, isCampus } from "../../../uni/campus/campus";
-import { Discipline, isDiscipline } from "../../../uni/discipline/discipline";
-import { EquipmentLeaseForm, equipmentLeaseForm } from "../resources/equipment/equipment-lease";
-import { InputMaterialForm, createInputMaterialForm } from "../resources/material/input/input-material";
-import { OutputMaterialForm, createOutputMaterialForm } from "../resources/material/output/output-material";
-import { ResourceContainer } from "../resources/resources";
-import { SoftwareForm, createSoftwareForm } from "../resources/software/software";
+import { isDiscipline } from "../../../uni/discipline/discipline";
+import { ResourceContainer } from "../resources/resource-container";
 import { LabType } from "../../type/lab-type";
-import { Service, ServiceForm } from "../resources/service/service";
-import { ResourceContainerPatch } from "../resources/resources";
+import { ResourceContainerPatch } from "../resources/resource-container";
 import { ModelService } from "src/app/utils/models/model-service";
-import { ExperimentalPlan, ExperimentalPlanContext, injectExperimentalPlanFromContext } from "../experimental-plan";
-import { BehaviorSubject, Observable, Subscription, combineLatest, filter, firstValueFrom, map, of } from "rxjs";
+import { ExperimentalPlan, ExperimentalPlanContext } from "../experimental-plan";
+import { BehaviorSubject, Observable, Subscription, filter, firstValueFrom, of } from "rxjs";
 import { Injectable, inject } from "@angular/core";
 import { Context } from "src/app/utils/models/model-context";
 
@@ -105,11 +100,11 @@ export class WorkUnitModelService extends ModelService<WorkUnit, WorkUnitPatch, 
     }
 
     readByPlanAndIndex(plan: ExperimentalPlan, index: number): Observable<WorkUnit> {
-        return this.read(`${index}`, { resourcePath: this.resourcePathFromPlan(plan) });
+        return this.fetch(`${index}`, { resourcePath: this.resourcePathFromPlan(plan) });
     }
 
     readById(id: string) {
-        return this.read(id);
+        return this.fetch(id);
     }
 
     queryPlanWorkUnits(plan: ExperimentalPlan, params: {[k: string]: any}): Observable<WorkUnit[]> {
@@ -121,31 +116,17 @@ export class WorkUnitModelService extends ModelService<WorkUnit, WorkUnitPatch, 
 
 @Injectable()
 export abstract class WorkUnitContext extends Context<WorkUnit, WorkUnitPatch> {
+    models = inject(WorkUnitModelService);
+    _planContext = inject(ExperimentalPlanContext);
 
-    _planContext = inject(Context<ExperimentalPlan>, {skipSelf: true, optional: true});
-    readonly plan$: Observable<ExperimentalPlan | null> = (
-        this._planContext && this._planContext.committed$ || of(null)
+    readonly plan$: Observable<ExperimentalPlan> = this._planContext.plan$.pipe(
+        filter((plan): plan is ExperimentalPlan => plan != null)
     );
-
-    readonly planIdSubject = new BehaviorSubject<string | null>();
 
     async create(patch: WorkUnitPatch | WorkUnitCreate): Promise<WorkUnit> {
         const plan = await firstValueFrom(this.plan$);
+        return firstValueFrom(this.models.create({...patch, planId: plan.id}));
     }
 
-    models = inject(WorkUnitModelService);
-    readonly workUnit$ = this.committedSubject.pipe(
-        filter((committed): committed is WorkUnit => committed != null)
-    )
-
-    override connect() {
-        const _subscription = super.connect();
-
-        return new Subscription(() => {
-            _subscription.unsubscribe();
-            this.planIdSubject.complete();
-        })
-
-    }
-
+    readonly workUnit$ = this.committed$;
 }

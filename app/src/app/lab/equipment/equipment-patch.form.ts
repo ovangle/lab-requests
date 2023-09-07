@@ -1,11 +1,10 @@
 import { CommonModule } from "@angular/common";
 import { Component, ElementRef, Input, OnDestroy, OnInit, TemplateRef, ViewChild, inject } from "@angular/core";
-import { AbstractControl, FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { AbstractControl, FormArray, FormControl, FormGroup, FormGroupDirective, ReactiveFormsModule, Validators } from "@angular/forms";
 
-import { Equipment, EquipmentPatch, EquipmentPatchErrors, EquipmentModelService, equipmentPatchFromEquipment } from './equipment';
-import { EquipmentSchema } from "./equipment-schema";
+import { Equipment, EquipmentPatch, EquipmentPatchErrors, EquipmentModelService, equipmentPatchFromEquipment, EquipmentContext } from './equipment';
 import { LabType } from "../type/lab-type";
-import { BehaviorSubject, Observable, Subscription, map, share } from "rxjs";
+import { BehaviorSubject, Observable, Subscription, firstValueFrom, map, share } from "rxjs";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatButtonModule } from "@angular/material/button";
 import { MatInputModule } from "@angular/material/input";
@@ -36,14 +35,11 @@ function equipmentPatchErrorsFromForm(form: EquipmentForm): EquipmentPatchErrors
     return form.errors as EquipmentPatchErrors;
 }
 
-
 export class EquipmentFormService {
     modelService = inject(EquipmentModelService);
+    context = inject(EquipmentContext);
 
-    committedSubject = new BehaviorSubject<Equipment | null>(null);
-    readonly committed$ = this.committedSubject.asObservable();
-
-    readonly patchForm: EquipmentForm = new FormGroup({
+    readonly form: EquipmentForm = new FormGroup({
         name: new FormControl<string>(
             '', 
             { 
@@ -58,50 +54,26 @@ export class EquipmentFormService {
         trainingDescriptions: new FormArray<FormControl<string>>([])
     });
 
-    readonly patchValue$: Observable<EquipmentPatch | null> = this.patchForm.statusChanges.pipe(
-        map(() => equipmentPatchFromForm(this.patchForm)),
+    readonly patchValue$: Observable<EquipmentPatch | null> = this.form.statusChanges.pipe(
+        map(() => equipmentPatchFromForm(this.form)),
         share()
     );
-    readonly patchErrors$: Observable<EquipmentPatchErrors | null> = this.patchForm.statusChanges.pipe(
-        map(() => equipmentPatchErrorsFromForm(this.patchForm)),
+    readonly patchErrors$: Observable<EquipmentPatchErrors | null> = this.form.statusChanges.pipe(
+        map(() => equipmentPatchErrorsFromForm(this.form)),
         share()
     );
 
     pushTrainingDescriptionForm() {
-        const formArr = this.patchForm.controls.trainingDescriptions;
+        const formArr = this.form.controls.trainingDescriptions;
         formArr.push(new FormControl<string>('', {nonNullable: true}));
     }
 
     popTrainingDescriptionForm(): AbstractControl<string> {
-        const formArr = this.patchForm.controls.trainingDescriptions;
+        const formArr = this.form.controls.trainingDescriptions;
         const control = formArr.controls[formArr.length - 1];
         formArr.removeAt(formArr.length - 1);
         return control;
     }
-
-    connect(equipment: Equipment | null): Subscription {
-        this.committedSubject.subscribe((committed) => {
-            if (committed == null) {
-                this.patchForm.reset();
-                return;
-                
-            }
-            const patch = equipmentPatchFromEquipment(committed);
-            this.patchForm.setValue(patch);
-        })
-        this.committedSubject.next(equipment);
-
-        const keepalivePatchValue = this.patchValue$.subscribe();
-        const keepalivePatchErrors = this.patchErrors$.subscribe();
-
-        return new Subscription(() => {
-            this.committedSubject.complete();
-
-            keepalivePatchValue.unsubscribe();
-            keepalivePatchErrors.unsubscribe();
-        });
-    }
-
 
     _isEquipmentNameUnique(nameControl: AbstractControl<string>): Observable<{'notUnique': string} | null> {
         const name = nameControl.value;
@@ -109,10 +81,26 @@ export class EquipmentFormService {
             map(names => names.length > 0 ? {'notUnique': 'Name is not unique'} : null)
         );
     }
+
+    async commit(): Promise<Equipment> {
+        if (!this.form.valid) {
+            throw new Error('Cannot commit. Form invalid');
+        }
+        const patch = equipmentPatchFromForm(this.form);
+        return this.context.commit(patch!);
+    }
+
+    async reset() {
+        const committed = await firstValueFrom(this.context.committed$);
+        this.form.reset();
+        if (committed) {
+            this.form.patchValue(equipmentPatchFromEquipment(committed));
+        }
+    }
 }
 
 @Component({
-    selector: 'app-lab-equipment-form',
+    selector: 'form[app-lab-equipment-form]',
     standalone: true,
     imports: [
         CommonModule,
@@ -150,12 +138,7 @@ export class EquipmentFormService {
         </ng-container>
 
         <div class="form-actions"> 
-            <ng-container [ngTemplateOutlet]="formActionControls">
-                <button mat-button type="submit" 
-                        [disabled]="form.invalid">
-                    <mat-icon>save</mat-icon> save
-                </button>
-            </ng-container>
+            <ng-container [ngTemplateOutlet]="formActionControls"></ng-container>
         </div>
     </form>
 
@@ -169,30 +152,25 @@ export class EquipmentFormService {
         EquipmentFormService
     ]
 })
-export class LabEquipmentFormComponent implements OnInit, OnDestroy {
-    readonly formService = inject(EquipmentFormService);
-    _formServiceConnection: Subscription | undefined = undefined;
+export class LabEquipmentFormComponent {
+    readonly _formService = inject(EquipmentFormService);
 
     @ViewChild('formActionControls', {static: true})
     formActionControls: TemplateRef<any>;
 
     get form() {
-        return this.formService.patchForm;
+        return this._formService.form;
     }
 
-    readonly patchValue$ = this.formService.patchValue$;
-    readonly nameErrors$ = this.formService.patchErrors$.pipe(
+    readonly patchValue$ = this._formService.patchValue$;
+    readonly nameErrors$ = this._formService.patchErrors$.pipe(
         map(patchErrors => patchErrors?.name)
     );
 
-
-    ngOnInit() {
-        this._formServiceConnection = this.formService.connect(equipmentFixtures[0] || null)
+    commitForm() {
+        this._formService.commit();
     }
-
-    ngOnDestroy() {
-        if (this._formServiceConnection) {
-            this._formServiceConnection.unsubscribe();
-        }
+    resetForm() {
+        this._formService.reset();
     }
 }

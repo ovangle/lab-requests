@@ -7,7 +7,7 @@ import { ModelService } from "./model-service";
 export abstract class Context<T extends { readonly id: string}, TPatch = unknown, TCreate extends TPatch = TPatch> {
     abstract readonly models: ModelService<T, TPatch, TCreate>;
 
-    abstract readonly fromContext$: Observable<T>;
+    abstract readonly fromContext$: Observable<T | null>;
     readonly committedSubject = new BehaviorSubject<T | null>(null);
 
     readonly committed$: Observable<T> = this.committedSubject.pipe(

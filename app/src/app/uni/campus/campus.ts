@@ -1,7 +1,8 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from "@angular/common/http";
 import { Injectable, InjectionToken, inject } from "@angular/core";
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
-import { Observable, catchError, map, switchMap } from "rxjs";
+import { Observable, catchError, firstValueFrom, map, switchMap } from "rxjs";
+import { Context } from "src/app/utils/models/model-context";
 
 import { ModelService } from "src/app/utils/models/model-service";
 
@@ -38,36 +39,37 @@ export function isCampus(obj: any): obj is Campus {
     return obj instanceof Campus;
 }
 
-export type CampusForm = FormGroup<{
-    code: FormControl<CampusCode>;
-    name: FormControl<string>;
-}>;
+export interface CampusPatch {
+    code: CampusCode;
+    name: string;
+}
 
-export interface CampusFormValidationErrors extends ValidationErrors {
-    code: Readonly<{
-        required: string;
-        pattern: string
-        notUnique: string;
-    }>
-    name: Readonly<{required: string}>
+
+export type CampusPatchErrors = ValidationErrors & {
+    code?: Readonly<{
+        required: string | null;
+        pattern: string | null;
+        notUnique: string | null;
+    }>;
+    name?: Readonly<{required: string | null}>;
 }
 
 class CampusDoesNotExist extends Error {}
 
 @Injectable()
-export class CampusModelService extends ModelService<Campus> {
-    override readonly servicePath = '/uni/campuses'
+export class CampusModelService extends ModelService<Campus, CampusPatch> {
+    override readonly resourcePath = '/uni/campuses'
     override modelFromJson(json: object): Campus {
         return new Campus(json);
     }
 
     searchCampuses(name: string | null): Observable<Campus[]> {
         console.log(`searching campuses where name starts with ${name}`)
-        return this.list('', {params: { name_startswith: name || '' }});
+        return this.query({ name_startswith: name || '' });
     }
 
     getCampusesByCode(code: string): Observable<Campus[]> {
-        return this.list(`/`, {params: {code}});
+        return this.query({params: {code}});
     }
 
     protected _validateCodeUnique(control: AbstractControl<string>): Observable<{[k: string]: any} | null> {
@@ -82,33 +84,16 @@ export class CampusModelService extends ModelService<Campus> {
         )
     }
 
-    campusForm(campus: Partial<Campus>): CampusForm {
-        return new FormGroup({
-            code: new FormControl<CampusCode>(
-                campus.code || '',
-                {
-                    nonNullable: true,
-                    validators: [
-                        Validators.required, 
-                        Validators.pattern(/^[_A-Z]{0,8}$/),
-                    ],
-                    asyncValidators: [
-                        (control) => this._validateCodeUnique(control)
-                    ]
-                }
-            ),
-            name: new FormControl<string>(
-                campus.name || '',
-                {nonNullable: true, validators: [Validators.required]}
-            )
-        });
+    
+
+}
+
+@Injectable()
+export abstract class CampusContext extends Context<Campus, CampusPatch> {
+    override readonly models = inject(CampusModelService);
+    override create(patch: CampusPatch): Promise<Campus> {
+        return firstValueFrom(this.models.create(patch));
     }
 
-    commitForm(form: CampusForm): Observable<Campus> {
-        if (!form.valid) {
-            throw new Error('Cannot commit invalid form');
-        }
-        return this.create('/campuses', { code: form.value.code!, name: form.value.name! });
-    }
 }
 
