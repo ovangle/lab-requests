@@ -1,4 +1,4 @@
-import { FormControl, FormGroup, Validators } from "@angular/forms";
+import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { Material } from "../material";
 import { Resource } from "../../common/resource";
 import { ResourceStorage, ResourceStorageForm, createResourceStorageForm, isResourceStorageType } from "../../common/storage/resource-storage";
@@ -95,4 +95,9 @@ export function disableDependentControlsWithBaseUnitValidity(outputMaterialForm:
             return baseUnit != '';
         }),
     ).subscribe(toggler);
+}
+
+export type OutputMaterialFormErrors = ValidationErrors & {
+    name?: { required: string | null; };
+    baseUnit?: {required: string | null; };
 }

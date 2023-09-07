@@ -4,5 +4,9 @@
         "--config-file \"./api/src/mypy.ini\""
     ],
     "python.analysis.typeCheckingMode": "basic",
-    "angular.forceStrictTemplates": true
+    "angular.forceStrictTemplates": true,
+    "python.analysis.autoSearchPaths": false,
+    "python.analysis.extraPaths": [
+        "api/src/"
+    ]
 }

@@ -1,4 +1,4 @@
-import { FormControl, FormGroup, Validators } from "@angular/forms";
+import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { Resource } from "../common/resource";
 
 export class Software implements Resource {
@@ -42,5 +42,9 @@ export function createSoftwareForm(s: Partial<Software>): SoftwareForm {
         estimatedCost: new FormControl(s.estimatedCost || 0, {nonNullable: true})
     });
 }
+
+export type SoftwareFormErrors = ValidationErrors & {
+    name?: { required: string | null };
+};
 
 

@@ -12,6 +12,7 @@ from api.utils.db import uuid_pk
 from ..types import LabType
 from .errors import EquipmentDoesNotExist
 
+
 class Equipment(Base):
     __tablename__ = 'equipments'
 

@@ -1,159 +1,105 @@
 import { CommonModule } from "@angular/common";
 import { Component, Injectable, inject } from "@angular/core";
-import { FormArray, ReactiveFormsModule } from "@angular/forms";
+import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCardModule } from "@angular/material/card";
 import { ActivatedRoute, ParamMap, Routes } from "@angular/router";
-import { BehaviorSubject, Connectable, Observable, Subscription, combineLatest, connectable as createConnectable, distinctUntilChanged, map, tap, withLatestFrom } from "rxjs";
+import { BehaviorSubject, Connectable, Observable, Subscription, combineLatest, connectable as createConnectable, distinctUntilChanged, firstValueFrom, map, of, tap, withLatestFrom } from "rxjs";
 import { EquipmentLeaseTableComponent } from "../resources/equipment/equipment-lease-table.component";
 import { InputMaterialResourceTableComponent } from "../resources/material/input/input-material-resource-table.component";
 import { OutputMaterialResourceTableComponent } from "../resources/material/output/output-material-resource-table.component";
-import { ResourceContainer, ResourceContainerFormService } from "../resources/resources";
+import { ResourceContainer, ResourceContainerFormControls, ResourceContainerFormService, resourceContainerFormControls } from "../resources/resources";
 import { SoftwareResourceTableComponent } from "../resources/software/software-resource-table.component";
 import { ExperimentalPlanModelService } from "../experimental-plan";
 
-import { WorkUnit, WorkUnitForm, workUnitForm } from "./work-unit";
 import { WorkUnitCampusLabFormComponent } from "./work-unit-campus-lab-form.component";
 import { WorkUnitCampusLabInfoComponent } from "./work-unit-campus-lab-info.component";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 
-export function workUnitFormRoutes(): Routes {
-    return [
-        {
-            path: '',
-            redirectTo: 'work-units/0',
-            pathMatch: 'full'
-        },
-        {
-            path: 'work-units/:work_unit_id',
-            component: WorkUnitFormComponent,
-        }
-    ];
-}
+import { WorkUnit, WorkUnitContext, WorkUnitModelService, WorkUnitPatch, WorkUnitPatchErrors } from "./work-unit";
+import { Campus } from "src/app/uni/campus/campus";
+import { Discipline } from "src/app/uni/discipline/discipline";
+import { EquipmentLeaseForm } from "../resources/equipment/equipment-lease";
+import { SoftwareForm } from "../resources/software/software";
+import { ServiceForm } from "../resources/service/service";
+import { InputMaterialForm } from "../resources/material/input/input-material";
+import { OutputMaterialForm } from "../resources/material/output/output-material";
+import { LabType } from "../../type/lab-type";
 
-export function injectWorkUnitRoute(): ActivatedRoute {
-    const activatedRoute = inject(ActivatedRoute);
+export type WorkUnitForm = FormGroup<{
+    campus: FormControl<Campus | null>;
+    labType: FormControl<Discipline | null>;
+    technician: FormControl<string>;
+    summary: FormControl<string>;
 
-    const workUnitActivatedRoute = activatedRoute.children.filter(
-        child => child.outlet === 'primary'
-    )[0]
-    if (!workUnitActivatedRoute) {
-        throw new Error('No work unit route');
-    }
-    return workUnitActivatedRoute;
-}
+    startDate: FormControl<Date | null>;
+    endDate: FormControl<Date | null>;
+
+} & ResourceContainerFormControls>;
 
 @Injectable()
 export class WorkUnitFormService {
-    readonly planService = inject(ExperimentalPlanModelService);
+    readonly models = inject(WorkUnitModelService);
+    readonly context: WorkUnitContext = inject(WorkUnitContext);
 
-    readonly activatedRoute = injectWorkUnitRoute();
+    readonly form = new FormGroup({
+        campus: new FormControl<Campus | null>(null, {validators: [Validators.required]}),
+        labType: new FormControl<LabType | null>(null, {validators: [Validators.required]}),
+        technician: new FormControl('', {
+            nonNullable: true,
+            validators: [
+                Validators.required,
+                Validators.email
+            ]
+        }),
+        summary: new FormControl('', {nonNullable: true}),
 
-    readonly workUnitIndexSubject = new BehaviorSubject(-1);
-    readonly workUnitIndex$ = createConnectable(
-        combineLatest([
-            this.activatedRoute.url,
-            this.activatedRoute.paramMap
-        ]).pipe(
-            tap(([url, _]) => {
-                if (!url.some(s => s.path.includes('work-units'))) {
-                    throw new Error('Segment must include `work-units` segment');
-                }
-            }),
-            map(([_, params]) => {
-                const workUnitIndex = Number.parseInt(params.get('work_unit_id')!);
-                if (Number.isNaN(workUnitIndex)) {
-                    throw new Error(`Invalid work unit index in route params`)
-                }
-                return workUnitIndex;
-            }),
-            withLatestFrom(this.planService.plan$),
-            distinctUntilChanged(),
-            tap(([workUnitIndex, plan]) => {
-                if (workUnitIndex >= plan.workUnits.length) {
-                    window.setTimeout(() => this._formArray.push(workUnitForm({})));
-                } else {
-                    while (plan.workUnits.length < this._formArray.length) {
-                        this._formArray.removeAt(this._formArray.length - 1);
-                    }
-                }
-            }),
-            map(([workUnitIndex, _]) => workUnitIndex)
-        ),
-        { connector: () => this.workUnitIndexSubject }
+        startDate: new FormControl<Date | null>(null),
+        endDate: new FormControl<Date | null>(null),
+
+        ...resourceContainerFormControls()
+    });
+
+    readonly patch$: Observable<WorkUnitPatch | null> = this.form.statusChanges.pipe(
+        map((status) => status === 'VALID' ? this.form.value as WorkUnitPatch : null)
+    );
+
+    readonly formErrors$: Observable<WorkUnitPatchErrors | null> = this.form.statusChanges.pipe(
+        map((status) => status === 'INVALID' ? this.form.errors as WorkUnitPatchErrors : null)
     )
 
-    get workUnitIndex(): number {
-        return this.workUnitIndexSubject.value;
-    }
-
-    /**
-     * The committed work unit.
-     */
-    readonly workUnit$ =
-        combineLatest([
-            this.planService.plan$,
-            this.workUnitIndex$
-        ]).pipe(
-            map(([plan, workUnitIndex]) => plan.workUnits[workUnitIndex]),
-        )
-
-    get _formArray(): FormArray<WorkUnitForm> {
-        return this.planService.form.controls['workUnits'];
-    }
-
-    get form(): WorkUnitForm {
-        if (this.workUnitIndex < 0) {
-            throw new Error('Cannot access work unit form yet');
+    async commit() {
+        if (this.form.invalid) {
+            throw new Error('Cannot patch: invalid form');
         }
-        return this._formArray.controls[this.workUnitIndex];
+        const patch = await firstValueFrom(this.patch$);
+        return await this.context.commit(patch!);
     }
 
-    patchWorkUnit(params: Partial<WorkUnit>): void {
-        const workUnits = [...this.planService.plan!.workUnits];
-
-        const workUnit: Partial<WorkUnit> = this.workUnitIndex < workUnits.length
-            ? workUnits[this.workUnitIndex]
-            : {};
-
-        workUnits.splice(
-            this.workUnitIndex,
-            1,
-            new WorkUnit({...workUnit, ...params})
-        );
-        this.planService.patchExperimentalPlan({ workUnits: workUnits });
-    }
-
-    connect(): Subscription {
-        return this.workUnitIndex$.connect();
-    }
-
-    commitChanges() {
-        if (!this.form.valid) {
-            throw new Error('Form invalid');
-        }
-        this.patchWorkUnit(this.form.value as Partial<WorkUnit>);
+    connect() {
+        return new Subscription();
     }
 }
 
-@Injectable()
-export class WorkUnitResourceContainerFormService extends ResourceContainerFormService<WorkUnit> {
 
-    readonly workUnitService = inject(WorkUnitFormService);
+// @Injectable()
+// export class WorkUnitResourceContainerFormService extends ResourceContainerFormService<WorkUnit> {
 
-    protected override getContainer$(): Observable<WorkUnit> {
-        return this.workUnitService.workUnit$;
-    }
+//     readonly workUnitService = inject(WorkUnitPatchFormService);
 
-    protected override async patchContainer(params: Partial<ResourceContainer>) {
-        return this.workUnitService.patchWorkUnit(params);
-    }
+//     protected override getContainer$(): Observable<WorkUnit> {
+//         return this.workUnitService.workUnit$;
+//     }
 
-    protected override getContainerForm(): WorkUnitForm {
-        return this.workUnitService.form;
-    }
-}
+//     protected override async patchContainer(params: Partial<ResourceContainer>) {
+//         return this.workUnitService.patchWorkUnit(params);
+//     }
+
+//     protected override getContainerForm(): WorkUnitForm {
+//         return this.workUnitService.form;
+//     }
+// }
 
 @Component({
     selector: 'lab-req-experimental-plan-work-unit-form',
@@ -169,7 +115,7 @@ export class WorkUnitResourceContainerFormService extends ResourceContainerFormS
         WorkUnitCampusLabFormComponent,
         WorkUnitCampusLabInfoComponent,
 
-        EquipmentResourceTableComponent,
+        EquipmentLeaseTableComponent,
         SoftwareResourceTableComponent,
         InputMaterialResourceTableComponent,
         OutputMaterialResourceTableComponent
@@ -238,7 +184,7 @@ export class WorkUnitFormComponent {
     }
 
     ngOnDestroy() {
-        this._workUnitServiceConnection?.unsubscribe();
+        this._workUnitServiceConnection!.unsubscribe();
         this.campusLabInfoEditingEnabledSubject.complete();
     }
 

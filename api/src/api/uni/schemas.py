@@ -5,7 +5,8 @@ from uuid import UUID
 from pydantic import ConfigDict, TypeAdapter
 from pydantic.dataclasses import dataclass
 
-from api.base.schemas import SCHEMA_CONFIG, ApiModel, RecordCreateRequest, api_dataclass
+from api.base.schemas import SCHEMA_CONFIG, ApiModel, ModelPatch, ModelCreate, api_dataclass
+from api.utils.db import LocalSession
 
 from .types import CampusCode
 
@@ -14,16 +15,31 @@ if TYPE_CHECKING:
 
 @api_dataclass()
 class CampusBase:
-    code: CampusCode
     name: str
 
 @api_dataclass()
-class CampusCreate(CampusBase, RecordCreateRequest):
-    pass
+class CampusPatch(CampusBase, ModelPatch[models.Campus]):
+    async def apply_to_model(self, db: LocalSession, model: models.Campus):
+        if model.name != self.name:
+            model.name = self.name
+            db.add(model)
+        return model
 
 @api_dataclass()
-class Campus(CampusBase, ApiModel):
+class CampusCreate(CampusPatch, ModelCreate[models.Campus]):
+    code: CampusCode
+
+    async def create_model(self, db: LocalSession):
+        instance = models.Campus(code=self.code)
+        await self.apply_to_model(db, instance)
+
+
+
+
+@api_dataclass()
+class Campus(CampusBase, ApiModel[models.Campus]):
     id: UUID
+    code: CampusCode
 
     @classmethod
     def from_model(cls, model: models.Campus):
@@ -34,7 +50,3 @@ class Campus(CampusBase, ApiModel):
             created_at=model.created_at,
             updated_at=model.updated_at
         )
-
-@dataclass(kw_only=True)
-class CampusPatch(CampusBase):
-    pass

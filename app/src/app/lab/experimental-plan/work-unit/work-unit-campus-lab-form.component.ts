@@ -3,7 +3,7 @@ import { Component, inject } from "@angular/core";
 import { FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { MatInputModule } from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { WorkUnitFormService } from "./work-unit-form.component";
+import { WorkUnitPatchFormService } from "./work-unit-patch-form.component";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { CampusSearchModule } from "../../../uni/campus/campus-search.module";
@@ -74,7 +74,7 @@ import { DisciplineSelectModule } from "../../../uni/discipline/discipline-selec
     `]
 })
 export class WorkUnitCampusLabFormComponent {
-    workUnitFormService = inject(WorkUnitFormService);
+    workUnitFormService = inject(WorkUnitPatchFormService);
 
     get formGroup(): FormGroup<any> {
         return this.workUnitFormService.form;

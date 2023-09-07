@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Generic, Optional, TypeVar, dataclass_transform
 from pydantic import ConfigDict
 from pydantic.dataclasses import dataclass
+from api.utils.db import LocalSession
 
 from humps import camelize
 
@@ -45,12 +46,13 @@ class ApiModel(Generic[TModel], ABC):
 
 class ModelPatch(Generic[TModel], ABC):
     @abstractmethod
-    async def apply_to_model(self, model: TModel):
+    async def apply_to_model(self, model: TModel, db: LocalSession):
         raise NotImplementedError
 
 class ModelCreate(Generic[TModel], ABC):
     @abstractmethod
-    async def create_model(self) -> models.TModel:
+    async def create_model(self, db: LocalSession) -> TModel:
+        raise NotImplementedError
 
 
 

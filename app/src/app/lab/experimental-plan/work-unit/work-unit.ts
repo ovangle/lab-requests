@@ -1,4 +1,4 @@
-import { FormArray, FormControl, FormGroup, Validators } from "@angular/forms";
+import { FormArray, FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { Campus, isCampus } from "../../../uni/campus/campus";
 import { Discipline, isDiscipline } from "../../../uni/discipline/discipline";
 import { EquipmentLeaseForm, equipmentLeaseForm } from "../resources/equipment/equipment-lease";
@@ -10,7 +10,11 @@ import { LabType } from "../../type/lab-type";
 import { Service, ServiceForm } from "../resources/service/service";
 import { ResourceContainerPatch } from "../resources/resources";
 import { ModelService } from "src/app/utils/models/model-service";
-import { injectExperimentalPlanFromContext } from "../experimental-plan";
+import { ExperimentalPlan, ExperimentalPlanContext, injectExperimentalPlanFromContext } from "../experimental-plan";
+import { BehaviorSubject, Observable, Subscription, combineLatest, filter, firstValueFrom, map, of } from "rxjs";
+import { Injectable, inject } from "@angular/core";
+import { Context } from "src/app/utils/models/model-context";
+
 
 /**
  * A WorkUnit is a portion of an experimental plan which is conducted
@@ -19,8 +23,11 @@ import { injectExperimentalPlanFromContext } from "../experimental-plan";
  */
 
 export class WorkUnit extends ResourceContainer {
-    readonly campus: Campus;
+    readonly planId: string;
+    readonly index: number;
+    readonly id: string;
 
+    readonly campus: Campus;
     readonly labType: LabType;
     readonly technician: string;
 
@@ -28,7 +35,6 @@ export class WorkUnit extends ResourceContainer {
 
     readonly startDate: Date | null;
     readonly endDate: Date | null;
-
     constructor(
         params: Partial<WorkUnit>
     ) {
@@ -53,81 +59,93 @@ export class WorkUnit extends ResourceContainer {
 }
 
 export interface WorkUnitPatch extends ResourceContainerPatch {
+    readonly labType: LabType;
+    readonly technician: string;
 
+    readonly summary: string;
 
+    readonly startDate: Date | null;
+    readonly endDate: Date | null;
 }
 
-export type WorkUnitForm = FormGroup<{
-    campus: FormControl<Campus | null>;
-    labType: FormControl<Discipline | null>;
-    technician: FormControl<string>;
-    summary: FormControl<string>;
-
-    startDate: FormControl<Date | null>;
-    endDate: FormControl<Date | null>;
-
-    equipments: FormArray<EquipmentLeaseForm>;
-    softwares: FormArray<SoftwareForm>;
-    services: FormArray<ServiceForm>;
-
-    inputMaterials: FormArray<InputMaterialForm>;
-    outputMaterials: FormArray<OutputMaterialForm>;
-}>;
-
-export function workUnitForm(params: Partial<WorkUnit>): WorkUnitForm {
-    return new FormGroup({
-        campus: new FormControl(params.campus || null, {validators: [Validators.required]}),
-        labType: new FormControl(params.labType || null, {validators: [Validators.required]}),
-        technician: new FormControl(params.technician || '', {
-            nonNullable: true,
-            validators: [
-                Validators.required,
-                Validators.email
-            ]
-        }),
-        summary: new FormControl(params.summary || '', {nonNullable: true}),
-
-        startDate: new FormControl(params.startDate || null),
-        endDate: new FormControl(params.endDate || null),
-
-        equipments: new FormArray(
-            (params.equipments || []).map((e) => equipmentLeaseForm(e))
-        ),
-        softwares: new FormArray(
-            (params.softwares || []).map((e) => createSoftwareForm(e))
-        ),
-        services: new FormArray(
-            (params.services || []).map((e) => createServiceForm(e))
-        ),
-        inputMaterials: new FormArray(
-            (params.inputMaterials || []).map(e => createInputMaterialForm(e))
-        ),
-        outputMaterials: new FormArray(
-            (params.outputMaterials || []).map(e => createOutputMaterialForm(e))
-        )
-    });
-}
-function createServiceForm(e: Service): any {
-    throw new Error("Function not implemented.");
+export type WorkUnitPatchErrors = ValidationErrors & {
+    labType?: {
+        required: string | null;
+    }; 
+    technician?: {
+        required: string | null;
+        email: string | null;
+    };
+    startDate?: {
+        afterToday: string | null;
+    };
+    endDate?: {
+        afterStartDate: string | null;
+    };
 }
 
-export class WorkUnitModelService extends ModelService<WorkUnit, WorkUnitPatch> {
+export interface WorkUnitCreate extends WorkUnitPatch {
+    planId: string;
+}
+
+export type WorkUnitCreateErrors = WorkUnitPatchErrors & {
+    planId?: { 
+        required: string | null;
+    }
+}
+
+export class WorkUnitModelService extends ModelService<WorkUnit, WorkUnitPatch, WorkUnitCreate> {
     override resourcePath = '/lab/experimental-plans/work-units';
+    protected resourcePathFromPlan(plan: ExperimentalPlan) {
+        return `/lab/experimental-plans/${plan.id}/work-units`;
+    }
+
     override modelFromJson(json: object): WorkUnit {
         return new WorkUnit(json);
     }
-    override patchToJson(patch: WorkUnitPatch): object {
-        return patch;
+
+    readByPlanAndIndex(plan: ExperimentalPlan, index: number): Observable<WorkUnit> {
+        return this.read(`${index}`, { resourcePath: this.resourcePathFromPlan(plan) });
     }
 
-    experimentalPlan$ = injectExperimentalPlanFromContext();
+    readById(id: string) {
+        return this.read(id);
+    }
 
-    readonly resourcePath = this.experimentalPlan$.pipe(
-        map(plan => {
-            if (plan == null) {
-                throw new Error('WorkUnit model service requires an experimental plan context');
-            }
-        })
+    queryPlanWorkUnits(plan: ExperimentalPlan, params: {[k: string]: any}): Observable<WorkUnit[]> {
+        return this.query(params, {
+            resourcePath: this.resourcePathFromPlan(plan)
+        });
+    }
+}
+
+@Injectable()
+export abstract class WorkUnitContext extends Context<WorkUnit, WorkUnitPatch> {
+
+    _planContext = inject(Context<ExperimentalPlan>, {skipSelf: true, optional: true});
+    readonly plan$: Observable<ExperimentalPlan | null> = (
+        this._planContext && this._planContext.committed$ || of(null)
+    );
+
+    readonly planIdSubject = new BehaviorSubject<string | null>();
+
+    async create(patch: WorkUnitPatch | WorkUnitCreate): Promise<WorkUnit> {
+        const plan = await firstValueFrom(this.plan$);
+    }
+
+    models = inject(WorkUnitModelService);
+    readonly workUnit$ = this.committedSubject.pipe(
+        filter((committed): committed is WorkUnit => committed != null)
     )
+
+    override connect() {
+        const _subscription = super.connect();
+
+        return new Subscription(() => {
+            _subscription.unsubscribe();
+            this.planIdSubject.complete();
+        })
+
+    }
 
 }

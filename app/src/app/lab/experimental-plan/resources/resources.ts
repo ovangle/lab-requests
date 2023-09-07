@@ -1,12 +1,14 @@
-import { FormArray, FormGroup } from "@angular/forms";
-import { Software, SoftwareForm, createSoftwareForm } from "./software/software";
-import { InputMaterial, InputMaterialForm, createInputMaterialForm } from "./material/input/input-material";
-import { OutputMaterial, OutputMaterialForm, createOutputMaterialForm } from "./material/output/output-material";
+import { FormArray, FormGroup, ValidationErrors } from "@angular/forms";
+import { Software, SoftwareForm, SoftwareFormErrors, createSoftwareForm } from "./software/software";
+import { InputMaterial, InputMaterialForm, InputMaterialFormErrors, createInputMaterialForm } from "./material/input/input-material";
+import { OutputMaterial, OutputMaterialForm, OutputMaterialFormErrors, createOutputMaterialForm } from "./material/output/output-material";
 import { Resource, ResourceType } from "./common/resource";
 import { Injectable, inject } from "@angular/core";
 import { BehaviorSubject, Observable, Subscription, filter, firstValueFrom, map } from "rxjs";
-import { Service, ServiceForm, serviceForm } from "./service/service";
-import { EquipmentLease, EquipmentLeaseForm } from "./equipment/equipment-lease";
+import { Service, ServiceForm, ServiceFormErrors, serviceForm } from "./service/service";
+import { EquipmentLease, EquipmentLeaseForm, EquipmentLeaseFormErrors } from "./equipment/equipment-lease";
+import { ModelService } from "src/app/utils/models/model-service";
+import { UpdateContext } from "src/app/utils/models/model-context";
 
 
 export class ResourceContainer {
@@ -88,7 +90,7 @@ export function resourceContainerPatchFromContainer(container: ResourceContainer
     }
 }
 
-type ResourceContainerFormControls = {
+export type ResourceContainerFormControls = {
     addEquipments: FormArray<EquipmentLeaseForm>;
     replaceEquipments: FormGroup<{[k: number]: EquipmentLeaseForm}>;
 
@@ -125,6 +127,22 @@ export function resourceContainerFormControls(): ResourceContainerFormControls {
 }
 
 export type ResourceContainerForm<T extends ResourceContainerFormControls> = FormGroup<T>;
+
+export type ResourceContainerFormErrors = ValidationErrors & {
+    addEquipments?: (EquipmentLeaseFormErrors | null)[];
+    replaceEquipments?: {[k: string]: EquipmentLeaseFormErrors };
+
+    addSoftwares?: (SoftwareFormErrors | null)[];
+    replaceSoftwares?: {[k: string]: SoftwareFormErrors };
+
+    addServices?: (ServiceFormErrors | null)[];
+    replaceServices?: {[k: string]: ServiceFormErrors };
+    addInputMaterials?: (InputMaterialFormErrors | null)[];
+    replaceInputMaterials?: {[k: string]: InputMaterialFormErrors };
+
+    addOutputMaterials?: (OutputMaterialFormErrors | null)[];
+    replaceOutputMaterials?: {[k: string]: OutputMaterialFormErrors };
+}
 
 export function containerPatchFromForm(form: ResourceContainerForm<any>): ResourceContainerPatch {
     return { ...form.value };
@@ -207,12 +225,19 @@ function getResourceFormArray<F extends FormGroup<any>>(form: ResourceContainerF
     }
 }
 
+
 /**
  * Abstract form service which represents a model and associated form containing
  * equipments, softwares, inputMaterials and outputMaterials.
  */
 @Injectable()
-export abstract class ResourceContainerFormService<T extends ResourceContainer> {
+export abstract class ResourceContainerFormService<
+        T extends ResourceContainer & { readonly id: string; }, 
+        TPatch extends ResourceContainerPatch, 
+        TCreate extends TPatch = TPatch
+> {
+    abstract readonly context: UpdateContext<T, TPatch>;
+    abstract readonly models: ModelService<T, TPatch, TCreate>;
 
     protected abstract getContainer$(): Observable<T>;
     protected abstract patchContainer(params: Partial<ResourceContainer>): Promise<void>;

@@ -12,7 +12,7 @@ import { EquipmentLeaseFormComponent } from './lab/experimental-plan/resources/e
 import { InputMaterialResourceFormComponent } from './lab/experimental-plan/resources/material/input/input-material-resource-form.component';
 import { resourceFormRoutes } from './lab/experimental-plan/resources/resource-form-routing';
 import { OutputMaterialResourceFormComponent } from './lab/experimental-plan/resources/material/output/output-material-resource-form.component';
-import { WorkUnitFormComponent, workUnitFormRoutes } from './lab/experimental-plan/work-unit/work-unit-form.component';
+import { WorkUnitFormComponent } from './lab/experimental-plan/work-unit/work-unit-patch-form.component';
 
 const routes: Routes = [
   {
@@ -46,6 +46,11 @@ const routes: Routes = [
         path: 'equipment', 
         loadChildren: () => import('./lab/equipment/equipment.routes')
             .then(module => module.equipmentRoutes)
+      },
+      {
+        path: 'experimental-plans',
+        loadChildren: () => import('./lab/experimental-plan/experimental-plan.module')
+          .then(module => module.ExperimentalPlanModule)
       }
     ]
   },

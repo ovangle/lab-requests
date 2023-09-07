@@ -1,4 +1,4 @@
-import { FormControl, FormGroup, Validators } from "@angular/forms";
+import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { Resource } from "../common/resource";
 
 
@@ -53,6 +53,10 @@ export function serviceForm(service: Partial<Service>): ServiceForm {
         estimatedCost: new FormControl(service.estimatedCost || 0, {nonNullable: true})
     });
 }
+
+export type ServiceFormErrors = ValidationErrors & {
+    name?: { required: string | null };
+};
 
 
 

@@ -1,6 +1,6 @@
 import { Equipment, EquipmentPatch } from "src/app/lab/equipment/equipment";
 import { Resource, CostEstimate, CostEstimateForm, costEstimateForm } from "../common/resource";
-import { FormControl, FormGroup, Validators } from "@angular/forms";
+import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 
 export class EquipmentLease implements Resource {
     readonly type = 'equipment';
@@ -50,4 +50,8 @@ export function equipmentLeaseForm(lease?: EquipmentLease): EquipmentLeaseForm {
         ),
         usageCostEstimate: costEstimateForm(lease?.usageCostEstimate)
     });
+}
+
+export type EquipmentLeaseFormErrors = ValidationErrors & {
+    equipment?: { required: string | null; };
 }

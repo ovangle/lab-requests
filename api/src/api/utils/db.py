@@ -10,7 +10,7 @@ from sqlalchemy import MetaData, schema, Column
 from sqlalchemy.orm import mapped_column, sessionmaker, Mapped
 from sqlalchemy.sql import expression
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.types import DateTime, VARCHAR, TIMESTAMP
 
 from sqlalchemy.dialects import postgresql as pg_dialect
@@ -27,13 +27,16 @@ db_engine = create_async_engine(
     f'postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
 )
 
-Session = async_sessionmaker(db_engine)
+class LocalSession(AsyncSession):
+    pass
+
+local_sessionmaker = async_sessionmaker(db_engine, class_=LocalSession)
 async def get_db():
     """
     Provides an injectable context manager for the session, which will attempt
     to close any remaining connections when disposing of the session.
     """
-    db = Session()
+    db = local_sessionmaker()
     try:
         yield db
     finally:

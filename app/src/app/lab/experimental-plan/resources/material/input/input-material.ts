@@ -1,4 +1,4 @@
-import { FormControl, FormGroup, Validators } from "@angular/forms";
+import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { Material } from "../material";
 import { HazardClass } from "../../common/hazardous/hazardous";
 import { ResourceStorage, ResourceStorageForm, createResourceStorageForm, isResourceStorageType } from "../../common/storage/resource-storage";
@@ -84,3 +84,8 @@ export function createInputMaterialForm(input: Partial<InputMaterial>): InputMat
         hazardClasses: new FormControl<HazardClass[]>(input.hazardClasses || [], {nonNullable: true})
     });
 }
+
+export type InputMaterialFormErrors = ValidationErrors & {
+    name?: { required: string | null };
+    baseUnit?: {required: string | null };
+};

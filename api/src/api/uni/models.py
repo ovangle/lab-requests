@@ -8,10 +8,8 @@ from sqlalchemy.orm import mapped_column, Mapped
 from sqlalchemy.types import VARCHAR, CHAR
 from sqlalchemy.dialects.postgresql import ENUM
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from api.base.models import Base
-from api.utils.db import uuid_pk, Session
+from api.utils.db import uuid_pk, LocalSession
 
 from .types import CampusCode, campus_code
 from .errors import CampusDoesNotExist
@@ -26,7 +24,7 @@ class Campus(Base):
     name: Mapped[str] = mapped_column(VARCHAR(64))
 
     @classmethod
-    async def get_for_id(cls, db: AsyncSession, id: UUID) -> Campus:
+    async def get_for_id(cls, db: LocalSession, id: UUID) -> Campus:
         result = (await db.execute(
             select(Campus).where(Campus.id == id)
         )).first()
@@ -37,7 +35,7 @@ class Campus(Base):
 
 
     @classmethod
-    async def get_for_campus_code(cls, db: AsyncSession, code: str | CampusCode, other_code_description: Optional[str] = None) -> Campus:
+    async def get_for_campus_code(cls, db: LocalSession, code: str | CampusCode, other_code_description: Optional[str] = None) -> Campus:
         code = CampusCode(code)
         result = (await db.execute(
             select(Campus).where(Campus.code == code)
@@ -47,21 +45,14 @@ class Campus(Base):
         return result[0]
 
     @classmethod
-    async def get_all_for_campus_codes(cls, db: AsyncSession, codes: Iterable[str | CampusCode]) -> list[Campus]:
+    async def get_all_for_campus_codes(cls, db: LocalSession, codes: Iterable[str | CampusCode]) -> list[Campus]:
         results = await db.execute(
             select(Campus).where(Campus.code.in_(map(CampusCode, codes)))
         )
         return [result[0] for result in results]
 
-    @classmethod
-    def get_by_max(cls, db: AsyncSession):
-        from sqlalchemy.sql.expression import func
-        return select(Campus).where(
-            Campus.created_at.in_(select(func.max(Campus.id)))
-        )
 
-
-async def seed_campuses(db: AsyncSession):
+async def seed_campuses(db: LocalSession):
     all_known_campuses = [
         Campus(code=CampusCode('BNG'), name='Bundaberg'),
         Campus(code=CampusCode('CNS'), name='Cairns'),

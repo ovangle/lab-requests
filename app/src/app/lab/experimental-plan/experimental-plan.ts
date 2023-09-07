@@ -6,7 +6,7 @@ import { __runInitializers } from "tslib";
 import { Campus, CampusCode, CampusForm } from "../../uni/campus/campus";
 import { Discipline } from "../../uni/discipline/discipline";
 import { ExperimentalPlanType } from "./funding-type/experimental-plan-type";
-import { WorkUnit, WorkUnitForm, workUnitForm } from "./work-unit/work-unit";
+import { WorkUnit } from "./work-unit/work-unit";
 import { ModelService } from "src/app/utils/models/model-service";
 import { ActivatedRoute } from "@angular/router";
 
@@ -94,6 +94,7 @@ export class ExperimentalPlanModelService extends ModelService<ExperimentalPlan,
     override modelFromJson(json: object) {
         return new ExperimentalPlan(json as any);
     }
+
     override patchToJson(patch: ExperimentalPlanPatch) {
         return {...patch};
     }

@@ -6,7 +6,7 @@ import { InputMaterial } from "./resources/material/input/input-material";
 import { hazardClassByDivision } from "./resources/common/hazardous/hazardous";
 import { WorkUnit } from "./work-unit/work-unit";
 import { Campus } from "src/app/uni/campus/campus";
-import { WorkUnitFormService, WorkUnitResourceContainerFormService } from "./work-unit/work-unit-form.component";
+import { WorkUnitPatchFormService, WorkUnitResourceContainerFormService } from "./work-unit/work-unit-patch-form.component";
 import { ResourceContainerFormService } from "./resources/resources";
 import { BehaviorSubject, Observable, Subscription, map, share, tap } from "rxjs";
 import { Discipline } from "src/app/uni/discipline/discipline";
@@ -143,7 +143,7 @@ export class ExperimentalPlanFormService {
     ],
     providers: [
         ExperimentalPlanFormService, 
-        WorkUnitFormService,
+        WorkUnitPatchFormService,
         {
             provide: ResourceContainerFormService,
             useClass: WorkUnitResourceContainerFormService
