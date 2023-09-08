@@ -1,7 +1,7 @@
 
 import { Injectable, Provider, inject } from "@angular/core";
 import { ValidationErrors, FormArray, FormControl, FormGroup, Validators } from "@angular/forms";
-import { BehaviorSubject, Observable, Subject, Subscription, connectable, filter, map, of, share, shareReplay, switchMap } from "rxjs";
+import { BehaviorSubject, Observable, Subject, Subscription, connectable, filter, firstValueFrom, map, of, share, shareReplay, switchMap } from "rxjs";
 import { __runInitializers } from "tslib";
 import { Campus, CampusCode, CampusForm } from "../../uni/campus/campus";
 import { Discipline } from "../../uni/discipline/discipline";
@@ -9,6 +9,7 @@ import { ExperimentalPlanType } from "./funding-type/experimental-plan-type";
 import { WorkUnit } from "./work-unit/work-unit";
 import { ModelService } from "src/app/utils/models/model-service";
 import { ActivatedRoute } from "@angular/router";
+import { Context } from "src/app/utils/models/model-context";
 
 
 export interface ExperimentalPlanBase {
@@ -110,16 +111,13 @@ export class ExperimentalPlanModelService extends ModelService<ExperimentalPlan,
  * via the context.
  */
 @Injectable()
-export class ExperimentalPlanContext {
-    readonly modelService = inject(ExperimentalPlanModelService)
+export abstract class ExperimentalPlanContext extends Context<ExperimentalPlan, ExperimentalPlanPatch> {
+    override readonly models = inject(ExperimentalPlanModelService);
+    override create(patch: ExperimentalPlanPatch): Promise<ExperimentalPlan> {
+        return firstValueFrom(this.models.create(patch));
+    }
 
-    readonly activatedRoute = inject(ActivatedRoute);
-
-    readonly plan$: Observable<ExperimentalPlan | null> = this.activatedRoute.paramMap.pipe(
-        map(paramMap => paramMap.get('experimentalPlanId')),
-        switchMap(experimentalPlanId => experimentalPlanId ? this.modelService.fetch(experimentalPlanId): of(null)),
-        shareReplay(1)
-    );
+    readonly plan$ = this.committed$;
 }
 
 export function injectExperimentalPlanFromContext(): Observable<ExperimentalPlan | null> {

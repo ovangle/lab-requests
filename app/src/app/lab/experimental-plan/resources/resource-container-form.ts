@@ -5,9 +5,9 @@ import { OutputMaterial, OutputMaterialForm, createOutputMaterialForm } from "./
 import { Service, ServiceForm, serviceForm } from "./service/service";
 import { Software, SoftwareForm, createSoftwareForm } from "./software/software";
 import { ResourceContainer, ResourceContainerContext, ResourceContainerPatch, ResourceContainerPatchErrors } from "./resource-container";
-import { Resource, ResourceType } from "./common/resource";
+import { RESOURCE_TYPE_NAMES, Resource, ResourceType } from "./common/resource";
 import { Injectable, inject } from "@angular/core";
-import { Observable, firstValueFrom, filter, map, Subscription } from "rxjs";
+import { Observable, firstValueFrom, filter, map, Subscription, BehaviorSubject } from "rxjs";
 import { Context } from "src/app/utils/models/model-context";
 import { ModelService } from "src/app/utils/models/model-service";
 import { Equipment } from "../../equipment/equipment";
@@ -120,6 +120,12 @@ function popResourceCreateForm(form: ResourceContainerForm<any>, resourceType: R
     formArr.removeAt(formArr.length - 1);
 }
 
+
+function getReplaceFormAt(form: ResourceContainerForm<any>, resourceType: ResourceType, index: number): FormGroup<any> | null { 
+    const formGroup = getResourceReplaceGroup(form, resourceType);
+    return formGroup.get(`${index}`) as FormGroup<any> | null
+}
+
 function setReplaceForm(form: ResourceContainerForm<any>, resourceType: ResourceType, replaceEntry: [number, Partial<Resource>]) {
     const formGroup = getResourceReplaceGroup(form, resourceType);
     const [replaceAt, committedValue] = replaceEntry;
@@ -127,10 +133,9 @@ function setReplaceForm(form: ResourceContainerForm<any>, resourceType: Resource
     formGroup.addControl(`${replaceAt}`, updateForm);
 }
 
-function revertReplaceForm(form: ResourceContainerForm<any>, resourceType: ResourceType, replaceEntry: [number, Partial<Resource>]) {
-    const formGroup = getResourceReplaceGroup(form, resourceType);
-    const [replaceAt, _] = replaceEntry;
-    formGroup.removeControl(`${replaceAt}`);
+function revertReplaceFormAt(form: ResourceContainerForm<any>, resourceType: ResourceType, index: number) {
+    const formGroup: FormGroup<any> = getResourceReplaceGroup(form, resourceType);
+    formGroup.removeControl(`${index}`)
 }
 
 /**
@@ -150,13 +155,40 @@ export abstract class ResourceContainerFormService<
     }
     readonly form = this._context.form;
 
-    protected abstract getContainerForm(): ResourceContainerForm<any>;
+    readonly resourceCountsSubject = new BehaviorSubject<Partial<Record<ResourceType, number>>>({});
 
-    async pushCreateResourceForm(resourceType: ResourceType) {
+    constructor() {
+        this.container$.pipe(
+            map(container => {
+                const resourceTypes = Object.keys(RESOURCE_TYPE_NAMES) as ResourceType[];
+                const counts: [ResourceType, number][] = resourceTypes.map(t => [t, container.countResources(t)]) 
+                return Object.fromEntries(counts); 
+            })
+        ).subscribe(this.resourceCountsSubject);
+    }
+
+    getResourceForm(resourceType: ResourceType, index: number): FormGroup<any> | null {
+        const resourceCounts = this.resourceCountsSubject.value;
+        const count = resourceCounts[resourceType] || -1;
+        if (index >= count) {
+            // This is a create form
+            const addArr = getResourceAddArray(this.form, resourceType); 
+            return (addArr.controls[index - count] as FormGroup<any>) || null; 
+        } else {
+            const replaceForm = getResourceReplaceGroup(resourceType, index) || null;
+        }
+    }
+
+    /**
+     * Pushes a create form onto the reosurce
+     * @param resourceType 
+     * @returns 
+     */
+    async pushResourceForm(resourceType: ResourceType) {
         return pushResourceCreateForm(this.form, resourceType)
     }
 
-    async popCreateResourceForm(resourceType: ResourceType) {
+    async popResourceForm(resourceType: ResourceType) {
         return popResourceCreateForm(this.form, resourceType)
     }
 
@@ -171,17 +203,18 @@ export abstract class ResourceContainerFormService<
 
 
     async deleteResourceAt(resourceType: ResourceType, index: number) {
-        const container = await firstValueFrom(this.getContainer$());
-        const resourceForms = this.getResourceFormArray(resourceType);
-        resourceForms.removeAt(index);
+        throw new Error('Not implemented')
+        //const container = await firstValueFrom(this.getContainer$());
+        //const resourceForms = this.getResourceFormArray(resourceType);
+        //resourceForms.removeAt(index);
 
-        const resources = [...container.getResources(resourceType)];
-        resources.splice(index, 1);
-        this.patchContainer(createContainerPatch(resourceType, resources));
+        //const resources = [...container.getResources(resourceType)];
+        //resources.splice(index, 1);
+        //this.patchContainer(createContainerPatch(resourceType, resources));
     }
 
     getResources$<TResource extends Resource>(type: ResourceType): Observable<readonly TResource[]> {
-        return this.getContainer$().pipe(
+        return this.container$.pipe(
             filter((p): p is T => p !== null),
             map((c) => c?.getResources<TResource>(type) || [])
         );

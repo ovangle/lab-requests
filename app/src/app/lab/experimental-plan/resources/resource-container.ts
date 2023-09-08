@@ -50,6 +50,10 @@ export class ResourceContainer {
         }
     }
 
+    countResources(t: ResourceType): number {
+        return this.getResources(t).length;
+    }
+
     getResourceAt<T extends Resource>(t: ResourceType & T['type'], index: number): T {
         const resources = this.getResources(t);
         if (index < 0 || index >= resources.length) {

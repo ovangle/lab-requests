@@ -2,16 +2,14 @@ import { Component, ContentChild, ContentChildren, DestroyRef, Inject, Injectabl
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { Resource, ResourceType, resourceTypeName } from "./resource";
 import { FormArray, FormControlDirective, FormControlName, FormGroup, FormGroupDirective, ReactiveFormsModule } from "@angular/forms";
-import { ExperimentalPlanModelService } from "../../experimental-plan/experimental-plan";
 import { CommonModule } from "@angular/common";
 import { ActivatedRoute, Router } from "@angular/router";
 import { BehaviorSubject, Connectable, Observable, Subject, Subscription, combineLatest, connect, connectable, map, takeUntil, tap } from "rxjs";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { BodyScrollbarHidingService } from "src/app/utils/body-scrollbar-hiding.service";
-import { ResourceContainer, ResourceContainerForm, ResourceContainerFormService } from "../resource-container";
 import { isThisWeek } from "date-fns";
-import { WorkUnit } from "../../experimental-plan/work-unit/work-unit";
+import { ResourceContainerFormService } from "../resource-container-form";
 
 export const RESOURCE_TYPE = new InjectionToken<ResourceType>('RESOURCE_TYPE');
 export const RESOURCE_FORM_FACTORY = new InjectionToken<() => FormGroup<any>>('RESOURCE_FORM_FACTORY');
@@ -19,6 +17,7 @@ export const RESOURCE_FORM_FACTORY = new InjectionToken<() => FormGroup<any>>('R
 @Injectable()
 export class ResourceFormService<T extends Resource, F extends FormGroup<any>> {
     readonly resourceContainerService = inject(ResourceContainerFormService);
+
     readonly resourceType = inject(RESOURCE_TYPE);
     readonly createEmptyForm = inject<() => F>(RESOURCE_FORM_FACTORY);
 
