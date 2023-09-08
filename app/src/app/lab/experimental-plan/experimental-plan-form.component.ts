@@ -1,20 +1,19 @@
 import { Component, Injectable, inject } from "@angular/core";
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
-import { Software } from "./resources/software/software";
 import { ExperimentalPlan, ExperimentalPlanPatchErrors, ExperimentalPlanModelService, ExperimentalPlanPatch, injectExperimentalPlanFromContext} from "./experimental-plan";
-import { InputMaterial } from "./resources/material/input/input-material";
-import { hazardClassByDivision } from "./resources/common/hazardous/hazardous";
-import { WorkUnit, WorkUnitContext, WorkUnitPatch } from "./work-unit/work-unit";
 import { Campus } from "src/app/uni/campus/campus";
 import { BehaviorSubject, Observable, Subscription, map, share, tap } from "rxjs";
 import { Discipline } from "src/app/uni/discipline/discipline";
 import { ExperimentalPlanType } from "./funding-type/experimental-plan-type";
-import { WorkUnitFormService } from "./work-unit/work-unit-patch-form.component";
-import { ResourceContainerContext, ResourceContainerPatch } from "./resources/resource-container";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatInputModule } from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { CommonModule } from "@angular/common";
+import { WorkUnit } from "../work-unit/work-unit";
+import { Software } from "../work-unit/resources/software/software";
+import { InputMaterial } from "../work-unit/resources/material/input/input-material";
+import { hazardClassByDivision } from "../work-unit/resources/common/hazardous/hazardous";
+import { WorkUnitFormService } from "../work-unit/work-unit-patch-form.component";
 
 const experimentalPlanFixture = new ExperimentalPlan({
     researcher: 'hello@world.com',
@@ -157,10 +156,6 @@ export class ExperimentalPlanFormService {
     providers: [
         ExperimentalPlanFormService, 
         WorkUnitFormService,
-        {
-            provide: ResourceContainerContext,
-            useClass: WorkUnitResourceContainerContext
-        }
     ]
 })
 export class ExperimentalPlanFormComponent {
@@ -183,6 +178,6 @@ export class ExperimentalPlanFormComponent {
      * then we are currently adding one.
      */
     isAddingWorkUnit(plan: ExperimentalPlan): boolean {
-        return plan.workUnits.length < this.workUnitForms.length;
+        throw new Error('Not implemented');
     }
 }

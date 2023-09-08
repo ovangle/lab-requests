@@ -1,7 +1,7 @@
 import { Inject, Injectable, inject } from "@angular/core";
 import { FormArray, FormGroup, ValidationErrors } from "@angular/forms";
 import { ActivatedRoute } from "@angular/router";
-import { BehaviorSubject, Observable, combineLatest, firstValueFrom, map, shareReplay, tap } from "rxjs";
+import { BehaviorSubject, Observable, Subscription, combineLatest, filter, firstValueFrom, map, shareReplay, tap } from "rxjs";
 import { InputMaterialResourceFormComponent } from "../material/input/input-material-resource-form.component";
 import { RESOURCE_TYPE } from "./resource-form.component";
 import { ResourceContainerContext } from "../resource-container";
@@ -28,32 +28,71 @@ export const RESOURCE_TYPE_NAMES: {[K in ResourceType]: string} = {
     'output-material': 'Output material'
 }
 
+export function isResourceType(obj: any): obj is ResourceType {
+    return typeof obj === 'string' 
+        && Object.keys(RESOURCE_TYPE_NAMES).includes(obj);
+}
+
 export function resourceTypeName(r: ResourceType) {
     return RESOURCE_TYPE_NAMES[r];
 }
 
 @Injectable()
-export class ResourceContext<T extends Resource, TPatch extends ResourcePatch> {
+export abstract class ResourceContext<T extends Resource, TPatch extends ResourcePatch> {
     readonly _containerContext = inject(ResourceContainerContext);
     readonly container$ = this._containerContext.committed$;
 
     readonly _containerFormService = inject(ResourceContainerFormService);
     readonly containerForm: ResourceContainerForm<any> = this._containerFormService.form;
 
-    readonly resourceType = inject(RESOURCE_TYPE);
+    readonly resourceTypeSubject = new BehaviorSubject<ResourceType | null>(null);
+    readonly resourceType$ = this.resourceTypeSubject.asObservable();
+
+    abstract readonly resourceTypeFromContext$: Observable<ResourceType | null>;
+
     readonly indexSubject = new BehaviorSubject<number>(-1);
     readonly index$ = this.indexSubject.asObservable();
 
+    abstract readonly indexFromContext$: Observable<number>;
+
     readonly resourceSubject = new BehaviorSubject<T | null>(null);
-    readonly resource$: Observable<T | null> = combineLatest([this.container$, this.index$]).pipe(
-        map(([container, index]) => container.getResourceAt(this.resourceType, index) || null),
+    readonly resource$: Observable<T | null> = combineLatest([
+        this.container$, 
+        this.resourceType$,
+        this.index$
+    ]).pipe(
+        map(([container, resourceType, index]) => resourceType && container.getResourceAt(resourceType, index) || null),
         tap(this.resourceSubject),
         shareReplay(1)
     );
 
-    get resourceForm(): FormGroup<any> | null {
+    get _typeIndex(): [ResourceType, number] {
+        const resourceType = this.resourceTypeSubject.value;
+        if (resourceType == null) {
+            throw new Error('Cannot access resource type yet');
+        }
         const index = this.indexSubject.value;
-        return this._containerFormService.getResourceForm(this.resourceType, index)
+        return [resourceType!, index];
+    }
+
+    get resourceForm(): FormGroup<any> | null {
+        const [resourceType, index] = this._typeIndex;
+        return this._containerFormService.getResourceForm(resourceType, index)
+    }
+
+    get isCreate(): boolean {
+        const [resourceType, index] = this._typeIndex;
+        return this._containerFormService.isCreateFormAt(resourceType, index);
+    }
+
+    connect() {
+        this.resourceTypeFromContext$.subscribe(this.resourceTypeSubject);
+        this.indexFromContext$.subscribe(this.indexSubject);
+
+        return new Subscription(() => {
+            this.resourceTypeSubject.complete();
+            this.indexSubject.complete();
+        });
     }
 }
 

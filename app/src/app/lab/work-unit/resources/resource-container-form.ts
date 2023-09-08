@@ -150,33 +150,64 @@ export abstract class ResourceContainerFormService<
     readonly _context = inject(ResourceContainerContext<T,TPatch>);
 
     readonly container$ = this._context.committed$;
-    commitContainer(patch: TPatch) {
+    _commitContainer(patch: TPatch) {
         return this._context.commitContext(patch);
     }
     readonly form = this._context.form;
 
+    readonly patchValue$ = this.form.statusChanges.pipe( 
+        filter((status) => status === 'VALID'),
+        map(() => resourceContainerPatchFromForm(this.form))
+    );
+
+    abstract patchFromContainerPatch(containerPatch: ResourceContainerPatch): TPatch;
+
+    async commit() {
+        if (!this.form.valid) {
+            throw new Error('Cannot commit invalid form');
+        }
+        const patch = this.patchFromContainerPatch(resourceContainerPatchFromForm(this.form))
+        return await this._commitContainer(patch);
+    }
+
+
     readonly resourceCountsSubject = new BehaviorSubject<Partial<Record<ResourceType, number>>>({});
 
-    constructor() {
-        this.container$.pipe(
+    connect() {
+        const syncCountsSubscription = this.container$.pipe(
             map(container => {
                 const resourceTypes = Object.keys(RESOURCE_TYPE_NAMES) as ResourceType[];
                 const counts: [ResourceType, number][] = resourceTypes.map(t => [t, container.countResources(t)]) 
                 return Object.fromEntries(counts); 
             })
         ).subscribe(this.resourceCountsSubject);
+
+        return new Subscription(() => {
+            this.resourceCountsSubject.complete();
+        });
+    }
+
+    getCommitedResourceCount(resourceType: ResourceType) {
+        const resourceCounts = this.resourceCountsSubject.value;
+        return resourceCounts[resourceType] || -1;
     }
 
     getResourceForm(resourceType: ResourceType, index: number): FormGroup<any> | null {
-        const resourceCounts = this.resourceCountsSubject.value;
-        const count = resourceCounts[resourceType] || -1;
+        const count = this.getCommitedResourceCount(resourceType);
         if (index >= count) {
             // This is a create form
             const addArr = getResourceAddArray(this.form, resourceType); 
             return (addArr.controls[index - count] as FormGroup<any>) || null; 
+        } else if (index >= 0) {
+            return getReplaceFormAt(this.form, resourceType, index) || null;
         } else {
-            const replaceForm = getResourceReplaceGroup(resourceType, index) || null;
+            return null;
         }
+    }
+
+    isCreateFormAt(resourceType: ResourceType, index: number) {
+        const count = this.getCommitedResourceCount(resourceType);
+        return index >= count;
     }
 
     /**
@@ -198,7 +229,7 @@ export abstract class ResourceContainerFormService<
             throw new Error('Index out of range');
         }
         const resource = committedResources[index]
-        return setReplaceForm(this.form, resourceType, [index, resource]),; 
+        return setReplaceForm(this.form, resourceType, [index, resource]); 
     }
 
 
@@ -222,9 +253,5 @@ export abstract class ResourceContainerFormService<
 
     getResourceAt$<T extends Resource>(type: ResourceType, index: number): Observable<T> {
         return this.getResources$<T>(type).pipe(map(resources => resources[index]));
-    }
-
-    connect(): Subscription {
-        return new Subscription();
     }
 }

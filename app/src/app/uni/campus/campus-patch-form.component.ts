@@ -135,7 +135,7 @@ export class CampusFormService {
     </form>
     `,
     providers: [
-        CampusModelService
+        CampusFormService
     ]
 })
 export class CampusFormComponent {

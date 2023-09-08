@@ -10,44 +10,60 @@
 </style>
 
 
-<div class="main">
-    <form [formGroup]="form">
-        <div class="general-info-container">
-            <h2>General information</h2>
+<form [formGroup]="form">
+    <div class="general-info-container">
+        <h2>General information</h2>
+        <h2>General information</h2>
 
-            <mat-card *ngIf="planService.plan$ | async as plan">
-                <mat-card-header>
-                    <nav mat-tab-nav-bar [tabPanel]="tabPanel"
-                        mat-align-tabs="start"
-                        mat-stretch-tabs="false">
-                        <a mat-tab-link *ngFor="let workUnit of plan.workUnits; let index=index"
-                            [routerLink]="['./', 'work-units', index]" routerLinkActive #linkActive="routerLinkActive"
-                            [active]="linkActive.isActive">
-                            {{workUnit.campus.name}} - {{workUnit.labType}}
-                        </a>
-                        <div class="spacer" [style.flex-grow]="1"></div>
-                        <a mat-tab-link
-                            [routerLink]="['./', 'work-units', plan.workUnits.length]"
-                            routerLinkActive #linkActive="routerLinkActive"
-                            [active]="linkActive.isActive"
-                            [disabled]="isAddingWorkUnit(plan)">
-                            <mat-icon>+</mat-icon>
-                        </a>
-                    </nav>
-                </mat-card-header>
+        <mat-form-field>
+            <mat-label for="project-title">
+                Project title
+            </mat-label>
 
-                <mat-card-content>
-                <mat-tab-nav-panel #tabPanel>
-                    <router-outlet></router-outlet>
-                </mat-tab-nav-panel>
-                </mat-card-content>
-            </mat-card>
+            <input matInput type="text" id="project-title" formControlName="title" />
+        </mat-form-field>
+
+        <!--
+        <lab-req-campus-select formGroupName="campus"></lab-req-campus-select>
+        -->
+
+        <lab-req-experimental-plan-type-select formControlName="planType">
+        </lab-req-experimental-plan-type-select>
+
+        <mat-form-field>
+            <mat-label>Experimental Plan Summary</mat-label>
+            <textarea matInput id="process-summary" formControlName="processSummary">
+            </textarea>
+        </mat-form-field>
+
+        <div class="supervisor-discipline">
+            <mat-form-field>
+                <mat-label>Supervisor email</mat-label>
+                <input matInput formControlName="supervisor" />
+            </mat-form-field>
+
+            <lab-req-discipline-select formControlName="discipline">
+            </lab-req-discipline-select>
         </div>
-    </form>
 
-    <div class="right-pane">
-        <div class="form-container">
-            <router-outlet name="form"></router-outlet>
-        </div>
+        <mat-form-field>
+            <mat-label>Duration</mat-label>
+            <mat-date-range-input [rangePicker]="picker">
+                <input matStartDate placehoder="Start" formControlName="startDate">
+                <input matEndDate placeholder="End" formControlName="endDate">
+            </mat-date-range-input>
+            <mat-hint>DD/MM/YYYY - DD/MM/YYYY</mat-hint>
+
+            <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-date-range-picker #picker></mat-date-range-picker>
+        </mat-form-field>
     </div>
+</form>
+
+<!--
+<div class="right-pane">
+<div class="form-container">
+    <router-outlet name="form"></router-outlet>
 </div>
+</div>
+-->

@@ -1,11 +1,12 @@
 import { CommonModule } from "@angular/common";
 import { Component, Injectable, inject } from "@angular/core";
 import { MatTabsModule } from "@angular/material/tabs";
-import { ExperimentalPlanFormComponent } from "./experimental-plan-form.component";
-import { ExperimentalPlan, ExperimentalPlanContext } from "./experimental-plan";
+import { ExperimentalPlanFormComponent } from "../experimental-plan-form.component";
+import { ExperimentalPlan, ExperimentalPlanContext } from "../experimental-plan";
 import { ActivatedRoute } from "@angular/router";
 import { Observable, Subscription, map, shareReplay, switchMap } from "rxjs";
 import { MatCardModule } from "@angular/material/card";
+import { ExperimentalPlanDetailFormOutlet } from "./experimental-plan-detail-form-outlet.component";
 
 @Injectable()
 export class ExperimentalPlanDetailContext extends ExperimentalPlanContext {
@@ -39,6 +40,7 @@ export class ExperimentalPlanDetailContext extends ExperimentalPlanContext {
     imports: [
         CommonModule,
         ExperimentalPlanFormComponent,
+        ExperimentalPlanDetailFormOutlet,
 
         MatCardModule,
         MatTabsModule
@@ -76,9 +78,8 @@ export class ExperimentalPlanDetailContext extends ExperimentalPlanContext {
     </mat-card>
 
     <div class="resource-form-pane">
-        <div class="sticky">
-            <router-outlet name="resource-details"></router-outlet>
-        </div>
+        <lab-experimental-plan-detail-form-outlet>
+        </lab-experimental-plan-detail-form-outlet>
     </div>
     `,
     styles: [`
@@ -97,7 +98,7 @@ export class ExperimentalPlanDetailContext extends ExperimentalPlanContext {
         z-index: 100;
     }
 
-    .resource-form-pane .sticky-container {
+    .resource-form-pane lab-experimental-plan-detail-form-outlet {
         width: 100%;
         height: 100vh;
         position: sticky;

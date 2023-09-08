@@ -3,6 +3,7 @@ import { Component } from "@angular/core";
 
 
 @Component({
+    selector: 'lab-experimental-plan-index',
     standalone: true,
     imports: [
         CommonModule

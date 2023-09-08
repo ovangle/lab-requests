@@ -16,12 +16,6 @@ export function isOtherCampusCode(code: CampusCode | null | undefined) {
     return code === 'OTH';
 }
 
-export interface CampusCreate {
-    readonly id?: string;
-    readonly code?: string;
-    readonly name: string;
-}
-
 export class Campus {
     readonly id: string;
     readonly code: CampusCode;
@@ -40,10 +34,9 @@ export function isCampus(obj: any): obj is Campus {
 }
 
 export interface CampusPatch {
-    code: CampusCode;
+    code: string;
     name: string;
 }
-
 
 export type CampusPatchErrors = ValidationErrors & {
     code?: Readonly<{
@@ -83,9 +76,6 @@ export class CampusModelService extends ModelService<Campus, CampusPatch> {
             })
         )
     }
-
-    
-
 }
 
 @Injectable()

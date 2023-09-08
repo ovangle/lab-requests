@@ -1,12 +1,12 @@
 import { ValidationErrors } from "@angular/forms";
-import { Campus, isCampus } from "../../../uni/campus/campus";
-import { isDiscipline } from "../../../uni/discipline/discipline";
-import { ResourceContainer } from "../resources/resource-container";
-import { LabType } from "../../type/lab-type";
-import { ResourceContainerPatch } from "../resources/resource-container";
+import { Campus, isCampus } from "../../uni/campus/campus";
+import { isDiscipline } from "../../uni/discipline/discipline";
+import { ResourceContainer } from "./resources/resource-container";
+import { LabType } from "../type/lab-type";
+import { ResourceContainerPatch } from "./resources/resource-container";
 import { ModelService } from "src/app/utils/models/model-service";
-import { ExperimentalPlan, ExperimentalPlanContext } from "../experimental-plan";
-import { BehaviorSubject, Observable, Subscription, filter, firstValueFrom, of } from "rxjs";
+import { ExperimentalPlan, ExperimentalPlanContext } from "../experimental-plan/experimental-plan";
+import { BehaviorSubject, Observable, Subscription, filter, firstValueFrom, of, skipWhile } from "rxjs";
 import { Injectable, inject } from "@angular/core";
 import { Context } from "src/app/utils/models/model-context";
 
@@ -82,6 +82,9 @@ export type WorkUnitPatchErrors = ValidationErrors & {
 export interface WorkUnitCreate extends WorkUnitPatch {
     planId: string;
 }
+export function isWorkUnitCreate(obj: any): obj is WorkUnitCreate {
+    return typeof obj === 'object' && !!obj && typeof obj.planId === 'string';
+}
 
 export type WorkUnitCreateErrors = WorkUnitPatchErrors & {
     planId?: { 
@@ -116,17 +119,35 @@ export class WorkUnitModelService extends ModelService<WorkUnit, WorkUnitPatch, 
 
 @Injectable()
 export abstract class WorkUnitContext extends Context<WorkUnit, WorkUnitPatch> {
-    models = inject(WorkUnitModelService);
-    _planContext = inject(ExperimentalPlanContext);
 
-    readonly plan$: Observable<ExperimentalPlan> = this._planContext.plan$.pipe(
-        filter((plan): plan is ExperimentalPlan => plan != null)
+    _planContext = inject(ExperimentalPlanContext);
+    readonly plan$ = this._planContext.committed$.pipe(
+        skipWhile((p) => p == null), // Ignore initial nulls
+        filter((p): p is ExperimentalPlan => {
+            if (p == null) {
+                throw new Error('WorkUnit context requires an non-null experimental plan context');
+            }
+            return true;
+        })
     );
+
+    models: WorkUnitModelService = inject(WorkUnitModelService);
+    readonly workUnit$ = this.committedSubject.pipe(
+        filter((committed): committed is WorkUnit => committed != null)
+    )
 
     async create(patch: WorkUnitPatch | WorkUnitCreate): Promise<WorkUnit> {
         const plan = await firstValueFrom(this.plan$);
-        return firstValueFrom(this.models.create({...patch, planId: plan.id}));
-    }
+        let create: WorkUnitCreate;
+        if (isWorkUnitCreate(patch)) {
+            if (patch.planId != plan.id) {
+                throw new Error('Cannot create work unit for different context plan id');
+            }
+            create = patch;
+        } else {
+            create = {...patch, planId: plan.id};
+        }
 
-    readonly workUnit$ = this.committed$;
+        return await firstValueFrom(this.models.create(create));
+    }
 }

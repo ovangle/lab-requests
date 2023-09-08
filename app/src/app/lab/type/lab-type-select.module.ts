@@ -23,6 +23,6 @@ import { LabTypeSelectComponent, LabTypeSelectLabelComponent, LabTypeSelectOptio
         LabTypeSelectLabelComponent 
     ]
 })
-export class DisciplineSelectModule {
+export class LabTypeSelectModule {
 
-}p
+}

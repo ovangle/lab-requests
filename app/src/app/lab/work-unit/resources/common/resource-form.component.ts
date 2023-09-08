@@ -1,6 +1,6 @@
 import { Component, ContentChild, ContentChildren, DestroyRef, Inject, Injectable, InjectionToken, Input, QueryList, ViewChild, inject } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { Resource, ResourceType, resourceTypeName } from "./resource";
+import { Resource, ResourceContext, ResourcePatch, ResourceType, resourceTypeName } from "./resource";
 import { FormArray, FormControlDirective, FormControlName, FormGroup, FormGroupDirective, ReactiveFormsModule } from "@angular/forms";
 import { CommonModule } from "@angular/common";
 import { ActivatedRoute, Router } from "@angular/router";
@@ -8,16 +8,17 @@ import { BehaviorSubject, Connectable, Observable, Subject, Subscription, combin
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { BodyScrollbarHidingService } from "src/app/utils/body-scrollbar-hiding.service";
+import { ResourceContainer } from "../resource-container";
 import { isThisWeek } from "date-fns";
 import { ResourceContainerFormService } from "../resource-container-form";
 
 export const RESOURCE_TYPE = new InjectionToken<ResourceType>('RESOURCE_TYPE');
 export const RESOURCE_FORM_FACTORY = new InjectionToken<() => FormGroup<any>>('RESOURCE_FORM_FACTORY');
 
+
 @Injectable()
 export class ResourceFormService<T extends Resource, F extends FormGroup<any>> {
     readonly resourceContainerService = inject(ResourceContainerFormService);
-
     readonly resourceType = inject(RESOURCE_TYPE);
     readonly createEmptyForm = inject<() => F>(RESOURCE_FORM_FACTORY);
 
@@ -29,34 +30,6 @@ export class ResourceFormService<T extends Resource, F extends FormGroup<any>> {
         })
     );
 
-    readonly _resourceIndexSubject = new BehaviorSubject(-1);
-    readonly resourceIndex$ = connectable(
-        combineLatest([
-            this.isCreateForm$,
-            this.activatedRoute.paramMap
-        ]).pipe(
-            map(([isCreateForm, paramMap]) => {
-                const formIndex = isCreateForm
-                    ? this.getResourceFormArray().length
-                    : Number.parseInt(paramMap.get('index')!);
-                if (Number.isNaN(formIndex)) {
-                    throw new Error('Expected index in update form path');
-                }
-                return [isCreateForm, formIndex] as [boolean, number];
-            }),
-            tap(([isCreateForm, _]) => {
-                if (isCreateForm) {
-                    const formArray = this.getResourceFormArray();
-                    formArray.push(this.createEmptyForm());
-                }
-            }),
-            map(([_, formIndex]) => formIndex)
-        ),
-        {
-            connector: () => this._resourceIndexSubject
-        }
-    )
-
     get resourceIndex(): number {
         return this._resourceIndexSubject.value;
     }
@@ -65,20 +38,17 @@ export class ResourceFormService<T extends Resource, F extends FormGroup<any>> {
         return this.resourceIndex$.connect();
     }
 
-    getResourceFormArray(): FormArray<F> {
-        return this.resourceContainerService.getResourceFormArray(this.resourceType);
-    }
 
     getResourceForm(): F {
         return this.resourceContainerService.getResourceForm(this.resourceType, this.resourceIndex) as F;
     }
 
     commitForm() {
-        return this.resourceContainerService.commitResourceFormAt(this.resourceType, this.resourceIndex);
+        return this.resourceContainerService.commit();
     }
 
     revertForm() {
-        return this.resourceContainerService.revertResourceFormAt(this.resourceType, this.resourceIndex);
+        return this.resourceContainerService.form.reset();
     }
 }
 

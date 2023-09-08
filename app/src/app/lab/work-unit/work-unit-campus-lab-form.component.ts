@@ -3,11 +3,11 @@ import { Component, inject } from "@angular/core";
 import { FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { MatInputModule } from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { WorkUnitPatchFormService } from "./work-unit-patch-form.component";
+import { WorkUnitFormService } from "./work-unit-patch-form.component";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
-import { CampusSearchModule } from "../../../uni/campus/campus-search.module";
-import { DisciplineSelectModule } from "../../../uni/discipline/discipline-select.module";
+import { CampusSearchModule } from "src/app/uni/campus/campus-search.module";
+import { LabTypeSelectModule } from "../type/lab-type-select.module";
 
 
 /**
@@ -32,7 +32,7 @@ import { DisciplineSelectModule } from "../../../uni/discipline/discipline-selec
         MatInputModule,
 
         CampusSearchModule,
-        DisciplineSelectModule
+        LabTypeSelectModule
     ],
     template: `
     <ng-container [formGroup]="formGroup">
@@ -42,9 +42,9 @@ import { DisciplineSelectModule } from "../../../uni/discipline/discipline-selec
             </app-uni-campus-search-label>
         </app-uni-campus-search>
 
-        <lab-req-discipline-select formControlName="labType">
-            <lab-req-discipline-select-label>Lab type</lab-req-discipline-select-label>
-        </lab-req-discipline-select>
+        <app-lab-type-select formControlName="labType">
+            <app-lab-type-select-label>Lab type</app-lab-type-select-label>
+        </app-lab-type-select>
 
         <mat-form-field>
             <mat-label>Lab Technician</mat-label>
@@ -53,7 +53,8 @@ import { DisciplineSelectModule } from "../../../uni/discipline/discipline-selec
 
 
         <div class="controls">
-            <button mat-button (click)="commit()"
+            <button mat-button 
+                    (click)="workUnitFormService.commit()"
                     [disabled]="!formGroup.valid">
                 <mat-icon>keyboard_left</mat-icon>
                 Next
@@ -74,13 +75,9 @@ import { DisciplineSelectModule } from "../../../uni/discipline/discipline-selec
     `]
 })
 export class WorkUnitCampusLabFormComponent {
-    workUnitFormService = inject(WorkUnitPatchFormService);
+    workUnitFormService = inject(WorkUnitFormService);
 
     get formGroup(): FormGroup<any> {
         return this.workUnitFormService.form;
-    }
-
-    commit() {
-        this.workUnitFormService.commitChanges();
     }
 }

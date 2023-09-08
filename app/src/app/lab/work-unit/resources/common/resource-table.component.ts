@@ -8,8 +8,7 @@ import { ActivatedRoute, RouterLink, RouterModule } from "@angular/router";
 import { MatIconModule } from "@angular/material/icon";
 import { animate, state, style, transition, trigger } from "@angular/animations";
 import { MatButtonModule } from "@angular/material/button";
-import { ExperimentalPlanModelService } from "../../experimental-plan/experimental-plan";
-import { ResourceContainerFormService } from "../resource-container";
+import { ResourceContainerFormService } from "../resource-container-form";
 
 @Injectable()
 export abstract class ResourceTableDataSource<T extends Resource> extends DataSource<T> {
@@ -62,7 +61,6 @@ export abstract class ResourceTableDataSource<T extends Resource> extends DataSo
             transition('expanded <=> collapsed', animate('225ms cubic-bezier(0.4, 0.0, 0.2, 1)'))
         ])
     ]
-
 })
 export class ResourceTableComponent<T extends Resource> implements AfterContentInit {
     dataSource: ResourceTableDataSource<T> = inject(ResourceTableDataSource);

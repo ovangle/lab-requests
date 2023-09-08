@@ -26,13 +26,13 @@ export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<Equip
     <lab-req-resource-table
         [displayedColumns]="['name']"
         [detailTemplate]="detailTemplate">
-        <lab-request-resource-table-info-header>
+        <lab-req-resource-table-info-header>
             Equipment represent permanent fixtures of the lab.
-        </lab-request-resource-table-info-header>
+        </lab-req-resource-table-info-header>
 
         <ng-container matColumnDef="name">
             <th mat-header-cell *matHeaderCellDef>Name</th>
-            <td mat-cell *matCellDef="let element">{{element.name}}</th>
+            <td mat-cell *matCellDef="let element">{{element.name}}</td>
         </ng-container>
 
         <ng-container matColumnDef="is-trained">
