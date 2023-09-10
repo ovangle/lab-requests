@@ -50,7 +50,9 @@ export class EquipmentDetailPage {
     _contextConnection: Subscription;
 
     ngOnInit() {
-        this._contextConnection = this.context.connect();
+        this._contextConnection = this.context.connect(
+            equipmentContextFromDetailRoute()
+        );
     }
 
     ngOnDestroy() {
