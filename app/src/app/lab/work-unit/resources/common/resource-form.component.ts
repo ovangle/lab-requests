@@ -17,38 +17,30 @@ export const RESOURCE_FORM_FACTORY = new InjectionToken<() => FormGroup<any>>('R
 
 
 @Injectable()
-export class ResourceFormService<T extends Resource, F extends FormGroup<any>> {
-    readonly resourceContainerService = inject(ResourceContainerFormService);
+export class ResourceFormService<T extends Resource, TPatch extends ResourcePatch = ResourcePatch> {
+    readonly resourceContext = inject(ResourceContext<T, TPatch>);
     readonly resourceType = inject(RESOURCE_TYPE);
-    readonly createEmptyForm = inject<() => F>(RESOURCE_FORM_FACTORY);
 
-    readonly activatedRoute = inject(ActivatedRoute);
+    readonly containerFormService = inject(ResourceContainerFormService);
 
-    readonly isCreateForm$ = this.activatedRoute.url.pipe(
-        map(segments => {
-            return segments.some(s => s.path.includes('create'));
-        })
-    );
-
-    get resourceIndex(): number {
-        return this._resourceIndexSubject.value;
+    get form(): FormGroup<any> | null {
+        const [resourceType, index] = this.resourceContext._typeIndex;
+        return this.containerFormService.getResourceForm(resourceType, index);
     }
 
-    connect(): Subscription {
-        return this.resourceIndex$.connect();
+    get isCreate(): boolean {
+        const [resourceType, index] = this.resourceContext._typeIndex;
+        return this.containerFormService.isCreateFormAt(resourceType, index);
     }
 
-
-    getResourceForm(): F {
-        return this.resourceContainerService.getResourceForm(this.resourceType, this.resourceIndex) as F;
+    async commitForm(): Promise<T> {
+        const [resourceType, index] = this.resourceContext._typeIndex;
+        const container: ResourceContainer = await this.containerFormService.commit();
+        return container.getResourceAt<T>(resourceType, index);
     }
 
-    commitForm() {
-        return this.resourceContainerService.commit();
-    }
-
-    revertForm() {
-        return this.resourceContainerService.form.reset();
+    resetForm() {
+        this.form?.reset();
     }
 }
 
@@ -65,7 +57,7 @@ export class ResourceFormService<T extends Resource, F extends FormGroup<any>> {
     template: `
         <div class="form-title">
             <h2>
-                <ng-container *ngIf="isCreateResourceForm$ | async; else updateTitle">Add</ng-container>
+                <ng-container *ngIf="isCreate; else updateTitle">Add</ng-container>
                 <ng-template #updateTitle>Update</ng-template>
                 {{_resourceTypeName(resourceType).toLocaleLowerCase()}}
             </h2>
@@ -125,25 +117,24 @@ export class ResourceFormComponent<T extends Resource, F extends FormGroup<any>>
     readonly resourceContainerFormService = inject(ResourceContainerFormService);
     protected _resourceContainerFormServiceConnection: Subscription;
     readonly resourceFormService = inject(ResourceFormService<T, F>);
-    protected _resourceFormServiceConnection: Subscription;
 
     readonly resourceType = inject(RESOURCE_TYPE);
 
-    readonly isCreateResourceForm$ = this.resourceFormService.isCreateForm$;
-
     get form(): F | null {
-        return this.resourceFormService.getResourceForm();
+        return this.resourceFormService.form as F | null;
+    }
+
+    get isCreate(): boolean {
+        return this.resourceFormService.isCreate;
     }
 
     ngOnInit() {
         this._resourceContainerFormServiceConnection = this.resourceContainerFormService.connect();
-        this._resourceFormServiceConnection = this.resourceFormService.connect();
         this.bodyScrollbarHiding.hideScrollbar();
     }
 
     ngOnDestroy() {
         this._resourceContainerFormServiceConnection.unsubscribe();
-        this._resourceFormServiceConnection.unsubscribe();
         this.bodyScrollbarHiding.unhideScrollbar();
     }
 
@@ -153,7 +144,7 @@ export class ResourceFormComponent<T extends Resource, F extends FormGroup<any>>
     }
 
     cancelAndClose() {
-        this.resourceFormService.revertForm();
+        this.resourceFormService.resetForm();
         this._close();
     }
 

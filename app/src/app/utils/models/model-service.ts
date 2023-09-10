@@ -26,7 +26,7 @@ export abstract class ModelService<T, TPatch, TCreate extends TPatch=TPatch> {
         resourcePath?: string
     }): Observable<T> {
         const resourcePath = (options && options.resourcePath) ? options.resourcePath : this.resourcePath;
-        const url = urlJoin(resourcePath, identifier)
+        const url = urlJoin(this.apiBaseUrl, resourcePath, identifier)
         return this.httpClient.get(url, {params: options?.params}).pipe(
             map(result => this.modelFromJson(result))
         )
@@ -34,22 +34,24 @@ export abstract class ModelService<T, TPatch, TCreate extends TPatch=TPatch> {
 
     query(params: {[k: string]: any}, options?: {resourcePath?: string}): Observable<T[]> {
         const resourcePath = (options && options.resourcePath) ? options.resourcePath : this.resourcePath;
-        return this.httpClient.get<{items: object[]}>(resourcePath, {params: params}).pipe(
+        const url = urlJoin(this.apiBaseUrl, resourcePath);
+        return this.httpClient.get<{items: object[]}>(url, {params: params}).pipe(
             map(result => result.items.map(item => this.modelFromJson(item)))
         );
     }
 
     create(patch: TCreate, options?: {resourcePath?: string}): Observable<T> {
         const resourcePath = (options && options.resourcePath) ? options.resourcePath : this.resourcePath;
+        const url = urlJoin(this.apiBaseUrl, resourcePath);
 
-        return this.httpClient.post<object>(resourcePath, this.createToJson(patch)).pipe(
+        return this.httpClient.post<object>(url, this.createToJson(patch)).pipe(
             map(result => this.modelFromJson(result))
         );
     }
 
     update(identifier: string, patch: TPatch, options?: {resourcePath?: string}): Observable<T> {
         const resourcePath = (options && options.resourcePath) ? options.resourcePath : this.resourcePath;
-        const url = urlJoin(resourcePath, identifier);
+        const url = urlJoin(this.apiBaseUrl, resourcePath, identifier);
         return this.httpClient.post(url, this.patchToJson(patch)).pipe(
             map(result => this.modelFromJson(result))
         );

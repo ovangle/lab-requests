@@ -10,7 +10,7 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
 import { ProvisionFormComponent } from "../common/provision/provision-form.component";
 
 @Component({
-    selector: 'lab-req-software-resource-form',
+    selector: 'lab-software-resource-form',
     standalone: true,
     imports: [
         CommonModule,

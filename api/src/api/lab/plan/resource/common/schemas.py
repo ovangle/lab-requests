@@ -1,10 +1,12 @@
 from __future__ import annotations
+from datetime import datetime
 from enum import Enum
 import re
-from typing import Optional
+from typing import Any
 from uuid import UUID
-from pydantic.dataclasses import dataclass
-from api.base.schemas import api_dataclass
+
+from pydantic import BaseModel, GetCoreSchemaHandler
+from pydantic_core import core_schema
 
 class ResourceType(Enum):
     EQUIPMENT = 'equipment'
@@ -14,7 +16,7 @@ class ResourceType(Enum):
     OUTPUT_MATERIAL = 'output-material'
 
 class HazardClass(str):
-    RE = re.compile(r'(?<group>\d+)(?<class>\.\d+)?')
+    RE = re.compile(r'(?P<group>\d+)(?P<class>\.\d+)?')
 
     def __new__(cls, value: str | HazardClass):
         if isinstance(value, HazardClass):
@@ -24,23 +26,26 @@ class HazardClass(str):
 
         return super().__new__(cls, value)
 
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type: Any, handler: GetCoreSchemaHandler):
+        return core_schema.no_info_after_validator_function(cls, handler(str))
+
     
-@api_dataclass()
-class ResourceCostEstimate: 
+class ResourceCostEstimate(BaseModel): 
     is_university_supplied: bool
     estimated_cost: float = 0
 
-@api_dataclass()
-class ResourceStorage:
+class ResourceStorage(BaseModel):
     description: str
     estimated_cost: ResourceCostEstimate | None
 
-@api_dataclass()
-class ResourceDisposal:
+class ResourceDisposal(BaseModel):
     description: str
     estimated_cost: ResourceCostEstimate | None
 
-@api_dataclass()
-class Resource:
+class Resource(BaseModel):
     plan_id: UUID
     index: int
+
+    created_at: datetime
+    updated_at: datetime

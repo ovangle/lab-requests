@@ -24,7 +24,7 @@ export class WorkUnitIndexContext extends WorkUnitContext {
 @Component({
     standalone: true,
     imports: [
-        CommonModule
+        CommonModule,
     ],
     template: `
     `,

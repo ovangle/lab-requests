@@ -64,35 +64,43 @@ export class ResourceContainer {
 }
 
 export class ResourceContainerPatch {
-    addEquipments: EquipmentLease[];
-    replaceEquipments: {[k: number]: EquipmentLease | null};
+    addEquipments?: EquipmentLease[];
+    replaceEquipments?: {[k: number]: EquipmentLease | null};
+    delEquipments?: number[];
 
-    addServices: Service[];
-    replaceServices: {[k: number]: Service | null};
+    addServices?: Service[];
+    replaceServices?: {[k: number]: Service | null};
+    delServices?: number[];
 
-    addSoftwares: Software[];
-    replaceSoftwares: {[k: number]: Software | null}
+    addSoftwares?: Software[];
+    replaceSoftwares?: {[k: number]: Software | null}
+    delSoftwares?: number[]
 
-    addInputMaterials: InputMaterial[]; 
-    replaceInputMaterials: {[k: number]: InputMaterial | null};
+    addInputMaterials?: InputMaterial[]; 
+    replaceInputMaterials?: {[k: number]: InputMaterial | null};
+    delInputMaterials?: number[]
 
-    addOutputMaterials: OutputMaterial[];
-    replaceOutputMaterials: {[k: number]: OutputMaterial | null};
+    addOutputMaterials?: OutputMaterial[];
+    replaceOutputMaterials?: {[k: number]: OutputMaterial | null};
+    delOutputMaterials?: number[]
 }
 
-export function resourceContainerPatchFromContainer(container: ResourceContainer): ResourceContainerPatch {
-    return {
-        addEquipments: [],
-        replaceEquipments: {},
-        addServices: [],
-        replaceServices: {},
-        addSoftwares: [],
-        replaceSoftwares: {},
-        addInputMaterials: [],
-        replaceInputMaterials: {},
-        addOutputMaterials: [],
-        replaceOutputMaterials: {}
+function delResourcePatch(resourceType: ResourceType, toDel: number[]): ResourceContainerPatch {
+    switch (resourceType) {
+        case 'equipment':
+            return {delEquipments: toDel}
+        case 'service':
+            return {delServices: toDel}
+        case 'software':
+            return {delSoftwares: toDel}
+        case 'input-material':
+            return {delInputMaterials: toDel}
+        case 'output-material':
+            return {delOutputMaterials: toDel}
     }
+}
+export function resourceContainerPatchFromContainer(container: ResourceContainer): ResourceContainerPatch {
+    return {}
 }
 
 export type ResourceContainerPatchErrors = ValidationErrors & {
@@ -117,10 +125,11 @@ export abstract class ResourceContainerContext<T extends ResourceContainer & { r
     abstract readonly committed$: Observable<T | null>;
 
     abstract commitContext(patch: TPatch): Promise<T>;
+    abstract patchFromContainerPatch(containerPatch: ResourceContainerPatch): TPatch;
 
-    committedResources$(resourceType: ResourceType) {
+    committedResources$<TResource extends Resource>(resourceType: ResourceType): Observable<readonly TResource[]> {
         return this.committed$.pipe(
-            map(committed => committed ? committed.getResources(resourceType) : [])
+            map(committed => committed ? committed.getResources<TResource>(resourceType) : [])
         );
     }
 
@@ -131,6 +140,9 @@ export abstract class ResourceContainerContext<T extends ResourceContainer & { r
         }
         return this.commitContext(patch);
     }
-
-    abstract form: ResourceContainerForm<any>;
+    
+    async deleteResourceAt(resourceType: ResourceType, index: number) {
+        const patch = this.patchFromContainerPatch(delResourcePatch(resourceType, [index]));
+        return this.commitContext(patch);
+    }
 }

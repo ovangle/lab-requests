@@ -7,54 +7,47 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { BehaviorSubject, Observable, filter, map, of, startWith, switchMap } from "rxjs";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
-import { CampusFormComponent } from "./campus-patch-form.component";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
+import { MatInputModule } from "@angular/material/input";
+import { CampusInfoComponent } from "./campus-info.component";
 
 @Component({
-    selector: 'app-uni-campus-search-label',
-    template: `
-    <ng-content></ng-content>
-    `
-})
-export class CampusSearchLabelComponent {}
+    selector: 'uni-campus-search',
+    standalone: true,
+    imports: [
+        CommonModule,
 
-@Component({
-    selector: 'app-uni-campus-search-option',
-    template: `
-    <span class="campus-code">{{campus.code}}</span> 
-    - <span class="campus-name">{{campus.name}}</span> 
-    `
-})
-export class CampusSearchOptionComponent {
-    @Input()
-    campus: Campus;
-}
+        ReactiveFormsModule,
+        MatAutocompleteModule,
+        MatFormFieldModule,
+        MatInputModule,
 
-@Component({
-    selector: 'app-uni-campus-search',
+        CampusInfoComponent
+    ],
     template: `
     <mat-form-field>
         <mat-label>
-            <ng-content select="app-uni-campus-search-label"></ng-content>
+            <ng-content select="mat-label"></ng-content>
         </mat-label>
 
         <input matInput [matAutocomplete]="autocomplete" 
                         [formControl]="searchControl" 
                         [required]="required" />
                     
-        <mat-error *ngIf="required && !hasSelectedValue">
-            A value is required
-        </mat-error>
+        <ng-content select="mat-error"></ng-content>
     </mat-form-field>
 
     <mat-autocomplete #autocomplete [displayWith]="_displayCampusInfo">
         <mat-option *ngFor="let campus of (searchResults$ | async)" [value]="campus">
-            <app-uni-campus-search-option 
-                 [campus]="campus">
-            </app-uni-campus-search-option>
+            <uni-campus-info [campus]="campus"></uni-campus-info>
         </mat-option>
     </mat-autocomplete>
     `,
+    styles: [`
+    .mat-form-field {
+        width: 100%;
+    }
+    `],
     providers: [
         CampusModelService,
         { provide: NG_VALUE_ACCESSOR, multi: true, useExisting: CampusSearchComponent }

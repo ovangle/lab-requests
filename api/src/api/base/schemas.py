@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-import dataclasses
 from datetime import datetime
-from typing import Generic, Optional, TypeVar, dataclass_transform
-from pydantic import ConfigDict
+from typing import Any, Generic, Optional, TypeVar, cast, dataclass_transform
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic.dataclasses import dataclass
 from api.utils.db import LocalSession
 
@@ -13,54 +12,49 @@ from humps import camelize
 from . import models 
 
 SCHEMA_CONFIG = ConfigDict(
-    alias_generator=camelize
+    alias_generator=camelize,
+    arbitrary_types_allowed=True
 )
-
-@dataclass_transform(kw_only_default=True)
-def api_dataclass(
-    kw_only: bool = True,
-    config: Optional[ConfigDict] = None
-):
-    config = config or ConfigDict()
-    config.update(SCHEMA_CONFIG)
-    return dataclass(
-        kw_only=kw_only,
-        config=config
-    )
 
 TModel = TypeVar('TModel', bound=models.Base)
 
-@api_dataclass()
-class ApiModel(Generic[TModel], ABC):
+class ApiModel(BaseModel, Generic[TModel], ABC):
+    model_config = SCHEMA_CONFIG
+
     created_at: datetime
     updated_at: datetime
 
-    def __new__(cls, model: Optional[TModel] = None, **kwargs):
+    def __new__(cls, model: Optional[Any] = None, **kwargs):
         if model is not None:
             return cls.from_model(model)
-        return super().__new__(cls, **kwargs)
+        return super().__new__(cls)
 
-    @abstractmethod
     @classmethod
-    def from_model(cls, model: TModel) -> ApiModel:
+    @abstractmethod
+    def from_model(cls, model: Any) -> ApiModel:
         raise NotImplementedError
 
-@api_dataclass()
-class ModelPatch(Generic[TModel], ABC):
+class ModelPatch(BaseModel, Generic[TModel], ABC):
+    model_config = SCHEMA_CONFIG
+
     @classmethod
     def from_create(cls, create_req: ModelPatch | ModelCreate):
-        return cls(**dataclasses.asdict(create_req))
+        import dataclasses
+        return cls(**create_req.model_dump())
 
     @abstractmethod
-    def do_update(self, db: LocalSession, model: TModel):
+    async def do_update(self, db: LocalSession, model: Any) -> TModel:
         raise NotImplementedError
 
-    async def __call__(self, db: LocalSession, model: TModel):
-        await self.do_update(db, model)
+    async def __call__(self, db: LocalSession, model: TModel) -> TModel:
+        updated = await self.do_update(db, model)
         await db.commit()
+        return updated
 
-@api_dataclass()
-class ModelCreate(Generic[TModel], ABC):
+
+class ModelCreate(BaseModel, Generic[TModel], ABC):
+    model_config = SCHEMA_CONFIG
+
     @abstractmethod
     async def do_create(self, db: LocalSession) -> TModel:
         raise NotImplementedError
@@ -70,24 +64,17 @@ class ModelCreate(Generic[TModel], ABC):
         await db.commit()
 
 
+TItem = TypeVar('TItem', bound=ApiModel[Any])
 
-
-
-
-
-T = TypeVar('T')
-
-@api_dataclass()
-class PagedResultList(Generic[T]):
-    items: list[T]
+class PagedResultList(BaseModel, Generic[TItem]):
+    items: list[TItem]
 
     total_item_count: int
     page_index: int = 0
 
 
-@api_dataclass()
-class CursorResultList(Generic[T]):
-    items: list[T]
+class CursorResultList(Generic[TItem]):
+    items: list[TItem]
 
     cursor: str
     total_item_count: int

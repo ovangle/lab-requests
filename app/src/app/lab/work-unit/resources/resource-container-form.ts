@@ -7,7 +7,7 @@ import { Software, SoftwareForm, createSoftwareForm } from "./software/software"
 import { ResourceContainer, ResourceContainerContext, ResourceContainerPatch, ResourceContainerPatchErrors } from "./resource-container";
 import { RESOURCE_TYPE_NAMES, Resource, ResourceType } from "./common/resource";
 import { Injectable, inject } from "@angular/core";
-import { Observable, firstValueFrom, filter, map, Subscription, BehaviorSubject } from "rxjs";
+import { Observable, firstValueFrom, filter, map, Subscription, BehaviorSubject, connectable, defer } from "rxjs";
 import { Context } from "src/app/utils/models/model-context";
 import { ModelService } from "src/app/utils/models/model-service";
 import { Equipment } from "../../equipment/equipment";
@@ -48,13 +48,16 @@ export function resourceContainerFormControls(): ResourceContainerFormControls {
     }
 }
 
-export type ResourceContainerForm<T extends ResourceContainerFormControls> = FormGroup<T>;
+export type ResourceContainerForm<TPatch extends ResourceContainerPatch = ResourceContainerPatch> = FormGroup<ResourceContainerFormControls>;
 
-export function resourceContainerPatchFromForm(form: ResourceContainerForm<any>): ResourceContainerPatch {
+export function resourceContainerPatchFromForm<TPatch extends ResourceContainerPatch>(
+    form: ResourceContainerForm<TPatch>, 
+    patchFromResourceContainerPatch: (p: ResourceContainerPatch) => TPatch
+): TPatch {
     if (!form.valid) {
         throw new Error('Cannot get patch from invalid form');
     }
-    return form.value as ResourceContainerPatch;
+    return patchFromResourceContainerPatch(form.value as ResourceContainerPatch);
 }
 
 export function resourceContainerPatchErrorsFromForm(form: ResourceContainerForm<any>): ResourceContainerPatchErrors | null {
@@ -86,7 +89,7 @@ function getResourceReplaceGroup(form: ResourceContainerForm<any>, resourceType:
         case 'software':
             return form.controls['replaceSoftwares']  as FormGroup<{[k: string]: FormGroup<any>}>;
         case 'service':
-            return form.controls['.replaceServices']  as FormGroup<{[k: string]: FormGroup<any>}>;
+            return form.controls['replaceServices']  as FormGroup<{[k: string]: FormGroup<any>}>;
         case 'input-material':
             return form.controls['replaceInputMaterials'] as FormGroup<{[k: string]: FormGroup<any>}>;
         case 'output-material':
@@ -153,20 +156,23 @@ export abstract class ResourceContainerFormService<
     _commitContainer(patch: TPatch) {
         return this._context.commitContext(patch);
     }
-    readonly form = this._context.form;
 
-    readonly patchValue$ = this.form.statusChanges.pipe( 
+    readonly patchValue$ = defer(() => this.form.statusChanges.pipe( 
         filter((status) => status === 'VALID'),
-        map(() => resourceContainerPatchFromForm(this.form))
-    );
+        map(() => resourceContainerPatchFromForm(this.form, (p) => this.patchFromContainerPatch(p)))
+    ));
 
-    abstract patchFromContainerPatch(containerPatch: ResourceContainerPatch): TPatch;
+    abstract readonly form: ResourceContainerForm;
+
+    patchFromContainerPatch(patch: ResourceContainerPatch) {
+        return this._context.patchFromContainerPatch(patch);
+    }
 
     async commit() {
         if (!this.form.valid) {
             throw new Error('Cannot commit invalid form');
         }
-        const patch = this.patchFromContainerPatch(resourceContainerPatchFromForm(this.form))
+        const patch = resourceContainerPatchFromForm<TPatch>(this.form, (p) => this.patchFromContainerPatch(p))
         return await this._commitContainer(patch);
     }
 

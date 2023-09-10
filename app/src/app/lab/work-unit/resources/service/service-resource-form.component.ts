@@ -3,13 +3,13 @@ import { Component, inject } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { RESOURCE_FORM_FACTORY, RESOURCE_TYPE, ResourceFormComponent, ResourceFormService } from "../common/resource-form.component";
-import { serviceForm } from "./service";
+import { Service, ServiceForm, serviceForm } from "./service";
 import { MatInputModule } from "@angular/material/input";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { ProvisionFormComponent } from "../common/provision/provision-form.component";
 
 @Component({
-    selector: 'lab-req-service-resource-form',
+    selector: 'lab-service-resource-form',
     standalone: true,
     imports: [
         CommonModule,
@@ -45,11 +45,13 @@ import { ProvisionFormComponent } from "../common/provision/provision-form.compo
     ]
 })
 export class ServiceResourceFormComponent {
-    readonly resourceFormService = inject(ResourceFormService);
+    readonly resourceFormService = inject(ResourceFormService<Service>);
+
+    get form(): ServiceForm  {
+        return this.resourceFormService.form as ServiceForm;
+    }
 
     get isLabTechService() {
-        const form = this.resourceFormService.getResourceForm();
-        return !!form.value.isLabTechService;
-
+        return !!this.form.value.isLabTechService;
     }
 }

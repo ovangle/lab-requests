@@ -62,11 +62,19 @@ export class EquipmentModelService extends ModelService<Equipment, EquipmentPatc
 }
 
 @Injectable()
-export abstract class EquipmentContext extends Context<Equipment, EquipmentPatch> {
+export class EquipmentContext extends Context<Equipment, EquipmentPatch> {
+    
     override readonly models: EquipmentModelService = inject(EquipmentModelService);
     readonly equipment$ = this.committed$;
 
     override create(patch: EquipmentPatch): Promise<Equipment> {
         return firstValueFrom(this.models.create(patch));
+    }
+
+    override _doCreate(request: EquipmentPatch): Observable<Equipment> {
+        return this.models.create(request);
+    }
+    override _doCommit(identifier: string, patch: EquipmentPatch): Observable<Equipment> {
+        return this.models.update(identifier, patch);
     }
 }

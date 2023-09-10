@@ -1,33 +1,25 @@
 import { CommonModule } from "@angular/common";
 import { Component, Injectable, inject } from "@angular/core";
 import { ActivatedRoute, RouterModule } from "@angular/router";
-import { Equipment, EquipmentContext } from "./equipment";
+import { Equipment, EquipmentContext, EquipmentModelService } from "./equipment";
 import { Observable, Subscription, shareReplay, switchMap } from "rxjs";
 
-@Injectable()
-export class EquipmentContextFromRoute extends EquipmentContext {
-    readonly route = inject(ActivatedRoute)
+function equipmentContextFromDetailRoute() {
+    const route = inject(ActivatedRoute);
+    const models = inject(EquipmentModelService);
 
-    override readonly fromContext$: Observable<Equipment> = this.route.paramMap.pipe(
+    return route.paramMap.pipe(
         switchMap(params => {
             const equipmentId = params.get('equipment_id');
             if (!equipmentId) {
                 throw new Error('No equipment in route');
             }
-            return this.models.fetch(equipmentId);
+            return models.fetch(equipmentId);
         }),
         shareReplay(1)
     );
-
-    override connect() {
-        const sSubscription = super.connect();
-        const fromContext__keepalive = this.fromContext$.subscribe()
-        return new Subscription(() => {
-            sSubscription.unsubscribe();
-            fromContext__keepalive.unsubscribe();
-        })
-    }
 }
+
 
 @Component({
     standalone: true,
@@ -50,7 +42,7 @@ export class EquipmentContextFromRoute extends EquipmentContext {
     </ng-container>
     `,
     providers: [
-        { provide: EquipmentContext, useClass: EquipmentContextFromRoute }
+        EquipmentContext,
     ]
 })
 export class EquipmentDetailPage {

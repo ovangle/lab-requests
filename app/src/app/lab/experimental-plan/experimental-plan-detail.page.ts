@@ -1,53 +1,47 @@
 import { CommonModule } from "@angular/common";
 import { Component, Injectable, inject } from "@angular/core";
 import { MatTabsModule } from "@angular/material/tabs";
-import { ExperimentalPlanFormComponent } from "../experimental-plan-form.component";
-import { ExperimentalPlan, ExperimentalPlanContext } from "../experimental-plan";
-import { ActivatedRoute } from "@angular/router";
+import { ExperimentalPlanFormComponent } from "./experimental-plan-form.component";
+import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanModelService } from "./experimental-plan";
+import { ActivatedRoute, RouterModule } from "@angular/router";
 import { Observable, Subscription, map, shareReplay, switchMap } from "rxjs";
 import { MatCardModule } from "@angular/material/card";
-import { ExperimentalPlanDetailFormOutlet } from "./experimental-plan-detail-form-outlet.component";
+import { MatIconModule } from "@angular/material/icon";
 
-@Injectable()
-export class ExperimentalPlanDetailContext extends ExperimentalPlanContext {
-    readonly activatedRoute = inject(ActivatedRoute);
+export function experimentalPlanContextFromDetailRoute(): Observable<ExperimentalPlan> {
+    const activatedRoute = inject(ActivatedRoute);
+    const models = inject(ExperimentalPlanModelService);
 
-    readonly fromContext$: Observable<ExperimentalPlan> = this.activatedRoute.paramMap.pipe(
-        map(paramMap => paramMap.get('experimentalPlanId')),
+    return activatedRoute.paramMap.pipe(
+        map(paramMap => paramMap.get('experimental_plan_id')),
         switchMap(experimentalPlanId => {
             if (experimentalPlanId == null) {
-                throw new Error('No experimental plan in map');
+                throw new Error('No experimental plan in params');
             }
-            return this.models.fetch(experimentalPlanId);
-        }),
+            return models.fetch(experimentalPlanId);
+        }),        
         shareReplay(1)
     );
-
-    override connect() {
-        const sConnection = super.connect();
-        const fromContextKeepalive = this.fromContext$.subscribe();
-        return new Subscription(() => {
-            sConnection.unsubscribe();
-            fromContextKeepalive.unsubscribe();
-        });
-    }
 }
 
-
 @Component({
-    selector: 'app-lab-experimental-plan-detail-page',
+    selector: 'lab-experimental-plan-detail-page',
     standalone: true,
     imports: [
         CommonModule,
-        ExperimentalPlanFormComponent,
-        ExperimentalPlanDetailFormOutlet,
+        RouterModule,
 
         MatCardModule,
-        MatTabsModule
+        MatIconModule,
+        MatTabsModule,
+
+        ExperimentalPlanFormComponent,
     ],
     template: `
-    <app-lab-experimental-plan-form [disabled]="!isEditingForm">
-    </app-lab-experimental-plan-form>
+
+
+    <lab-experimental-plan-form [disabled]="!isEditingForm">
+    </lab-experimental-plan-form>
 
     <mat-card *ngIf="plan$ | async as plan">
         <mat-card-header>
@@ -78,8 +72,9 @@ export class ExperimentalPlanDetailContext extends ExperimentalPlanContext {
     </mat-card>
 
     <div class="resource-form-pane">
-        <lab-experimental-plan-detail-form-outlet>
-        </lab-experimental-plan-detail-form-outlet>
+        <div class="sticky-top">
+            <router-outlet name="form"></router-outlet>
+        </div>
     </div>
     `,
     styles: [`
@@ -98,7 +93,7 @@ export class ExperimentalPlanDetailContext extends ExperimentalPlanContext {
         z-index: 100;
     }
 
-    .resource-form-pane lab-experimental-plan-detail-form-outlet {
+    .resource-form-pane .sticky-top {
         width: 100%;
         height: 100vh;
         position: sticky;
@@ -106,10 +101,7 @@ export class ExperimentalPlanDetailContext extends ExperimentalPlanContext {
     }
     `],
     providers: [
-        {
-            provide: ExperimentalPlanContext,
-            useClass: ExperimentalPlanDetailContext
-        }
+        ExperimentalPlanContext,
     ]
 })
 export class ExperimentalPlanDetailPage {
@@ -120,11 +112,17 @@ export class ExperimentalPlanDetailPage {
     readonly plan$ = this._context.plan$;
 
     constructor() {
-        this._contextConnection = this._context.connect();
+        this._contextConnection = this._context.connect(
+            experimentalPlanContextFromDetailRoute()
+        );
     }
 
     ngOnDestroy() {
         this._contextConnection.unsubscribe();
+    }
+
+    isAddingWorkUnit(plan: ExperimentalPlan) {
+        return false;
     }
 
 }

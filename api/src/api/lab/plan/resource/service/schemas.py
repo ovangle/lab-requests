@@ -1,11 +1,8 @@
 
-from api.base.schemas import api_dataclass
-
-from ..common.schemas import ResourceCostEstimate, ResourceType
+from ..common.schemas import ResourceCostEstimate, ResourceType, Resource
 
 
-@api_dataclass()
-class Service:
+class Service(Resource):
     type: ResourceType = ResourceType.SERVICE
     description: str
 

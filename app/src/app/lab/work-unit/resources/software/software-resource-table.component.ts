@@ -15,7 +15,7 @@ export class SoftwareResourceTableDataSource extends ResourceTableDataSource<Sof
 }
 
 @Component({
-    selector: 'lab-req-software-resource-table',
+    selector: 'lab-software-resource-table',
     standalone: true,
     imports: [
         CommonModule,

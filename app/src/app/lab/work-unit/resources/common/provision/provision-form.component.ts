@@ -6,7 +6,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatRadioModule } from "@angular/material/radio";
 
-import { CampusInfoComponent } from '../../../../uni/campus/campus-info.component';
+import { CampusInfoComponent } from 'src/app/uni/campus/campus-info.component';
 
 @Component({
     selector: 'lab-req-provision-form',

@@ -1,4 +1,4 @@
-import { Injectable, inject } from "@angular/core";
+import { Component, Injectable, inject } from "@angular/core";
 import { Resource, ResourceContext, ResourcePatch, ResourceType, isResourceType } from "./resource";
 import { ActivatedRoute } from "@angular/router";
 import { CommonModule } from "@angular/common";
@@ -10,23 +10,32 @@ import { OutputMaterialResourceFormComponent } from "../material/output/output-m
 import { InputMaterialResourceFormComponent } from "../material/input/input-material-resource-form.component";
 
 @Injectable()
-export class ResourceFormResourceContext<T extends Resource, TPatch extends ResourcePatch> extends ResourceContext<T, TPatch> {
+export class ResourceDetailsPageResourceContext<T extends Resource, TPatch extends ResourcePatch> extends ResourceContext<T, TPatch> {
     readonly activatedRoute = inject(ActivatedRoute);
 
-    readonly resourceType$ = this.activatedRoute.url.pipe(
+    override readonly resourceTypeFromContext$ = this.activatedRoute.url.pipe(
         map(segments => segments.filter(s => isResourceType(s.path))[0]),
-        map(segment => segment.path as ResourceType)
+        map(segment => {
+            if (!segment) {
+                throw new Error('No resource type in route');
+            }
+            return segment.path as ResourceType;
+        })
     );
 
-    override readonly indexFromContext$: Observable<number> = combineLatest([
-        this.activatedRoute.paramMap
-    ]).pipe(
-        map()
+    override readonly indexFromContext$ = this.activatedRoute.paramMap.pipe(
+        map(paramMap => {
+            const index = Number.parseInt(paramMap.get('index')!);
+            if (Number.isNaN(index)) {
+                throw new Error('No index in params');
+            }
+            return index;
+        })
     );
 }
 
 @Component({
-    selector: 'app-lab-work-unit-resource-form-host',
+    selector: 'app-lab-resource-details-page',
     standalone: true,
     imports: [
         CommonModule,
@@ -40,30 +49,28 @@ export class ResourceFormResourceContext<T extends Resource, TPatch extends Reso
     template: `
     <ng-container [ngSwitch]="resourceType$ | async">
         <ng-container *ngSwitchCase="'equipment'">
-            <app-lab-equipment-lease-form></app-lab-equipment-lease-form>
+            <lab-equipment-lease-form></lab-equipment-lease-form>
         </ng-container>
         <ng-container *ngSwitchCase="'software'">
-            <app-lab-software-resource-form></app-lab-software-resource-form>
+            <lab-software-resource-form></lab-software-resource-form>
         </ng-container>
         <ng-container *ngSwitchCase="'service'">
-            <app-lab-service-resource-form></app-lab-service-resource-form>
+            <lab-service-resource-form></lab-service-resource-form>
         </ng-container>
         <ng-container *ngSwitchCase="'input-material'">
-            <app-lab-input-material-resource-form></app-lab-input-material-resource-form>
+            <lab-input-material-resource-form></lab-input-material-resource-form>
         </ng-container>
-
         <ng-container *ngSwichCase="'output-material'">
-            <app-lab-output-material-resource-form></app-lab-output-material-resource-form>
+            <lab-output-material-resource-form></lab-output-material-resource-form>
         </ng-container>
-
     </ng-container>
     `,
     providers: [
-        { provide: ResourceContext, useClass: ResourceFormResourceContext }
+        { provide: ResourceContext, useClass: ResourceDetailsPageResourceContext }
     ]
 })
-export class ResourceContextFormHostComponent {
-    readonly _context = inject(ResourceFormResourceContext);
+export class ResourceDetailsPage {
+    readonly _context = inject(ResourceDetailsPageResourceContext);
     _contextConnection: Subscription;
 
     readonly resourceType$ = this._context.resourceTypeFromContext$;

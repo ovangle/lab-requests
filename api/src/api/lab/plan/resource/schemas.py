@@ -3,12 +3,12 @@ from __future__ import annotations
 from dataclasses import field
 import dataclasses
 from typing import TYPE_CHECKING, Dict, Optional, Type, TypeVar, Any, Union, cast
-import pydantic
 
-from sqlalchemy import UUID
 from humps import decamelize
+from pydantic import BaseModel
 
-from api.base.schemas import api_dataclass
+from api.base.models import Base
+from api.base.schemas import ApiModel, ModelPatch
 
 from .equipment_lease.schemas import EquipmentLease
 from .software.schemas import Software
@@ -30,8 +30,8 @@ def resource_name(resource: TResource | Type[TResource]) -> str:
         return decamelize(resource.__name__.lower())
     return resource_name(type(resource))
 
-@api_dataclass()
-class ResourceContainer:
+
+class ResourceContainer(BaseModel):
     equipments: list[EquipmentLease] = field(default_factory=list)
     input_materials: list[InputMaterial] = field(default_factory=list)
     output_materials: list[OutputMaterial] = field(default_factory=list)
@@ -52,27 +52,26 @@ class ResourceContainer:
         return instance
 
 
-@api_dataclass()
-class ResourceContainerPatch:
-    equipments: Optional[list[EquipmentLease]] = None
-    add_equipments: Optional[list[EquipmentLease]] = None
-    replace_equipments: Optional[dict[int, EquipmentLease]] = None
+class ResourceContainerPatch(BaseModel):
+    equipments: list[EquipmentLease] | None = None
+    add_equipments: list[EquipmentLease] | None = None
+    replace_equipments: dict[int, EquipmentLease] | None = None
 
-    input_materials: Optional[list[InputMaterial]] = None
-    add_input_materials: Optional[list[InputMaterial]] = None
-    replace_input_material: Optional[dict[int, InputMaterial]] = None
+    input_materials: list[InputMaterial] | None = None
+    add_input_materials: list[InputMaterial] | None = None
+    replace_input_material: dict[int, InputMaterial] | None = None
 
-    output_materials: Optional[list[OutputMaterial]] = None
-    add_output_materials: Optional[list[OutputMaterial]] = None
-    replace_output_material: Optional[dict[int, OutputMaterial]] = None
+    output_materials: list[OutputMaterial] | None = None
+    add_output_materials: list[OutputMaterial] | None = None
+    replace_output_material: dict[int, OutputMaterial] | None = None
 
-    services: Optional[list[Service]] = None
-    add_services: Optional[list[Service]] = None
-    replace_service: Optional[dict[int, Service]] = None
+    services: list[Service] | None = None
+    add_services: list[Service] | None = None
+    replace_service: dict[int, Service] | None = None
 
-    softwares: Optional[list[Software]] = None
-    add_softwares: Optional[list[Software]] = None
-    replace_softwares: Optional[dict[int, Service]] = None
+    softwares: list[Software] | None = None
+    add_softwares: list[Software] | None = None
+    replace_softwares: dict[int, Service] | None = None
 
     def _get_resources(self, resource_type: Type[TResource], model: models.ResourceContainer) -> list[TResource]:
         jsonb_resources: list[dict] = getattr(model, resource_name(resource_type))

@@ -57,7 +57,7 @@ export class CampusModelService extends ModelService<Campus, CampusPatch> {
     }
 
     searchCampuses(name: string | null): Observable<Campus[]> {
-        console.log(`searching campuses where name starts with ${name}`)
+        console.log(`searching campuses where name starts with ${name}`);
         return this.query({ name_startswith: name || '' });
     }
 
@@ -79,11 +79,14 @@ export class CampusModelService extends ModelService<Campus, CampusPatch> {
 }
 
 @Injectable()
-export abstract class CampusContext extends Context<Campus, CampusPatch> {
+export class CampusContext extends Context<Campus, CampusPatch> {
+    
     override readonly models = inject(CampusModelService);
-    override create(patch: CampusPatch): Promise<Campus> {
-        return firstValueFrom(this.models.create(patch));
+    override _doCreate(request: CampusPatch): Observable<Campus> {
+        return this.models.create(request);
     }
-
+    override _doCommit(identifier: string, patch: CampusPatch): Observable<Campus> {
+        return this.models.update(identifier, patch);
+    }
 }
 

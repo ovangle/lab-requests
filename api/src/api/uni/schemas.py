@@ -1,23 +1,20 @@
 from __future__ import annotations
+from enum import Enum
 
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
-from pydantic import ConfigDict, TypeAdapter
+from pydantic import BaseModel, ConfigDict, TypeAdapter
 from pydantic.dataclasses import dataclass
 
-from api.base.schemas import SCHEMA_CONFIG, ApiModel, ModelPatch, ModelCreate, api_dataclass
+from api.base.schemas import SCHEMA_CONFIG, ApiModel, ModelPatch, ModelCreate
 from api.utils.db import LocalSession
 
 from .types import CampusCode
+from . import models
 
-if TYPE_CHECKING:
-    from . import models
-
-@api_dataclass()
-class CampusBase:
+class CampusBase(BaseModel):
     name: str
 
-@api_dataclass()
 class CampusPatch(CampusBase, ModelPatch[models.Campus]):
     async def apply_to_model(self, db: LocalSession, model: models.Campus):
         if model.name != self.name:
@@ -25,18 +22,15 @@ class CampusPatch(CampusBase, ModelPatch[models.Campus]):
             db.add(model)
         return model
 
-@api_dataclass()
+
 class CampusCreate(CampusPatch, ModelCreate[models.Campus]):
     code: CampusCode
 
     async def do_create(self, db: LocalSession):
+        from . import models
         instance = models.Campus(code=self.code)
         await self.apply_to_model(db, instance)
 
-
-
-
-@api_dataclass()
 class Campus(CampusBase, ApiModel[models.Campus]):
     id: UUID
     code: CampusCode
@@ -50,3 +44,4 @@ class Campus(CampusBase, ApiModel[models.Campus]):
             created_at=model.created_at,
             updated_at=model.updated_at
         )
+

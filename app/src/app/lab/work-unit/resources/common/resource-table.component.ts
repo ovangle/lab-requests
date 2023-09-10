@@ -8,15 +8,16 @@ import { ActivatedRoute, RouterLink, RouterModule } from "@angular/router";
 import { MatIconModule } from "@angular/material/icon";
 import { animate, state, style, transition, trigger } from "@angular/animations";
 import { MatButtonModule } from "@angular/material/button";
-import { ResourceContainerFormService } from "../resource-container-form";
+
+import { ResourceContainerContext } from "../resource-container";
 
 @Injectable()
 export abstract class ResourceTableDataSource<T extends Resource> extends DataSource<T> {
     readonly resourceType: ResourceType;
     readonly resourceTitle: string;
 
-    readonly resourceContainerService = inject(ResourceContainerFormService);
-
+    readonly _containerContext = inject(ResourceContainerContext);
+    readonly resourceContainer$ = this._containerContext.committed$;
 
     getCreateLink(): any[] {
         return ['../../', {outlets: {form: [this.resourceType, 'create']}}]
@@ -27,11 +28,11 @@ export abstract class ResourceTableDataSource<T extends Resource> extends DataSo
     }
 
     deleteElementAt(elementIndex: number): void {
-        this.resourceContainerService.deleteResourceAt(this.resourceType, elementIndex);
+        this._containerContext.deleteResourceAt(this.resourceType, elementIndex);
     }
 
     override connect(collectionViewer: CollectionViewer): Observable<readonly T[]> {
-        return this.resourceContainerService.getResources$(this.resourceType);
+        return this._containerContext.committedResources$<T>(this.resourceType);
     }
 
     override disconnect(collectionViewer: CollectionViewer): void {

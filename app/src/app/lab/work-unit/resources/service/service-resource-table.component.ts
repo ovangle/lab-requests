@@ -13,7 +13,7 @@ export class ServiceResourceTableDataSource extends ResourceTableDataSource<Serv
 }
 
 @Component({
-    selector: 'lab-req-service-resource-table',
+    selector: 'lab-service-resource-table',
     standalone: true,
     imports: [
         CommonModule,

@@ -13,38 +13,29 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.types import VARCHAR, TEXT
 
+from api.uni.types import Discipline
 from api.utils.db import uuid_pk, EMAIL_DOMAIN
 from api.base.models import Base
+from ..types import LabType
 
 if TYPE_CHECKING:
     from api.uni.models import Campus
-    from api.lab.types import LabType
 
+from .funding.models import ExperimentalPlanFundingModel
 from .resource.models import ResourceContainer
-
-class FundingType(str):
-    re = re.compile(r'^[a-z]{0,8}$')
-
-    def __new__(cls, value: str | FundingType):
-        if isinstance(value, FundingType):
-            return value
-
-        if not FundingType.re.match(value):
-            raise ValueError('Funding type must match {FundingType.re}')
-        return super().__new__(cls, value)
-
-    @classmethod
-    def __get_pydantic_core_schema__(cls, source_type: Any, handler: GetCoreSchemaHandler):
-        return core_schema.no_info_after_validator_function(cls, handler(str))
 
 class ExperimentalPlan(Base):
     __tablename__ = 'experimental_plans'
 
     id: Mapped[uuid_pk]
-    funding_type: Mapped[FundingType] = mapped_column(VARCHAR(8))
 
-    campus_id: Mapped[UUID] = mapped_column(ForeignKey('campuses.id'))
-    campus: Mapped[Campus] = relationship(back_populates='campus')
+    funding_model_id: Mapped[UUID] = mapped_column(ForeignKey('experimental_plan_funding_models.id'))
+    funding_model: Mapped[ExperimentalPlanFundingModel] = relationship()
+
+    researcher_base_campus_id: Mapped[UUID] = mapped_column(ForeignKey('campuses.id'))
+    researcher_base_campus: Mapped[Campus] = relationship()
+
+    researcher_discipline: Mapped[Discipline] = mapped_column(ENUM(Discipline))
 
     # The name of the researcher responsible for this experimental plan
     researcher_email: Mapped[str] = mapped_column(EMAIL_DOMAIN)
@@ -83,6 +74,11 @@ class ExperimentalPlan(Base):
                 .where(ExperimentalPlan.supervisor_email == supervisor_email)
         )
         return [ExperimentalPlan(record) for record in results]
+
+    @staticmethod
+    async def all(db: AsyncSession):
+        results = await db.execute(select(ExperimentalPlan))
+        return [record[0] for record in results]
 
 
 class WorkUnit(ResourceContainer, Base):

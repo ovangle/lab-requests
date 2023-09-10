@@ -7,6 +7,7 @@ app = FastAPI()
 
 CORS_ALLOW_ORIGINS = [
     'http://localhost:4200',
+    'http://localhost:4201',
     'http://localhost:8000'
 ]
 
@@ -18,8 +19,11 @@ app.add_middleware(
     allow_headers=['*']
 )
 
-#from .plan.views import plans
-#app.add_route('/plan', plans)
+from .lab.equipment.views import lab_equipments
+app.include_router(lab_equipments)
+
+from .lab.plan.views import lab_plans
+app.include_router(lab_plans)
 
 from .uni.views import uni_campuses
 app.include_router(uni_campuses)

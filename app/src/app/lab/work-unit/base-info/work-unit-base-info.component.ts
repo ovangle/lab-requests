@@ -1,12 +1,10 @@
 import { CommonModule } from "@angular/common";
-import { Component, Input } from "@angular/core";
-import { WorkUnit } from "./work-unit";
-import { Campus } from "src/app/uni/campus/campus";
 import { CampusInfoComponent } from "src/app/uni/campus/campus-info.component";
-
+import { WorkUnit } from "../work-unit";
+import { Component, Input } from "@angular/core";
 
 @Component({
-    selector: 'lab-req-work-unit-campus-lab-info',
+    selector: 'lab-work-unit-base-info',
     standalone: true,
     imports: [
         CommonModule, 
@@ -14,16 +12,16 @@ import { CampusInfoComponent } from "src/app/uni/campus/campus-info.component";
     ],
     template: `
     <h3>
-        <app-uni-campus-info [campus]="workUnit.campus">
-        </app-uni-campus-info>    
+        <uni-campus-info [campus]="workUnit.campus" nameOnly>
+        </uni-campus-info>    
         - {{workUnit.labType}} lab</h3>
     <dl>
         <dt>Technician</dt><dd>{{workUnit.technician}}</dd>
+        <dt>Process</dt><dd>{{workUnit.processSummary}}</dd>
     </dl>
     `
 })
-export class WorkUnitCampusLabInfoComponent {
+export class WorkUnitBaseInfoComponent {
     @Input({required: true})
     workUnit: WorkUnit;
-
 }

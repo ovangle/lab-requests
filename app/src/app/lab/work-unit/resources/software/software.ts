@@ -23,7 +23,6 @@ export class Software implements Resource {
 }
 
 export type SoftwareForm = FormGroup<{
-    type: FormControl<'software'>;
     name: FormControl<string>;
     description: FormControl<string>;
     minVersion: FormControl<string>;
@@ -34,7 +33,6 @@ export type SoftwareForm = FormGroup<{
 
 export function createSoftwareForm(s: Partial<Software>): SoftwareForm {
     return new FormGroup({
-        type: new FormControl('software', {nonNullable: true}),
         name: new FormControl(s.name || '', { nonNullable: true, validators: [ Validators.required ] }),
         description: new FormControl(s.description || '', { nonNullable: true }),
         minVersion: new FormControl(s.minVersion || '', { nonNullable: true }),

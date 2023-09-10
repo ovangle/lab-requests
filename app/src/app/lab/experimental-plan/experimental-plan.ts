@@ -5,11 +5,12 @@ import { BehaviorSubject, Observable, Subject, Subscription, connectable, filter
 import { __runInitializers } from "tslib";
 import { Campus, CampusCode } from "../../uni/campus/campus";
 import { Discipline } from "../../uni/discipline/discipline";
-import { ExperimentalPlanType } from "./funding-type/experimental-plan-type";
+
 import { WorkUnit } from "../work-unit/work-unit";
 import { ModelService } from "src/app/utils/models/model-service";
 import { ActivatedRoute } from "@angular/router";
 import { Context } from "src/app/utils/models/model-context";
+import { FundingModel, FundingModelCreate } from "./funding-model/funding-model";
 
 
 export interface ExperimentalPlanBase {
@@ -20,7 +21,6 @@ export interface ExperimentalPlanBase {
     researcherDiscipline: Discipline | null;
     researcherBaseCampus: Campus;
 
-    fundingType: ExperimentalPlanType;
     supervisor: string | null;
 
     processSummary: string;
@@ -34,7 +34,7 @@ export class ExperimentalPlan implements ExperimentalPlanBase {
     researcherBaseCampus: Campus;
 
     title: string;
-    fundingType: ExperimentalPlanType;
+    fundingModel: FundingModel;
 
     supervisor: string | null;
     processSummary: string;
@@ -51,7 +51,7 @@ export class ExperimentalPlan implements ExperimentalPlanBase {
         this.researcherDiscipline = plan.researcherDiscipline!;
         this.researcherBaseCampus = plan.researcherBaseCampus!;
 
-        this.fundingType = plan.fundingType!;
+        this.fundingModel = plan.fundingModel!;
         this.supervisor = plan.supervisor || null;
 
         this.processSummary = plan?.processSummary || '';
@@ -67,11 +67,15 @@ export interface ExperimentalPlanPatch {
     title: string;
     researcher: string;
     researcherBaseCampus: Campus;
-    researcherDiscipline: Discipline;
+    researcherDiscipline: Discipline | null;
 
-    fundingType: ExperimentalPlanType;
+    fundingModel: FundingModel | FundingModelCreate | null;
     supervisor: string | null;
     processSummary: string;
+}
+
+export function patchFromExperimentalPlan(plan: ExperimentalPlan): ExperimentalPlanPatch {
+    return { ...plan };
 }
 
 export type ExperimentalPlanPatchErrors = ValidationErrors & {
@@ -82,7 +86,7 @@ export type ExperimentalPlanPatchErrors = ValidationErrors & {
     };
     researcherBaseCampus?: { required: string | null; };
     researcherDiscipline?: { required: string | null; };
-    fundingType: { required: string | null; };
+    fundingType?: { required: string | null; };
     supervisor?: {
         email: string | null;
     }
@@ -111,16 +115,15 @@ export class ExperimentalPlanModelService extends ModelService<ExperimentalPlan,
  * via the context.
  */
 @Injectable()
-export abstract class ExperimentalPlanContext extends Context<ExperimentalPlan, ExperimentalPlanPatch> {
+export class ExperimentalPlanContext extends Context<ExperimentalPlan, ExperimentalPlanPatch> {
     override readonly models = inject(ExperimentalPlanModelService);
-    override create(patch: ExperimentalPlanPatch): Promise<ExperimentalPlan> {
-        return firstValueFrom(this.models.create(patch));
+    readonly plan$ = this.committed$;
+
+    override _doCreate(create: ExperimentalPlanPatch): Observable<ExperimentalPlan> {
+        return this.models.create(create);
     }
 
-    readonly plan$ = this.committed$;
-}
-
-export function injectExperimentalPlanFromContext(): Observable<ExperimentalPlan | null> {
-    const maybeContext = inject(ExperimentalPlanContext, { optional: true });
-    return maybeContext ? maybeContext.plan$ : of(null);
+    override _doCommit(id: string, patch: ExperimentalPlanPatch): Observable<ExperimentalPlan> {
+        return this.models.update(id, patch);
+    }
 }

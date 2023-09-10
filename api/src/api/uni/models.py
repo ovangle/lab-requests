@@ -14,8 +14,6 @@ from api.utils.db import uuid_pk, LocalSession
 from .types import CampusCode, campus_code
 from .errors import CampusDoesNotExist
 
-
-
 class Campus(Base):
     __tablename__ = 'campuses'
 

@@ -11,7 +11,7 @@ import { InputMaterial, InputMaterialForm, createInputMaterialForm } from "./inp
 
 
 @Component({
-    selector: 'lab-req-input-material-resource-form',
+    selector: 'lab-input-material-resource-form',
     standalone: true,
     imports: [
         CommonModule,

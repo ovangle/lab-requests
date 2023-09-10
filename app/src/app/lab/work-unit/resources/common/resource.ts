@@ -28,6 +28,8 @@ export const RESOURCE_TYPE_NAMES: {[K in ResourceType]: string} = {
     'output-material': 'Output material'
 }
 
+export const ALL_RESOURCE_TYPES = Object.keys(RESOURCE_TYPE_NAMES) as ResourceType[];
+
 export function isResourceType(obj: any): obj is ResourceType {
     return typeof obj === 'string' 
         && Object.keys(RESOURCE_TYPE_NAMES).includes(obj);
@@ -42,11 +44,10 @@ export abstract class ResourceContext<T extends Resource, TPatch extends Resourc
     readonly _containerContext = inject(ResourceContainerContext);
     readonly container$ = this._containerContext.committed$;
 
-    readonly _containerFormService = inject(ResourceContainerFormService);
-    readonly containerForm: ResourceContainerForm<any> = this._containerFormService.form;
-
     readonly resourceTypeSubject = new BehaviorSubject<ResourceType | null>(null);
-    readonly resourceType$ = this.resourceTypeSubject.asObservable();
+    readonly resourceType$: Observable<ResourceType> = this.resourceTypeSubject.pipe(
+        filter((r): r is ResourceType => r != null)
+    );
 
     abstract readonly resourceTypeFromContext$: Observable<ResourceType | null>;
 
@@ -73,16 +74,6 @@ export abstract class ResourceContext<T extends Resource, TPatch extends Resourc
         }
         const index = this.indexSubject.value;
         return [resourceType!, index];
-    }
-
-    get resourceForm(): FormGroup<any> | null {
-        const [resourceType, index] = this._typeIndex;
-        return this._containerFormService.getResourceForm(resourceType, index)
-    }
-
-    get isCreate(): boolean {
-        const [resourceType, index] = this._typeIndex;
-        return this._containerFormService.isCreateFormAt(resourceType, index);
     }
 
     connect() {

@@ -3,7 +3,7 @@ import { Component } from "@angular/core";
 
 
 @Component({
-    selector: 'app-lab-plan-resources-equipment-lease',
+    selector: 'lab-equipment-lease-form',
     standalone: true,
     imports: [
         CommonModule,

@@ -2,15 +2,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from uuid import UUID
-from api.base.schemas import api_dataclass, ApiModel
+from api.base.schemas import ApiModel, ModelPatch
 
 from ..types import LabType
+from . import models
 
-if TYPE_CHECKING:
-    from . import models
-
-@api_dataclass()
-class EquipmentPatch:
+class EquipmentPatch(ModelPatch[models.Equipment]):
     name: str
     description: str
 
@@ -19,8 +16,7 @@ class EquipmentPatch:
     requires_training: bool
     training_descriptions: list[str]
 
-@api_dataclass()
-class Equipment(EquipmentPatch, ApiModel):
+class Equipment(EquipmentPatch, ApiModel[models.Equipment]):
     id: UUID
 
     @classmethod

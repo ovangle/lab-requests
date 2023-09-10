@@ -1,7 +1,6 @@
 
-from types import FunctionType
 from uuid import UUID
-from typing import Any, List, Optional
+from typing import Any, List
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from api.base.models import Base

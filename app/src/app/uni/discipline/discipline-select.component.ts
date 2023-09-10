@@ -7,27 +7,29 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
 
-
 @Component({
-    selector: 'lab-req-discipline-select-label',
-    template: `<ng-content></ng-content>`
-})
-export class DisciplineSelectLabelComponent {
-
-}
-
-@Component({
-    selector: 'lab-req-discipline-select',
+    selector: 'uni-discipline-select',
+    standalone: true,
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        MatFormFieldModule,
+        MatSelectModule
+    ],
     template: `
     <mat-form-field>
         <mat-label>
-            <ng-content select="lab-req-discipline-select-label"></ng-content>
+            <ng-content select="mat-label"></ng-content>
         </mat-label>
         <mat-select [formControl]="_control" (closed)="_onTouched()">
             <mat-option *ngFor="let discipline of disciplines" [value]="discipline">
                 {{discipline}}
             </mat-option>
         </mat-select>
+
+        <mat-error>
+            <ng-content select="mat-error"></ng-content>
+        </mat-error>
     </mat-form-field>
     `,
     providers: [
@@ -38,7 +40,7 @@ export class DisciplineSelectLabelComponent {
         }
     ],
     styles: [`
-    mat-form-field { width: 100%; }
+        mat-form-field { width: 100%; }
     `]
 })
 export class DisciplineSelectComponent implements ControlValueAccessor {

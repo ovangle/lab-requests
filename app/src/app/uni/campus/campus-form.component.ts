@@ -1,12 +1,9 @@
-import { Component, EventEmitter, Injectable, Input, Output, inject } from "@angular/core";
-import { CommonModule, NgIf } from '@angular/common';
+import { Component, Injectable, Input, inject } from "@angular/core";
+import { CommonModule } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { Campus, CampusPatchErrors, CampusModelService, CampusContext, CampusCode, CampusPatch} from "./campus";
-import { Observable, filter, firstValueFrom, map, switchMap } from "rxjs";
-import { AbstractControl, Form, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from "@angular/forms";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { ErrorStateMatcher } from "@angular/material/core";
+import { filter, firstValueFrom, map, switchMap } from "rxjs";
+import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 
 export type CampusForm = FormGroup<{
     code: FormControl<CampusCode>;
@@ -85,13 +82,13 @@ export class CampusFormService {
     async reset(): Promise<void> {
         this.form.reset();
         const committed = await firstValueFrom(this.committed$);
-        this.form.patchValue(committed);
+        this.form.patchValue(committed!);
     }
 }
 
 
 @Component({
-    selector: 'app-uni-campus-patch-form',
+    selector: 'uni-campus-form',
     standalone: true,
     imports: [
         CommonModule,

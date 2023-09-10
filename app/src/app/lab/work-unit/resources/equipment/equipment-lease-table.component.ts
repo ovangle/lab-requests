@@ -13,7 +13,7 @@ export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<Equip
 }
 
 @Component({
-    selector: 'lab-req-equipment-lease-table',
+    selector: 'lab-equipment-lease-table',
     standalone: true,
     imports: [
         CommonModule,

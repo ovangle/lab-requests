@@ -1,45 +1,20 @@
-import { Component, Injectable, inject } from "@angular/core";
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
-import { ExperimentalPlan, ExperimentalPlanPatchErrors, ExperimentalPlanModelService, ExperimentalPlanPatch, injectExperimentalPlanFromContext} from "./experimental-plan";
-import { Campus } from "src/app/uni/campus/campus";
-import { BehaviorSubject, Observable, Subscription, map, share, tap } from "rxjs";
-import { Discipline } from "src/app/uni/discipline/discipline";
-import { ExperimentalPlanType } from "./funding-type/experimental-plan-type";
-import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatInputModule } from "@angular/material/input";
-import { MatFormFieldModule } from "@angular/material/form-field";
+import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 import { CommonModule } from "@angular/common";
-import { WorkUnit } from "../work-unit/work-unit";
-import { Software } from "../work-unit/resources/software/software";
-import { InputMaterial } from "../work-unit/resources/material/input/input-material";
-import { hazardClassByDivision } from "../work-unit/resources/common/hazardous/hazardous";
-import { WorkUnitFormService } from "../work-unit/work-unit-patch-form.component";
-
-const experimentalPlanFixture = new ExperimentalPlan({
-    researcher: 'hello@world.com',
-    researcherBaseCampus: new Campus({code: 'ROK', name: 'Rockhampton'}),
-    workUnits: [
-        new WorkUnit({
-            campus: new Campus({code: 'ROK', name: 'Rockhampton'}),
-            labType: 'ICT',
-            technician: 'hello@world.com',
-            softwares: [
-                new Software({ name: 'MATLAB', description: 'test', minVersion: '3.21' }),
-                new Software({ name: 'Microsoft Word', description: 'Microsoft stuff', minVersion: '6304' })
-            ],
-            inputMaterials: [
-                new InputMaterial({
-                    name: 'poison',
-                    baseUnit: 'L',
-                    hazardClasses: [
-                        hazardClassByDivision('1.4'),
-                        hazardClassByDivision('6')
-                    ]
-                })
-            ]
-        })
-    ],
-});
+import { Component, Injectable, Input, TemplateRef, inject } from "@angular/core";
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatDatepickerModule } from "@angular/material/datepicker";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatInputModule } from "@angular/material/input";
+import { Observable, Subscription, defer, filter, map, shareReplay, tap } from "rxjs";
+import { Campus } from "src/app/uni/campus/campus";
+import { CampusSearchComponent } from "src/app/uni/campus/campus-search.component";
+import { Discipline } from "src/app/uni/discipline/discipline";
+import { DisciplineSelectComponent } from "src/app/uni/discipline/discipline-select.component";
+import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanPatch, ExperimentalPlanPatchErrors, patchFromExperimentalPlan } from "./experimental-plan";
+import { FundingModelSelectComponent } from "./funding-model/funding-model-select.component";
+import { ExperimentalPlanResearcherFormComponent } from "./researcher/researcher-form.component";
+import { FundingModel, FundingModelCreate } from "./funding-model/funding-model";
 
 export type ExperimentalPlanControls = {
     title: FormControl<string>;
@@ -47,7 +22,7 @@ export type ExperimentalPlanControls = {
     researcher: FormControl<string>;
     researcherBaseCampus: FormControl<Campus | null>;
     researcherDiscipline: FormControl<Discipline | null>;
-    fundingType: FormControl<ExperimentalPlanType | null>;
+    fundingModel: FormControl<FundingModel | FundingModelCreate | null>;
 
     supervisor: FormControl<string | null>;
     processSummary: FormControl<string>;
@@ -72,102 +47,195 @@ function experimentalPlanPatchErrorsFromForm(form: ExperimentalPlanForm): Experi
 
 @Injectable()
 export class ExperimentalPlanFormService {
-    readonly model = inject(ExperimentalPlanModelService);
+    readonly _context = inject(ExperimentalPlanContext);
 
-    readonly committedSubject = new BehaviorSubject<ExperimentalPlan | null>(null);
-    readonly committed$ = this.committedSubject.asObservable();
+    readonly committed$ = this._context.plan$.pipe(
+        tap((committed) => {
+            console.log('committed', committed);
+            this.patchForm.reset();
+            if (committed) {
+                const patch = patchFromExperimentalPlan(committed);
+                this.patchForm.patchValue(patch);
+            }
+        }),
+        shareReplay(1)
+    );
 
     readonly patchForm: ExperimentalPlanForm = new FormGroup({
         title: new FormControl<string>('', {nonNullable: true, validators: [Validators.required]}),
         researcher: new FormControl<string>('', {nonNullable: true, validators: [Validators.required, Validators.email]}),
         researcherBaseCampus: new FormControl<Campus | null>(null, { validators: [Validators.required]}),
         researcherDiscipline: new FormControl<Discipline | null>(null, { validators: [Validators.required] }),
-        fundingType: new FormControl<ExperimentalPlanType | null>(null, { validators: [Validators.required]}),
+        fundingModel: new FormControl<FundingModel | FundingModelCreate | null>(null, { validators: [Validators.required]}),
         supervisor: new FormControl<string | null>(null, { validators: [Validators.email]}),
         processSummary: new FormControl('', { nonNullable: true })
+    }, {
+        validators: [
+            (control) => this._formValidator(control as ExperimentalPlanForm)
+        ]
     });
 
-    readonly patchErrors$: Observable<ExperimentalPlanPatchErrors | null> = this.patchForm.statusChanges.pipe(
-        map(() => experimentalPlanPatchErrorsFromForm(this.patchForm)),
-        share()
-    );
-    readonly patchValue$: Observable<ExperimentalPlanPatch | null> = this.patchForm.statusChanges.pipe(
-        map(() => experimentalPlanPatchFromForm(this.patchForm)),
-        share()
-    );
-
-    connect(initial: ExperimentalPlan | null): Subscription {
-        // Reverts the patchForm to the committed subject's value whenever a new value is submitted
-        this.committedSubject.subscribe(() => this.revert());
-        this.committedSubject.next(initial);
-
-        const _patchErrorsSubscription = this.patchErrors$.subscribe();
-        const _patchValueSubscription = this.patchValue$.subscribe();
-
-        return new Subscription(() => {
-            _patchErrorsSubscription.unsubscribe();
-            _patchValueSubscription.unsubscribe();
-            this.committedSubject.complete();
-        });
+    _formValidator(form: ExperimentalPlanForm): ExperimentalPlanPatchErrors | null {
+        let errors: any = null;
+        for (const [name, control] of Object.entries(form.controls)) {
+            if (control.invalid) {
+                console.log(name, 'invalid', control.errors)
+            }
+            if (control.touched && control.invalid) {
+                errors = errors || {};
+                errors[name] = control.errors;
+            }
+        }
+        console.log('errors', errors);
+        return errors;
     }
 
-    commit(): Observable<ExperimentalPlan> {
-        const committed = this.committedSubject.value;
+    readonly patchErrors$: Observable<ExperimentalPlanPatchErrors | null> = defer(() => this.patchForm.valueChanges.pipe(
+        map(() => {
+            return experimentalPlanPatchErrorsFromForm(this.patchForm)
+        }),
+    ));
+    readonly patchValue$: Observable<ExperimentalPlanPatch> = defer(() => this.patchForm.valueChanges.pipe(
+        filter(() => this.patchForm.valid),
+        map(() => experimentalPlanPatchFromForm(this.patchForm)!)
+    ));
 
+    async commit(): Promise<ExperimentalPlan> {
         if (this.patchForm.invalid) {
             throw new Error('Cannot commit invalid form')
         }
         const patch = experimentalPlanPatchFromForm(this.patchForm)!;
-        let _commit: Observable<ExperimentalPlan>;
-        if (committed == null) {
-            _commit = this.model.create(patch);
-        } else {
-            _commit = this.model.update(committed.id, patch);
-        }
-        return _commit.pipe(
-            tap((committed) => this.committedSubject.next(committed))
-        );
+        return this._context.commit(patch);
     }
 
-    revert() {
-        if (this.committedSubject.value == null) {
-            this.patchForm.reset();
-        } else {
-            this.patchForm.setValue(this.committedSubject.value);
-        }
+    reset() {
+        this._context.reset();
     }
 }
 
 
 @Component({
-    selector: 'app-lab-experimental-plan-form',
+    selector: 'lab-experimental-plan-form',
     standalone: true,
     imports: [
         CommonModule,
         ReactiveFormsModule,
         MatFormFieldModule,
         MatInputModule,
-        MatCheckboxModule
+        MatCheckboxModule,
+        MatDatepickerModule,
+
+        DisciplineSelectComponent,
+        FundingModelSelectComponent,
+        CampusSearchComponent,
+        ExperimentalPlanResearcherFormComponent
     ],
-    templateUrl: './experiental-plan-form.component.html',
-    styleUrls: [
-        './experimental-plan-form.component.css'
-    ],
+    template: `
+    <form [formGroup]="form">
+        <mat-form-field>
+            <mat-label for="title">Project title</mat-label>
+
+            <input matInput type="text" id="title" formControlName="title" required />
+
+            <ng-container *ngIf="titleErrors$ | async as titleErrors">
+                <mat-error *ngIf="titleErrors.required">
+                    A value is required
+                </mat-error>
+            </ng-container>
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-label>Experimental Plan Summary</mat-label>
+            <textarea matInput id="process-summary" formControlName="processSummary">
+            </textarea>
+        </mat-form-field>
+
+        <lab-experimental-plan-researcher-form 
+            [form]="form">
+        </lab-experimental-plan-researcher-form>
+
+        <lab-funding-type-select formControlName="fundingType">
+            <mat-label>Funding source</mat-label>
+
+            <ng-container *ngIf="fundingTypeErrors$ | async as errors">
+                <mat-error *ngIf="errors.required">
+                    A value is required
+                </mat-error>
+            </ng-container>
+        </lab-funding-type-select>
+
+        form valid: {{form.valid}}
+
+        <ng-container [ngTemplateOutlet]="controls" [ngTemplateOutletContext]="formControlContext$ | async">
+        </ng-container>
+    </form>
+    `,
+    styles: [`
+        form {
+            padding: 0px 2em;
+        }
+
+        mat-card + mat-card {
+            margin-top: 1em;
+        }
+
+        mat-form-field {
+            width: 100%;
+        }
+
+        .researcher-details {
+            padding-left: 3em;
+        }
+    `],
     providers: [
         ExperimentalPlanFormService, 
-        WorkUnitFormService,
+        // WorkUnitFormService,
     ]
 })
 export class ExperimentalPlanFormComponent {
 
     readonly currentUser: string = 't.stephenson@cqu.edu.au';
 
-    readonly formService = inject(ExperimentalPlanFormService);
-    readonly form = this.formService.patchForm;
+    readonly _formService = inject(ExperimentalPlanFormService);
+    readonly form = this._formService.patchForm;
     private _formServiceConnection: Subscription 
+
+    readonly titleErrors$ = this._formService.patchErrors$.pipe(
+        map(errors => errors?.title || null)
+    );
+
+    readonly fundingTypeErrors$ = this._formService.patchErrors$.pipe(
+        map(errors => errors?.fundingType || null)
+    );
+
+    @Input()
+    controls: TemplateRef<{
+        $implicit: ExperimentalPlanForm,
+        committable: boolean,
+        doCommit: () => Promise<ExperimentalPlan>,
+    }>;
+
+    @Input()
+    get disabled(): boolean {
+        return this.form.disabled;
+    }
+    set disabled(value: BooleanInput) {
+        const isDisabled = coerceBooleanProperty(value);
+        if (isDisabled  && !this.form.disabled) {
+            this.form.disable();
+        } 
+        if (!isDisabled && this.form.disabled) {
+            this.form.enable();
+        }
+    }
     
     ngOnInit() {
-        this._formServiceConnection = this.formService.connect(experimentalPlanFixture);
+        this._formServiceConnection = this._formService.committed$.subscribe(
+            committed => console.log(`Committed: ${committed}`)
+        )
+        this._formService.patchErrors$.subscribe(
+            patchErrors => console.log('patch errors', patchErrors)
+        );
     }
     ngOnDestroy() {
         this._formServiceConnection.unsubscribe();
@@ -180,4 +248,13 @@ export class ExperimentalPlanFormComponent {
     isAddingWorkUnit(plan: ExperimentalPlan): boolean {
         throw new Error('Not implemented');
     }
+
+    readonly formControlContext$ = this.form.statusChanges.pipe(
+        map(() => ({
+            $implicit: this.form,
+            committable: this.form.valid,
+            doCommit: () => this._formService.commit(),
+            doReset: () => this._formService.reset()
+        }))
+    );
 }

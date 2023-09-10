@@ -11,7 +11,6 @@ from pydantic_core import CoreSchema, core_schema
 from sqlalchemy import VARCHAR, TypeDecorator
 from sqlalchemy.orm import mapped_column
 
-
 class CampusCode(str):
     _RE = re.compile(r'^[A-Z]{0,8}$')
 
@@ -31,3 +30,9 @@ class CampusCode(str):
 campus_code = Annotated[
     CampusCode, mapped_column(VARCHAR(8))
 ]
+
+class Discipline(Enum):
+    ELECTRICAL = 'Electrical'
+    MECHANICAL = 'Mechanical'
+    CIVIL = 'Civil'
+    ICT = 'ICT'

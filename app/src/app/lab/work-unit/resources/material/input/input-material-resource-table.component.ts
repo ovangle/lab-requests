@@ -14,7 +14,7 @@ export class InputMaterialResourceTableDataSource extends ResourceTableDataSourc
 }
 
 @Component({
-    selector: 'lab-req-input-material-resource-table',
+    selector: 'lab-input-material-resource-table',
     standalone: true,
     imports: [
         CommonModule,

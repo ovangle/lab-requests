@@ -1,14 +1,10 @@
 from typing import Optional
 from uuid import UUID
-from api.base.schemas import api_dataclass
 from pydantic import Field
 
 from api.lab.equipment.schemas import EquipmentPatch
-from ..common.schemas import Resource, ResourceType, ResourceCostEstimate
+from ..common.schemas import Resource, ResourceCostEstimate
 
-from api.lab.types import LabType
-
-@api_dataclass()
 class EquipmentLease(Resource):
     equipment_id: UUID | None
 
@@ -24,7 +20,7 @@ class EquipmentLease(Resource):
     require_assistance: bool
 
     # Instructions to prepare for experiment
-    setupInstructions: str
+    setup_instructions: str
 
     # The estimated cost of usage of this equipment
     # over the course of the research

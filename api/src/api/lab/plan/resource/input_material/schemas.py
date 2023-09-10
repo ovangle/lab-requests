@@ -1,10 +1,8 @@
 from typing import Literal
 
-from api.base.schemas import api_dataclass
-from ..common.schemas import ResourceCostEstimate, HazardClass
+from ..common.schemas import ResourceCostEstimate, HazardClass, Resource
 
-@api_dataclass()
-class InputMaterial:
+class InputMaterial(Resource):
     base_unit: str
 
     estimated_cost_per_unit: ResourceCostEstimate | None

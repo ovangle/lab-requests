@@ -1,10 +1,8 @@
 from uuid import UUID
-from api.base.schemas import api_dataclass
-from ..common.schemas import ResourceType
+from ..common.schemas import ResourceType, Resource
 
 
-@api_dataclass()
-class Software:
+class Software(Resource):
     type: ResourceType = ResourceType.SOFTWARE
     id: UUID
 

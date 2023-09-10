@@ -10,7 +10,7 @@ import { ResourceDisposalFormComponent } from "../../common/disposal/resource-di
 import { HazardClassesSelectComponent } from "../../common/hazardous/hazard-classes-select.component";
 
 @Component({
-    selector: 'lab-req-output-material-resource-form',
+    selector: 'lab-output-material-resource-form',
     standalone: true,
     imports: [
         CommonModule,

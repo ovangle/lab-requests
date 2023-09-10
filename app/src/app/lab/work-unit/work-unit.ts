@@ -1,12 +1,12 @@
 import { ValidationErrors } from "@angular/forms";
 import { Campus, isCampus } from "../../uni/campus/campus";
 import { isDiscipline } from "../../uni/discipline/discipline";
-import { ResourceContainer } from "./resources/resource-container";
+import { ResourceContainer, ResourceContainerContext } from "./resources/resource-container";
 import { LabType } from "../type/lab-type";
 import { ResourceContainerPatch } from "./resources/resource-container";
 import { ModelService } from "src/app/utils/models/model-service";
 import { ExperimentalPlan, ExperimentalPlanContext } from "../experimental-plan/experimental-plan";
-import { BehaviorSubject, Observable, Subscription, filter, firstValueFrom, of, skipWhile } from "rxjs";
+import { BehaviorSubject, Observable, Subscription, filter, firstValueFrom, of, skipWhile, switchMap, take } from "rxjs";
 import { Injectable, inject } from "@angular/core";
 import { Context } from "src/app/utils/models/model-context";
 
@@ -26,10 +26,11 @@ export class WorkUnit extends ResourceContainer {
     readonly labType: LabType;
     readonly technician: string;
 
-    readonly summary: string;
+    readonly processSummary: string;
 
     readonly startDate: Date | null;
     readonly endDate: Date | null;
+
     constructor(
         params: Partial<WorkUnit>
     ) {
@@ -46,7 +47,7 @@ export class WorkUnit extends ResourceContainer {
             throw new Error('WorkUnit requires a technician')
         this.technician = params.technician;
 
-        this.summary = params.summary || '';
+        this.processSummary = params.processSummary || '';
 
         this.startDate = params.startDate || null;
         this.endDate = params.endDate || null;
@@ -118,8 +119,7 @@ export class WorkUnitModelService extends ModelService<WorkUnit, WorkUnitPatch, 
 }
 
 @Injectable()
-export abstract class WorkUnitContext extends Context<WorkUnit, WorkUnitPatch> {
-
+export class WorkUnitContext extends Context<WorkUnit, WorkUnitPatch> {
     _planContext = inject(ExperimentalPlanContext);
     readonly plan$ = this._planContext.committed$.pipe(
         skipWhile((p) => p == null), // Ignore initial nulls
@@ -136,18 +136,34 @@ export abstract class WorkUnitContext extends Context<WorkUnit, WorkUnitPatch> {
         filter((committed): committed is WorkUnit => committed != null)
     )
 
-    async create(patch: WorkUnitPatch | WorkUnitCreate): Promise<WorkUnit> {
-        const plan = await firstValueFrom(this.plan$);
-        let create: WorkUnitCreate;
-        if (isWorkUnitCreate(patch)) {
-            if (patch.planId != plan.id) {
-                throw new Error('Cannot create work unit for different context plan id');
-            }
-            create = patch;
-        } else {
-            create = {...patch, planId: plan.id};
-        }
+    override _doCreate(request: WorkUnitCreate): Observable<WorkUnit> {
+        return this.plan$.pipe(
+            take(1),
+            switchMap(contextPlan => {
+                if (request.planId && request.planId != contextPlan.id) {
+                    throw new Error('Cannot create work unit for different plan');
+                }
+                request.planId = contextPlan.id;
+                return this.models.create(request);
+            })
+        )
+    }
 
-        return await firstValueFrom(this.models.create(create));
+    override _doCommit(id: string, patch: WorkUnitPatch): Observable<WorkUnit> {
+        return this.models.update(id, patch);
+    }
+}
+
+@Injectable()
+export class WorkUnitResourceContainerContext extends ResourceContainerContext<WorkUnit, WorkUnitPatch> {
+    readonly workUnitContext = inject(WorkUnitContext);
+    override committed$ = this.workUnitContext.committed$;
+
+    override commitContext(patch: WorkUnitPatch): Promise<WorkUnit> {
+        return this.workUnitContext.commit(patch);
+    };
+
+    override patchFromContainerPatch(containerPatch: ResourceContainerPatch): WorkUnitPatch {
+        return containerPatch as WorkUnitPatch; 
     }
 }

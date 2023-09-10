@@ -1,44 +1,51 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, Observable, Subscription, combineLatest, filter, firstValueFrom, switchMap, take, tap } from "rxjs";
+import { BehaviorSubject, Observable, Subject, Subscription, combineLatest, defer, filter, firstValueFrom, shareReplay, switchMap, take, tap } from "rxjs";
 import { ModelService } from "./model-service";
-
 
 @Injectable()
 export abstract class Context<T extends { readonly id: string}, TPatch = unknown, TCreate extends TPatch = TPatch> {
     abstract readonly models: ModelService<T, TPatch, TCreate>;
 
-    abstract readonly fromContext$: Observable<T | null>;
     readonly committedSubject = new BehaviorSubject<T | null>(null);
-
-    readonly committed$: Observable<T> = this.committedSubject.pipe(
-        filter((obj): obj is T => obj != null)
+    readonly committed$: Observable<T | null> = this.committedSubject.pipe(
+        shareReplay(1)
     );
 
-    connect(): Subscription {
-        this.fromContext$.subscribe(this.committedSubject);
+    connect(fromContext$: Observable<T | null>): Subscription {
+        fromContext$.subscribe(this.committedSubject);
+        const keepaliveCommitted = this.committed$.subscribe();
 
         return new Subscription(() => {
             this.committedSubject.complete();
+            keepaliveCommitted.unsubscribe();
         })
     }
 
-    abstract create(patch: TPatch): Promise<T>; 
+    abstract _doCreate(request: TCreate): Observable<T>;
 
-    _commit(patch: TPatch): Observable<T> {
-        return this.committedSubject.pipe(
-            take(1), 
-            switchMap(committed => {
-                if (committed) {
-                    return this.models.update(committed.id, patch);
-                }
-                return this.create(patch);
-            }),
-            tap((nextCommitted) => this.committedSubject.next(nextCommitted))
-        );
+    async create(request: TCreate): Promise<T> {
+        const committed = await firstValueFrom(this.committed$);
+        if (committed != null) {
+            throw new Error('Cannot create in context. Context already has a current committed value')
+        }
+        return await firstValueFrom(this._doCreate(request));
     }
+
+    abstract _doCommit(identifier: string, patch: TPatch): Observable<T>;
 
     async commit(patch: TPatch): Promise<T> {
-        return await firstValueFrom(this._commit(patch));
+        const committed = await firstValueFrom(this.committed$);
+        if (committed == null) {
+            // Should create
+            throw new Error('Cannot commit patch in an empty context');
+        }
+        return await firstValueFrom(this._doCommit(committed.id, patch));
+    }
+
+    async reset(): Promise<void> {
+        this.committedSubject.next(this.committedSubject.value);
     }
 }
+
+
 

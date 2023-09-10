@@ -1,12 +1,7 @@
 import { Component, Injectable, OnDestroy, OnInit, inject } from "@angular/core";
 import { Campus, CampusContext } from "./campus";
 import { Observable, Subscription, of } from "rxjs";
-import { CampusFormComponent } from "./campus-patch-form.component";
-
-@Injectable()
-export class CampusCreateContext extends CampusContext {
-    override fromContext$: Observable<Campus | null> = of(null);
-}
+import { CampusFormComponent } from "./campus-form.component";
 
 @Component({
     standalone: true,
@@ -15,10 +10,10 @@ export class CampusCreateContext extends CampusContext {
     ],
     template: `
         <h1>Create campus</h1>
-        <app-uni-campus-patch-form></app-uni-campus-patch-form>
+        <uni-campus-form></uni-campus-form>
     `,
     providers: [
-        { provide: CampusContext, useClass: CampusCreateContext }
+        CampusContext
     ]
 })
 export class CampusCreatePage implements OnDestroy {
@@ -26,7 +21,7 @@ export class CampusCreatePage implements OnDestroy {
     _contextConnection: Subscription;
 
     constructor() {
-        this._contextConnection = this.context.connect();
+        this._contextConnection = this.context.connect(of(null));
     }
 
     ngOnDestroy() {

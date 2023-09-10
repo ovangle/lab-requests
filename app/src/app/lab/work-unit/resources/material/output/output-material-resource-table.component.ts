@@ -12,7 +12,7 @@ export class OutputMaterialResourceTableDataSource extends ResourceTableDataSour
 }
 
 @Component({
-    selector: 'lab-req-output-material-resource-table',
+    selector: 'lab-output-material-resource-table',
     standalone: true,
     imports: [
         CommonModule,
