@@ -1,5 +1,5 @@
 import { Inject, Injectable, inject } from "@angular/core";
-import { FormArray, FormGroup, ValidationErrors } from "@angular/forms";
+import { AbstractControl, FormArray, FormControl, FormGroup, ValidationErrors } from "@angular/forms";
 import { ActivatedRoute } from "@angular/router";
 import { BehaviorSubject, Observable, Subscription, combineLatest, filter, firstValueFrom, map, shareReplay, tap } from "rxjs";
 import { InputMaterialResourceFormComponent } from "../material/input/input-material-resource-form.component";
@@ -106,8 +106,14 @@ export function costEstimateToJson(cost: CostEstimate) {
     };
 }
 
-export type CostEstimateForm = FormGroup<{}>;
+export type CostEstimateForm = FormGroup<{
+    isUniversitySupplied: FormControl<boolean>;
+    estimatedCost: FormControl<number>;
+}>;
 
-export function costEstimateForm(costEstimate?: CostEstimate | null): CostEstimateForm {
-    return new FormGroup({}); 
+export function costEstimateForm(initial?: CostEstimate): CostEstimateForm {
+    return new FormGroup({
+        isUniversitySupplied: new FormControl(!!initial?.isUniversitySupplied, {nonNullable: true}),
+        estimatedCost: new FormControl(initial?.estimatedCost || 0, {nonNullable: true})
+    });
 }

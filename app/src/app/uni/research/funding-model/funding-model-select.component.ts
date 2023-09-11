@@ -12,7 +12,7 @@ import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 import { animate, state, style, transition, trigger } from "@angular/animations";
 import { SelectOtherDescriptionComponent } from "src/app/utils/forms/select-other-description.component";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
-import { ExperimentalPlanFundingModelFormComponent } from "./funding-model-form.component";
+import { FundingModelFormComponent } from "./funding-model-form.component";
 import { LayoutSplitViewComponent } from "src/app/utils/layout/split-view.component";
 
 @Injectable()
@@ -67,7 +67,7 @@ export class FundingModelSelectContext extends FundingModelContext {
 
 
 @Component({
-    selector: 'lab-funding-model-select',
+    selector: 'uni-research-funding-model-select',
     standalone: true,
     imports: [
         CommonModule,
@@ -80,7 +80,7 @@ export class FundingModelSelectContext extends FundingModelContext {
 
         LayoutSplitViewComponent,
         SelectOtherDescriptionComponent,
-        ExperimentalPlanFundingModelFormComponent
+        FundingModelFormComponent
     ],
     template: `
     <app-layout-split-view [rightPaneVisible]="isOtherSelected$ | async">
@@ -91,8 +91,8 @@ export class FundingModelSelectContext extends FundingModelContext {
                 </mat-label>
                 <mat-select [formControl]="selectedControl" [required]="required" 
                             (selectionChange)="_onTouched()">
-                    <mat-option *ngFor="let builtinModel of builtinModels" [value]="builtinModel">
-                        {{builtinModel.description}}
+                    <mat-option *ngFor="let option of (options$ | async)" [value]="option">
+                        {{option.description}}
                     </mat-option>
                     <mat-option value="other">Other...</mat-option>
                 </mat-select>
@@ -102,9 +102,9 @@ export class FundingModelSelectContext extends FundingModelContext {
         </section>
 
         <section id="right-pane">
-            <lab-experimental-plan-funding-model-form
+            <uni-research-funding-model-form
                 [disabled]="selectedControl.disabled">
-            </lab-experimental-plan-funding-model-form>
+            </uni-research-funding-model-form>
         </section>
     </app-layout-split-view>
 
@@ -147,9 +147,7 @@ export class FundingModelSelectComponent implements ControlValueAccessor {
 
     readonly valueSubject = (this._fundingModelContext as FundingModelSelectContext).fundingModel$;
 
-    get builtinModels(): readonly FundingModel[] {
-        return this._models.builtinModels;
-    }
+    readonly options$: Observable<FundingModel[]> = this._models.search('')
 
     constructor() {
         // Connect to the funding model with the 

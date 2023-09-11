@@ -12,13 +12,13 @@ from pydantic.dataclasses import dataclass
 from api.base.schemas import ApiModel, ModelCreate, ModelPatch
 
 from api.uni.errors import CampusDoesNotExist
+from api.uni.research.schemas import FundingModel, FundingModelCreate
 from api.uni.schemas import Campus, CampusCode
 from api.lab.types import LabType
 from api.uni.types import Discipline
 from api.utils.db import LocalSession
 
 from .resource.schemas import ResourceContainer, ResourceContainerPatch
-from .funding.schemas import ExperimentalPlanFundingModel, ExperimentalPlanFundingModelCreate, ExperimentalPlanFundingModelPatch
 from . import models
 
 class WorkUnitBase(BaseModel):
@@ -90,14 +90,24 @@ class WorkUnit(WorkUnitBase, ResourceContainer, ApiModel[models.WorkUnit]):
 
 class ExperimentalPlanBase(BaseModel):
     process_summary: str
+    funding_model: FundingModel | FundingModelCreate | UUID
 
     researcher: str
+    researcher_base_campus: Campus | CampusCode | UUID
     researcher_discipline: Discipline
+
     supervisor: Optional[str] = None
 
-    def update_model(self, instance: models.ExperimentalPlan) -> tuple[models.ExperimentalPlan, bool]:
-        is_modified = False
+    async def prepare_fields(self, db):
+        if isinstance(self.researcher_base_campus, CampusCode):
+            campus = await Campus.get_by_campus_code(db, self.researcher_base_campus)
+            self.researcher_base_campus = campus
 
+        if isinstance(self.funding_model, FundingModelCreate):
+            self.funding_model = await self.funding_model.do_create(db)
+
+    def _set_model_fields(self, instance: models.ExperimentalPlan) -> bool: 
+        is_modified = False
         if self.process_summary != instance.process_summary:
             instance.process_summary = self.process_summary
             is_modified = True
@@ -105,81 +115,74 @@ class ExperimentalPlanBase(BaseModel):
         if self.researcher != instance.researcher_email: 
             instance.researcher_email = self.researcher
             is_modified = True
-
-        if self.supervisor != instance.supervisor_email:
-            instance.supervisor_email = self.supervisor
-            is_modified = True
         
-        return (instance, is_modified)
-
-class ExperimentalPlanPatch(ExperimentalPlanBase, ModelPatch):
-    researcher_base_campus: Campus | CampusCode | UUID
-    funding_model: ExperimentalPlanFundingModel | ExperimentalPlanFundingModelCreate | UUID
-
-    async def do_update(self, db: LocalSession, instance: models.ExperimentalPlan) -> ExperimentalPlan:
+        print('researcher_base_campus: {0}'.format(self.researcher_base_campus))
         if isinstance(self.researcher_base_campus, (UUID, Campus)):
             campus_id = (
                 self.researcher_base_campus.id 
                 if isinstance(self.researcher_base_campus, Campus) 
                 else self.researcher_base_campus
             )
-            if campus_id != instance.campus_id:
-                instance.campus_id = campus_id
-                db.add(instance)
+            if campus_id != instance.researcher_base_campus_id:
+                instance.researcher_base_campus_id = campus_id
+                is_modified = True
 
         elif isinstance(self.researcher_base_campus, CampusCode):
-            if instance.campus.code != self.researcher_base_campus:
-                campus_id = (await db.execute(
-                    select(models.Campus.id).where(models.Campus.code == self.researcher_base_campus)
-                )).first()
-                if not campus_id:
-                    raise CampusDoesNotExist.for_code(self.researcher_base_campus)
+            raise Exception('Must Prepare fields before create/commit')
 
-                instance.campus_id = campus_id[0]
-                db.add(instance)
+        if self.researcher_discipline != instance.researcher_discipline:
+            instance.researcher_discipline = self.researcher_discipline
+            is_modified = True
 
-        if isinstance(self.funding_model, (UUID, ExperimentalPlanFundingModel)):
-            funding_model_id = (
-                self.funding_model.id
-                if isinstance(self.funding_model, ExperimentalPlanFundingModel)
-                else self.funding_model
-            )
-            if funding_model_id != instance.funding_model_id:
-                funding_model = models.ExperimentalPlanFundingModel.fetch_by_id(db, funding_model_id)
-                instance.funding_model_id = funding_model_id
-            
-        elif isinstance(self.funding_model, ExperimentalPlanFundingModelCreate):
-            funding_model = await models.ExperimentalPlanFundingModel.create(self.funding_model)
-            instance.funding_model_id = funding_model.id
-
-        if self.process_summary != instance.process_summary:
-            instance.process_summary = self.process_summary
-            db.add(instance)
-        
-        if self.researcher != instance.researcher_email:
-            instance.researcher_email = self.researcher
-            db.add(instance)
-        
         if self.supervisor != instance.supervisor_email:
             instance.supervisor_email = self.supervisor
-            db.add(instance)
+            is_modified = True
 
+        print('funding model: {0}'.format(self.funding_model))
+        if isinstance(self.funding_model, (UUID, FundingModel)):
+            funding_model_id = (
+                self.funding_model 
+                if isinstance(self.funding_model, UUID)
+                else self.funding_model.id
+            )
+            if funding_model_id != instance.funding_model_id:
+                instance.funding_model_id = funding_model_id
+                is_modified = True
+            
+        elif isinstance(self.funding_model, FundingModelCreate):
+            raise Exception('Did not prepare instance')
+        
+        else:
+            raise ValueError('Unrecognised funding model')
+
+        return is_modified
+
+
+class ExperimentalPlanPatch(ExperimentalPlanBase, ModelPatch):
+    async def do_update(self, db: LocalSession, instance: models.ExperimentalPlan) -> ExperimentalPlan:
         return ExperimentalPlan.from_model(instance)
 
 class ExperimentalPlanCreate(ExperimentalPlanBase, ModelCreate[models.ExperimentalPlan]):
+    funding_model: FundingModelCreate | UUID
+
     # Work units can be provided on plan create but not on other 
-    work_units: list[WorkUnitCreate] = field(default_factory=list)
+    work_units: list[WorkUnitPatch] = field(default_factory=list)
 
     async def do_create(self, db: LocalSession):
-        instance = models.ExperimentalPlan()
+        await self.prepare_fields(db)
 
-        if not list(instance.work_units):
+        instance = models.ExperimentalPlan()
+        self._set_model_fields(instance)
+
+        db.add(instance)
+        if list(instance.work_units):
             raise ValueError('Can not be applied after work units created')
 
         work_units = []
-        create_request = WorkUnitCreate(plan_id=instance.id, **dataclasses.asdict(self))
-        work_unit = await create_request(db)
-        work_units.append(work_unit)
+        for work_unit in self.work_units:
+            work_unit_create = WorkUnitCreate(plan_id=instance.id, **work_unit.model_dump())
+            work_unit = await work_unit_create(db)
+            work_units.append(work_unit)
 
         db.add(instance)
 
@@ -187,7 +190,7 @@ class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan]):
     id: UUID
 
     funding_model_id: UUID
-    funding_model: ExperimentalPlanFundingModel
+    funding_model: FundingModel
 
     researcher_base_campus_id: UUID
     researcher_base_campus: Campus

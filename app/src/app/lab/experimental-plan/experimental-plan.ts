@@ -3,14 +3,14 @@ import { Injectable, Provider, inject } from "@angular/core";
 import { ValidationErrors, FormArray, FormControl, FormGroup, Validators } from "@angular/forms";
 import { BehaviorSubject, Observable, Subject, Subscription, connectable, filter, firstValueFrom, map, of, share, shareReplay, switchMap } from "rxjs";
 import { __runInitializers } from "tslib";
-import { Campus, CampusCode, campusFromJson } from "../../uni/campus/campus";
+import { Campus, CampusCode, campusFromJson, isCampusCode } from "../../uni/campus/campus";
 import { Discipline } from "../../uni/discipline/discipline";
 
-import { WorkUnit, workUnitFromJson } from "../work-unit/work-unit";
+import { WorkUnit, WorkUnitCreate, workUnitFromJson } from "../work-unit/work-unit";
 import { ModelService } from "src/app/utils/models/model-service";
 import { ActivatedRoute } from "@angular/router";
 import { Context } from "src/app/utils/models/model-context";
-import { FundingModel, FundingModelCreate, fundingModelFromJson } from "./funding-model/funding-model";
+import { FundingModel, FundingModelCreate, fundingModelFromJson } from "../../uni/research/funding-model/funding-model";
 import { parseISO } from "date-fns";
 
 
@@ -85,12 +85,14 @@ export function experimentalPlanFromJson(json: {[k: string]: any}) {
 export interface ExperimentalPlanPatch {
     title: string;
     researcher: string;
-    researcherBaseCampus: Campus;
+    researcherBaseCampus: Campus | CampusCode;
     researcherDiscipline: Discipline | null;
 
-    fundingModel: FundingModel | FundingModelCreate | null;
+    fundingModel: FundingModel | FundingModelCreate;
     supervisor: string | null;
     processSummary: string;
+
+    addWorkUnits?: WorkUnitCreate[];
 }
 
 export function patchFromExperimentalPlan(plan: ExperimentalPlan): ExperimentalPlanPatch {
@@ -98,14 +100,24 @@ export function patchFromExperimentalPlan(plan: ExperimentalPlan): ExperimentalP
 }
 
 export function experimentalPlanPatchToJson(patch: ExperimentalPlanPatch): {[k: string]: any} {
+    let researcherBaseCampus: string;
+    if (patch.researcherBaseCampus instanceof Campus) {
+        researcherBaseCampus = patch.researcherBaseCampus.id;
+    } else if (isCampusCode(patch.researcherBaseCampus)) {
+        researcherBaseCampus = patch.researcherBaseCampus;
+    } else {
+        throw new Error('Expected a campus or code');
+    }
+
     return {
         title: patch.title,
         researcher: patch.researcher,
-        researcherBaseCampus: patch.researcherBaseCampus.id,
+        researcherBaseCampus: researcherBaseCampus,
         researcherDiscipline: patch.researcherDiscipline,
         fundingModel: (patch.fundingModel instanceof FundingModel) ? patch.fundingModel.id : patch.fundingModel,
         supervisor: patch.supervisor,
-        processSummary: patch.processSummary
+        processSummary: patch.processSummary,
+        addWorkUnits: patch.addWorkUnits || []
     }
 }
 

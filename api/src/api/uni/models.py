@@ -23,31 +23,22 @@ class Campus(Base):
 
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID) -> Campus:
-        result = (await db.execute(
-            select(Campus).where(Campus.id == id)
-        )).first()
-
-        if not result:
-            raise CampusDoesNotExist.for_id(id)
-        return result[0]
-
-
+        return await db.get(Campus, id)
+        
     @classmethod
-    async def get_for_campus_code(cls, db: LocalSession, code: str | CampusCode, other_code_description: Optional[str] = None) -> Campus:
+    async def get_for_campus_code(cls, db: LocalSession, code: str | CampusCode) -> Campus:
         code = CampusCode(code)
-        result = (await db.execute(
-            select(Campus).where(Campus.code == code)
-        )).first()
+        result = await db.scalar(select(Campus).where(Campus.code == code))
         if not result:
             raise CampusDoesNotExist.for_code(code)
-        return result[0]
+        return result
 
     @classmethod
     async def get_all_for_campus_codes(cls, db: LocalSession, codes: Iterable[str | CampusCode]) -> list[Campus]:
-        results = await db.execute(
+        return list(await db.scalars(
             select(Campus).where(Campus.code.in_(map(CampusCode, codes)))
-        )
-        return [result[0] for result in results]
+        ))
+        
 
 
 async def seed_campuses(db: LocalSession):

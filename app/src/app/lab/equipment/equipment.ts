@@ -12,7 +12,7 @@ export class Equipment {
     name: string;
     description: string;
 
-    availableInLabTypes: LabType[];
+    availableInLabTypes: LabType[] | 'all';
 
     requiresTraining: boolean;
     trainingDescriptions: string[]

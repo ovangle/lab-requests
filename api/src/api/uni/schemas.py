@@ -45,3 +45,7 @@ class Campus(CampusBase, ApiModel[models.Campus]):
             updated_at=model.updated_at
         )
 
+    @classmethod
+    async def get_by_campus_code(cls, db: LocalSession, code: CampusCode):
+        return cls.from_model(await models.Campus.get_for_campus_code(db, code))
+

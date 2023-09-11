@@ -29,3 +29,6 @@ app.include_router(lab_plans)
 from .uni.views import uni_campuses
 app.include_router(uni_campuses)
 
+from .uni.research.views import uni_research_funding
+app.include_router(uni_research_funding)
+

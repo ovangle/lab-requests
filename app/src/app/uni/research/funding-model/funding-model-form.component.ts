@@ -3,7 +3,7 @@ import { Component, Injectable, Input, inject } from "@angular/core";
 import { FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { Observable, filter, map } from "rxjs";
-import { ExperimentalPlanFormService } from "../experimental-plan-form.component";
+import { ExperimentalPlanFormService } from "../../../lab/experimental-plan/experimental-plan-form.component";
 import { FundingModelContext, FundingModelPatch } from "./funding-model";
 import { MatInputModule } from "@angular/material/input";
 import { MatCheckboxModule } from "@angular/material/checkbox";
@@ -65,7 +65,7 @@ export class FundingModelFormService {
 
 
 @Component({
-    selector: 'lab-experimental-plan-funding-model-form',
+    selector: 'uni-research-funding-model-form',
     standalone: true,
     imports: [
         CommonModule,
@@ -92,7 +92,7 @@ export class FundingModelFormService {
         FundingModelFormService
     ]
 })
-export class ExperimentalPlanFundingModelFormComponent {
+export class FundingModelFormComponent {
     _formService = inject(FundingModelFormService)
     readonly form = this._formService.form;
 

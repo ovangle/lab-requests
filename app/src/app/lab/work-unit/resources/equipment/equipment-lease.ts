@@ -77,7 +77,7 @@ export function equipmentLeaseForm(lease?: Partial<EquipmentLease>): EquipmentLe
             lease?.setupInstructions || '', 
             {nonNullable: true}
         ),
-        usageCostEstimate: costEstimateForm(lease?.usageCostEstimate)
+        usageCostEstimate: costEstimateForm(lease?.usageCostEstimate || undefined)
     });
 }
 

@@ -20,8 +20,8 @@ from ..types import LabType
 
 if TYPE_CHECKING:
     from api.uni.models import Campus
+    from api.uni.research.models import FundingModel
 
-from .funding.models import ExperimentalPlanFundingModel
 from .resource.models import ResourceContainer
 
 class ExperimentalPlan(Base):
@@ -29,8 +29,8 @@ class ExperimentalPlan(Base):
 
     id: Mapped[uuid_pk]
 
-    funding_model_id: Mapped[UUID] = mapped_column(ForeignKey('experimental_plan_funding_models.id'))
-    funding_model: Mapped["ExperimentalPlanFundingModel"] = relationship()
+    funding_model_id: Mapped[UUID] = mapped_column(ForeignKey('uni_research_funding_model.id'))
+    funding_model: Mapped[FundingModel] = relationship()
 
     researcher_base_campus_id: Mapped[UUID] = mapped_column(ForeignKey('campuses.id'))
     researcher_base_campus: Mapped[Campus] = relationship()

@@ -1,31 +1,34 @@
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 import { CommonModule } from "@angular/common";
 import { Component, Injectable, Input, TemplateRef, inject } from "@angular/core";
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { AbstractControl, FormArray, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from "@angular/forms";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { Observable, Subscription, defer, filter, map, shareReplay, tap } from "rxjs";
+import { Observable, Subscription, defer, filter, firstValueFrom, map, shareReplay, tap } from "rxjs";
 import { Campus } from "src/app/uni/campus/campus";
 import { CampusSearchComponent } from "src/app/uni/campus/campus-search.component";
 import { Discipline } from "src/app/uni/discipline/discipline";
 import { DisciplineSelectComponent } from "src/app/uni/discipline/discipline-select.component";
 import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanPatch, ExperimentalPlanPatchErrors, patchFromExperimentalPlan } from "./experimental-plan";
-import { FundingModelSelectComponent } from "./funding-model/funding-model-select.component";
+import { FundingModelSelectComponent } from "../../uni/research/funding-model/funding-model-select.component";
 import { ExperimentalPlanResearcherFormComponent } from "./researcher/researcher-form.component";
-import { FundingModel, FundingModelCreate } from "./funding-model/funding-model";
+import { FundingModel, FundingModelCreate } from "../../uni/research/funding-model/funding-model";
+import { WorkUnitForm } from "../work-unit/work-unit-form.service";
 
 export type ExperimentalPlanControls = {
     title: FormControl<string>;
 
     researcher: FormControl<string>;
-    researcherBaseCampus: FormControl<Campus | null>;
+    researcherBaseCampus: FormControl<Campus | string | null>;
     researcherDiscipline: FormControl<Discipline | null>;
     fundingModel: FormControl<FundingModel | FundingModelCreate | null>;
 
     supervisor: FormControl<string | null>;
     processSummary: FormControl<string>;
+
+    addWorkUnits: FormArray<WorkUnitForm>;
 }
 
 export type ExperimentalPlanForm = FormGroup<ExperimentalPlanControls>;
@@ -45,6 +48,19 @@ function experimentalPlanPatchErrorsFromForm(form: ExperimentalPlanForm): Experi
     return null;
 }
 
+function isCampusOrCampusCode(control: AbstractControl<Campus | string | null>): ValidationErrors | null {
+    if (control.value instanceof Campus || control.value == null){
+        return null;
+    } else if (typeof control.value === 'string') {
+        if (/[A-Z]{3}/.test(control.value)) {
+            return null;
+        }
+        return {'invalidCode': `Invalid campus code ${control.value}`};
+    } else {
+        throw new Error('Invalid control value');
+    }
+}
+
 @Injectable()
 export class ExperimentalPlanFormService {
     readonly _context = inject(ExperimentalPlanContext);
@@ -55,20 +71,28 @@ export class ExperimentalPlanFormService {
             this.patchForm.reset();
             if (committed) {
                 const patch = patchFromExperimentalPlan(committed);
-                this.patchForm.patchValue(patch);
+                this.patchForm.patchValue(patch as any);
             }
         }),
         shareReplay(1)
     );
 
+    readonly isCreate$ = defer(() => this.committed$.pipe(
+        map(committed => committed == null)
+    ));
+
     readonly patchForm: ExperimentalPlanForm = new FormGroup({
         title: new FormControl<string>('', {nonNullable: true, validators: [Validators.required]}),
         researcher: new FormControl<string>('', {nonNullable: true, validators: [Validators.required, Validators.email]}),
-        researcherBaseCampus: new FormControl<Campus | null>(null, { validators: [Validators.required]}),
+        researcherBaseCampus: new FormControl<Campus | string | null>(
+            null, 
+            { validators: [Validators.required, isCampusOrCampusCode]}
+        ),
         researcherDiscipline: new FormControl<Discipline | null>(null, { validators: [Validators.required] }),
         fundingModel: new FormControl<FundingModel | FundingModelCreate | null>(null, { validators: [Validators.required]}),
         supervisor: new FormControl<string | null>(null, { validators: [Validators.email]}),
-        processSummary: new FormControl('', { nonNullable: true })
+        processSummary: new FormControl('', { nonNullable: true }),
+        addWorkUnits: new FormArray<WorkUnitForm>([])
     }, {
         validators: [
             (control) => this._formValidator(control as ExperimentalPlanForm)
@@ -95,17 +119,25 @@ export class ExperimentalPlanFormService {
             return experimentalPlanPatchErrorsFromForm(this.patchForm)
         }),
     ));
+
     readonly patchValue$: Observable<ExperimentalPlanPatch> = defer(() => this.patchForm.valueChanges.pipe(
         filter(() => this.patchForm.valid),
         map(() => experimentalPlanPatchFromForm(this.patchForm)!)
     ));
 
-    async commit(): Promise<ExperimentalPlan> {
+    async save(): Promise<ExperimentalPlan> {
         if (this.patchForm.invalid) {
             throw new Error('Cannot commit invalid form')
         }
+        const isCreate = await firstValueFrom(this.isCreate$);
+        console.log('is create: ', isCreate);
+
         const patch = experimentalPlanPatchFromForm(this.patchForm)!;
-        return this._context.commit(patch);
+        if (isCreate) {
+            return this._context.create(patch);
+        } else {
+            return this._context.commit(patch);
+        }
     }
 
     reset() {
@@ -163,8 +195,6 @@ export class ExperimentalPlanFormService {
                 </mat-error>
             </ng-container>
         </lab-funding-model-select>
-
-        form valid: {{form.valid}}
 
         <ng-container [ngTemplateOutlet]="controls" [ngTemplateOutletContext]="formControlContext$ | async">
         </ng-container>
@@ -253,7 +283,7 @@ export class ExperimentalPlanFormComponent {
         map(() => ({
             $implicit: this.form,
             committable: this.form.valid,
-            doCommit: () => this._formService.commit(),
+            doCommit: () => this._formService.save(),
             doReset: () => this._formService.reset()
         }))
     );

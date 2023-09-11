@@ -1,25 +1,22 @@
-from api.lab.plan.schemas import ExperimentalPlanPatch
+import asyncio
+from sqlalchemy import select
+from api.utils.db import local_sessionmaker, LocalSession
+from api.uni.research.models import FundingModel
 
-patch_json = '''
-{
-                "title": "The importance of being earnest",
-                "researcher": "hello@world.com",
-                "researcherBaseCampus": {
-                    "params": {
-                        "code": "ROK",
-                        "name": "Rockhampton"
-                    },
-                    "code": "ROK",
-                    "name": "Rockhampton"
-                },
-                "researcherDiscipline": "ICT",
-                "fundingModel": {
-                    "id": "unknown2",
-                    "description": "General research",
-                    "requiresSupervisor": true
-                },
-                "supervisor": null,
-                "processSummary": "Behave earnestly, then deceptively and observe changes."
-}'''
+EVENT_LOOP = asyncio.get_event_loop()
 
-ExperimentalPlanPatch.parse_raw(patch_json)
+db: LocalSession = local_sessionmaker()
+
+
+async def main():
+    hello = ''
+    query = select(FundingModel).where(
+        FundingModel.description.ilike(rf'%{hello}%') 
+    )
+    for result in await db.scalars(query):
+        print(result.description)
+
+try:
+    EVENT_LOOP.run_until_complete(main())
+finally:
+    EVENT_LOOP.run_until_complete(db.close())

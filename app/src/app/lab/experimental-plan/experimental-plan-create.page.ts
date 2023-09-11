@@ -1,11 +1,11 @@
 import { CommonModule } from "@angular/common";
-import { Component, Injectable, inject } from "@angular/core";
+import { ChangeDetectorRef, Component, Injectable, ViewChild, inject } from "@angular/core";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTabsModule } from "@angular/material/tabs";
 import { RouterModule } from "@angular/router";
 import { ExperimentalPlanFormComponent } from "./experimental-plan-form.component";
-import { ExperimentalPlan, ExperimentalPlanContext } from "./experimental-plan";
+import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanPatch } from "./experimental-plan";
 import { Observable, Subscription, of } from "rxjs";
 import { Campus } from "src/app/uni/campus/campus";
 import { hazardClassFromDivision } from "../work-unit/resources/common/hazardous/hazardous";
@@ -13,20 +13,21 @@ import { InputMaterial } from "../work-unit/resources/material/input/input-mater
 import { Software } from "../work-unit/resources/software/software";
 import { WorkUnit } from "../work-unit/work-unit";
 import { MatButtonModule } from "@angular/material/button";
-import { FundingModel, GRANT } from "./funding-model/funding-model";
+import { FundingModel } from "../../uni/research/funding-model/funding-model";
 
 
-const experimentalPlanFixture = new ExperimentalPlan({
-    id: '',
+const experimentalPlanCreateFixture: ExperimentalPlanPatch = ({
     title: 'The importance of being earnest',
     processSummary: 'Behave earnestly, then deceptively and observe changes.',
-    fundingModel: GRANT as FundingModel,
+    fundingModel: {
+        description: 'Custom funding model',
+        requiresSupervisor: false
+    },
     researcher: 'hello@world.com',
     researcherDiscipline: 'ICT',
-    researcherBaseCampus: new Campus({code: 'ROK', name: 'Rockhampton'} as any),
-    workUnits: [
-       
-    ],
+    researcherBaseCampus: 'MEL',
+    supervisor: null,
+    addWorkUnits: []
 });
 
 @Component({
@@ -42,7 +43,6 @@ const experimentalPlanFixture = new ExperimentalPlan({
         <lab-experimental-plan-form [controls]="controls"></lab-experimental-plan-form>
 
         <ng-template #controls let-committable="committable" let-commit="doCommit">
-            committable: {{committable}}
             <button mat-raised-button 
                     [disabled]="!committable"
                     (click)="commit()">
@@ -56,14 +56,27 @@ const experimentalPlanFixture = new ExperimentalPlan({
     ]
 })
 export class ExperimentalPlanCreatePage {
+    _cdRef = inject(ChangeDetectorRef);
+
     _context: ExperimentalPlanContext = inject(ExperimentalPlanContext);
     _contextSubscription: Subscription;
+
+    @ViewChild(ExperimentalPlanFormComponent, {static: true})
+    experimentalPlanForm: ExperimentalPlanFormComponent;
 
     constructor() {
         this._context.plan$.subscribe(plan => {
             console.log('context plan', plan)
         });
-        this._contextSubscription = this._context.connect(of(experimentalPlanFixture));
+        this._contextSubscription = this._context.connect(of(null));
+    }
+
+    ngAfterViewInit() {
+        this.experimentalPlanForm.form.setValue({
+            ...experimentalPlanCreateFixture,
+            addWorkUnits: []
+        })
+        this._cdRef.detectChanges();
     }
 
     ngOnDestroy() {
