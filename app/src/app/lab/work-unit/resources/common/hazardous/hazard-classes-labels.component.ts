@@ -1,5 +1,5 @@
 import { Component, Input } from "@angular/core";
-import { HazardClass, classDivision, hazardClassLabelImage } from "./hazardous";
+import { HazardClass, hazardClassDivision, hazardClassLabelImage } from "./hazardous";
 import { CommonModule } from "@angular/common";
 import { MatTooltipModule } from "@angular/material/tooltip";
 
@@ -34,5 +34,5 @@ export class HazardClassLabelsComponent {
     hazardClasses: HazardClass[];
     readonly labelImage = hazardClassLabelImage;
 
-    readonly tooltipContent = (cls: HazardClass) => `${classDivision(cls)}: ${cls.description}`;
+    readonly tooltipContent = (cls: HazardClass) => `${hazardClassDivision(cls)}: ${cls.description}`;
 }

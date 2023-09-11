@@ -22,6 +22,26 @@ export class Software implements Resource {
     }
 }
 
+export function softwareFromJson(json: {[k: string]: any}): Software {
+    return new Software({
+        name: json['name'],
+        description: json['description'],
+        minVersion: json['minVersion'],
+        isLicenseRequired: json['isLicenceRequired'],
+        estimatedCost: json['estimatedCost']
+    })
+}
+
+export function softwareToJson(software: Software): {[k: string]: any} {
+    return {
+        name: software.name,
+        description: software.description,
+        minVersion: software.minVersion,
+        isLicenseRequired: software.isLicenseRequired,
+        estimatedCost: software.estimatedCost
+    };
+}
+
 export type SoftwareForm = FormGroup<{
     name: FormControl<string>;
     description: FormControl<string>;

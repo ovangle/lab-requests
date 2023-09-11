@@ -8,6 +8,7 @@ app = FastAPI()
 CORS_ALLOW_ORIGINS = [
     'http://localhost:4200',
     'http://localhost:4201',
+    'http://127.0.0.1:4201',
     'http://localhost:8000'
 ]
 

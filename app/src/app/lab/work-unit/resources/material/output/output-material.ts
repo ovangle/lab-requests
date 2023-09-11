@@ -1,9 +1,9 @@
 import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { Material } from "../material";
 import { Resource } from "../../common/resource";
-import { ResourceStorage, ResourceStorageForm, createResourceStorageForm, isResourceStorageType } from "../../common/storage/resource-storage";
-import { HazardClass } from "../../common/hazardous/hazardous";
-import { ResourceDisposal, ResourceDisposalForm, createResourceDisposalForm, isResourceDisposalType } from "../../common/disposal/resource-disposal";
+import { ResourceStorage, ResourceStorageForm, createResourceStorageForm, isResourceStorageType, resourceStorageFromJson, resourceStorageToJson } from "../../common/storage/resource-storage";
+import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../common/hazardous/hazardous";
+import { ResourceDisposal, ResourceDisposalForm, createResourceDisposalForm, isResourceDisposalType, resourceDisposalFromJson, resourceDisposalToJson } from "../../common/disposal/resource-disposal";
 import { groupDisabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { Subscription, map, tap } from "rxjs";
@@ -44,6 +44,32 @@ export class OutputMaterial extends Material {
         this.hazardClasses = input?.hazardClasses || [];
     }
 }
+
+export function outputMaterialFromJson(json: {[k: string]: any}): OutputMaterial {
+    return new OutputMaterial({
+        type: json['type'],
+        name: json['name'],
+        baseUnit: json['baseUnit'],
+        numUnitsProduced: json['numUnitsProduced'],
+        storage: resourceStorageFromJson(json['storage']),
+        disposal: resourceDisposalFromJson(json['disposal']),
+        hazardClasses: hazardClassesFromJson(json['hazardClasses'])
+    })
+}
+
+
+export function outputMaterialToJson(outputMaterial: OutputMaterial): {[k: string]: any} {
+    return {
+        type: outputMaterial.type,
+        name: outputMaterial.name,
+        baseUnit: outputMaterial.baseUnit,
+        numUnitsProduced: outputMaterial.numUnitsProduced,
+        storage: resourceStorageToJson(outputMaterial.storage),
+        disposal: resourceDisposalToJson(outputMaterial.disposal),
+        hazardClasses: hazardClassesToJson(outputMaterial.hazardClasses)
+    }
+}
+
 
 export type OutputMaterialForm = FormGroup<{
     type: FormControl<'output-material'>;

@@ -1,10 +1,8 @@
 import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { Material } from "../material";
-import { HazardClass } from "../../common/hazardous/hazardous";
-import { ResourceStorage, ResourceStorageForm, createResourceStorageForm, isResourceStorageType } from "../../common/storage/resource-storage";
-import { ResourceStorageFormComponent } from "../../common/storage/resource-storage-form.component";
-import { numberAttribute } from "@angular/core";
-import { HazardClassLabelsComponent } from "../../common/hazardous/hazard-classes-labels.component";
+import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../common/hazardous/hazardous";
+import { ResourceStorage, ResourceStorageForm, createResourceStorageForm, isResourceStorageType, resourceStorageFromJson, resourceStorageToJson } from "../../common/storage/resource-storage";
+import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "../../common/resource";
 
 export class InputMaterial extends Material {
     override readonly type = 'input-material';
@@ -14,9 +12,7 @@ export class InputMaterial extends Material {
 
     numUnitsRequired: number;
 
-    isUniversitySupplied: boolean;
-    /** The estimated cost per base unit */
-    estimatedCost: number;
+    perUnitCostEstimate: CostEstimate | null; 
 
     storage: ResourceStorage;
     hazardClasses: HazardClass[];
@@ -28,8 +24,7 @@ export class InputMaterial extends Material {
 
         this.numUnitsRequired = input.numUnitsRequired || 0;
 
-        this.isUniversitySupplied = !!input?.isUniversitySupplied;
-        this.estimatedCost = input?.estimatedCost || 0;
+        this.perUnitCostEstimate = input.perUnitCostEstimate || null;
 
         this.storage = new ResourceStorage(
             isResourceStorageType(input.storage?.type)
@@ -39,6 +34,29 @@ export class InputMaterial extends Material {
 
 
         this.hazardClasses = input?.hazardClasses || [];
+    }
+}
+
+export function inputMaterialFromJson(json: {[k: string]: any}): InputMaterial {
+    return new InputMaterial({
+        name: json['name'],
+        baseUnit: json['baseUnit'],
+        numUnitsRequired: json['numUnitsRequired'],
+        perUnitCostEstimate: json['perUnitCostEstimate'] ? costEstimateFromJson(json['perUnitCostEstimate']) : null,
+        storage: resourceStorageFromJson(json['storage']),
+        hazardClasses: hazardClassesFromJson(json['hazardClasses'])
+    })
+}
+
+
+export function inputMaterialToJson(inputMaterial: InputMaterial): {[k: string]: any} {
+    return {
+        name: inputMaterial.name,
+        baseUnit: inputMaterial.baseUnit,
+        numUnitsRequired: inputMaterial.numUnitsRequired,
+        perUnitCostEstimate: inputMaterial.perUnitCostEstimate && costEstimateToJson(inputMaterial.perUnitCostEstimate),
+        storage: resourceStorageToJson(inputMaterial.storage),
+        hazardClasses: hazardClassesToJson(inputMaterial.hazardClasses)
     }
 }
 
@@ -72,10 +90,10 @@ export function createInputMaterialForm(input: Partial<InputMaterial>): InputMat
             {nonNullable: true}
         ),
         isUniversitySupplied: new FormControl<boolean>(
-            input.isUniversitySupplied || false, {nonNullable: true}
+            input.perUnitCostEstimate?.isUniversitySupplied || false, {nonNullable: true}
         ),
         estimatedCost: new FormControl<number>(
-            input.estimatedCost || 0,
+            input.perUnitCostEstimate?.estimatedCost || 0,
             {nonNullable: true}
         ),
         storage: createResourceStorageForm(

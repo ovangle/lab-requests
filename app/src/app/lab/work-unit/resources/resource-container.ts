@@ -1,12 +1,12 @@
 import { FormArray, FormGroup, ValidationErrors } from "@angular/forms";
-import { Software, SoftwareForm, SoftwareFormErrors, createSoftwareForm } from "./software/software";
-import { InputMaterial, InputMaterialForm, InputMaterialFormErrors, createInputMaterialForm } from "./material/input/input-material";
-import { OutputMaterial, OutputMaterialForm, OutputMaterialFormErrors, createOutputMaterialForm } from "./material/output/output-material";
-import { Resource, ResourceType } from "./common/resource";
+import { Software, SoftwareForm, SoftwareFormErrors, createSoftwareForm, softwareFromJson, softwareToJson } from "./software/software";
+import { InputMaterial, InputMaterialForm, InputMaterialFormErrors, createInputMaterialForm, inputMaterialFromJson, inputMaterialToJson } from "./material/input/input-material";
+import { OutputMaterial, OutputMaterialForm, OutputMaterialFormErrors, createOutputMaterialForm, outputMaterialFromJson, outputMaterialToJson } from "./material/output/output-material";
+import { ALL_RESOURCE_TYPES, Resource, ResourceType } from "./common/resource";
 import { Injectable, inject } from "@angular/core";
 import { BehaviorSubject, Observable, Subscription, filter, firstValueFrom, map } from "rxjs";
-import { Service, ServiceForm, ServiceFormErrors, serviceForm } from "./service/service";
-import { EquipmentLease, EquipmentLeaseForm, EquipmentLeaseFormErrors } from "./equipment/equipment-lease";
+import { Service, ServiceForm, ServiceFormErrors, serviceForm, serviceFromJson, serviceToJson } from "./service/service";
+import { EquipmentLease, EquipmentLeaseForm, EquipmentLeaseFormErrors, equipmentLeaseFromJson, equipmentLeaseToJson } from "./equipment/equipment-lease";
 import { ModelService } from "src/app/utils/models/model-service";
 import { Context } from "src/app/utils/models/model-context";
 import { ResourceContainerForm } from "./resource-container-form";
@@ -63,6 +63,17 @@ export class ResourceContainer {
     }
 }
 
+export function researchContainerFieldsFromJson(json: {[k: string]: any}) {
+    return {
+        equipments: new Array(json['equipments']).map(equip => equipmentLeaseFromJson(equip)),
+        softwares: new Array(json['softwares']).map(software => softwareFromJson(software)), 
+        services: new Array(json['services']).map(service => serviceFromJson(service)),
+
+        inputMaterials: new Array(json['inputMaterials']).map(inputMaterial => inputMaterialFromJson(inputMaterial)),
+        outputMaterials: new Array(json['outputMaterials']).map(outputMaterial => outputMaterialFromJson(outputMaterial))
+    };
+}
+
 export class ResourceContainerPatch {
     addEquipments?: EquipmentLease[];
     replaceEquipments?: {[k: number]: EquipmentLease | null};
@@ -83,6 +94,67 @@ export class ResourceContainerPatch {
     addOutputMaterials?: OutputMaterial[];
     replaceOutputMaterials?: {[k: number]: OutputMaterial | null};
     delOutputMaterials?: number[]
+}
+
+export function resourceContainerPatchToJson(patch: ResourceContainerPatch): {[k: string]: any} {
+    let json: {[k: string]: any} = {};
+    for (const resourceType of ALL_RESOURCE_TYPES) {
+        contributeResourceFieldsToOutput(resourceType);
+    }
+    return json;
+
+    function resourceSerializer(resourceType: ResourceType) {
+        switch (resourceType) {
+            case 'equipment':
+                return equipmentLeaseToJson;
+            case 'software':
+                return softwareToJson;
+            case 'service':
+                return serviceToJson;
+            case 'input-material':
+                return inputMaterialToJson;
+            case 'output-material':
+                return outputMaterialToJson;
+        }
+    }
+
+    function getFieldSuffix(resourceType: ResourceType) {
+        switch (resourceType) {
+            case 'equipment':
+                return 'Equipments';
+            case 'software':
+                return 'Softwares';
+            case 'service':
+                return 'Services';
+            case 'input-material':
+                return 'InputMaterials';
+            case 'output-material':
+                return 'OutputMaterials';
+        }
+    }
+
+    function contributeResourceFieldsToOutput(resourceType: ResourceType) {
+        const resourceToJson = resourceSerializer(resourceType);
+        const fieldSuffix = getFieldSuffix(resourceType);
+
+        const addField: keyof ResourceContainerPatch = `add${fieldSuffix}`;
+        if (addField in Object.keys(patch)) {
+            json[addField] = patch[addField]!.map((item) => resourceToJson(item as any));
+        }
+
+        const replaceField: keyof ResourceContainerPatch = `replace${fieldSuffix}`;
+        if (replaceField in Object.keys(patch)) {
+            const replaceEntries = Object.entries(patch[replaceField]!).map(
+                ([k, v]) => [k, resourceToJson(v)]
+            );
+            json[replaceField] = Object.fromEntries(replaceEntries);
+        }
+
+        const delField: keyof ResourceContainerPatch = `del${fieldSuffix}`;
+        if (delField in Object.keys(patch)) {
+            json[delField] = patch[delField];
+        }
+    }
 }
 
 function delResourcePatch(resourceType: ResourceType, toDel: number[]): ResourceContainerPatch {

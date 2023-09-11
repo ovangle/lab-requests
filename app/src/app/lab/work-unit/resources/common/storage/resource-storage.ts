@@ -29,6 +29,21 @@ export class ResourceStorage {
     }
 }
 
+export function resourceStorageFromJson(json: {[k: string]: any}): ResourceStorage {
+    return new ResourceStorage({
+        type: json['type'],
+        otherDescription: json['otherDescription']
+    })
+}
+
+
+export function resourceStorageToJson(storage: ResourceStorage): {[k: string]: any} {
+    return {
+        type: storage.type,
+        otherDescription: storage.otherDescription
+    };
+}
+
 function otherDescriptionRequired(control: AbstractControl<string>) {
     if (!isResourceStorageForm(control.parent)) {
         return {notInResourceStorageForm: 'parent control must be a resource storage form'};

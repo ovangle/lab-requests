@@ -154,7 +154,7 @@ export class ExperimentalPlanFormService {
             [form]="form">
         </lab-experimental-plan-researcher-form>
 
-        <lab-funding-type-select formControlName="fundingType">
+        <lab-funding-model-select formControlName="fundingModel">
             <mat-label>Funding source</mat-label>
 
             <ng-container *ngIf="fundingTypeErrors$ | async as errors">
@@ -162,7 +162,7 @@ export class ExperimentalPlanFormService {
                     A value is required
                 </mat-error>
             </ng-container>
-        </lab-funding-type-select>
+        </lab-funding-model-select>
 
         form valid: {{form.valid}}
 

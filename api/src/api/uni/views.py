@@ -28,7 +28,7 @@ async def search_campuses(
     db = Depends(get_db)
 ) -> PagedResultList[Campus]:
     campuses = await list_campuses(db, name_startswith=name_startswith)
-    return PagedResultList(
+    return PagedResultList[Campus](
         items=campuses,
         total_item_count=len(campuses),
         page_index=0

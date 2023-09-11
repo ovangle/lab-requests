@@ -1,5 +1,6 @@
 import { ThisReceiver } from "@angular/compiler";
 import { FormControl, FormGroup, Validators } from "@angular/forms";
+import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "../resource";
 
 export const RESOURCE_DISPOSAL_TYPES = [
     'general',
@@ -20,13 +21,13 @@ export class ResourceDisposal {
     readonly type: ResourceDisposalType;
     readonly otherDescription: string;
 
-    readonly estimatedCost: number;
+    readonly costEstimate: CostEstimate | null;
 
     constructor(params: Partial<ResourceDisposal>) {
         this.type = params.type || 'general';
 
         this.otherDescription = params.otherDescription || '';
-        this.estimatedCost = params.estimatedCost || 0;
+        this.costEstimate = params.costEstimate || null;
     }
 
     get typeName(): string {
@@ -34,6 +35,23 @@ export class ResourceDisposal {
             return this.otherDescription;
         }
         return this.type;
+    }
+}
+
+export function resourceDisposalFromJson(json: {[k: string]: any}): ResourceDisposal {
+    return new ResourceDisposal({
+        type: json['type'],
+        otherDescription: json['otherDescription'],
+        costEstimate: json['costEstimate'] ? costEstimateFromJson(json['costEstimate']) : null
+    });
+}
+
+
+export function resourceDisposalToJson(disposal: ResourceDisposal): {[k: string]: any} {
+    return {
+        type: disposal.type,
+        otherDescription: disposal.otherDescription,
+        costEstimate: disposal.costEstimate && costEstimateToJson(disposal.costEstimate)
     }
 }
 
@@ -54,7 +72,7 @@ export function createResourceDisposalForm(r: Partial<ResourceDisposal>): Resour
             {nonNullable: true}
         ),
         estimatedCost: new FormControl<number>(
-            r.estimatedCost || 0,
+            r.costEstimate?.estimatedCost || 0,
             {nonNullable: true}
         )
     });

@@ -30,7 +30,7 @@ class ExperimentalPlan(Base):
     id: Mapped[uuid_pk]
 
     funding_model_id: Mapped[UUID] = mapped_column(ForeignKey('experimental_plan_funding_models.id'))
-    funding_model: Mapped[ExperimentalPlanFundingModel] = relationship()
+    funding_model: Mapped["ExperimentalPlanFundingModel"] = relationship()
 
     researcher_base_campus_id: Mapped[UUID] = mapped_column(ForeignKey('campuses.id'))
     researcher_base_campus: Mapped[Campus] = relationship()

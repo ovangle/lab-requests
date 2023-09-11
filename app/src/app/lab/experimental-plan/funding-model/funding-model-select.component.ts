@@ -13,6 +13,7 @@ import { animate, state, style, transition, trigger } from "@angular/animations"
 import { SelectOtherDescriptionComponent } from "src/app/utils/forms/select-other-description.component";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
 import { ExperimentalPlanFundingModelFormComponent } from "./funding-model-form.component";
+import { LayoutSplitViewComponent } from "src/app/utils/layout/split-view.component";
 
 @Injectable()
 export class FundingModelSelectContext extends FundingModelContext {
@@ -77,30 +78,35 @@ export class FundingModelSelectContext extends FundingModelContext {
         MatSelectModule,
         MatRadioModule,
 
+        LayoutSplitViewComponent,
         SelectOtherDescriptionComponent,
         ExperimentalPlanFundingModelFormComponent
     ],
     template: `
-    <mat-form-field>
-        <mat-label>
-            <ng-content select="mat-label"></ng-content>
-        </mat-label>
-        <mat-select formControlName="selectedType" [required]="required" 
-                    (selectionChange)="_onTouched()">
-            <mat-option *ngFor="let builtinModel of builtinModels" [value]="builtinModel">
-                {{builtinModel.description}}
-            </mat-option>
-            <mat-option value="other">Other...</mat-option>
-        </mat-select>
+    <app-layout-split-view [rightPaneVisible]="isOtherSelected$ | async">
+        <section id="left-pane">
+            <mat-form-field>
+                <mat-label>
+                    <ng-content select="mat-label"></ng-content>
+                </mat-label>
+                <mat-select [formControl]="selectedControl" [required]="required" 
+                            (selectionChange)="_onTouched()">
+                    <mat-option *ngFor="let builtinModel of builtinModels" [value]="builtinModel">
+                        {{builtinModel.description}}
+                    </mat-option>
+                    <mat-option value="other">Other...</mat-option>
+                </mat-select>
 
-        <ng-content select="mat-error"></ng-content>
-    </mat-form-field>
+                <ng-content select="mat-error"></ng-content>
+            </mat-form-field>
+        </section>
 
-    <div class="select-other" [class.is-other-selected]="isOtherSelected$ | async">
-        <lab-experimental-plan-funding-model-form
-            [disabled]="selectedControl.disabled">
-        </lab-experimental-plan-funding-model-form>
-    </div>
+        <section id="right-pane">
+            <lab-experimental-plan-funding-model-form
+                [disabled]="selectedControl.disabled">
+            </lab-experimental-plan-funding-model-form>
+        </section>
+    </app-layout-split-view>
 
         <!--
         <lab-req-select-other-description
@@ -110,19 +116,10 @@ export class FundingModelSelectContext extends FundingModelContext {
         -->
     `,
     styles: [`
-    :host {
-        display: flex;
-        flex-direction: row;
-    }
-
-    mat-form-field, .other-select-container {
-        width: 100%;
-    }
-    .other-select-container > mat-form-field {
+    section[id=right-pane] {
         padding-left: 1em;
         box-sizing: border-box;
     }
-
     `],
     providers: [
         FundingModelService,
@@ -165,6 +162,7 @@ export class FundingModelSelectComponent implements ControlValueAccessor {
 
     ngOnDestroy() {
         this._fundingModelContextConnection.unsubscribe();
+        this._onChangeSubscriptions.forEach(s => s.unsubscribe());
     }
 
     @Input()
@@ -185,7 +183,7 @@ export class FundingModelSelectComponent implements ControlValueAccessor {
         }
     }
 
-    _onChangeSubscriptions: Subscription[];
+    _onChangeSubscriptions: Subscription[] = [];
     registerOnChange(fn: (value: FundingModel | FundingModelCreate | null) => void): void {
         this._onChangeSubscriptions.push(this.valueSubject.subscribe(fn));
     }
@@ -194,5 +192,4 @@ export class FundingModelSelectComponent implements ControlValueAccessor {
         this._onTouched = fn;
     }
     readonly setDisabledState = disabledStateToggler(this.selectedControl);
-
 }

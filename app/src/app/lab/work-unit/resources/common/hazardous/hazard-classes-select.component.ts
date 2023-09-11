@@ -1,5 +1,5 @@
 import { Component, Directive, Injectable, Input, ViewChild, inject, ɵbypassSanitizationTrustStyle } from "@angular/core";
-import { HAZARDOUS_MATERIAL_CLASSES, HazardClass, classDivision, hazardClassLabelImage } from "./hazardous";
+import { HAZARDOUS_MATERIAL_CLASSES, HazardClass, hazardClassDivision, hazardClassLabelImage } from "./hazardous";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { CommonModule } from "@angular/common";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -99,7 +99,7 @@ export class HazardClassesSelectComponent implements ControlValueAccessor {
     }
 
     _classDivisionLabel(cls: HazardClass) {
-        return classDivision(cls);
+        return hazardClassDivision(cls);
     }
 
     labelImage(cls: HazardClass) {

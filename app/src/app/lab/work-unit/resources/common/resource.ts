@@ -28,7 +28,7 @@ export const RESOURCE_TYPE_NAMES: {[K in ResourceType]: string} = {
     'output-material': 'Output material'
 }
 
-export const ALL_RESOURCE_TYPES = Object.keys(RESOURCE_TYPE_NAMES) as ResourceType[];
+export const ALL_RESOURCE_TYPES: ResourceType[] = Object.keys(RESOURCE_TYPE_NAMES) as ResourceType[];
 
 export function isResourceType(obj: any): obj is ResourceType {
     return typeof obj === 'string' 
@@ -90,6 +90,20 @@ export abstract class ResourceContext<T extends Resource, TPatch extends Resourc
 export interface CostEstimate {
     isUniversitySupplied: boolean;
     estimatedCost: number;
+}
+
+export function costEstimateFromJson(json: {[k: string]: any}): CostEstimate {
+    return { 
+        isUniversitySupplied: json['isUniversitySupplied'],
+        estimatedCost: json['estimatedCost']
+    }
+}
+
+export function costEstimateToJson(cost: CostEstimate) {
+    return {
+        isUniversitySupplied: cost.isUniversitySupplied,
+        estimatedCost: cost.estimatedCost
+    };
 }
 
 export type CostEstimateForm = FormGroup<{}>;

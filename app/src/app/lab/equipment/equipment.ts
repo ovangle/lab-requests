@@ -27,12 +27,38 @@ export class Equipment {
    }
 }
 
+export function equipmentFromJson(json: {[k: string]: any}): Equipment {
+    return new Equipment({
+        id: json['id'],
+        name: json['name'],
+        description: json['description'],
+        availableInLabTypes: new Array(json['availableInLabTypes']), 
+        requiresTraining: json['requiresTraining'],
+        trainingDescriptions: new Array(json['trainingDescriptions'])
+    })
+}
+
 export interface EquipmentPatch {
     name: string;
     description: string;
     availableInLabTypes: LabType[] | 'all';
     requiresTraining: boolean;
     trainingDescriptions: string[];
+}
+
+export function isEquipmentPatch(obj: any): obj is EquipmentPatch {
+    return typeof obj === 'object' && obj != null;
+}
+
+
+export function equipmentPatchToJson(patch: EquipmentPatch) {
+    return {
+        name: patch.name,
+        description: patch.description,
+        availableInLabTypes: patch.availableInLabTypes, 
+        requiresTraining: patch.requiresTraining,
+        trainingDescriptions: patch.trainingDescriptions
+    }
 }
 
 export function equipmentPatchFromEquipment(equipment: Equipment): EquipmentPatch {
@@ -55,10 +81,8 @@ export type EquipmentPatchErrors = ValidationErrors & {
 @Injectable()
 export class EquipmentModelService extends ModelService<Equipment, EquipmentPatch> {
     override readonly resourcePath: string = '/lab/equipment'
-
-    override modelFromJson(json: object): Equipment {
-        return new Equipment(json);
-    }
+    override readonly modelFromJson = equipmentFromJson;
+    override readonly patchToJson = equipmentPatchToJson;
 }
 
 @Injectable()

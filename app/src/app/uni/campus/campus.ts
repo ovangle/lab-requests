@@ -1,6 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from "@angular/common/http";
 import { Injectable, InjectionToken, inject } from "@angular/core";
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
+import { formatISO, parseISO } from "date-fns";
 import { Observable, catchError, firstValueFrom, map, switchMap } from "rxjs";
 import { Context } from "src/app/utils/models/model-context";
 
@@ -22,20 +23,40 @@ export class Campus {
 
     name: string;
 
-    constructor(readonly params: Partial<Campus>) {
+    createdAt: Date;
+    updatedAt: Date;
+
+    constructor(params: Campus) {
         this.id = params.id!;
         this.code = params.code!;
         this.name = params.name!;
+        this.createdAt = params.createdAt;
+        this.updatedAt = params.updatedAt;
     }
+
 }
 
 export function isCampus(obj: any): obj is Campus {
     return obj instanceof Campus;
 }
 
+export function campusFromJson(json: {[k: string]: any}): Campus {
+    return new Campus({
+        id: json['id'],
+        code: json['code'],
+        name: json['name'],
+        createdAt: parseISO(json['createdAt']),
+        updatedAt: parseISO(json['updatedAt'])
+    })
+}
+
 export interface CampusPatch {
     code: string;
     name: string;
+}
+
+export function campusPatchToJson(patch: CampusPatch) {
+    return {code: patch.code, name: patch.name};
 }
 
 export type CampusPatchErrors = ValidationErrors & {
@@ -47,14 +68,11 @@ export type CampusPatchErrors = ValidationErrors & {
     name?: Readonly<{required: string | null}>;
 }
 
-class CampusDoesNotExist extends Error {}
-
 @Injectable()
 export class CampusModelService extends ModelService<Campus, CampusPatch> {
     override readonly resourcePath = '/uni/campuses'
-    override modelFromJson(json: object): Campus {
-        return new Campus(json);
-    }
+    override readonly modelFromJson = campusFromJson;
+    override readonly patchToJson = campusPatchToJson;
 
     searchCampuses(name: string | null): Observable<Campus[]> {
         console.log(`searching campuses where name starts with ${name}`);

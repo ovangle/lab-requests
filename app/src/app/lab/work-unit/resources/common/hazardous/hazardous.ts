@@ -97,7 +97,7 @@ export function hazardClassGroup(cls: HazardClass): HazardClassGroup {
     return maybeGroup;
 }
 
-export function classDivision(cls: HazardClass): string {
+export function hazardClassDivision(cls: HazardClass): string {
     return cls.id !== 0
         ? `${cls.groupId}.${cls.id}`
         : `${cls.groupId}`;
@@ -112,7 +112,7 @@ function divisionIds(division: string): [number, number] {
     throw new Error(`Division must match ${re}, got '${division}'`);
 }
 
-export function hazardClassByDivision(division: string): HazardClass {
+export function hazardClassFromDivision(division: string): HazardClass {
     const [groupId, divisionId] = divisionIds(division);
     const group = HAZARDOUS_MATERIAL_CLASSES[groupId - 1];
     if (group === undefined) {
@@ -126,6 +126,14 @@ export function hazardClassByDivision(division: string): HazardClass {
 
 }
 
+export function hazardClassesFromJson(json: any[]): HazardClass[] {
+    return json.map(hazardClassFromDivision);
+}
+
+export function hazardClassesToJson(hazardClasses: HazardClass[]): string[] {
+    return hazardClasses.map(hazardClassDivision)
+}
+
 export function hazardClassLabelImage(cls: HazardClass) {
-    return `/assets/hazard-labels/DOT_hazmat_class_${classDivision(cls)}.svg`;
+    return `/assets/hazard-labels/DOT_hazmat_class_${hazardClassDivision(cls)}.svg`;
 }

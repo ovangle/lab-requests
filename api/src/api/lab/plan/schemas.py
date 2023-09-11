@@ -48,11 +48,6 @@ class WorkUnitCreate(WorkUnitBase, ModelCreate[models.WorkUnit]):
         db.add(instance)
         return instance
 
-    async def __call__(self, db: LocalSession) -> WorkUnit:
-        instance = await self.do_create(db)
-        await db.commit()
-        return WorkUnit.from_model(instance)
-
 
 class WorkUnit(WorkUnitBase, ResourceContainer, ApiModel[models.WorkUnit]):
     plan_id: UUID
@@ -97,38 +92,65 @@ class ExperimentalPlanBase(BaseModel):
     process_summary: str
 
     researcher: str
+    researcher_discipline: Discipline
     supervisor: Optional[str] = None
 
-           
-class ExperimentalPlanPatch(ExperimentalPlanBase, ModelPatch):
-    campus: CampusCode | UUID
-    funding_model: ExperimentalPlanFundingModelCreate | UUID | None
+    def update_model(self, instance: models.ExperimentalPlan) -> tuple[models.ExperimentalPlan, bool]:
+        is_modified = False
 
-    async def __call__(self, db: LocalSession, instance: models.ExperimentalPlan) -> ExperimentalPlan:
-        if isinstance(self.campus, CampusCode):
-            if instance.campus.code != self.campus:
+        if self.process_summary != instance.process_summary:
+            instance.process_summary = self.process_summary
+            is_modified = True
+
+        if self.researcher != instance.researcher_email: 
+            instance.researcher_email = self.researcher
+            is_modified = True
+
+        if self.supervisor != instance.supervisor_email:
+            instance.supervisor_email = self.supervisor
+            is_modified = True
+        
+        return (instance, is_modified)
+
+class ExperimentalPlanPatch(ExperimentalPlanBase, ModelPatch):
+    researcher_base_campus: Campus | CampusCode | UUID
+    funding_model: ExperimentalPlanFundingModel | ExperimentalPlanFundingModelCreate | UUID
+
+    async def do_update(self, db: LocalSession, instance: models.ExperimentalPlan) -> ExperimentalPlan:
+        if isinstance(self.researcher_base_campus, (UUID, Campus)):
+            campus_id = (
+                self.researcher_base_campus.id 
+                if isinstance(self.researcher_base_campus, Campus) 
+                else self.researcher_base_campus
+            )
+            if campus_id != instance.campus_id:
+                instance.campus_id = campus_id
+                db.add(instance)
+
+        elif isinstance(self.researcher_base_campus, CampusCode):
+            if instance.campus.code != self.researcher_base_campus:
                 campus_id = (await db.execute(
-                    select(models.Campus.id).where(models.Campus.code == self.campus)
+                    select(models.Campus.id).where(models.Campus.code == self.researcher_base_campus)
                 )).first()
                 if not campus_id:
-                    raise CampusDoesNotExist.for_code(self.campus)
+                    raise CampusDoesNotExist.for_code(self.researcher_base_campus)
 
                 instance.campus_id = campus_id[0]
                 db.add(instance)
 
-        if isinstance(self.campus, UUID):
-            if self.campus != instance.campus_id:
-                instance.campus_id = self.campus
-                db.add(instance)
-
-        if isinstance(self.funding_model, UUID):
-            if self.funding_model != instance.funding_model_id:
-                funding_model = models.ExperimentalPlanFundingModel.fetch_by_id(db, self.funding_model)
-                instance.funding_model_id = self.funding_model
+        if isinstance(self.funding_model, (UUID, ExperimentalPlanFundingModel)):
+            funding_model_id = (
+                self.funding_model.id
+                if isinstance(self.funding_model, ExperimentalPlanFundingModel)
+                else self.funding_model
+            )
+            if funding_model_id != instance.funding_model_id:
+                funding_model = models.ExperimentalPlanFundingModel.fetch_by_id(db, funding_model_id)
+                instance.funding_model_id = funding_model_id
             
         elif isinstance(self.funding_model, ExperimentalPlanFundingModelCreate):
-            funding_model = await models.ExperimentalPlanFundingModel.create
-
+            funding_model = await models.ExperimentalPlanFundingModel.create(self.funding_model)
+            instance.funding_model_id = funding_model.id
 
         if self.process_summary != instance.process_summary:
             instance.process_summary = self.process_summary
@@ -144,24 +166,22 @@ class ExperimentalPlanPatch(ExperimentalPlanBase, ModelPatch):
 
         return ExperimentalPlan.from_model(instance)
 
-class ExperimentalPlanCreate(ExperimentalPlanPatch, ModelCreate[models.ExperimentalPlan]):
+class ExperimentalPlanCreate(ExperimentalPlanBase, ModelCreate[models.ExperimentalPlan]):
     # Work units can be provided on plan create but not on other 
-    work_units: list[WorkUnitPatch] = field(default_factory=list)
+    work_units: list[WorkUnitCreate] = field(default_factory=list)
 
-    async def __call__(self, db: LocalSession) -> ExperimentalPlan: 
+    async def do_create(self, db: LocalSession):
         instance = models.ExperimentalPlan()
 
         if not list(instance.work_units):
             raise ValueError('Can not be applied after work units created')
 
         work_units = []
-        for patch in self.work_units:
-            create_request = WorkUnitCreate(plan_id=instance.id, **dataclasses.asdict(patch))
-            await create_request(db)
+        create_request = WorkUnitCreate(plan_id=instance.id, **dataclasses.asdict(self))
+        work_unit = await create_request(db)
+        work_units.append(work_unit)
 
         db.add(instance)
-
-        return await super().__call__(db, instance)
 
 class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan]):
     id: UUID

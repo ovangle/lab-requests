@@ -13,6 +13,8 @@ from . import models
 
 SCHEMA_CONFIG = ConfigDict(
     alias_generator=camelize,
+    populate_by_name=True,
+    from_attributes=True,
     arbitrary_types_allowed=True
 )
 
@@ -23,11 +25,6 @@ class ApiModel(BaseModel, Generic[TModel], ABC):
 
     created_at: datetime
     updated_at: datetime
-
-    def __new__(cls, model: Optional[Any] = None, **kwargs):
-        if model is not None:
-            return cls.from_model(model)
-        return super().__new__(cls)
 
     @classmethod
     @abstractmethod
@@ -59,9 +56,10 @@ class ModelCreate(BaseModel, Generic[TModel], ABC):
     async def do_create(self, db: LocalSession) -> TModel:
         raise NotImplementedError
 
-    async def __call__(self, db: LocalSession):
-        await self.do_create(db)
+    async def __call__(self, db: LocalSession) -> TModel:
+        instance = await self.do_create(db)
         await db.commit()
+        return instance
 
 
 TItem = TypeVar('TItem', bound=ApiModel[Any])
@@ -73,7 +71,7 @@ class PagedResultList(BaseModel, Generic[TItem]):
     page_index: int = 0
 
 
-class CursorResultList(Generic[TItem]):
+class CursorResultList(BaseModel, Generic[TItem]):
     items: list[TItem]
 
     cursor: str

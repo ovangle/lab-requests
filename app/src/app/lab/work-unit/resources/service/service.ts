@@ -1,5 +1,5 @@
 import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
-import { Resource } from "../common/resource";
+import { CostEstimate, Resource, costEstimateFromJson, costEstimateToJson } from "../common/resource";
 
 
 
@@ -15,8 +15,7 @@ export class Service implements Resource {
 
     readonly isLabTechService: boolean;
 
-    readonly isUniversitySupplied: boolean;
-    readonly estimatedCost: number;
+    readonly costEstimate: CostEstimate | null;
 
     constructor(params: Partial<Service>) {
         if (!params.name) {
@@ -25,13 +24,23 @@ export class Service implements Resource {
         this.name = params.name;
 
         this.isLabTechService = !!params.isLabTechService;
-        this.isUniversitySupplied = !!params.isUniversitySupplied;
+        this.costEstimate = params.costEstimate || null;
+    }
+}
 
-        if (this.isLabTechService && !this.isUniversitySupplied) {
-            throw new Error('A lab tech service must always be university supplied');
-        }
+export function serviceFromJson(json: {[k: string]: any}): Service {
+    return new Service({
+        name: json['name'],
+        isLabTechService: json['isLabTechService'],
+        costEstimate: json['costEstimate'] ? costEstimateFromJson(json['costEstimate']) : null
+    })
+}
 
-        this.estimatedCost = params.estimatedCost || 0;
+export function serviceToJson(service: Service) {
+    return {
+        name: service.name,
+        isLabTechService: service.isLabTechService,
+        costEstimate: service.costEstimate && costEstimateToJson(service.costEstimate)
     }
 }
 
@@ -49,8 +58,8 @@ export function serviceForm(service: Partial<Service>): ServiceForm {
         type: new FormControl('service', {nonNullable: true}),
         name: new FormControl(service.name || '', {nonNullable: true, validators: [Validators.required]}),
         isLabTechService: new FormControl(!!service.isLabTechService, {nonNullable: true}),
-        isUniversitySupplied: new FormControl(!!service.isUniversitySupplied, {nonNullable: true}),
-        estimatedCost: new FormControl(service.estimatedCost || 0, {nonNullable: true})
+        isUniversitySupplied: new FormControl(!!service.costEstimate?.isUniversitySupplied, {nonNullable: true}),
+        estimatedCost: new FormControl(service.costEstimate?.estimatedCost || 0, {nonNullable: true})
     });
 }
 

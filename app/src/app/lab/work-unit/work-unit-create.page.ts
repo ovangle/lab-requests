@@ -1,23 +1,42 @@
 import { CommonModule } from "@angular/common";
-import { Component, Injectable, inject } from "@angular/core";
-import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, inject } from "@angular/core";
+import { ReactiveFormsModule } from "@angular/forms";
 import { MatCardModule } from "@angular/material/card";
-import { ActivatedRoute, ParamMap, Routes } from "@angular/router";
-import { BehaviorSubject, Connectable, Observable, Subscription, combineLatest, connectable as createConnectable, defer, distinctUntilChanged, firstValueFrom, map, of, tap, withLatestFrom } from "rxjs";
+import { BehaviorSubject, Observable, combineLatest, defer, map } from "rxjs";
 
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 
-import { WorkUnit, WorkUnitContext, WorkUnitModelService, WorkUnitPatch, WorkUnitPatchErrors } from "./work-unit";
 import { Campus } from "src/app/uni/campus/campus";
-import { Discipline } from "src/app/uni/discipline/discipline";
-import { LabType } from "../type/lab-type";
-import { ResourceContainerFormControls, resourceContainerFormControls } from "./resources/resource-container-form";
-import { WorkUnitBaseInfoComponent } from "./base-info/work-unit-base-info.component";
 import { WorkUnitBaseInfoFormComponent } from "./base-info/work-unit-base-info-form.component";
+import { WorkUnitBaseInfoComponent } from "./base-info/work-unit-base-info.component";
+import { hazardClassFromDivision } from "./resources/common/hazardous/hazardous";
+import { InputMaterial } from "./resources/material/input/input-material";
+import { Software } from "./resources/software/software";
+import { WorkUnit } from "./work-unit";
 import { WorkUnitFormService } from "./work-unit-form.service";
 
+const workUnitFixture = new WorkUnit({
+    campus: new Campus({code: 'ROK', name: 'Rockhampton'} as any),
+    labType: 'ICT',
+    technician: 'hello@world.com',
+    softwares: [
+        new Software({ name: 'MATLAB', description: 'test', minVersion: '3.21' }),
+        new Software({ name: 'Microsoft Word', description: 'Microsoft stuff', minVersion: '6304' })
+    ],
+    inputMaterials: [
+        new InputMaterial({
+            name: 'poison',
+            baseUnit: 'L',
+            hazardClasses: [
+                hazardClassFromDivision('1.4'),
+                hazardClassFromDivision('6')
+            ]
+        })
+    ]
+})
+       
 @Component({
     selector: 'lab-work-unit-form',
     standalone: true,

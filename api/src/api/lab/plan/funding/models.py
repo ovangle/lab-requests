@@ -10,7 +10,7 @@ from api.base.models import Base
 from api.utils.db import LocalSession, uuid_pk
 
 class ExperimentalPlanFundingModel(Base):
-    __tablename__ = 'experimental_plan_fundings'
+    __tablename__ = 'experimental_plan_funding_models'
     id: Mapped[uuid_pk]
 
     description: Mapped[str] = mapped_column(VARCHAR(128))
@@ -31,3 +31,19 @@ class ExperimentalPlanFundingModel(Base):
     async def fetch_by_id(db: LocalSession, id: UUID) -> ExperimentalPlanFundingModel:
         return await db.get(ExperimentalPlanFundingModel, id)
 
+
+async def seed_funding_models(db: LocalSession):
+    builtin_funding_models = [
+        ExperimentalPlanFundingModel(description='Grant', requires_supervisor=True),
+        ExperimentalPlanFundingModel(description='General Research', requires_supervisor=True),
+        ExperimentalPlanFundingModel(description='Student project', requires_supervisor=True),
+    ]
+    builtin_descriptions = [builtin.description for builtin in builtin_funding_models]
+
+    existing_descriptions = await db.scalars(
+        select(ExperimentalPlanFundingModel.description)
+            .where(ExperimentalPlanFundingModel.description.in_(builtin_descriptions))
+    )
+
+    db.add_all(builtin for builtin in builtin_funding_models if builtin.description not in existing_descriptions)
+    await db.commit()

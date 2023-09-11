@@ -1,7 +1,7 @@
 import { ValidationErrors } from "@angular/forms";
-import { Campus, isCampus } from "../../uni/campus/campus";
+import { Campus, CampusCode, campusFromJson, isCampus } from "../../uni/campus/campus";
 import { isDiscipline } from "../../uni/discipline/discipline";
-import { ResourceContainer, ResourceContainerContext } from "./resources/resource-container";
+import { ResourceContainer, ResourceContainerContext, researchContainerFieldsFromJson } from "./resources/resource-container";
 import { LabType } from "../type/lab-type";
 import { ResourceContainerPatch } from "./resources/resource-container";
 import { ModelService } from "src/app/utils/models/model-service";
@@ -9,6 +9,7 @@ import { ExperimentalPlan, ExperimentalPlanContext } from "../experimental-plan/
 import { BehaviorSubject, Observable, Subscription, filter, firstValueFrom, of, skipWhile, switchMap, take } from "rxjs";
 import { Injectable, inject } from "@angular/core";
 import { Context } from "src/app/utils/models/model-context";
+import { formatISO, parseISO } from "date-fns";
 
 
 /**
@@ -54,6 +55,25 @@ export class WorkUnit extends ResourceContainer {
    }
 }
 
+
+export function workUnitFromJson(json: {[k: string]: any}): WorkUnit {
+    return new WorkUnit({
+        id: json['id'],
+        planId: json['planId'],
+        index: json['index'],
+        campus: campusFromJson(json['campus']),
+        labType: json['labType'],
+        technician: json['technician'],
+        processSummary: json['processSummary'],
+
+        startDate: json['startDate'] && parseISO(json['startDate']),
+        endDate: json['endDate'] && parseISO(json['endDate']),
+
+        ...researchContainerFieldsFromJson(json)
+    })
+
+}
+
 export interface WorkUnitPatch extends ResourceContainerPatch {
     readonly labType: LabType;
     readonly technician: string;
@@ -62,6 +82,16 @@ export interface WorkUnitPatch extends ResourceContainerPatch {
 
     readonly startDate: Date | null;
     readonly endDate: Date | null;
+}
+
+export function workUnitPatchToJson(patch: WorkUnitPatch): {[k: string]: any} {
+    return {
+        labType: patch.labType,
+        technician: patch.technician,
+        summary: patch.summary,
+        startDate: patch.startDate && formatISO(patch.startDate),
+        endDate: patch.endDate && formatISO(patch.endDate)
+    };
 }
 
 export type WorkUnitPatchErrors = ValidationErrors & {
@@ -83,8 +113,16 @@ export type WorkUnitPatchErrors = ValidationErrors & {
 export interface WorkUnitCreate extends WorkUnitPatch {
     planId: string;
 }
+
 export function isWorkUnitCreate(obj: any): obj is WorkUnitCreate {
     return typeof obj === 'object' && !!obj && typeof obj.planId === 'string';
+}
+
+export function workUnitCreateToJson(create: WorkUnitCreate) {
+    return {
+        ...workUnitPatchToJson(create),
+        planId: create.planId
+    };
 }
 
 export type WorkUnitCreateErrors = WorkUnitPatchErrors & {
@@ -99,9 +137,9 @@ export class WorkUnitModelService extends ModelService<WorkUnit, WorkUnitPatch, 
         return `/lab/experimental-plans/${plan.id}/work-units`;
     }
 
-    override modelFromJson(json: object): WorkUnit {
-        return new WorkUnit(json);
-    }
+    override readonly modelFromJson = workUnitFromJson;
+    override readonly patchToJson = workUnitPatchToJson;
+    override readonly createToJson = workUnitCreateToJson;
 
     readByPlanAndIndex(plan: ExperimentalPlan, index: number): Observable<WorkUnit> {
         return this.fetch(`${index}`, { resourcePath: this.resourcePathFromPlan(plan) });

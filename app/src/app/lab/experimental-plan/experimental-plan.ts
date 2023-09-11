@@ -3,14 +3,15 @@ import { Injectable, Provider, inject } from "@angular/core";
 import { ValidationErrors, FormArray, FormControl, FormGroup, Validators } from "@angular/forms";
 import { BehaviorSubject, Observable, Subject, Subscription, connectable, filter, firstValueFrom, map, of, share, shareReplay, switchMap } from "rxjs";
 import { __runInitializers } from "tslib";
-import { Campus, CampusCode } from "../../uni/campus/campus";
+import { Campus, CampusCode, campusFromJson } from "../../uni/campus/campus";
 import { Discipline } from "../../uni/discipline/discipline";
 
-import { WorkUnit } from "../work-unit/work-unit";
+import { WorkUnit, workUnitFromJson } from "../work-unit/work-unit";
 import { ModelService } from "src/app/utils/models/model-service";
 import { ActivatedRoute } from "@angular/router";
 import { Context } from "src/app/utils/models/model-context";
-import { FundingModel, FundingModelCreate } from "./funding-model/funding-model";
+import { FundingModel, FundingModelCreate, fundingModelFromJson } from "./funding-model/funding-model";
+import { parseISO } from "date-fns";
 
 
 export interface ExperimentalPlanBase {
@@ -19,7 +20,7 @@ export interface ExperimentalPlanBase {
     researcher: string;
 
     researcherDiscipline: Discipline | null;
-    researcherBaseCampus: Campus;
+    researcherBaseCampus: Campus | CampusCode;
 
     supervisor: string | null;
 
@@ -59,10 +60,28 @@ export class ExperimentalPlan implements ExperimentalPlanBase {
         this.workUnits = (plan.workUnits || []).map(workUnit => new WorkUnit(workUnit));
 
         this.createdAt = plan.createdAt!;
-        this.updatedAt = plan.updatedAt!
+        this.updatedAt = plan.updatedAt!;
     }
 }
+export function experimentalPlanFromJson(json: {[k: string]: any}) {
+    return new ExperimentalPlan({
+        id: json['id'],
+        title: json['title'],
+        researcher: json['researcher'],
+        researcherDiscipline: json['researcherDiscipline'],
+        researcherBaseCampus: campusFromJson(json['researcherBaseCampus']),
 
+        fundingModel: fundingModelFromJson(json['fundingModel']),
+        supervisor: json['supervisor'],
+
+        processSummary: json['processSummary'],
+
+        workUnits: new Array(json['workUnits']).map(workUnit => workUnitFromJson(workUnit)),
+
+        createdAt: parseISO(json['createdAt']),
+        updatedAt: parseISO(json['updatedAt'])
+    })
+}
 export interface ExperimentalPlanPatch {
     title: string;
     researcher: string;
@@ -76,6 +95,18 @@ export interface ExperimentalPlanPatch {
 
 export function patchFromExperimentalPlan(plan: ExperimentalPlan): ExperimentalPlanPatch {
     return { ...plan };
+}
+
+export function experimentalPlanPatchToJson(patch: ExperimentalPlanPatch): {[k: string]: any} {
+    return {
+        title: patch.title,
+        researcher: patch.researcher,
+        researcherBaseCampus: patch.researcherBaseCampus.id,
+        researcherDiscipline: patch.researcherDiscipline,
+        fundingModel: (patch.fundingModel instanceof FundingModel) ? patch.fundingModel.id : patch.fundingModel,
+        supervisor: patch.supervisor,
+        processSummary: patch.processSummary
+    }
 }
 
 export type ExperimentalPlanPatchErrors = ValidationErrors & {
@@ -96,14 +127,8 @@ export type ExperimentalPlanPatchErrors = ValidationErrors & {
 @Injectable()
 export class ExperimentalPlanModelService extends ModelService<ExperimentalPlan, ExperimentalPlanPatch> {
     override readonly resourcePath = '/lab/experimental-plans'
-    override modelFromJson(json: object) {
-        return new ExperimentalPlan(json as any);
-    }
-
-    override patchToJson(patch: ExperimentalPlanPatch) {
-        return {...patch};
-    }
-
+    override readonly modelFromJson = experimentalPlanFromJson;
+    override readonly patchToJson = experimentalPlanPatchToJson;
 
     updatePlan(plan: ExperimentalPlan, patch: ExperimentalPlanPatch): Observable<ExperimentalPlan> {
         return this.update(plan.id, patch)

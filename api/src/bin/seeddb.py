@@ -5,8 +5,10 @@ from api.utils.db import local_sessionmaker
 
 async def seed_db():
     from api.uni.models import seed_campuses
+    from api.lab.plan.funding.models import seed_funding_models
     async with local_sessionmaker() as db:
         await seed_campuses(db)
+        await seed_funding_models(db)
 
 if __name__ == '__main__':
     import asyncio 

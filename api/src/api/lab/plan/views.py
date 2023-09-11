@@ -2,14 +2,16 @@ import dataclasses
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from sqlalchemy import func, select
 from api.base.schemas import PagedResultList
 
 from api.utils.db import LocalSession, get_db
 
+from . import models
 from .schemas import (
     ExperimentalPlan,
     ExperimentalPlanCreate,
+    ExperimentalPlanPatch,
     WorkUnit,
     WorkUnitCreate,
     WorkUnitPatch
@@ -39,6 +41,14 @@ async def create_plan(create_request: ExperimentalPlanCreate, db=Depends(get_db)
 async def read_plan(plan_id: UUID, db = Depends(get_db)) -> ExperimentalPlan:
     return await ExperimentalPlan.get_by_id(db, plan_id)
 
+@lab_plans.post(
+    "/{plan_id}"
+)
+async def update_plan(plan_id: UUID, patch: ExperimentalPlanPatch, db: LocalSession = Depends(get_db)):
+    plan = await db.get(models.ExperimentalPlan, plan_id)
+    plan = await patch(db, plan);
+    await db.commit()
+    return plan
 
 @lab_plans.get(
     "/{plan_id}/work_units/"
@@ -74,7 +84,7 @@ async def list_work_units(
     researcher_email: str | None = None,
     supervisor_email: str | None = None,
     technician_email: str | None = None,
-    db = Depends(get_db)
+    db: LocalSession = Depends(get_db)
 ) -> PagedResultList[WorkUnit]:
     from .queries import query_work_units 
 
@@ -84,12 +94,12 @@ async def list_work_units(
         supervisor_email=supervisor_email,
         technician_email=technician_email
     ) 
-    item_count = await db.count(query)
-    model_results = await db.execute(query)
+    model_results = await db.scalars(query)
+    model_count = await db.scalar(func.count(WorkUnit.id).select_from(query))
 
-    return PagedResultList(
-        items=[WorkUnit.from_model(result[0]) for result in model_results],
-        total_item_count=item_count,
+    return PagedResultList[WorkUnit](
+        items=[WorkUnit.from_model(m) for m in model_results],
+        total_item_count=model_count or 0,
         page_index=0
     )
  

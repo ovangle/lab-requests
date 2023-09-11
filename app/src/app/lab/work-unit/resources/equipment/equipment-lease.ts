@@ -1,5 +1,5 @@
-import { Equipment, EquipmentPatch } from "src/app/lab/equipment/equipment";
-import { Resource, CostEstimate, CostEstimateForm, costEstimateForm } from "../common/resource";
+import { Equipment, EquipmentPatch, equipmentFromJson, equipmentPatchToJson, isEquipmentPatch } from "src/app/lab/equipment/equipment";
+import { Resource, CostEstimate, CostEstimateForm, costEstimateForm, costEstimateFromJson, costEstimateToJson } from "../common/resource";
 import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 
 export class EquipmentLease implements Resource {
@@ -18,6 +18,35 @@ export class EquipmentLease implements Resource {
         this.requiresAssistance = params.requiresAssistance!;
         this.setupInstructions = params.setupInstructions!;
         this.usageCostEstimate = params.usageCostEstimate || null;
+    }
+}
+
+export function equipmentLeaseFromJson(json: {[k: string]: any}): EquipmentLease {
+    return new EquipmentLease({
+        equipment: equipmentFromJson(json['equipment']),
+        isTrainingCompleted: json['isTrainingCompleted'],
+        requiresAssistance: json['requiresAssistance'],
+        setupInstructions: json['setupInstructions'],
+        usageCostEstimate: json['usageCostEstimate'] ? costEstimateFromJson(json['usageCostEstimate']) : null
+    });
+}
+
+export function equipmentLeaseToJson(lease: EquipmentLease): {[k: string]: any} {
+    let equipment;
+    if (lease.equipment instanceof Equipment) {
+        equipment = lease.equipment.id;
+    } else if (isEquipmentPatch(lease.equipment)) {
+        equipment = equipmentPatchToJson(lease.equipment);
+    } else {
+        equipment = lease.equipment;
+    }
+
+    return {
+        equipment,
+        isTrainingCompleted: lease.isTrainingCompleted,
+        requiresAssistance: lease.requiresAssistance,
+        setupInstructions: lease.setupInstructions,
+        usageCostEstimate: lease.usageCostEstimate && costEstimateToJson(lease.usageCostEstimate)
     }
 }
 

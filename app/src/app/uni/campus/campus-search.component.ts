@@ -4,7 +4,7 @@ import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModu
 import { CommonModule } from "@angular/common";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { BehaviorSubject, Observable, filter, map, of, startWith, switchMap } from "rxjs";
+import { BehaviorSubject, Observable, filter, map, of, startWith, switchMap, tap } from "rxjs";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
@@ -33,8 +33,9 @@ import { CampusInfoComponent } from "./campus-info.component";
         <input matInput [matAutocomplete]="autocomplete" 
                         [formControl]="searchControl" 
                         [required]="required" />
-                    
-        <ng-content select="mat-error"></ng-content>
+        <mat-error>
+            <ng-content select="mat-error"></ng-content>
+        </mat-error>
     </mat-form-field>
 
     <mat-autocomplete #autocomplete [displayWith]="_displayCampusInfo">
@@ -97,7 +98,7 @@ export class CampusSearchComponent implements ControlValueAccessor {
         this.searchControl.valueChanges.pipe(
             takeUntilDestroyed(),
             filter((value): value is Campus => value instanceof Campus),
-        ).subscribe(this._onChange)
+        ).subscribe((value) => this._onChange(value))
     }
 
     _displayCampusInfo(campus: Campus) {
@@ -112,7 +113,10 @@ export class CampusSearchComponent implements ControlValueAccessor {
     }
     _onChange = (value: any) => {}
     registerOnChange(fn: any): void {
-        this._onChange = fn;
+        this._onChange = (value: any) => {
+            console.log('ON CHANGE', value)
+            fn(value);
+        };
     }
     _onTouched = () => {};
     registerOnTouched(fn: any): void {
