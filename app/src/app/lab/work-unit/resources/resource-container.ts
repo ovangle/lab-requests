@@ -65,12 +65,12 @@ export class ResourceContainer {
 
 export function researchContainerFieldsFromJson(json: {[k: string]: any}) {
     return {
-        equipments: new Array(json['equipments']).map(equip => equipmentLeaseFromJson(equip)),
-        softwares: new Array(json['softwares']).map(software => softwareFromJson(software)), 
-        services: new Array(json['services']).map(service => serviceFromJson(service)),
+        equipments: Array.from<object>(json['equipments']).map(equip => equipmentLeaseFromJson(equip)),
+        softwares: Array.from<object>(json['softwares']).map(software => softwareFromJson(software)), 
+        services: Array.from<object>(json['services']).map(service => serviceFromJson(service)),
 
-        inputMaterials: new Array(json['inputMaterials']).map(inputMaterial => inputMaterialFromJson(inputMaterial)),
-        outputMaterials: new Array(json['outputMaterials']).map(outputMaterial => outputMaterialFromJson(outputMaterial))
+        inputMaterials: Array.from<object>(json['inputMaterials']).map(inputMaterial => inputMaterialFromJson(inputMaterial)),
+        outputMaterials: Array.from<object>(json['outputMaterials']).map(outputMaterial => outputMaterialFromJson(outputMaterial))
     };
 }
 

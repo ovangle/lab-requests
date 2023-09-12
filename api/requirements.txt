@@ -4,3 +4,4 @@ psycopg[c]===3.1.10
 uvicorn[standard]==0.23.2
 
 pyhumps==3.8.0
+debugpy==1.7.0

@@ -7,11 +7,12 @@ from typing import TYPE_CHECKING, Any, Optional
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema
 
-from sqlalchemy import DATE, Table, Column, ForeignKey, select
+from sqlalchemy import DATE, Select, Table, Column, ForeignKey, select
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.types import VARCHAR, TEXT
+from api.lab.plan.errors import ExperimentalPlanDoesNotExist
 
 from api.uni.types import Discipline
 from api.utils.db import uuid_pk, EMAIL_DOMAIN
@@ -24,10 +25,11 @@ if TYPE_CHECKING:
 
 from .resource.models import ResourceContainer
 
-class ExperimentalPlan(Base):
+class ExperimentalPlan_(Base):
     __tablename__ = 'experimental_plans'
 
     id: Mapped[uuid_pk]
+    title: Mapped[str] = mapped_column(VARCHAR(128))
 
     funding_model_id: Mapped[UUID] = mapped_column(ForeignKey('uni_research_funding_model.id'))
     funding_model: Mapped[FundingModel] = relationship()
@@ -47,47 +49,25 @@ class ExperimentalPlan(Base):
         server_default=''
     )
 
-    work_units: Mapped[list[WorkUnit]] = relationship(
+    work_units: Mapped[list[WorkUnit_]] = relationship(
         back_populates='plan'
     )
 
     @staticmethod
-    async def get_by_id(db: AsyncSession, id: UUID) -> ExperimentalPlan:
-        result = await db.execute(
-            select(ExperimentalPlan)
-                .where(ExperimentalPlan.id == id)
-        )
-        return ExperimentalPlan(result)
+    async def get_by_id(db: AsyncSession, id: UUID) -> ExperimentalPlan_:
+        m = await db.get(ExperimentalPlan_, id)
+        if m is None:
+            raise ExperimentalPlanDoesNotExist.for_id(id)
+        return m
 
-    @staticmethod 
-    async def list_for_researcher(db: AsyncSession, researcher_email: str) -> list[ExperimentalPlan]:
-        results = await db.execute(
-            select(ExperimentalPlan)
-                .where(ExperimentalPlan.researcher_email == researcher_email)
-        )
-        return [ExperimentalPlan(record) for record in results]
-
-    @staticmethod
-    async def list_for_supervisor(db: AsyncSession, supervisor_email: str) -> list[ExperimentalPlan]:
-        results = await db.execute(
-            select(ExperimentalPlan)
-                .where(ExperimentalPlan.supervisor_email == supervisor_email)
-        )
-        return [ExperimentalPlan(record) for record in results]
-
-    @staticmethod
-    async def all(db: AsyncSession):
-        results = await db.execute(select(ExperimentalPlan))
-        return [record[0] for record in results]
-
-
-class WorkUnit(ResourceContainer, Base):
+    
+class WorkUnit_(ResourceContainer, Base):
     __tablename__ = 'work_units'
 
     id: Mapped[uuid_pk]
 
     plan_id: Mapped[UUID] = mapped_column(ForeignKey('experimental_plans.id'))
-    plan: Mapped[ExperimentalPlan] = relationship(back_populates='work_units')
+    plan: Mapped[ExperimentalPlan_] = relationship(back_populates='work_units')
 
     index: Mapped[int] = mapped_column()
 
@@ -100,32 +80,24 @@ class WorkUnit(ResourceContainer, Base):
     end_date: Mapped[Optional[date]] = mapped_column(DATE)
 
     @staticmethod
-    async def get_by_id(db: AsyncSession, id: UUID) -> WorkUnit:
-        return ExperimentalPlan(await db.execute(
-            select(WorkUnit).where(WorkUnit.id == id)
-        ))
+    async def get_by_id(db: AsyncSession, id: UUID) -> WorkUnit_:
+        return await db.get(WorkUnit_, id)
 
     @staticmethod
-    async def get_by_plan_and_index(db: AsyncSession, plan_id: UUID, index: int) -> WorkUnit:
-        return ExperimentalPlan(await db.execute(
-            select(WorkUnit).where(WorkUnit.plan_id == plan_id, WorkUnit.index == index)
-        ))
-
-    @staticmethod
-    async def list_for_experimental_plan(db: AsyncSession, plan_id: UUID) -> list[WorkUnit]:
-        results = await db.execute(
-            select(WorkUnit)
-            .where(WorkUnit.plan_id == plan_id)
-            .order_by(WorkUnit.index)
+    async def get_by_plan_and_index(db: AsyncSession, plan_id: UUID, index: int) -> WorkUnit_:
+        return await db.scalar(
+            select(WorkUnit_).where(WorkUnit_.plan_id == plan_id, WorkUnit_.index == index)
         )
-        return [WorkUnit(record) for record in results]
 
+    @staticmethod
+    def list_for_experimental_plan(db: AsyncSession, plan_id: UUID) -> Select[tuple[WorkUnit_]]:
+        return (
+            select(WorkUnit_)
+                .where(WorkUnit_.plan_id == plan_id)
+                .order_by(WorkUnit_.index)
+        )
     
     @staticmethod
-    async def list_by_technician(db: AsyncSession, technician_email: str) -> list[WorkUnit]:
-        results = await db.execute(
-            select(WorkUnit)
-            .where(WorkUnit.technician_email == technician_email)
-        )
-        return [WorkUnit(record) for record in results]
+    def list_for_technician(db: AsyncSession, technician_email: str) -> Select[tuple[WorkUnit_]]:
+        return select(WorkUnit_).where(WorkUnit_.technician_email == technician_email)
 

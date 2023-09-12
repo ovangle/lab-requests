@@ -48,14 +48,14 @@ async def get_db():
     
 
 async def initdb_async():
-    import api.main
+    import main
 
     async with db_engine.begin() as conn:
         await conn.run_sync(db_metadata.create_all)
 
 
 async def teardowndb_async():
-    import api.main
+    import main
 
     async with db_engine.begin() as conn:
         await conn.run_sync(db_metadata.drop_all)

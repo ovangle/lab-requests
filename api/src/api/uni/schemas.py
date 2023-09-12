@@ -15,22 +15,15 @@ from . import models
 class CampusBase(BaseModel):
     name: str
 
-class CampusPatch(CampusBase, ModelPatch[models.Campus]):
-    async def apply_to_model(self, db: LocalSession, model: models.Campus):
+    def _set_model_fields(self, model: models.Campus) -> bool:  
+        is_modified = False
+
         if model.name != self.name:
             model.name = self.name
-            db.add(model)
-        return model
+            is_modified = True
 
+        return is_modified
 
-class CampusCreate(CampusPatch, ModelCreate[models.Campus]):
-    code: CampusCode
-
-    async def do_create(self, db: LocalSession):
-        from . import models
-        instance = models.Campus()
-        instance.code = self.code
-        await self.apply_to_model(db, instance)
 
 class Campus(CampusBase, ApiModel[models.Campus]):
     id: UUID
@@ -50,4 +43,32 @@ class Campus(CampusBase, ApiModel[models.Campus]):
     async def get_by_campus_code(cls, db: LocalSession, code: CampusCode):
         return await cls.from_model(await models.Campus.get_for_campus_code(db, code))
 
+
+class CampusPatch(CampusBase, ModelPatch[models.Campus]):
+    __api_model__ = Campus 
+
+    async def apply_to_model(self, db: LocalSession, model: models.Campus):
+        if model.name != self.name:
+            model.name = self.name
+            db.add(model)
+        return model
+
+    async def do_update(self, db: LocalSession, instance: models.Campus) -> models.Campus:
+        is_modified = self._set_model_fields(instance)
+        if is_modified:
+            db.add(instance)
+        return instance
+
+class CampusCreate(CampusBase, ModelCreate[models.Campus]):
+    __api_model__ = Campus
+
+    code: CampusCode
+
+    async def do_create(self, db: LocalSession):
+        from . import models
+        instance = models.Campus()
+        instance.code = self.code
+        self._set_model_fields(instance)
+        db.add(instance)
+        return instance
 

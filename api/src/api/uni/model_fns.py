@@ -14,7 +14,7 @@ async def get_campus(db: AsyncSession, code_or_id: CampusCode | UUID) -> schemas
     elif isinstance(code_or_id, UUID):
         campus = await models.Campus.get_for_id(db, code_or_id)
 
-    return schemas.Campus.from_model(campus)
+    return await schemas.Campus.from_model(campus)
 
 
 async def list_campuses(db: AsyncSession, *, name_startswith=None) -> list[schemas.Campus]:
@@ -22,9 +22,8 @@ async def list_campuses(db: AsyncSession, *, name_startswith=None) -> list[schem
     if name_startswith:
         query = query.where(models.Campus.name.istartswith(name_startswith))
 
-    results = await db.execute(query)
-    print(f'found {results} campuses with name prefixed by {name_startswith}')
-    return [schemas.Campus.from_model(result[0]) for result in results]
+    results = await db.scalars(query)
+    return await schemas.Campus.gather_models(results)
 
 
 async def get_or_create_campus(db: AsyncSession, params: Optional[schemas.CampusCreate] = None, /, **kwargs):

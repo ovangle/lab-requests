@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 
 from asyncio.futures import Future
 from abc import ABC, abstractmethod
@@ -8,7 +9,7 @@ import functools
 from typing import Any, Awaitable, Callable, ClassVar, Generic, Iterable, Optional, Type, TypeVar, cast, dataclass_transform
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.dataclasses import dataclass
-from sqlalchemy import Select, func
+from sqlalchemy import Select, func, select
 from api.utils.db import LocalSession
 
 from humps import camelize
@@ -37,11 +38,8 @@ class ApiModel(BaseModel, Generic[TModel], ABC):
         raise NotImplementedError
 
     @classmethod
-    async def from_models(cls: Type[TApiModel], models: Iterable[TModel | ModelOf[TApiModel]]) -> list[TApiModel]:
-        return [
-            await cls.from_model(m)
-            for m in models
-        ]
+    async def gather_models(cls: Type[TApiModel], models: Iterable[TModel | ModelOf[TApiModel]]) -> list[TApiModel]:
+        return await asyncio.gather(*(cls.from_model(m) for m in models))
 
 class ModelOf(Generic[TApiModel], ABC):
     pass
@@ -88,7 +86,7 @@ class ModelCreate(BaseModel, Generic[TApiModel], ABC):
         return await self._api_model.from_model(created)
 
 
-TItem = TypeVar('TItem', bound=ApiModel[Any])
+TItem = TypeVar('TItem', bound='ApiModel[Any]')
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -99,6 +97,7 @@ class PageInfo:
     page_index: int
     start_index: int
 
+
 class PagedResultList(BaseModel, Generic[TItem]):
     items: list[TItem]
 
@@ -106,29 +105,25 @@ class PagedResultList(BaseModel, Generic[TItem]):
     page_index: int = 0
 
     @classmethod
-    async def from_selection(cls, item_type: Type[TItem], db: LocalSession, select: Select[tuple[TModel]]):
-        total_item_count = await db.scalar(func.count().select_from(select))
-        results = await db.scalars(select)
-
-        # No paging is actually performed yet.
-        page_info = PageInfo(
-            total_item_count=total_item_count or 0,
-            page_size=20,
-            page_index=0,
-            start_index=0
+    async def from_selection(cls, item_type: Type[TItem], db: LocalSession, selection: Select[tuple[TModel]]):
+        total_item_count = await db.scalar(
+            selection.with_only_columns(func.count()).order_by(None)
         )
+        results = await item_type.gather_models(await db.scalars(selection))
 
-        return await cls.from_page(item_type, list(results), page_info)
+        return cls(
+            items=results,
+            total_item_count=total_item_count or 0,
+            page_index=0
+        )
 
     @classmethod
-    async def from_page(cls, item_type: Type[TItem], page_items: list[TModel], page_info: PageInfo) -> PagedResultList[TItem]:
-        return cls(
-            items=[await item_type.from_model(item) for item in page_items],
-            total_item_count=page_info.total_item_count,
-            page_index=page_info.page_index
-        )
-
-
+    def from_list(
+        cls,
+        items: list[TItem]
+    ):
+        return cls(items=items, total_item_count=len(items), page_index=0)
+        
 
 class CursorResultList(BaseModel, Generic[TItem]):
     items: list[TItem]

@@ -3,6 +3,19 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Python: Api server",
+      "type": "python",
+      "request": "attach",
+      "port": 8765,
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/api",
+          "remoteRoot": "/srv/api"
+        }
+      ],
+      "justMyCode": false
+    },
+    {
       "name": "ng serve",
       "type": "chrome",
       "request": "launch",

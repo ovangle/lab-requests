@@ -76,7 +76,7 @@ export function experimentalPlanFromJson(json: {[k: string]: any}) {
 
         processSummary: json['processSummary'],
 
-        workUnits: new Array(json['workUnits']).map(workUnit => workUnitFromJson(workUnit)),
+        workUnits: Array.from<object>(json['workUnits']).map(workUnit => workUnitFromJson(workUnit)),
 
         createdAt: parseISO(json['createdAt']),
         updatedAt: parseISO(json['updatedAt'])

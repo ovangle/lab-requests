@@ -6,7 +6,7 @@ from uuid import UUID
 
 from datetime import date, datetime
 from typing import Iterable, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic.dataclasses import dataclass
@@ -31,9 +31,9 @@ class WorkUnitBase(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
 
-class WorkUnitPatch(WorkUnitBase, ResourceContainerPatch, ModelPatch[models.WorkUnit]):
+class WorkUnitPatch(WorkUnitBase, ResourceContainerPatch, ModelPatch[models.WorkUnit_]):
 
-    async def apply(self, db: AsyncSession, model: models.WorkUnit):
+    async def apply(self, db: AsyncSession, model: models.WorkUnit_):
         for attr in ('lab_type', 'technician_email', 'process_summary', 
                      'start_date', 'end_date'):
             s_attr = getattr(self, attr)
@@ -41,17 +41,17 @@ class WorkUnitPatch(WorkUnitBase, ResourceContainerPatch, ModelPatch[models.Work
                 setattr(model, attr, getattr(self, attr))
                 db.add(model)
 
-class WorkUnitCreate(WorkUnitBase, ModelCreate[models.WorkUnit]):
+class WorkUnitCreate(WorkUnitBase, ModelCreate[models.WorkUnit_]):
     plan_id: UUID
 
-    async def do_create(self, db: LocalSession) -> models.WorkUnit:
-        instance = models.WorkUnit()
+    async def do_create(self, db: LocalSession) -> models.WorkUnit_:
+        instance = models.WorkUnit_()
         instance.plan_id = self.plan_id
         db.add(instance)
         return instance
 
 
-class WorkUnit(WorkUnitBase, ResourceContainer, ApiModel[models.WorkUnit]):
+class WorkUnit(WorkUnitBase, ResourceContainer, ApiModel[models.WorkUnit_]):
     plan_id: UUID
     id: UUID
 
@@ -60,7 +60,7 @@ class WorkUnit(WorkUnitBase, ResourceContainer, ApiModel[models.WorkUnit]):
     campus: Campus
 
     @classmethod
-    async def from_model(cls, model: models.WorkUnit):
+    async def from_model(cls, model: models.WorkUnit_):
         m_campus = await model.awaitable_attrs.campus
 
         instance = cls(
@@ -81,18 +81,20 @@ class WorkUnit(WorkUnitBase, ResourceContainer, ApiModel[models.WorkUnit]):
 
     @classmethod
     async def list_for_experimental_plan(cls, db: LocalSession, plan_id: UUID):
-        modelList = await models.WorkUnit.list_for_experimental_plan(db, plan_id)
-        return list(map(cls.from_model, modelList))
+        items = await db.scalars(models.WorkUnit_.list_for_experimental_plan(db, plan_id))
+        return [await cls.from_model(item) for item in items]
 
     @classmethod
     async def get_by_id(cls, db: LocalSession, id: UUID):
-        return cls.from_model(await models.WorkUnit.get_by_id(db, id))
+        return await cls.from_model(await models.WorkUnit_.get_by_id(db, id))
 
     @classmethod
     async def get_by_plan_and_index(cls, db: LocalSession, plan: UUID, index: int):
-        return cls.from_model(await models.WorkUnit.get_by_plan_and_index(db, plan, index))
+        return await cls.from_model(await models.WorkUnit_.get_by_plan_and_index(db, plan, index))
 
 class ExperimentalPlanBase(BaseModel):
+    title: str
+
     process_summary: str
     funding_model: FundingModel | FundingModelCreate | UUID
 
@@ -111,8 +113,13 @@ class ExperimentalPlanBase(BaseModel):
             create_req = self.funding_model
             self.funding_model = await create_req(db)
 
-    def _set_model_fields(self, instance: models.ExperimentalPlan) -> bool: 
+    def _set_model_fields(self, instance: models.ExperimentalPlan_) -> bool: 
         is_modified = False
+
+        if self.title != instance.title:
+            instance.title = self.title
+            is_modified = True
+
         if self.process_summary != instance.process_summary:
             instance.process_summary = self.process_summary
             is_modified = True
@@ -163,8 +170,9 @@ class ExperimentalPlanBase(BaseModel):
         return is_modified
 
 
-class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan]):
+class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan_]):
     id: UUID
+    title: str = Field(max_length=256)
 
     funding_model_id: UUID
     funding_model: FundingModel
@@ -175,7 +183,7 @@ class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan]):
     work_units: list[WorkUnit]
 
     @classmethod
-    async def from_model(cls, model: models.ExperimentalPlan) -> ExperimentalPlan:
+    async def from_model(cls, model: models.ExperimentalPlan_) -> ExperimentalPlan:
         funding_model = await FundingModel.from_model(
             await model.awaitable_attrs.funding_model
         )
@@ -184,7 +192,7 @@ class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan]):
             await model.awaitable_attrs.researcher_base_campus
         )
 
-        work_units = await WorkUnit.from_models(
+        work_units = await WorkUnit.gather_models(
             await model.awaitable_attrs.work_units
         )
 
@@ -206,39 +214,28 @@ class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan]):
 
     @classmethod
     async def get_by_id(cls, db: AsyncSession, id: UUID):
-        return cls.from_model(await models.ExperimentalPlan.get_by_id(db, id))
-
-    @classmethod
-    async def list_for_researcher(cls, db: AsyncSession, researcher_email: str) -> list[ExperimentalPlan]:
-        instances = await models.ExperimentalPlan.list_for_researcher(db, researcher_email)
-        return list(await ExperimentalPlan.from_models(instances))
-
-    @classmethod
-    async def list_for_supervisor(cls, db: AsyncSession, supervisor_email: str) -> list[ExperimentalPlan]:
-        instances = await models.ExperimentalPlan.list_for_supervisor(db, supervisor_email)
-        return list(await ExperimentalPlan.from_models(instances))
-
-    @classmethod
-    async def all(cls, db: AsyncSession):
-        return [cls.from_model(instance) for instance in await models.ExperimentalPlan.all(db)]
-
+        return await cls.from_model(await models.ExperimentalPlan_.get_by_id(db, id))
 
 
 class ExperimentalPlanPatch(ExperimentalPlanBase, ModelPatch[ExperimentalPlan]):
     __api_model__ = ExperimentalPlan
 
-    async def do_update(self, db: LocalSession, instance: models.ExperimentalPlan) -> models.ExperimentalPlan:
+    async def do_update(self, db: LocalSession, instance: models.ExperimentalPlan_) -> models.ExperimentalPlan_:
+        await self.prepare_fields(db)
+
+        self._set_model_fields(instance)
+        db.add(instance)
+
         return instance
 
 class ExperimentalPlanCreate(ExperimentalPlanBase, ModelCreate[ExperimentalPlan]):
     __api_model__ = ExperimentalPlan
-    funding_model: FundingModelCreate | UUID
-    work_units: list[WorkUnitPatch] = field(default_factory=list)
+    add_work_units: list[WorkUnitPatch] = field(default_factory=list)
 
-    async def do_create(self, db: LocalSession) -> models.ExperimentalPlan:
+    async def do_create(self, db: LocalSession) -> models.ExperimentalPlan_:
         await self.prepare_fields(db)
 
-        instance = models.ExperimentalPlan()
+        instance = models.ExperimentalPlan_()
         self._set_model_fields(instance)
 
         db.add(instance)
@@ -246,7 +243,7 @@ class ExperimentalPlanCreate(ExperimentalPlanBase, ModelCreate[ExperimentalPlan]
             raise ValueError('Can not be applied after work units created')
 
         work_units = []
-        for work_unit in self.work_units:
+        for work_unit in self.add_work_units:
             work_unit_create = WorkUnitCreate(plan_id=instance.id, **work_unit.model_dump())
             work_unit = await work_unit_create(db)
             work_units.append(work_unit)

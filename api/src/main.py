@@ -1,9 +1,11 @@
+import os
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from uuid import UUID
 
 from fastapi.responses import JSONResponse
 
+API_DEBUG = os.environ.get('API_DEBUG', 'no') == 'yes'
 
 app = FastAPI()
 
@@ -47,15 +49,26 @@ app.add_middleware(
     allow_headers=['*']
 )
 
-from .lab.equipment.views import lab_equipments
+from api.lab.equipment.views import lab_equipments
 app.include_router(lab_equipments)
 
-from .lab.plan.views import lab_plans
+from api.lab.plan.views import lab_plans
 app.include_router(lab_plans)
 
-from .uni.views import uni_campuses
+from api.uni.views import uni_campuses
 app.include_router(uni_campuses)
 
-from .uni.research.views import uni_research_funding
+from api.uni.research.views import uni_research_funding
 app.include_router(uni_research_funding)
 
+
+if __name__ == '__main__':
+    import uvicorn
+    import debugpy
+
+    if API_DEBUG:
+        print('running in debug mode. waiting for client...')
+        debugpy.listen(('0.0.0.0', 8765))
+        # debugpy.wait_for_client()
+
+    uvicorn.run('main:app', host="0.0.0.0", port=8000, reload=True)

@@ -1,12 +1,14 @@
 from uuid import UUID
 
+from fastapi import HTTPException
+
 from .types import CampusCode
 
-class CampusDoesNotExist(Exception):
+class CampusDoesNotExist(HTTPException):
     @classmethod
     def for_code(cls, code: CampusCode):
-        return cls('No campus exists with campus code {code}')
+       return cls(404, 'No campus exists with campus code {code}')
     
     @classmethod
     def for_id(cls, id: UUID):
-        return cls('No campus exists with id {id}')
+        return cls(404, 'No campus exists with id {id}')

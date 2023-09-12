@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from api.base.schemas import PagedResultList
+from api.lab.plan.queries import query_experimental_plans
 
 from api.utils.db import LocalSession, get_db
 
@@ -23,10 +24,18 @@ lab_plans = APIRouter(
 )
 
 @lab_plans.get("/")
-async def list_plans(researcher: str | None = None, db=Depends(get_db)) -> list[ExperimentalPlan]:
-    if researcher:
-        return await ExperimentalPlan.list_for_researcher(db, researcher)
-    return await ExperimentalPlan.all(db)
+async def index_plans(
+    researcher: str | None = None, 
+    supervisor: str | None = None,
+    technician: str | None = None,
+    db=Depends(get_db)
+) -> PagedResultList[ExperimentalPlan]:
+    experimental_plans = query_experimental_plans(
+        researcher_email=researcher,
+        supervisor_email=supervisor,
+        technician_email=technician
+    )
+    return await PagedResultList[ExperimentalPlan].from_selection(ExperimentalPlan, db, experimental_plans)
 
 @lab_plans.post(
     "/",
@@ -45,7 +54,7 @@ async def read_plan(plan_id: UUID, db = Depends(get_db)) -> ExperimentalPlan:
     "/{plan_id}"
 )
 async def update_plan(plan_id: UUID, patch: ExperimentalPlanPatch, db: LocalSession = Depends(get_db)):
-    plan = await db.get(models.ExperimentalPlan, plan_id)
+    plan = await db.get(models.ExperimentalPlan_, plan_id)
     plan = await patch(db, plan);
     await db.commit()
     return plan
@@ -56,8 +65,9 @@ async def update_plan(plan_id: UUID, patch: ExperimentalPlanPatch, db: LocalSess
 async def list_plan_work_units(
     plan_id: UUID, 
     db = Depends(get_db)
-) -> list[WorkUnit]:
-    return await WorkUnit.list_for_experimental_plan(db, plan_id)
+) -> PagedResultList[WorkUnit]:
+    work_units = await WorkUnit.list_for_experimental_plan(db, plan_id)
+    return PagedResultList.from_list(work_units)
 
 @lab_plans.get(
     "/{plan_id}/work_units/{work_unit_index}"
@@ -97,11 +107,7 @@ async def list_work_units(
     model_results = await db.scalars(query)
     model_count = await db.scalar(func.count(WorkUnit.id).select_from(query))
 
-    return PagedResultList[WorkUnit](
-        items=[WorkUnit.from_model(m) for m in model_results],
-        total_item_count=model_count or 0,
-        page_index=0
-    )
+    return await PagedResultList[WorkUnit].from_selection(WorkUnit, db, query)
  
 
 @lab_plans.get(
