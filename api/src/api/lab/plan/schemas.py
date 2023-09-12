@@ -1,10 +1,11 @@
 from __future__ import annotations
+import asyncio
 from dataclasses import field
 import dataclasses
 from uuid import UUID
 
 from datetime import date, datetime
-from typing import Optional
+from typing import Iterable, Optional
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,7 +45,8 @@ class WorkUnitCreate(WorkUnitBase, ModelCreate[models.WorkUnit]):
     plan_id: UUID
 
     async def do_create(self, db: LocalSession) -> models.WorkUnit:
-        instance = models.WorkUnit(plan_id=self.plan_id)
+        instance = models.WorkUnit()
+        instance.plan_id = self.plan_id
         db.add(instance)
         return instance
 
@@ -58,12 +60,14 @@ class WorkUnit(WorkUnitBase, ResourceContainer, ApiModel[models.WorkUnit]):
     campus: Campus
 
     @classmethod
-    def from_model(cls, model: models.WorkUnit):
+    async def from_model(cls, model: models.WorkUnit):
+        m_campus = await model.awaitable_attrs.campus
+
         instance = cls(
             plan_id=model.plan_id,
             id=model.id,
             index=model.index,
-            campus=Campus.from_model(model.campus),
+            campus=await Campus.from_model(m_campus),
             lab_type=model.lab_type,
             technician=model.technician_email,
             process_summary=model.process_summary,
@@ -171,17 +175,29 @@ class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan]):
     work_units: list[WorkUnit]
 
     @classmethod
-    def from_model(cls, model: models.ExperimentalPlan) -> ExperimentalPlan:
+    async def from_model(cls, model: models.ExperimentalPlan) -> ExperimentalPlan:
+        funding_model = await FundingModel.from_model(
+            await model.awaitable_attrs.funding_model
+        )
+
+        researcher_base_campus = await Campus.from_model(
+            await model.awaitable_attrs.researcher_base_campus
+        )
+
+        work_units = await WorkUnit.from_models(
+            await model.awaitable_attrs.work_units
+        )
+
         return cls(
             id=model.id,
-            funding_model_id=model.funding_model_id,
+            funding_model_id=funding_model.id,
             funding_model=model.funding_model,
             researcher=model.researcher_email,
             supervisor=model.supervisor_email,
 
-            researcher_base_campus=Campus.from_model(model.campus),
+            researcher_base_campus=researcher_base_campus,
             researcher_discipline=model.researcher_discipline,
-            work_units=[WorkUnit.from_model(work_unit) for work_unit in model.work_units],
+            work_units=work_units,
 
             process_summary=model.process_summary,
             created_at=model.created_at,
@@ -195,12 +211,12 @@ class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan]):
     @classmethod
     async def list_for_researcher(cls, db: AsyncSession, researcher_email: str) -> list[ExperimentalPlan]:
         instances = await models.ExperimentalPlan.list_for_researcher(db, researcher_email)
-        return list(map(cls.from_model, instances))
+        return list(await ExperimentalPlan.from_models(instances))
 
     @classmethod
     async def list_for_supervisor(cls, db: AsyncSession, supervisor_email: str) -> list[ExperimentalPlan]:
         instances = await models.ExperimentalPlan.list_for_supervisor(db, supervisor_email)
-        return list(map(cls.from_model, instances))
+        return list(await ExperimentalPlan.from_models(instances))
 
     @classmethod
     async def all(cls, db: AsyncSession):
@@ -219,7 +235,7 @@ class ExperimentalPlanCreate(ExperimentalPlanBase, ModelCreate[ExperimentalPlan]
     funding_model: FundingModelCreate | UUID
     work_units: list[WorkUnitPatch] = field(default_factory=list)
 
-    async def do_create(self, db: LocalSession):
+    async def do_create(self, db: LocalSession) -> models.ExperimentalPlan:
         await self.prepare_fields(db)
 
         instance = models.ExperimentalPlan()
@@ -236,6 +252,7 @@ class ExperimentalPlanCreate(ExperimentalPlanBase, ModelCreate[ExperimentalPlan]
             work_units.append(work_unit)
 
         db.add(instance)
+        return instance
 
 
    

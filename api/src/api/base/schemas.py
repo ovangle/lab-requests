@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from asyncio.futures import Future
 from abc import ABC, abstractmethod
 import dataclasses
 from datetime import datetime
-from typing import Any, Callable, ClassVar, Generic, Iterable, Optional, Type, TypeVar, cast, dataclass_transform
+import functools
+from typing import Any, Awaitable, Callable, ClassVar, Generic, Iterable, Optional, Type, TypeVar, cast, dataclass_transform
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.dataclasses import dataclass
 from sqlalchemy import Select, func
@@ -31,8 +33,15 @@ class ApiModel(BaseModel, Generic[TModel], ABC):
 
     @classmethod
     @abstractmethod
-    def from_model(cls: Type[TApiModel], model: TModel | ModelOf[TApiModel]) -> TApiModel:
+    async def from_model(cls: Type[TApiModel], model: TModel | ModelOf[TApiModel]) -> TApiModel:
         raise NotImplementedError
+
+    @classmethod
+    async def from_models(cls: Type[TApiModel], models: Iterable[TModel | ModelOf[TApiModel]]) -> list[TApiModel]:
+        return [
+            await cls.from_model(m)
+            for m in models
+        ]
 
 class ModelOf(Generic[TApiModel], ABC):
     pass
@@ -58,7 +67,7 @@ class ModelPatch(BaseModel, Generic[TApiModel], ABC):
     async def __call__(self, db: LocalSession, model: Any) -> TApiModel:
         updated_model = await self.do_update(db, model)
         await db.commit()
-        return self._api_model.from_model(updated_model)
+        return await self._api_model.from_model(updated_model)
 
 
 class ModelCreate(BaseModel, Generic[TApiModel], ABC):
@@ -76,7 +85,7 @@ class ModelCreate(BaseModel, Generic[TApiModel], ABC):
     async def __call__(self, db: LocalSession) -> TApiModel:
         created = await self.do_create(db)
         await db.commit()
-        return self._api_model.from_model(created)
+        return await self._api_model.from_model(created)
 
 
 TItem = TypeVar('TItem', bound=ApiModel[Any])
@@ -109,12 +118,12 @@ class PagedResultList(BaseModel, Generic[TItem]):
             start_index=0
         )
 
-        return cls.from_page(item_type, list(results), page_info)
+        return await cls.from_page(item_type, list(results), page_info)
 
     @classmethod
-    def from_page(cls, item_type: Type[TItem], page_items: list[TModel], page_info: PageInfo) -> PagedResultList[TItem]:
+    async def from_page(cls, item_type: Type[TItem], page_items: list[TModel], page_info: PageInfo) -> PagedResultList[TItem]:
         return cls(
-            items=[item_type.from_model(item) for item in page_items],
+            items=[await item_type.from_model(item) for item in page_items],
             total_item_count=page_info.total_item_count,
             page_index=page_info.page_index
         )

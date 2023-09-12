@@ -17,7 +17,7 @@ class FundingModel(ApiModel[models.FundingModel], FundingModelBase):
     id: UUID
 
     @classmethod
-    def from_model(cls, model: models.FundingModel):
+    async def from_model(cls, model: models.FundingModel):
         return cls(
             id=model.id,
             description=model.description,

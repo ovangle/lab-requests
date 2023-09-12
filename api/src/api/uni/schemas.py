@@ -28,7 +28,8 @@ class CampusCreate(CampusPatch, ModelCreate[models.Campus]):
 
     async def do_create(self, db: LocalSession):
         from . import models
-        instance = models.Campus(code=self.code)
+        instance = models.Campus()
+        instance.code = self.code
         await self.apply_to_model(db, instance)
 
 class Campus(CampusBase, ApiModel[models.Campus]):
@@ -36,7 +37,7 @@ class Campus(CampusBase, ApiModel[models.Campus]):
     code: CampusCode
 
     @classmethod
-    def from_model(cls, model: models.Campus):
+    async def from_model(cls, model: models.Campus):
         return cls(
             id=model.id,
             code=model.code,
@@ -47,5 +48,6 @@ class Campus(CampusBase, ApiModel[models.Campus]):
 
     @classmethod
     async def get_by_campus_code(cls, db: LocalSession, code: CampusCode):
-        return cls.from_model(await models.Campus.get_for_campus_code(db, code))
+        return await cls.from_model(await models.Campus.get_for_campus_code(db, code))
+
 

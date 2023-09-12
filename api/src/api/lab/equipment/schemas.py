@@ -20,7 +20,7 @@ class Equipment(EquipmentPatch, ApiModel[models.Equipment]):
     id: UUID
 
     @classmethod
-    def from_model(cls, equipment: models.Equipment):
+    async def from_model(cls, equipment: models.Equipment):
         return cls(
             id=equipment.id,
             name=equipment.name,
