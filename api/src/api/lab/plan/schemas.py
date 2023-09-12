@@ -104,7 +104,8 @@ class ExperimentalPlanBase(BaseModel):
             self.researcher_base_campus = campus
 
         if isinstance(self.funding_model, FundingModelCreate):
-            self.funding_model = await self.funding_model.do_create(db)
+            create_req = self.funding_model
+            self.funding_model = await create_req(db)
 
     def _set_model_fields(self, instance: models.ExperimentalPlan) -> bool: 
         is_modified = False
@@ -158,41 +159,12 @@ class ExperimentalPlanBase(BaseModel):
         return is_modified
 
 
-class ExperimentalPlanPatch(ExperimentalPlanBase, ModelPatch):
-    async def do_update(self, db: LocalSession, instance: models.ExperimentalPlan) -> ExperimentalPlan:
-        return ExperimentalPlan.from_model(instance)
-
-class ExperimentalPlanCreate(ExperimentalPlanBase, ModelCreate[models.ExperimentalPlan]):
-    funding_model: FundingModelCreate | UUID
-
-    # Work units can be provided on plan create but not on other 
-    work_units: list[WorkUnitPatch] = field(default_factory=list)
-
-    async def do_create(self, db: LocalSession):
-        await self.prepare_fields(db)
-
-        instance = models.ExperimentalPlan()
-        self._set_model_fields(instance)
-
-        db.add(instance)
-        if list(instance.work_units):
-            raise ValueError('Can not be applied after work units created')
-
-        work_units = []
-        for work_unit in self.work_units:
-            work_unit_create = WorkUnitCreate(plan_id=instance.id, **work_unit.model_dump())
-            work_unit = await work_unit_create(db)
-            work_units.append(work_unit)
-
-        db.add(instance)
-
 class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan]):
     id: UUID
 
     funding_model_id: UUID
     funding_model: FundingModel
 
-    researcher_base_campus_id: UUID
     researcher_base_campus: Campus
     researcher_discipline: Discipline
 
@@ -207,7 +179,6 @@ class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan]):
             researcher=model.researcher_email,
             supervisor=model.supervisor_email,
 
-            researcher_base_campus_id=model.base_campus_id,
             researcher_base_campus=Campus.from_model(model.campus),
             researcher_discipline=model.researcher_discipline,
             work_units=[WorkUnit.from_model(work_unit) for work_unit in model.work_units],
@@ -236,6 +207,35 @@ class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan]):
         return [cls.from_model(instance) for instance in await models.ExperimentalPlan.all(db)]
 
 
+
+class ExperimentalPlanPatch(ExperimentalPlanBase, ModelPatch[ExperimentalPlan]):
+    __api_model__ = ExperimentalPlan
+
+    async def do_update(self, db: LocalSession, instance: models.ExperimentalPlan) -> models.ExperimentalPlan:
+        return instance
+
+class ExperimentalPlanCreate(ExperimentalPlanBase, ModelCreate[ExperimentalPlan]):
+    __api_model__ = ExperimentalPlan
+    funding_model: FundingModelCreate | UUID
+    work_units: list[WorkUnitPatch] = field(default_factory=list)
+
+    async def do_create(self, db: LocalSession):
+        await self.prepare_fields(db)
+
+        instance = models.ExperimentalPlan()
+        self._set_model_fields(instance)
+
+        db.add(instance)
+        if list(instance.work_units):
+            raise ValueError('Can not be applied after work units created')
+
+        work_units = []
+        for work_unit in self.work_units:
+            work_unit_create = WorkUnitCreate(plan_id=instance.id, **work_unit.model_dump())
+            work_unit = await work_unit_create(db)
+            work_units.append(work_unit)
+
+        db.add(instance)
 
 
    

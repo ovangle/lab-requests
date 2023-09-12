@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import dataclasses
 from datetime import datetime
-from typing import Any, ClassVar, Generic, Iterable, Optional, Type, TypeVar, cast, dataclass_transform
+from typing import Any, Callable, ClassVar, Generic, Iterable, Optional, Type, TypeVar, cast, dataclass_transform
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.dataclasses import dataclass
 from sqlalchemy import Select, func
@@ -21,6 +21,7 @@ SCHEMA_CONFIG = ConfigDict(
 )
 
 TModel = TypeVar('TModel', bound=models.Base)
+TApiModel = TypeVar('TApiModel', bound='ApiModel')
 
 class ApiModel(BaseModel, Generic[TModel], ABC):
     model_config = SCHEMA_CONFIG
@@ -30,10 +31,15 @@ class ApiModel(BaseModel, Generic[TModel], ABC):
 
     @classmethod
     @abstractmethod
-    def from_model(cls, model: Any) -> ApiModel:
+    def from_model(cls: Type[TApiModel], model: TModel | ModelOf[TApiModel]) -> TApiModel:
         raise NotImplementedError
 
-class ModelPatch(BaseModel, Generic[TModel], ABC):
+class ModelOf(Generic[TApiModel], ABC):
+    pass
+
+
+class ModelPatch(BaseModel, Generic[TApiModel], ABC):
+    __api_model__: ClassVar[Type[ApiModel]]
     model_config = SCHEMA_CONFIG
 
     @classmethod
@@ -41,27 +47,36 @@ class ModelPatch(BaseModel, Generic[TModel], ABC):
         import dataclasses
         return cls(**create_req.model_dump())
 
+    @property
+    def _api_model(self) -> Type[TApiModel]:
+        return cast(Type[TApiModel], type(self).__api_model__)
+
     @abstractmethod
-    async def do_update(self, db: LocalSession, model: Any) -> ApiModel[TModel]:
+    async def do_update(self, db: LocalSession, model: TModel) -> TModel:
         raise NotImplementedError
 
-    async def __call__(self, db: LocalSession, model: TModel) -> ApiModel[TModel]:
-        updated = await self.do_update(db, model)
+    async def __call__(self, db: LocalSession, model: Any) -> TApiModel:
+        updated_model = await self.do_update(db, model)
         await db.commit()
-        return updated
+        return self._api_model.from_model(updated_model)
 
 
-class ModelCreate(BaseModel, Generic[TModel], ABC):
+class ModelCreate(BaseModel, Generic[TApiModel], ABC):
+    __api_model__: ClassVar[Type[ApiModel]]
     model_config = SCHEMA_CONFIG
 
+    @property
+    def _api_model(self) -> Type[TApiModel]:
+        return cast(Type[TApiModel], type(self).__api_model__)
+
     @abstractmethod
-    async def do_create(self, db: LocalSession) -> ApiModel[TModel]:
+    async def do_create(self, db: LocalSession) -> ModelOf[TApiModel]:
         raise NotImplementedError
 
-    async def __call__(self, db: LocalSession) -> ApiModel[TModel]:
-        instance = await self.do_create(db)
+    async def __call__(self, db: LocalSession) -> TApiModel:
+        created = await self.do_create(db)
         await db.commit()
-        return instance
+        return self._api_model.from_model(created)
 
 
 TItem = TypeVar('TItem', bound=ApiModel[Any])

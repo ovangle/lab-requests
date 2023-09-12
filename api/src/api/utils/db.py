@@ -30,7 +30,11 @@ db_engine = create_async_engine(
 class LocalSession(AsyncSession):
     pass
 
-local_sessionmaker = async_sessionmaker(db_engine, class_=LocalSession)
+local_sessionmaker = async_sessionmaker(
+    db_engine, 
+    class_=LocalSession,
+    expire_on_commit=False
+)
 async def get_db():
     """
     Provides an injectable context manager for the session, which will attempt
@@ -90,9 +94,17 @@ uuid_pk = Annotated[UUID, mapped_column(pg_dialect.UUID, primary_key=True, serve
 
 # email field
 
+_POSTGRES_EMAIL_RE = (
+    r"^"
+    r"[a-z0-9.!#$%&''*+/=?^_`{|}~-]+"
+    r"@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?"
+    r"(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*"
+    r"$"
+)
+
 EMAIL_DOMAIN = pg_dialect.DOMAIN(
     'email',
     pg_dialect.CITEXT(128),
-    check=r"value ~ '^[a-z0-9].!#$%&''*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$'", 
+    check=rf"value ~ '{_POSTGRES_EMAIL_RE}'"
 )
 

@@ -13,7 +13,7 @@ class FundingModelBase(BaseModel):
     description: str = Field(max_length=128)
     requires_supervisor: bool = True
 
-class FundingModel(FundingModelBase, ApiModel[models.FundingModel]):
+class FundingModel(ApiModel[models.FundingModel], FundingModelBase):
     id: UUID
 
     @classmethod
@@ -26,8 +26,10 @@ class FundingModel(FundingModelBase, ApiModel[models.FundingModel]):
             updated_at=model.updated_at
         )
 
-class FundingModelPatch(FundingModelBase, ModelPatch[models.FundingModel]):
-    async def do_update(self, db: LocalSession, model: Any) -> FundingModel:
+class FundingModelPatch(FundingModelBase, ModelPatch[FundingModel]):
+    __api_model__ = FundingModel
+
+    async def do_update(self, db: LocalSession, model: models.FundingModel) -> models.FundingModel:
         if self.description != model.description:
             model.description = self.description
             db.add(model) 
@@ -35,10 +37,12 @@ class FundingModelPatch(FundingModelBase, ModelPatch[models.FundingModel]):
         if self.requires_supervisor != model.requires_supervisor:
             model.requires_supervisor = self.requires_supervisor
             db.add(model)
+        return model
 
-        return FundingModel.from_model(model)
 
-class FundingModelCreate(FundingModelBase, ModelCreate[models.FundingModel]):
+class FundingModelCreate(FundingModelBase, ModelCreate[FundingModel]):
+    __api_model__ = FundingModel
+
     async def do_create(self, db: LocalSession) -> FundingModel:
         to_create = models.FundingModel()
         db.add(to_create)

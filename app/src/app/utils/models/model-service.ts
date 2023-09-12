@@ -21,28 +21,38 @@ export abstract class ModelService<T, TPatch, TCreate extends TPatch=TPatch> {
         return this.patchToJson(create);
     }
 
+    _resourceUrl(identifier: string, options?: {resourcePath?: string}) {
+        const resourcePath: string = options && options.resourcePath || this.resourcePath;
+        return urlJoin(this.apiBaseUrl, resourcePath, identifier)
+    }
+
+    _indexUrl(options?: {resourcePath?: string}) {
+        const resourcePath: string = options && options.resourcePath || this.resourcePath;
+        const indexUrl = urlJoin(this.apiBaseUrl, resourcePath, '/')
+        console.log(`indexUrl: ${indexUrl}`)
+        return indexUrl;
+    }
+
+
     fetch(identifier: string, options?: {
         params?: {[k: string]: any},
         resourcePath?: string
     }): Observable<T> {
-        const resourcePath = (options && options.resourcePath) ? options.resourcePath : this.resourcePath;
-        const url = urlJoin(this.apiBaseUrl, resourcePath, identifier)
+        const url = this._resourceUrl(identifier, options);
         return this.httpClient.get(url, {params: options?.params}).pipe(
             map(result => this.modelFromJson(result))
         )
     }
 
     query(params: {[k: string]: any}, options?: {resourcePath?: string}): Observable<T[]> {
-        const resourcePath = (options && options.resourcePath) ? options.resourcePath : this.resourcePath;
-        const url = urlJoin(this.apiBaseUrl, resourcePath);
+        const url = this._indexUrl(options);
         return this.httpClient.get<{items: object[]}>(url, {params: params}).pipe(
             map(result => result.items.map(item => this.modelFromJson(item)))
         );
     }
 
     create(patch: TCreate, options?: {resourcePath?: string}): Observable<T> {
-        const resourcePath = (options && options.resourcePath) ? options.resourcePath : this.resourcePath;
-        const url = urlJoin(this.apiBaseUrl, resourcePath);
+        const url = this._indexUrl(options);
 
         return this.httpClient.post<object>(url, this.createToJson(patch)).pipe(
             map(result => this.modelFromJson(result))
@@ -50,8 +60,7 @@ export abstract class ModelService<T, TPatch, TCreate extends TPatch=TPatch> {
     }
 
     update(identifier: string, patch: TPatch, options?: {resourcePath?: string}): Observable<T> {
-        const resourcePath = (options && options.resourcePath) ? options.resourcePath : this.resourcePath;
-        const url = urlJoin(this.apiBaseUrl, resourcePath, identifier);
+        const url = this._resourceUrl(identifier, options);
         return this.httpClient.post(url, this.patchToJson(patch)).pipe(
             map(result => this.modelFromJson(result))
         );

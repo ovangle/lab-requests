@@ -9,12 +9,13 @@ db: LocalSession = local_sessionmaker()
 
 
 async def main():
-    hello = ''
+    description = ''
     query = select(FundingModel).where(
-        FundingModel.description.ilike(rf'%{hello}%') 
+        FundingModel.description.ilike(rf'%{description}%') 
     )
     for result in await db.scalars(query):
-        print(result.description)
+        print(f'result {result.id} (created_at: {result.created_at}) (updated_at: {result.updated_at})')
+        print(f'description: {result.description}')
 
 try:
     EVENT_LOOP.run_until_complete(main())
