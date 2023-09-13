@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
 from api.base.models import Base
+from api.uni.research.errors import FundingModelDoesNotExist
 from db import LocalSession
 from db.orm import uuid_pk
 
@@ -23,8 +24,11 @@ class FundingModel_(Base):
         self.requires_supervisor = requires_supervisor
 
     @staticmethod
-    async def fetch_by_id(db: LocalSession, id: UUID) -> FundingModel_:
-        return await db.get(FundingModel_, id)
+    async def get_for_id(db: LocalSession, id: UUID) -> FundingModel_:
+        instance = await db.get(FundingModel_, id)
+        if instance is None:
+            raise FundingModelDoesNotExist.for_id(id)
+        return instance
 
 
 async def seed_funding_models(db: LocalSession):

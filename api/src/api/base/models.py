@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy import TIMESTAMP, ForeignKey
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import (
-    declarative_base,
+    DeclarativeBase,
     Mapped,
     mapped_column
 )
@@ -11,8 +11,9 @@ from uuid import UUID
 from db.func import utcnow
 from db import db_metadata
 
-class Base(AsyncAttrs, declarative_base(metadata=db_metadata)):
+class Base(AsyncAttrs, DeclarativeBase):
     __abstract__ = True
+    metadata = db_metadata
 
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), 

@@ -30,7 +30,7 @@ class Campus(CampusBase, ApiModel[models.Campus]):
     code: CampusCode
 
     @classmethod
-    async def from_model(cls, model: models.Campus):
+    async def from_model(cls, model: Campus | models.Campus):
         return cls(
             id=model.id,
             code=model.code,
@@ -39,12 +39,15 @@ class Campus(CampusBase, ApiModel[models.Campus]):
             updated_at=model.updated_at
         )
 
+    def to_model(self, db: LocalSession):
+        return models.Campus.get_for_id(db, self.id)
+
     @classmethod
     async def get_by_campus_code(cls, db: LocalSession, code: CampusCode):
         return await cls.from_model(await models.Campus.get_for_campus_code(db, code))
 
 
-class CampusPatch(CampusBase, ModelPatch[models.Campus]):
+class CampusPatch(CampusBase, ModelPatch[Campus, models.Campus]):
     __api_model__ = Campus 
 
     async def do_update(self, db: LocalSession, instance: models.Campus) -> models.Campus:
@@ -53,7 +56,7 @@ class CampusPatch(CampusBase, ModelPatch[models.Campus]):
             db.add(instance)
         return instance
 
-class CampusCreate(CampusBase, ModelCreate[models.Campus]):
+class CampusCreate(CampusBase, ModelCreate[Campus, models.Campus]):
     __api_model__ = Campus
 
     code: CampusCode

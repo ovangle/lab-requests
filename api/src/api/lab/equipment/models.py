@@ -30,7 +30,7 @@ class Equipment(Base):
     training_descriptions: Mapped[list[str]] = mapped_column(ARRAY(TEXT), server_default="{}")
 
     @staticmethod
-    async def get_by_id(db: AsyncSession, id: UUID) -> Equipment:
+    async def get_for_id(db: AsyncSession, id: UUID) -> Equipment:
         result = (await db.execute(
             select(Equipment).where(Equipment.id == id)
         )).first()

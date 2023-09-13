@@ -3,9 +3,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import func
+from api.lab.plan.errors import ExperimentalPlanDoesNotExist
 
 from db import LocalSession, get_db
 from api.base.schemas import PagedResultList
+from api.lab.work_unit.queries import query_work_units
 from api.lab.work_unit.schemas import WorkUnit, WorkUnitPatch, WorkUnitCreate
 
 from . import models
@@ -52,8 +54,10 @@ async def read_plan(plan_id: UUID, db = Depends(get_db)) -> ExperimentalPlan:
     "/{plan_id}"
 )
 async def update_plan(plan_id: UUID, patch: ExperimentalPlanPatch, db: LocalSession = Depends(get_db)):
-    plan = await db.get(models.ExperimentalPlan_, plan_id)
-    plan = await patch(db, plan);
+    db_plan = await db.get(models.ExperimentalPlan_, plan_id)
+    if not db_plan:
+        raise ExperimentalPlanDoesNotExist.for_id(plan_id)
+    plan = await patch(db, db_plan);
     await db.commit()
     return plan
 
@@ -64,8 +68,12 @@ async def index_plan_work_units(
     plan_id: UUID, 
     db = Depends(get_db)
 ) -> PagedResultList[WorkUnit]:
-    work_units = await WorkUnit.list_for_experimental_plan(db, plan_id)
-    return PagedResultList.from_list(work_units)
+    return await PagedResultList[WorkUnit].from_selection(
+        WorkUnit,
+        db,
+        query_work_units(plan_id=plan_id),
+    )
+
 
 @lab_plans.get(
     "/{plan_id}/work-units/{work_unit_index}"

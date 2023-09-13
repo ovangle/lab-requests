@@ -15,6 +15,7 @@ from api.base.models import Base
 from api.lab.types import LabType
 from api.lab.plan.models import ExperimentalPlan_
 
+from .errors import WorkUnitDoesNotExist
 from .resource.models import ResourceContainer
     
 class WorkUnit_(ResourceContainer, Base):
@@ -40,13 +41,20 @@ class WorkUnit_(ResourceContainer, Base):
 
     @staticmethod
     async def get_by_id(db: LocalSession, id: UUID) -> WorkUnit_:
-        return await db.get(WorkUnit_, id)
+        instance = await db.get(WorkUnit_, id)
+        if not instance:
+            raise WorkUnitDoesNotExist.for_id(id)
+        return instance
+
 
     @staticmethod
     async def get_by_plan_and_index(db: LocalSession, plan_id: UUID, index: int) -> WorkUnit_:
-        return await db.scalar(
+        instance = await db.scalar(
             select(WorkUnit_).where(WorkUnit_.plan_id == plan_id, WorkUnit_.index == index)
         )
+        if not instance:
+            raise WorkUnitDoesNotExist.for_plan_id_and_index(plan_id, index)
+        return instance
 
     @staticmethod
     def list_for_experimental_plan(db: LocalSession, plan_id: UUID) -> Select[tuple[WorkUnit_]]:

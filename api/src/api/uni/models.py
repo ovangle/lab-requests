@@ -29,7 +29,10 @@ class Campus(Base):
 
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID) -> Campus:
-        return await db.get(Campus, id)
+        campus = await db.get(Campus, id)
+        if not campus:
+            raise CampusDoesNotExist.for_id(id)
+        return campus
         
     @classmethod
     async def get_for_campus_code(cls, db: LocalSession, code: str | CampusCode) -> Campus:

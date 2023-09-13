@@ -24,6 +24,9 @@ T = TypeVar('T', bound='ResourceContainer')
 RESOURCE_TYPES = [EquipmentLease, Software, Service, InputMaterial, OutputMaterial]
 Resource = Union[EquipmentLease, Software, Service, InputMaterial, OutputMaterial]
 
+def is_resource(obj):
+    return any(isinstance(obj, t) for t in RESOURCE_TYPES)
+
 TResource = TypeVar('TResource', bound=Resource)
 def resource_name(resource: TResource | Type[TResource]) -> str:
     if isinstance(resource, type):
@@ -41,16 +44,17 @@ class ResourceContainer(BaseModel):
     def get_resources(self, resource_type: Type[TResource]) -> list[TResource]:
         return getattr(self, resource_name(resource_type))
 
-    @classmethod
-    def _init_from_model(cls: Type[T], instance: T, model: models.ResourceContainer) -> T:
-        instance.equipments.extend(EquipmentLease(**equipment_json) for equipment_json in model.equipments)
-        instance.input_materials.extend(InputMaterial(**input_material_json) for input_material_json in model.input_materials)
-        instance.output_materials.extend(OutputMaterial(**output_material_json) for output_material_json in model.output_materials)
-        instance.services.extend(Service(**service_json) for service_json in model.services)
-        instance.softwares.extend(Software(**software_json) for software_json in model.softwares) 
+    def _set_resource_container_fields_from_model(self, model: ResourceContainer | models.ResourceContainer):
+        def resource_json(resource: Resource | dict[str, Any]) -> dict[str, Any]: 
+            if isinstance(resource, dict):
+                return resource
+            return resource.model_dump()
 
-        return instance
-
+        self.equipments = [EquipmentLease(**resource_json(item)) for item in model.equipments]
+        self.input_materials = [InputMaterial(**resource_json(item)) for item in model.input_materials]
+        self.output_materials = [OutputMaterial(**resource_json(item)) for item in model.output_materials]
+        self.services = [Service(**resource_json(item)) for item in model.services]
+        self.softwares = [Software(**resource_json(item)) for item in model.softwares]
 
 class ResourceContainerPatch(BaseModel):
     equipments: list[EquipmentLease] | None = None
@@ -75,9 +79,9 @@ class ResourceContainerPatch(BaseModel):
 
     def _get_resources(self, resource_type: Type[TResource], model: models.ResourceContainer) -> list[TResource]:
         jsonb_resources: list[dict] = getattr(model, resource_name(resource_type))
-        return [
+        return cast(list[TResource], [
             resource_type(**json) for json in jsonb_resources
-        ]
+        ])
 
     def _replace_all(self, resource_type: Type[TResource], model: models.ResourceContainer, new_resources: list[TResource]):
         jsonb_resources = [dict(r) for r in new_resources] #type: ignore
@@ -86,7 +90,6 @@ class ResourceContainerPatch(BaseModel):
     def _add_resources(self, resource_type, model, to_add: list[TResource]):
         current_resources = getattr(model, resource_name(resource_type))
         current_resources.extend([dataclasses.asdict(item) for item in to_add ])
-
 
     def _replace_resource(self, resource_type: Type[TResource], model: models.ResourceContainer, to_replace: dict[int, TResource]):
         jsonb_resources = list(self._get_resources(resource_type, model))
@@ -109,8 +112,4 @@ class ResourceContainerPatch(BaseModel):
                 self._replace_resource(resource_type, model, items_to_replace)
             if items_to_add:
                 self._add_resources(resource_type, model, items_to_add)
-
-    def apply(self, container: models.ResourceContainer):
-        for resource_type in RESOURCE_TYPES:
-            self.update_resource(resource_type, container)
 

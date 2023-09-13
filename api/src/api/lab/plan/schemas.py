@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic.dataclasses import dataclass
-from api.base.schemas import ApiModel, ModelCreate, ModelPatch
+from api.base.schemas import ApiModel, ModelCreate, ModelPatch, PagedResultList
 
 from api.uni.errors import CampusDoesNotExist
 from api.uni.research.schemas import FundingModel, FundingModelCreate
@@ -113,7 +113,10 @@ class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan_])
     work_units: list[WorkUnit]
 
     @classmethod
-    async def from_model(cls, model: models.ExperimentalPlan_) -> ExperimentalPlan:
+    async def from_model(cls, model: ExperimentalPlan | models.ExperimentalPlan_) -> ExperimentalPlan:
+        if isinstance(model, ExperimentalPlan):
+            return cls(**model.model_dump())
+
         funding_model = await FundingModel.from_model(
             await model.awaitable_attrs.funding_model
         )
@@ -130,7 +133,7 @@ class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan_])
             id=model.id,
             title=model.title,
             funding_model_id=funding_model.id,
-            funding_model=model.funding_model,
+            funding_model=funding_model,
             researcher=model.researcher_email,
             supervisor=model.supervisor_email,
 
@@ -143,12 +146,15 @@ class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan_])
             updated_at=model.updated_at
         )
 
+    async def to_model(self, db: LocalSession) -> models.ExperimentalPlan_:
+        return await models.ExperimentalPlan_.get_by_id(db, self.id)
+
     @classmethod
-    async def get_by_id(cls, db: AsyncSession, id: UUID):
+    async def get_by_id(cls, db: LocalSession, id: UUID):
         return await cls.from_model(await models.ExperimentalPlan_.get_by_id(db, id))
 
 
-class ExperimentalPlanPatch(ExperimentalPlanBase, ModelPatch[ExperimentalPlan]):
+class ExperimentalPlanPatch(ExperimentalPlanBase, ModelPatch[ExperimentalPlan, models.ExperimentalPlan_]):
     __api_model__ = ExperimentalPlan
 
     async def do_update(self, db: LocalSession, instance: models.ExperimentalPlan_) -> models.ExperimentalPlan_:
@@ -159,7 +165,7 @@ class ExperimentalPlanPatch(ExperimentalPlanBase, ModelPatch[ExperimentalPlan]):
 
         return instance
 
-class ExperimentalPlanCreate(ExperimentalPlanBase, ModelCreate[ExperimentalPlan]):
+class ExperimentalPlanCreate(ExperimentalPlanBase, ModelCreate[ExperimentalPlan, models.ExperimentalPlan_]):
     __api_model__ = ExperimentalPlan
     add_work_units: list[WorkUnitPatch] = field(default_factory=list)
 
@@ -173,14 +179,10 @@ class ExperimentalPlanCreate(ExperimentalPlanBase, ModelCreate[ExperimentalPlan]
         if list(instance.work_units):
             raise ValueError('Can not be applied after work units created')
 
-        work_units = []
+        new_work_units = []
         for work_unit in self.add_work_units:
             work_unit_create = WorkUnitCreate(plan_id=instance.id, **work_unit.model_dump())
-            work_unit = await work_unit_create(db)
-            work_units.append(work_unit)
+            new_work_units.append(await work_unit_create(db))
 
         db.add(instance)
         return instance
-
-
-   

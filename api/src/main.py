@@ -1,4 +1,5 @@
 import os
+from typing import Type, cast
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from uuid import UUID
@@ -27,7 +28,7 @@ async def default_exception_middleware(request: Request, call_next):
         response_content = {
             "error": 500,
             "message": "Internal server error",
-            "exception": traceback.format_exception_only(e),
+            "exception": traceback.format_exception_only(type(e), e),
             "trace": traceback.format_tb(e.__traceback__)
         }
 
@@ -67,7 +68,7 @@ app.include_router(uni_research_funding)
 
 if __name__ == '__main__':
     import uvicorn
-    import debugpy
+    import debugpy # type: ignore
 
     if API_DEBUG:
         print('running in debug mode. waiting for client...')

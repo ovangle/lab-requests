@@ -1,4 +1,4 @@
-
+from __future__ import annotations
 
 from typing import Any, Coroutine, Optional
 from uuid import UUID
@@ -17,7 +17,7 @@ class FundingModel(FundingModelBase, ApiModel[models.FundingModel_]):
     id: UUID
 
     @classmethod
-    async def from_model(cls, model: models.FundingModel_):
+    async def from_model(cls, model: FundingModel | models.FundingModel_):
         return cls(
             id=model.id,
             description=model.description,
@@ -26,7 +26,10 @@ class FundingModel(FundingModelBase, ApiModel[models.FundingModel_]):
             updated_at=model.updated_at
         )
 
-class FundingModelPatch(FundingModelBase, ModelPatch[FundingModel]):
+    def to_model(self, db: LocalSession):
+        return models.FundingModel_.get_for_id(db, self.id)
+
+class FundingModelPatch(FundingModelBase, ModelPatch[FundingModel, models.FundingModel_]):
     __api_model__ = FundingModel
 
     async def do_update(self, db: LocalSession, model: models.FundingModel_) -> models.FundingModel_:
@@ -40,10 +43,10 @@ class FundingModelPatch(FundingModelBase, ModelPatch[FundingModel]):
         return model
 
 
-class FundingModelCreate(FundingModelBase, ModelCreate[FundingModel]):
+class FundingModelCreate(FundingModelBase, ModelCreate[FundingModel, models.FundingModel_]):
     __api_model__ = FundingModel
 
-    async def do_create(self, db: LocalSession) -> FundingModel:
+    async def do_create(self, db: LocalSession) -> models.FundingModel_:
         to_create = models.FundingModel_(**self.model_dump())
         db.add(to_create)
         return to_create
