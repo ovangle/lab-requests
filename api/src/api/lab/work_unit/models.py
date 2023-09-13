@@ -12,6 +12,7 @@ from sqlalchemy.dialects import postgresql as pg_dialect
 from db import LocalSession
 from db.orm import uuid_pk, email
 from api.base.models import Base
+from api.uni.models import Campus
 from api.lab.types import LabType
 from api.lab.plan.models import ExperimentalPlan_
 
@@ -26,6 +27,9 @@ class WorkUnit_(ResourceContainer, Base):
     plan_id: Mapped[UUID] = mapped_column(ForeignKey('experimental_plans.id'))
     plan: Mapped[ExperimentalPlan_] = relationship(back_populates='work_units')
 
+    campus_id: Mapped[UUID] = mapped_column(ForeignKey('campuses.id'))
+    campus: Mapped[Campus] = relationship()
+
     index: Mapped[int] = mapped_column()
 
     lab_type: Mapped[LabType] = mapped_column(pg_dialect.ENUM(LabType))
@@ -36,8 +40,23 @@ class WorkUnit_(ResourceContainer, Base):
     start_date: Mapped[Optional[date]] = mapped_column(DATE)
     end_date: Mapped[Optional[date]] = mapped_column(DATE)
 
-    def __init__(self, plan_id: UUID):
+    def __init__(self, 
+                 plan_id: UUID, 
+                 index: int, *, 
+                 lab_type: LabType, 
+                 technician_email: str, 
+                 process_summary: str, 
+                 start_date: date | None, 
+                 end_date: date | None
+    ):
+        super().__init__()
         self.plan_id = plan_id
+        self.index = index
+        self.lab_type = lab_type
+        self.technician_email = technician_email
+        self.process_summary = process_summary
+        self.start_date = start_date
+        self.end_date = end_date
 
     @staticmethod
     async def get_by_id(db: LocalSession, id: UUID) -> WorkUnit_:

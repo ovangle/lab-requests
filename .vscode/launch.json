@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: Api server",
+      "name": "debug api server",
       "type": "python",
       "request": "attach",
       "port": 8765,
@@ -16,18 +16,10 @@
       "justMyCode": false
     },
     {
-      "name": "ng serve",
+      "name": "debug client app",
       "type": "chrome",
-      "request": "launch",
-      "preLaunchTask": "npm: start",
-      "url": "http://localhost:4200/",
-    },
-    {
-      "name": "ng test",
-      "type": "chrome",
-      "request": "launch",
-      "preLaunchTask": "npm: test",
-      "url": "http://localhost:9876/debug.html"
-    },
+      "request": "attach",
+      "url": "http://localhost:4200"
+    }
   ]
 }

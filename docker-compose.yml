@@ -4,6 +4,8 @@ services:
     build: './app'
     ports:
       - "4201:4200"
+    profiles:
+    - do_not_start
 
   api:
     build: './api'

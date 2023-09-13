@@ -4,6 +4,7 @@ import { MatListModule } from "@angular/material/list";
 import { ExperimentalPlanModelService } from "./experimental-plan";
 import { BehaviorSubject, Subject, shareReplay, switchMap, tap } from "rxjs";
 import { RouterModule } from "@angular/router";
+import { MatButtonModule } from "@angular/material/button";
 
 
 interface Actor {
@@ -24,10 +25,15 @@ const researcherFixture = {
         CommonModule,
         RouterModule,
 
+        MatButtonModule,
         MatListModule
     ],
     template: `
     <div *ngIf="actor$ | async as actor">{{actor | json}}</div>
+
+    <a mat-button routerLink="./create">
+        + Add
+    </a>
 
     <mat-list *ngIf="items$ | async as items">
         <mat-list-item *ngFor="let item of items">

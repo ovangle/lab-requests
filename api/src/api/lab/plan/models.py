@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING, Any, Optional
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema
 
-from sqlalchemy import DATE, Select, Table, Column, ForeignKey, select
+from sqlalchemy import DATE, Select, Table, Column, ForeignKey, func, select
 from sqlalchemy.dialects.postgresql import ENUM
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, column_property
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.types import VARCHAR, TEXT
 from api.lab.plan.errors import ExperimentalPlanDoesNotExist
@@ -29,7 +29,7 @@ from api.lab.work_unit.resource.models import ResourceContainer
 class ExperimentalPlan_(Base):
     __tablename__ = 'experimental_plans'
 
-    id: Mapped[uuid_pk]
+    id: Mapped[uuid_pk] = mapped_column()
     title: Mapped[str] = mapped_column(VARCHAR(128))
 
     funding_model_id: Mapped[UUID] = mapped_column(ForeignKey('uni_research_funding_model.id'))

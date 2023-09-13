@@ -5,11 +5,12 @@ import { ResourceContainer, ResourceContainerContext, researchContainerFieldsFro
 import { LabType } from "../type/lab-type";
 import { ResourceContainerPatch } from "./resources/resource-container";
 import { ModelService } from "src/app/utils/models/model-service";
-import { ExperimentalPlan, ExperimentalPlanContext } from "../experimental-plan/experimental-plan";
-import { BehaviorSubject, Observable, Subscription, filter, firstValueFrom, of, skipWhile, switchMap, take } from "rxjs";
+import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanModelService } from "../experimental-plan/experimental-plan";
+import { BehaviorSubject, Observable, Subscription, defer, filter, firstValueFrom, map, of, skipWhile, switchMap, take, withLatestFrom } from "rxjs";
 import { Injectable, inject } from "@angular/core";
 import { Context } from "src/app/utils/models/model-context";
 import { formatISO, parseISO } from "date-fns";
+import urlJoin from "url-join";
 
 
 /**
@@ -79,7 +80,7 @@ export interface WorkUnitPatch extends ResourceContainerPatch {
     readonly labType: LabType;
     readonly technician: string;
 
-    readonly summary: string;
+    readonly processSummary: string;
 
     readonly startDate: Date | null;
     readonly endDate: Date | null;
@@ -90,7 +91,7 @@ export function workUnitPatchFromWorkUnit(workUnit: WorkUnit): WorkUnitPatch {
         campus: workUnit.campus,
         labType: workUnit.labType,
         technician: workUnit.technician,
-        summary: workUnit.processSummary,
+        processSummary: workUnit.processSummary,
         startDate: workUnit.startDate,
         endDate: workUnit.endDate,
 
@@ -103,7 +104,7 @@ export function workUnitPatchToJson(patch: WorkUnitPatch): {[k: string]: any} {
         campus: isCampus(patch.campus) ? patch.campus.id : patch.campus,
         labType: patch.labType,
         technician: patch.technician,
-        summary: patch.summary,
+        processSummary: patch.processSummary,
         startDate: patch.startDate && formatISO(patch.startDate),
         endDate: patch.endDate && formatISO(patch.endDate)
     };
@@ -150,9 +151,10 @@ export type WorkUnitCreateErrors = WorkUnitPatchErrors & {
 }
 
 export class WorkUnitModelService extends ModelService<WorkUnit, WorkUnitPatch, WorkUnitCreate> {
+    readonly _planModels = inject(ExperimentalPlanModelService);
     override resourcePath = '/lab/work-units';
-    protected resourcePathFromPlan(plan: ExperimentalPlan) {
-        return `/lab/experimental-plans/${plan.id}/work-units`;
+    resourcePathFromPlan(plan: ExperimentalPlan) {
+        return urlJoin(this._planModels.resourcePath, plan.id, 'work-units');
     }
 
     override readonly modelFromJson = workUnitFromJson;
@@ -171,6 +173,10 @@ export class WorkUnitModelService extends ModelService<WorkUnit, WorkUnitPatch, 
         return this.query(params, {
             resourcePath: this.resourcePathFromPlan(plan)
         });
+    }
+
+    createForPlan(plan: ExperimentalPlan, request: WorkUnitCreate): Observable<WorkUnit> {
+        return this.create(request, {resourcePath: this.resourcePathFromPlan(plan)})
     }
 }
 
@@ -193,6 +199,11 @@ export class WorkUnitContext extends Context<WorkUnit, WorkUnitPatch> {
     override _doCreate(request: WorkUnitCreate): Observable<WorkUnit> {
         return this.plan$.pipe(
             take(1),
+            switchMap(plan => this.models.createForPlan(plan, request))
+        );
+        /*
+        return this.plan$.pipe(
+            take(1),
             switchMap(contextPlan => {
                 if (request.planId && request.planId != contextPlan.id) {
                     throw new Error('Cannot create work unit for different plan');
@@ -201,6 +212,7 @@ export class WorkUnitContext extends Context<WorkUnit, WorkUnitPatch> {
                 return this.models.create(request);
             })
         )
+        */
     }
 
     override _doCommit(id: string, patch: WorkUnitPatch): Observable<WorkUnit> {

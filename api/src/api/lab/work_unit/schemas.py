@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
+from sqlalchemy import func, select
 
 from db import LocalSession
 from api.base.schemas import ApiModel, ModelPatch, ModelCreate
@@ -12,9 +13,7 @@ from api.uni.schemas import Campus, CampusCode
 from api.lab.types import LabType
 
 from .resource.schemas import ResourceContainer, ResourceContainerPatch
-
-if TYPE_CHECKING:
-    from . import models
+from . import models
 
 class WorkUnitBase(BaseModel):
     lab_type: LabType
@@ -76,7 +75,7 @@ class WorkUnit(WorkUnitBase, ResourceContainer, ApiModel[models.WorkUnit_]):
 class WorkUnitPatch(WorkUnitBase, ResourceContainerPatch, ModelPatch[WorkUnit, models.WorkUnit_]):
     __api_model__ = WorkUnit
 
-    async def apply(self, db: LocalSession, model: models.WorkUnit_):
+    async def do_update(self, db: LocalSession, model: models.WorkUnit_) -> models.WorkUnit_:
         for attr in ('lab_type', 'technician_email', 'process_summary', 
                      'start_date', 'end_date'):
             s_attr = getattr(self, attr)
@@ -84,12 +83,32 @@ class WorkUnitPatch(WorkUnitBase, ResourceContainerPatch, ModelPatch[WorkUnit, m
                 setattr(model, attr, getattr(self, attr))
                 db.add(model)
 
+        return model
+
+
+
 class WorkUnitCreate(WorkUnitBase, ModelCreate[WorkUnit, models.WorkUnit_]):
     __api_model__ = WorkUnit
     plan_id: UUID
 
+    async def next_plan_index(self, db: LocalSession) -> int:
+        return (await db.scalars(
+            select(func.count(models.WorkUnit_.id))
+            .select_from(models.WorkUnit_)
+            .where(models.WorkUnit_.plan_id == self.plan_id)
+        )).one() 
+
     async def do_create(self, db: LocalSession) -> models.WorkUnit_:
-        instance = models.WorkUnit_(self.plan_id)
-        db.add(instance)
-        return instance
+        plan = await models.ExperimentalPlan_.get_by_id(db, self.plan_id)
+        work_unit = models.WorkUnit_(
+            plan_id=plan.id,
+            index=await self.next_plan_index(db),
+            lab_type=self.lab_type,
+            technician_email=self.technician,
+            process_summary=self.process_summary,
+            start_date=self.start_date,
+            end_date=self.end_date,
+        )
+        db.add(work_unit)
+        return work_unit
 

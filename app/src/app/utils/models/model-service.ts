@@ -21,12 +21,12 @@ export abstract class ModelService<T, TPatch, TCreate extends TPatch=TPatch> {
         return this.patchToJson(create);
     }
 
-    _resourceUrl(identifier: string, options?: {resourcePath?: string}) {
+    protected _resourceUrl(identifier: string, options?: {resourcePath?: string}) {
         const resourcePath: string = options && options.resourcePath || this.resourcePath;
         return urlJoin(this.apiBaseUrl, resourcePath, identifier)
     }
 
-    _indexUrl(options?: {resourcePath?: string}) {
+    protected _indexUrl(options?: {resourcePath?: string}) {
         const resourcePath: string = options && options.resourcePath || this.resourcePath;
         const indexUrl = urlJoin(this.apiBaseUrl, resourcePath, '/')
         console.log(`indexUrl: ${indexUrl}`)

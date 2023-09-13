@@ -74,20 +74,18 @@ async def index_plan_work_units(
         query_work_units(plan_id=plan_id),
     )
 
+@lab_plans.post(
+    "/{plan_id}/work-units/"
+)
+async def create_plan_work_unit(plan_id: UUID, work_unit: WorkUnitPatch, db = Depends(get_db)) -> WorkUnit:
+    create_req = WorkUnitCreate(plan_id=plan_id, **work_unit.model_dump())
+    return await create_req(db)
 
 @lab_plans.get(
     "/{plan_id}/work-units/{work_unit_index}"
 )
 async def read_plan_work_unit(plan_id: UUID, work_unit_index: int, db = Depends(get_db)) -> WorkUnit:
     return await WorkUnit.get_by_plan_and_index(db, plan_id, work_unit_index)
-
-@lab_plans.post(
-    "/{plan_id}/work-units/create"
-)
-async def create_plan_work_unit(plan_id: UUID, work_unit: WorkUnitPatch, db = Depends(get_db)) -> WorkUnit:
-    create_req = WorkUnitCreate(plan_id=plan_id, **work_unit.model_dump())
-    return await create_req(db)
-
 
 @lab_plans.put(
     "/{plan_id}/work-units/{work_unit_index}",

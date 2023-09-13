@@ -56,7 +56,7 @@ import { LabTypeSelectComponent } from "../../type/lab-type-select.component";
 
         <mat-form-field>
             <mat-label>Process summary</mat-label>
-            <textarea matInput formControlName="summary">
+            <textarea matInput formControlName="processSummary">
             </textarea>
         </mat-form-field>
  

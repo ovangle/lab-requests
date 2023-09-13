@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends
 
 from db import LocalSession, get_db
 from api.base.schemas import PagedResultList
-from .schemas import WorkUnit
+from api.lab.plan.schemas import ExperimentalPlan
 
-
+from .schemas import WorkUnit, WorkUnitCreate
 
 lab_work_units = APIRouter(
     prefix="/lab/work-units",
@@ -30,11 +30,15 @@ async def index_work_units(
         technician_email=technician_email
     ) 
     return await PagedResultList[WorkUnit].from_selection(WorkUnit, db, query)
- 
+
+@lab_work_units.post("/")
+async def create_work_unit(create: WorkUnitCreate, db: LocalSession = Depends(get_db)) -> WorkUnit:
+    return await create(db)
+
 
 @lab_work_units.get(
     "/{work_unit_id}",
 )
-async def get_work_unit(work_unit_id: UUID, db = Depends(get_db)) -> WorkUnit:
+async def get_work_unit(work_unit_id: UUID, db: LocalSession = Depends(get_db)) -> WorkUnit:
     return await WorkUnit.get_by_id(db, work_unit_id)
 

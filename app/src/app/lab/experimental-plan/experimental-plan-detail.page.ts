@@ -7,7 +7,7 @@ import { ActivatedRoute, RouterModule } from "@angular/router";
 import { Observable, Subscription, map, shareReplay, switchMap } from "rxjs";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
-import { ExperimentalPlanInfoComponent } from "./experiental-plan-info.coponent";
+import { ExperimentalPlanInfoComponent } from "./experimental-plan-info.coponent";
 
 export function experimentalPlanContextFromDetailRoute(): Observable<ExperimentalPlan> {
     const activatedRoute = inject(ActivatedRoute);

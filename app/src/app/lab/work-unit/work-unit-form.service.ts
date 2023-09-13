@@ -11,7 +11,7 @@ export type WorkUnitForm = FormGroup<{
     campus: FormControl<Campus | string | null>;
     labType: FormControl<Discipline | null>;
     technician: FormControl<string>;
-    summary: FormControl<string>;
+    processSummary: FormControl<string>;
 
     startDate: FormControl<Date | null>;
     endDate: FormControl<Date | null>;
@@ -56,7 +56,7 @@ export class WorkUnitFormService {
                 Validators.email
             ]
         }),
-        summary: new FormControl('', {nonNullable: true}),
+        processSummary: new FormControl('', {nonNullable: true}),
 
         startDate: new FormControl<Date | null>(null),
         endDate: new FormControl<Date | null>(null),
