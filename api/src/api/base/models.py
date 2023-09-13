@@ -8,7 +8,8 @@ from sqlalchemy.orm import (
 )
 from uuid import UUID
 
-from api.utils.db import gen_random_uuid, utcnow, db_metadata
+from db.func import utcnow
+from db import db_metadata
 
 class Base(AsyncAttrs, declarative_base(metadata=db_metadata)):
     __abstract__ = True

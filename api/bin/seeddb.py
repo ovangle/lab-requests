@@ -1,7 +1,7 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.utils.db import local_sessionmaker
+from db import local_sessionmaker
 
 async def seed_db():
     from api.uni.models import seed_campuses

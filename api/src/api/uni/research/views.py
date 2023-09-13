@@ -2,7 +2,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends
 from api.base.schemas import PagedResultList
 
-from api.utils.db import LocalSession, get_db
+from db import LocalSession, get_db
 
 from .model_queries import query_funding_models
 from .schemas import FundingModel

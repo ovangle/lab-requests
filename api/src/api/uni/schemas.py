@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, TypeAdapter
 from pydantic.dataclasses import dataclass
 
 from api.base.schemas import SCHEMA_CONFIG, ApiModel, ModelPatch, ModelCreate
-from api.utils.db import LocalSession
+from db import LocalSession
 
 from .types import CampusCode
 from . import models
@@ -47,12 +47,6 @@ class Campus(CampusBase, ApiModel[models.Campus]):
 class CampusPatch(CampusBase, ModelPatch[models.Campus]):
     __api_model__ = Campus 
 
-    async def apply_to_model(self, db: LocalSession, model: models.Campus):
-        if model.name != self.name:
-            model.name = self.name
-            db.add(model)
-        return model
-
     async def do_update(self, db: LocalSession, instance: models.Campus) -> models.Campus:
         is_modified = self._set_model_fields(instance)
         if is_modified:
@@ -66,8 +60,7 @@ class CampusCreate(CampusBase, ModelCreate[models.Campus]):
 
     async def do_create(self, db: LocalSession):
         from . import models
-        instance = models.Campus()
-        instance.code = self.code
+        instance = models.Campus(self.code)
         self._set_model_fields(instance)
         db.add(instance)
         return instance

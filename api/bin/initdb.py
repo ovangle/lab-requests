@@ -1,10 +1,16 @@
+#! /usr/bin/env python
+
 import asyncio
-from api.utils.db import initdb_async
+from db import db_engine, db_metadata, local_sessionmaker
 
-loop = asyncio.get_event_loop()
 
-def main():
-    loop.run_until_complete(initdb_async())
+async def initdb():
+    # Ensure all models in packages we use are imported into metadata
+    import main
+
+    async with db_engine.begin() as db:
+        await db.run_sync(db_metadata.create_all)
 
 if __name__ == '__main__':
-    main()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(initdb())

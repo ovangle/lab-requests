@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
 from api.base.models import Base
-from api.utils.db import uuid_pk
+from db.orm import uuid_pk
 
 from ..types import LabType
 from .errors import EquipmentDoesNotExist

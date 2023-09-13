@@ -2,7 +2,7 @@ from typing import Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends
 
-from api.utils.db import get_db
+from db import get_db
 from api.base.schemas import PagedResultList
 
 from .schemas import Equipment, EquipmentPatch

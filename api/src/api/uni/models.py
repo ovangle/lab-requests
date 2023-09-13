@@ -9,7 +9,8 @@ from sqlalchemy.types import VARCHAR, CHAR
 from sqlalchemy.dialects.postgresql import ENUM
 
 from api.base.models import Base
-from api.utils.db import uuid_pk, LocalSession
+from db import LocalSession
+from db.orm import uuid_pk
 
 from .types import CampusCode, campus_code
 from .errors import CampusDoesNotExist
@@ -20,6 +21,11 @@ class Campus(Base):
     id: Mapped[uuid_pk]
     code: Mapped[campus_code]
     name: Mapped[str] = mapped_column(VARCHAR(64))
+
+    def __init__(self, code: CampusCode, name: str = ''):
+        super().__init__()
+        self.code = code
+        self.name = name
 
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID) -> Campus:

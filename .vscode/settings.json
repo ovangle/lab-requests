@@ -1,7 +1,8 @@
 {
     "mypy-type-checker.importStrategy": "fromEnvironment",
     "mypy-type-checker.args": [
-        "--config-file \"./api/src/mypy.ini\""
+        "--config-file \"./api/src/mypy.ini\"",
+        "./api/src"
     ],
     "python.analysis.typeCheckingMode": "basic",
     "angular.forceStrictTemplates": true,

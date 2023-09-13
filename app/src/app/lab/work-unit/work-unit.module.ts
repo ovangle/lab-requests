@@ -7,23 +7,29 @@ import { CommonModule } from "@angular/common";
 import { WorkUnitModelService } from "./work-unit";
 import { RESOURCE_ROUTES } from "./resources/resource-routes";
 import { WorkUnitResourceFormOutlet } from "./work-unit-resource-form-outlet.component";
+import { WorkUnitCreatePage } from "./work-unit-create.page";
 
-const WORK_UNIT_FROM_PLAN_ROUTES: Routes = [
+export const WORK_UNIT_FROM_PLAN_ROUTES: Routes = [
     {
-        path: '',
-        pathMatch: 'full',
-        component: WorkUnitIndexPage,
-    },
-    {
-        path: ':work_unit_index',
-        outlet: 'form',
-        component: WorkUnitResourceFormOutlet,
-        children: RESOURCE_ROUTES       
-    },
-    {
-        path: ':work_unit_index',
-        component: WorkUnitDetailPage,
-    },
+        path: 'work-units',
+        children: [
+            {
+                path: 'create',
+                pathMatch: 'full',
+                component: WorkUnitCreatePage,
+            },
+            {
+                path: ':work_unit_index',
+                outlet: 'form',
+                component: WorkUnitResourceFormOutlet,
+                children: RESOURCE_ROUTES       
+            },
+            {
+                path: ':work_unit_index',
+                component: WorkUnitDetailPage,
+            },
+        ]
+    }
 ];
 
 @NgModule({

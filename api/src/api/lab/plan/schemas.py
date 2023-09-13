@@ -17,7 +17,7 @@ from api.uni.research.schemas import FundingModel, FundingModelCreate
 from api.uni.schemas import Campus, CampusCode
 from api.lab.types import LabType
 from api.uni.types import Discipline
-from api.utils.db import LocalSession
+from db import LocalSession
 
 from .resource.schemas import ResourceContainer, ResourceContainerPatch
 from . import models
@@ -198,6 +198,7 @@ class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan_])
 
         return cls(
             id=model.id,
+            title=model.title,
             funding_model_id=funding_model.id,
             funding_model=model.funding_model,
             researcher=model.researcher_email,

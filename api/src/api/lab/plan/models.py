@@ -15,7 +15,7 @@ from sqlalchemy.types import VARCHAR, TEXT
 from api.lab.plan.errors import ExperimentalPlanDoesNotExist
 
 from api.uni.types import Discipline
-from api.utils.db import uuid_pk, EMAIL_DOMAIN
+from db.orm import uuid_pk, email
 from api.base.models import Base
 from ..types import LabType
 
@@ -40,9 +40,9 @@ class ExperimentalPlan_(Base):
     researcher_discipline: Mapped[Discipline] = mapped_column(ENUM(Discipline))
 
     # The name of the researcher responsible for this experimental plan
-    researcher_email: Mapped[str] = mapped_column(EMAIL_DOMAIN)
+    researcher_email: Mapped[email]
     # The supervisor associated with the plan, or None if the researcher is an academic
-    supervisor_email: Mapped[str | None] = mapped_column(EMAIL_DOMAIN, nullable=True)
+    supervisor_email: Mapped[email | None]
 
     process_summary: Mapped[str] = mapped_column(
         TEXT,
@@ -72,7 +72,7 @@ class WorkUnit_(ResourceContainer, Base):
     index: Mapped[int] = mapped_column()
 
     lab_type: Mapped[LabType] = mapped_column(ENUM(LabType))
-    technician_email: Mapped[str] = mapped_column(EMAIL_DOMAIN)
+    technician_email: Mapped[email]
 
     process_summary: Mapped[str] = mapped_column(TEXT)
 

@@ -55,7 +55,7 @@ export function experimentalPlanContextFromDetailRoute(): Observable<Experimenta
                 </a>
                 <div class="spacer" [style.flex-grow]="1"></div>
                 <a mat-tab-link
-                            [routerLink]="['./', 'work-units', plan.workUnits.length]"
+                            routerLink="./work-units/create"
                             routerLinkActive #linkActive="routerLinkActive"
                             [active]="linkActive.isActive"
                             [disabled]="isAddingWorkUnit(plan)">

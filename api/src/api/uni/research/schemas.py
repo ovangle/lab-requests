@@ -5,7 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from api.base.schemas import ApiModel, ModelCreate, ModelPatch
-from api.utils.db import LocalSession
+from db import LocalSession
 
 from . import models
 
@@ -44,7 +44,6 @@ class FundingModelCreate(FundingModelBase, ModelCreate[FundingModel]):
     __api_model__ = FundingModel
 
     async def do_create(self, db: LocalSession) -> FundingModel:
-        to_create = models.FundingModel()
+        to_create = models.FundingModel(**self.model_dump())
         db.add(to_create)
-        patch = FundingModelPatch(**self.model_dump())
-        return await patch.do_update(db, to_create)
+        return to_create

@@ -2,11 +2,11 @@ import dataclasses
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import func, select
+from sqlalchemy import func
 from api.base.schemas import PagedResultList
 from api.lab.plan.queries import query_experimental_plans
 
-from api.utils.db import LocalSession, get_db
+from db import LocalSession, get_db
 
 from . import models
 from .schemas import (

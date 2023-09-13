@@ -10,7 +10,7 @@ from typing import Any, Awaitable, Callable, ClassVar, Generic, Iterable, Option
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.dataclasses import dataclass
 from sqlalchemy import Select, func, select
-from api.utils.db import LocalSession
+from db import LocalSession
 
 from humps import camelize
 
