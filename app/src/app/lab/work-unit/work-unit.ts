@@ -1,7 +1,7 @@
 import { ValidationErrors } from "@angular/forms";
-import { Campus, CampusCode, campusFromJson, isCampus } from "../../uni/campus/campus";
+import { Campus, CampusCode, CampusPatch, campusFromJson, isCampus } from "../../uni/campus/campus";
 import { isDiscipline } from "../../uni/discipline/discipline";
-import { ResourceContainer, ResourceContainerContext, researchContainerFieldsFromJson } from "./resources/resource-container";
+import { ResourceContainer, ResourceContainerContext, researchContainerFieldsFromJson, resourceContainerPatchFromContainer } from "./resources/resource-container";
 import { LabType } from "../type/lab-type";
 import { ResourceContainerPatch } from "./resources/resource-container";
 import { ModelService } from "src/app/utils/models/model-service";
@@ -75,6 +75,7 @@ export function workUnitFromJson(json: {[k: string]: any}): WorkUnit {
 }
 
 export interface WorkUnitPatch extends ResourceContainerPatch {
+    readonly campus: Campus | string;
     readonly labType: LabType;
     readonly technician: string;
 
@@ -84,8 +85,22 @@ export interface WorkUnitPatch extends ResourceContainerPatch {
     readonly endDate: Date | null;
 }
 
+export function workUnitPatchFromWorkUnit(workUnit: WorkUnit): WorkUnitPatch {
+    return {
+        campus: workUnit.campus,
+        labType: workUnit.labType,
+        technician: workUnit.technician,
+        summary: workUnit.processSummary,
+        startDate: workUnit.startDate,
+        endDate: workUnit.endDate,
+
+        ...resourceContainerPatchFromContainer(workUnit)
+    };
+}
+
 export function workUnitPatchToJson(patch: WorkUnitPatch): {[k: string]: any} {
     return {
+        campus: isCampus(patch.campus) ? patch.campus.id : patch.campus,
         labType: patch.labType,
         technician: patch.technician,
         summary: patch.summary,
@@ -95,19 +110,22 @@ export function workUnitPatchToJson(patch: WorkUnitPatch): {[k: string]: any} {
 }
 
 export type WorkUnitPatchErrors = ValidationErrors & {
-    labType?: {
+    campus: {
         required: string | null;
-    }; 
-    technician?: {
+    } | null;
+    labType: {
+        required: string | null;
+    } | null; 
+    technician: {
         required: string | null;
         email: string | null;
-    };
-    startDate?: {
+    } | null;
+    startDate: {
         afterToday: string | null;
-    };
-    endDate?: {
+    } | null;
+    endDate: {
         afterStartDate: string | null;
-    };
+    } | null;
 }
 
 export interface WorkUnitCreate extends WorkUnitPatch {
@@ -132,7 +150,7 @@ export type WorkUnitCreateErrors = WorkUnitPatchErrors & {
 }
 
 export class WorkUnitModelService extends ModelService<WorkUnit, WorkUnitPatch, WorkUnitCreate> {
-    override resourcePath = '/lab/experimental-plans/work-units';
+    override resourcePath = '/lab/work-units';
     protected resourcePathFromPlan(plan: ExperimentalPlan) {
         return `/lab/experimental-plans/${plan.id}/work-units`;
     }
@@ -170,9 +188,7 @@ export class WorkUnitContext extends Context<WorkUnit, WorkUnitPatch> {
     );
 
     models: WorkUnitModelService = inject(WorkUnitModelService);
-    readonly workUnit$ = this.committedSubject.pipe(
-        filter((committed): committed is WorkUnit => committed != null)
-    )
+    readonly workUnit$ = this.committed$;
 
     override _doCreate(request: WorkUnitCreate): Observable<WorkUnit> {
         return this.plan$.pipe(
@@ -200,7 +216,6 @@ export class WorkUnitResourceContainerContext extends ResourceContainerContext<W
     override commitContext(patch: WorkUnitPatch): Promise<WorkUnit> {
         return this.workUnitContext.commit(patch);
     };
-
     override patchFromContainerPatch(containerPatch: ResourceContainerPatch): WorkUnitPatch {
         return containerPatch as WorkUnitPatch; 
     }

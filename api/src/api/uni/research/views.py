@@ -16,7 +16,9 @@ uni_research_funding = APIRouter(
 async def index_models(
     description_like: Optional[str] = None,
     db: LocalSession = Depends(get_db)
-):
+) -> PagedResultList[FundingModel]:
     query = query_funding_models(description_like=description_like)
-    return PagedResultList.from_selection(FundingModel, db, query)
+    return await PagedResultList[FundingModel].from_selection(FundingModel, db, query)
+
+
 

@@ -88,7 +88,7 @@ export class WorkUnitDetailPage {
 
     getResources<T extends Resource>(resourceType: ResourceType): Observable<readonly T[]> {
         return this.workUnit$.pipe(
-            map(workUnit => workUnit.getResources<T>(resourceType))
+            map(workUnit => workUnit!.getResources<T>(resourceType))
         )
     }
 }

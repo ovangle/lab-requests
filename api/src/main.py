@@ -55,6 +55,9 @@ app.include_router(lab_equipments)
 from api.lab.plan.views import lab_plans
 app.include_router(lab_plans)
 
+from api.lab.work_unit.views import lab_work_units
+app.include_router(lab_work_units)
+
 from api.uni.views import uni_campuses
 app.include_router(uni_campuses)
 

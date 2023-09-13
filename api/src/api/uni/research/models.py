@@ -10,7 +10,7 @@ from api.base.models import Base
 from db import LocalSession
 from db.orm import uuid_pk
 
-class FundingModel(Base):
+class FundingModel_(Base):
     __tablename__ = 'uni_research_funding_model'
     id: Mapped[uuid_pk]
 
@@ -23,21 +23,21 @@ class FundingModel(Base):
         self.requires_supervisor = requires_supervisor
 
     @staticmethod
-    async def fetch_by_id(db: LocalSession, id: UUID) -> FundingModel:
-        return await db.get(FundingModel, id)
+    async def fetch_by_id(db: LocalSession, id: UUID) -> FundingModel_:
+        return await db.get(FundingModel_, id)
 
 
 async def seed_funding_models(db: LocalSession):
     builtin_funding_models = [
-        FundingModel('Grant', requires_supervisor=True),
-        FundingModel('General Research', requires_supervisor=True),
-        FundingModel('Student project', requires_supervisor=True),
+        FundingModel_('Grant', requires_supervisor=True),
+        FundingModel_('General Research', requires_supervisor=True),
+        FundingModel_('Student project', requires_supervisor=True),
     ]
     builtin_descriptions = [builtin.description for builtin in builtin_funding_models]
 
     existing_descriptions = await db.scalars(
-        select(FundingModel.description)
-            .where(FundingModel.description.in_(builtin_descriptions))
+        select(FundingModel_.description)
+            .where(FundingModel_.description.in_(builtin_descriptions))
     )
 
     db.add_all(builtin for builtin in builtin_funding_models if builtin.description not in existing_descriptions)

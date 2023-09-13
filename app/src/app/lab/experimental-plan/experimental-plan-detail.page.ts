@@ -7,6 +7,7 @@ import { ActivatedRoute, RouterModule } from "@angular/router";
 import { Observable, Subscription, map, shareReplay, switchMap } from "rxjs";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
+import { ExperimentalPlanInfoComponent } from "./experiental-plan-info.coponent";
 
 export function experimentalPlanContextFromDetailRoute(): Observable<ExperimentalPlan> {
     const activatedRoute = inject(ActivatedRoute);
@@ -36,14 +37,17 @@ export function experimentalPlanContextFromDetailRoute(): Observable<Experimenta
         MatTabsModule,
 
         ExperimentalPlanFormComponent,
+        ExperimentalPlanInfoComponent
     ],
     template: `
-
-
-    <lab-experimental-plan-form [disabled]="!isEditingForm">
-    </lab-experimental-plan-form>
+    <!--
+        <lab-experimental-plan-form [disabled]="!isEditingForm">
+        </lab-experimental-plan-form>
+    -->
 
     <mat-card *ngIf="plan$ | async as plan">
+        <lab-experimental-plan-info [plan]="plan"></lab-experimental-plan-info>
+
         <mat-card-header>
             <nav mat-tab-nav-bar [tabPanel]="tabPanel"
                  mat-align-tabs="start"

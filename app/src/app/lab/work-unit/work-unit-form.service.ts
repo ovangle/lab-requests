@@ -1,14 +1,14 @@
 import { Injectable, inject } from "@angular/core";
 import { FormGroup, FormControl, Validators } from "@angular/forms";
-import { Observable, map, firstValueFrom } from "rxjs";
-import { Campus } from "src/app/uni/campus/campus";
+import { Observable, map, firstValueFrom, defer, filter, tap, shareReplay } from "rxjs";
+import { Campus, CampusPatch } from "src/app/uni/campus/campus";
 import { Discipline } from "src/app/uni/discipline/discipline";
 import { LabType } from "../type/lab-type";
 import { ResourceContainerFormControls, resourceContainerFormControls } from "./resources/resource-container-form";
-import { WorkUnitModelService, WorkUnitContext, WorkUnitPatch, WorkUnitPatchErrors } from "./work-unit";
+import { WorkUnitModelService, WorkUnitContext, WorkUnitPatch, WorkUnitPatchErrors, workUnitPatchFromWorkUnit } from "./work-unit";
 
 export type WorkUnitForm = FormGroup<{
-    campus: FormControl<Campus | null>;
+    campus: FormControl<Campus | string | null>;
     labType: FormControl<Discipline | null>;
     technician: FormControl<string>;
     summary: FormControl<string>;
@@ -18,13 +18,36 @@ export type WorkUnitForm = FormGroup<{
 
 } & ResourceContainerFormControls>;
 
+function workUnitPatchFromForm(form: WorkUnitForm): WorkUnitPatch {
+    if (!form.valid) {
+        throw new Error('Cannot create patch from invalid form');
+    }
+    return form.value as WorkUnitPatch;
+}
+
 @Injectable()
 export class WorkUnitFormService {
     readonly models = inject(WorkUnitModelService);
     readonly context: WorkUnitContext = inject(WorkUnitContext);
 
+    readonly committed$ = this.context.committed$.pipe(
+        tap((committed) => {
+            console.log('committed 15', committed);
+            this.form.reset();
+            if (committed) {
+                const patch = workUnitPatchFromWorkUnit(committed);
+                this.form.patchValue(patch as any);
+            }
+        }),
+        shareReplay(1)
+    );
+
+    readonly isCreate$ = defer(() => this.committed$.pipe(
+        map(committed => committed == null)
+    ));
+
     readonly form = new FormGroup({
-        campus: new FormControl<Campus | null>(null, {validators: [Validators.required]}),
+        campus: new FormControl<Campus | string | null>(null, {validators: [Validators.required]}),
         labType: new FormControl<LabType | null>(null, {validators: [Validators.required]}),
         technician: new FormControl('', {
             nonNullable: true,
@@ -39,23 +62,46 @@ export class WorkUnitFormService {
         endDate: new FormControl<Date | null>(null),
 
         ...resourceContainerFormControls()
+    }, {
+        validators: [(c) => this._collectErrors(c as WorkUnitForm)]
     });
 
-    readonly committed$ = this.context.committed$;
+    _collectErrors(form: WorkUnitForm): Partial<WorkUnitPatchErrors> | null {
+        if (form.valid) {
+            return null;
+        }
+        let errors: Partial<WorkUnitPatchErrors> | null = null;
+        for (const [key, control] of Object.entries(form.controls)) {
+            if (control.touched && !control.valid) {
+                errors = errors || {};
+                errors[key] = control.errors;
+            }
+        }
+        return errors;
+    }
 
-    readonly patch$: Observable<WorkUnitPatch | null> = this.form.statusChanges.pipe(
-        map((status) => status === 'VALID' ? this.form.value as WorkUnitPatch : null)
-    );
+    readonly patchValue$: Observable<WorkUnitPatch | null> = defer(() => this.form.valueChanges.pipe(
+        filter(() => this.form.valid),
+        map(() => {
+            return workUnitPatchFromForm(this.form);
+        })
+    ));
 
     readonly formErrors$: Observable<WorkUnitPatchErrors | null> = this.form.statusChanges.pipe(
         map((status) => status === 'INVALID' ? this.form.errors as WorkUnitPatchErrors : null)
     )
 
-    async commit() {
+    async save() {
         if (this.form.invalid) {
             throw new Error('Cannot patch: invalid form');
         }
-        const patch = await firstValueFrom(this.patch$);
-        return await this.context.commit(patch!);
+        const isCreate = await firstValueFrom(this.isCreate$);
+        console.log('isCreate', isCreate);
+        const patch = workUnitPatchFromForm(this.form);
+        if (isCreate) {
+            return await this.context.create(patch!);
+        } else { 
+            return await this.context.commit(patch!);
+        }
     }
 }

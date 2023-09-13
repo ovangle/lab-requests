@@ -1,20 +1,15 @@
 import { Component, Input } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { NG_VALUE_ACCESSOR, ControlValueAccessor, FormControl } from "@angular/forms";
+import { NG_VALUE_ACCESSOR, ControlValueAccessor, FormControl, ReactiveFormsModule } from "@angular/forms";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
 import { LabType, labTypes } from "./lab-type";
-
-
-@Component({
-    selector: 'app-lab-type-select-label',
-    template: `<ng-content></ng-content>`
-})
-export class LabTypeSelectLabelComponent {
-
-}
+import { CommonModule } from "@angular/common";
+import { MatSelectModule } from "@angular/material/select";
+import { MatFormFieldModule } from "@angular/material/form-field";
 
 @Component({
     selector: 'app-lab-type-select-option',
+    standalone: true,
     template: `
         {{labType}}
     `
@@ -26,16 +21,29 @@ export class LabTypeSelectOptionComponent {
 
 @Component({
     selector: 'app-lab-type-select',
+    standalone: true,
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        MatFormFieldModule,
+        MatSelectModule,
+
+        LabTypeSelectOptionComponent
+    ],
     template: `
     <mat-form-field>
         <mat-label>
-            <ng-content select="lab-req-discipline-select-label"></ng-content>
+            <ng-content select="mat-label"></ng-content>
         </mat-label>
         <mat-select [formControl]="_control" (closed)="_onTouched()">
             <mat-option *ngFor="let labType of labTypes" [value]="labType">
                 <app-lab-type-select-option [labType]="labType"></app-lab-type-select-option>
             </mat-option>
         </mat-select>
+
+        <mat-error>
+            <ng-content select="mat-error"></ng-content>
+        </mat-error>
     </mat-form-field>
     `,
     providers: [

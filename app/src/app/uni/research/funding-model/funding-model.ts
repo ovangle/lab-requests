@@ -49,7 +49,7 @@ export function fundingModelCreateToJson(create: FundingModelCreate) {
 @Injectable()
 export class FundingModelService extends ModelService<FundingModel, FundingModelPatch, FundingModelCreate> {
    
-    override readonly resourcePath: string = '/uni/research/funding-models';
+    override readonly resourcePath: string = '/uni/research/funding';
     override readonly modelFromJson = fundingModelFromJson;
     override readonly patchToJson = fundingModelPatchToJson;
     override readonly createToJson = fundingModelCreateToJson;

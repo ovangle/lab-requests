@@ -13,7 +13,9 @@ export abstract class Context<T extends { readonly id: string}, TPatch = unknown
 
     connect(fromContext$: Observable<T | null>): Subscription {
         fromContext$.subscribe(this.committedSubject);
-        const keepaliveCommitted = this.committed$.subscribe();
+        const keepaliveCommitted = this.committed$.subscribe((committed) => {
+            console.log('committed',committed);
+        });
 
         return new Subscription(() => {
             this.committedSubject.complete();

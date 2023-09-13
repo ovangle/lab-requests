@@ -1,19 +1,10 @@
 import { CommonModule } from "@angular/common";
-import { ChangeDetectorRef, Component, Injectable, ViewChild, inject } from "@angular/core";
-import { MatCardModule } from "@angular/material/card";
-import { MatIconModule } from "@angular/material/icon";
-import { MatTabsModule } from "@angular/material/tabs";
-import { RouterModule } from "@angular/router";
-import { ExperimentalPlanFormComponent } from "./experimental-plan-form.component";
-import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanPatch } from "./experimental-plan";
-import { Observable, Subscription, of } from "rxjs";
-import { Campus } from "src/app/uni/campus/campus";
-import { hazardClassFromDivision } from "../work-unit/resources/common/hazardous/hazardous";
-import { InputMaterial } from "../work-unit/resources/material/input/input-material";
-import { Software } from "../work-unit/resources/software/software";
-import { WorkUnit } from "../work-unit/work-unit";
+import { ChangeDetectorRef, Component, ViewChild, inject } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { FundingModel } from "../../uni/research/funding-model/funding-model";
+import { MatIconModule } from "@angular/material/icon";
+import { Subscription, of } from "rxjs";
+import { ExperimentalPlanContext, ExperimentalPlanPatch } from "./experimental-plan";
+import { ExperimentalPlanFormComponent } from "./experimental-plan-form.component";
 
 
 const experimentalPlanCreateFixture: ExperimentalPlanPatch = ({
@@ -59,7 +50,7 @@ export class ExperimentalPlanCreatePage {
     _cdRef = inject(ChangeDetectorRef);
 
     _context: ExperimentalPlanContext = inject(ExperimentalPlanContext);
-    _contextSubscription: Subscription;
+    _contextConnection: Subscription;
 
     @ViewChild(ExperimentalPlanFormComponent, {static: true})
     experimentalPlanForm: ExperimentalPlanFormComponent;
@@ -68,7 +59,7 @@ export class ExperimentalPlanCreatePage {
         this._context.plan$.subscribe(plan => {
             console.log('context plan', plan)
         });
-        this._contextSubscription = this._context.connect(of(null));
+        this._contextConnection = this._context.connect(of(null));
     }
 
     ngAfterViewInit() {
@@ -80,7 +71,7 @@ export class ExperimentalPlanCreatePage {
     }
 
     ngOnDestroy() {
-        this._contextSubscription.unsubscribe();
+        this._contextConnection.unsubscribe();
     }
 
 }

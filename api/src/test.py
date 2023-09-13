@@ -1,23 +1,23 @@
 import asyncio
 from sqlalchemy import select
-from api.utils.db import local_sessionmaker, LocalSession
-from api.uni.research.models import FundingModel
-
-EVENT_LOOP = asyncio.get_event_loop()
-
-db: LocalSession = local_sessionmaker()
+from db import local_sessionmaker, LocalSession
+from api.uni.research.models import FundingModel_
+from api.uni.research.schemas import FundingModel
 
 
 async def main():
-    description = ''
-    query = select(FundingModel).where(
-        FundingModel.description.ilike(rf'%{description}%') 
-    )
-    for result in await db.scalars(query):
-        print(f'result {result.id} (created_at: {result.created_at}) (updated_at: {result.updated_at})')
-        print(f'description: {result.description}')
+    async with local_sessionmaker() as db:
+        description = ''
 
-try:
-    EVENT_LOOP.run_until_complete(main())
-finally:
-    EVENT_LOOP.run_until_complete(db.close())
+        query = select(FundingModel_).where(
+            FundingModel_.description.ilike(rf'%{description}%') 
+        )
+        for result in await db.scalars(query):
+            funding_model = await FundingModel.from_model(result)
+            print('result', funding_model)
+
+            print(funding_model.model_dump_json())
+
+if __name__ == '__main__':
+    asyncio.run(main())
+    

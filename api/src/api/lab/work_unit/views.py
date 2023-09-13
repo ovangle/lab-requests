@@ -1,0 +1,40 @@
+
+from uuid import UUID
+from fastapi import APIRouter, Depends
+
+from db import LocalSession, get_db
+from api.base.schemas import PagedResultList
+from .schemas import WorkUnit
+
+
+
+lab_work_units = APIRouter(
+    prefix="/lab/work-units",
+    tags=["work units"]
+)
+
+@lab_work_units.get("/")
+async def index_work_units(
+    plan_id: UUID | None = None,
+    researcher_email: str | None = None,
+    supervisor_email: str | None = None,
+    technician_email: str | None = None,
+    db: LocalSession = Depends(get_db)
+) -> PagedResultList[WorkUnit]:
+    from .queries import query_work_units 
+
+    query = query_work_units(
+        plan_id=plan_id, 
+        researcher_email=researcher_email,
+        supervisor_email=supervisor_email,
+        technician_email=technician_email
+    ) 
+    return await PagedResultList[WorkUnit].from_selection(WorkUnit, db, query)
+ 
+
+@lab_work_units.get(
+    "/{work_unit_id}",
+)
+async def get_work_unit(work_unit_id: UUID, db = Depends(get_db)) -> WorkUnit:
+    return await WorkUnit.get_by_id(db, work_unit_id)
+

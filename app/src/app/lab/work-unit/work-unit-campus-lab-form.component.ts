@@ -7,7 +7,7 @@ import { WorkUnitFormService } from "./work-unit-form.service";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { CampusSearchComponent } from "src/app/uni/campus/campus-search.component";
-import { LabTypeSelectModule } from "../type/lab-type-select.module";
+import { LabTypeSelectComponent } from "../type/lab-type-select.component";
 
 
 /**
@@ -32,7 +32,7 @@ import { LabTypeSelectModule } from "../type/lab-type-select.module";
         MatInputModule,
 
         CampusSearchComponent,
-        LabTypeSelectModule
+        LabTypeSelectComponent
     ],
     template: `
     <ng-container [formGroup]="formGroup">

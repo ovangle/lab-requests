@@ -56,7 +56,7 @@ export type EquipmentLeaseForm = FormGroup<{
     requiresAssistance: FormControl<boolean>;
 
     setupInstructions: FormControl<string>;
-    usageCostEstimate: CostEstimateForm
+    usageCostEstimate: CostEstimateForm 
 }>;
 
 export function equipmentLeaseForm(lease?: Partial<EquipmentLease>): EquipmentLeaseForm {
