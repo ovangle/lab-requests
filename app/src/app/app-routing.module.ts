@@ -40,8 +40,8 @@ const routes: Routes = [
       },
       {
         path: 'experimental-plans',
-        loadChildren: () => import('./lab/experimental-plan/experimental-plan.module')
-          .then(module => module.ExperimentalPlanModule)
+        loadChildren: () => import('./lab/experimental-plan/_features/experimental-plan.feature-module')
+          .then(module => module.ExperimentalPlanFeatureModule)
       }
     ]
   },

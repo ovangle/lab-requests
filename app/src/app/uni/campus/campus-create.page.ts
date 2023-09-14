@@ -21,7 +21,7 @@ export class CampusCreatePage implements OnDestroy {
     _contextConnection: Subscription;
 
     constructor() {
-        this._contextConnection = this.context.connect(of(null));
+        this._contextConnection = this.context.sendCommitted(of(null));
     }
 
     ngOnDestroy() {

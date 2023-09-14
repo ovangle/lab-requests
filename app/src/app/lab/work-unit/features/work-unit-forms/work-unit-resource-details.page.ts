@@ -1,13 +1,13 @@
 import { Component, Injectable, inject } from "@angular/core";
-import { Resource, ResourceContext, ResourcePatch, ResourceType, isResourceType } from "./resource";
+import { Resource, ResourceContext, ResourcePatch, ResourceType, isResourceType } from "../../resources/common/resource";
 import { ActivatedRoute } from "@angular/router";
 import { CommonModule } from "@angular/common";
 import { Observable, Subscription, combineLatest, map } from "rxjs";
-import { EquipmentLeaseFormComponent } from "../equipment/equipment-lease-form.component";
-import { ServiceResourceFormComponent } from "../service/service-resource-form.component";
-import { SoftwareResourceFormComponent } from "../software/software-resource-form.component";
-import { OutputMaterialResourceFormComponent } from "../material/output/output-material-resource-form.component";
-import { InputMaterialResourceFormComponent } from "../material/input/input-material-resource-form.component";
+import { EquipmentLeaseFormComponent } from "../../resources/equipment/equipment-lease-form.component";
+import { ServiceResourceFormComponent } from "../../resources/service/service-resource-form.component";
+import { SoftwareResourceFormComponent } from "../../resources/software/software-resource-form.component";
+import { OutputMaterialResourceFormComponent } from "../../resources/material/output/output-material-resource-form.component";
+import { InputMaterialResourceFormComponent } from "../../resources/material/input/input-material-resource-form.component";
 
 @Injectable()
 export class ResourceDetailsPageResourceContext<T extends Resource, TPatch extends ResourcePatch> extends ResourceContext<T, TPatch> {
@@ -35,17 +35,7 @@ export class ResourceDetailsPageResourceContext<T extends Resource, TPatch exten
 }
 
 @Component({
-    selector: 'app-lab-resource-details-page',
-    standalone: true,
-    imports: [
-        CommonModule,
-        EquipmentLeaseFormComponent,
-        ServiceResourceFormComponent,
-        SoftwareResourceFormComponent,
-
-        InputMaterialResourceFormComponent,
-        OutputMaterialResourceFormComponent
-    ],
+    selector: 'lab-work-unit-resource-details-page',
     template: `
     <ng-container [ngSwitch]="resourceType$ | async">
         <ng-container *ngSwitchCase="'equipment'">
@@ -69,8 +59,8 @@ export class ResourceDetailsPageResourceContext<T extends Resource, TPatch exten
         { provide: ResourceContext, useClass: ResourceDetailsPageResourceContext }
     ]
 })
-export class ResourceDetailsPage {
-    readonly _context = inject(ResourceDetailsPageResourceContext);
+export class WorkUnitResourceDetailsPage {
+    readonly _context = inject(ResourceContext);
     _contextConnection: Subscription;
 
     readonly resourceType$ = this._context.resourceTypeFromContext$;

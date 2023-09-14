@@ -11,7 +11,7 @@ import { ExperimentalPlan } from "./experimental-plan";
         ExperimentalPlanResearcherInfoComponent
     ],
     template: `
-        <h1>{{plan.title}} {{plan.fundingType}}</h1>
+        <h1>{{plan.title}} {{plan.fundingModel.description}}</h1>
 
         <lab-experimental-plan-researcher-info 
             [plan]="plan">

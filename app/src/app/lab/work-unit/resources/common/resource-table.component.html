@@ -4,7 +4,7 @@
         <ng-content select="lab-req-resource-table-info-header"></ng-content>
     </div>
     <div class="table-actions">
-        <a mat-button [routerLink]="dataSource.getCreateLink()"
+        <a mat-button (click)="openResourceCreateForm($event)" 
            [disabled]="isActionsDisabled">
             + Add {{dataSource.resourceTitle}}
         </a>
@@ -20,7 +20,7 @@
         <td mat-cell *matCellDef="let element; let index=dataIndex">
             <div class="element-actions">
             <button mat-icon-button
-                    [routerLink]="dataSource.getUpdateLink(index)"
+                    (click)="openResourceUpdateFormAt(index, $event)"
                     [disabled]="isActionsDisabled">
                 <mat-icon>edit</mat-icon>
             </button>

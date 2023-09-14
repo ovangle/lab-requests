@@ -1,7 +1,7 @@
 import { CommonModule } from "@angular/common";
 import { Component, inject } from "@angular/core";
 import { MatListModule } from "@angular/material/list";
-import { ExperimentalPlanModelService } from "./experimental-plan";
+import { ExperimentalPlanModelService } from "../experimental-plan";
 import { BehaviorSubject, Subject, shareReplay, switchMap, tap } from "rxjs";
 import { RouterModule } from "@angular/router";
 import { MatButtonModule } from "@angular/material/button";
@@ -20,14 +20,6 @@ const researcherFixture = {
 
 @Component({
     selector: 'lab-experimental-plan-index',
-    standalone: true,
-    imports: [
-        CommonModule,
-        RouterModule,
-
-        MatButtonModule,
-        MatListModule
-    ],
     template: `
     <div *ngIf="actor$ | async as actor">{{actor | json}}</div>
 

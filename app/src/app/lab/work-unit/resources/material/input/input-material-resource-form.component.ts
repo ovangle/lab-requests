@@ -26,7 +26,7 @@ import { InputMaterial, InputMaterialForm, createInputMaterialForm } from "./inp
         ResourceFormComponent,
     ],
     template: `
-    <lab-req-resource-form #resourceForm>
+    <lab-generic-resource-form #resourceForm>
         <form [formGroup]="resourceForm.form">
             <mat-form-field>
                 <mat-label>Name</mat-label>
@@ -58,7 +58,7 @@ import { InputMaterial, InputMaterialForm, createInputMaterialForm } from "./inp
                 </lab-req-hazard-classes-select>
             </ng-container>
         </form>
-    </lab-req-resource-form>
+    </lab-generic-resource-form>
     `,
     styles: [`
     form {

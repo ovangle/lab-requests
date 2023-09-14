@@ -1,10 +1,7 @@
-import { CommonModule } from "@angular/common";
 import { ChangeDetectorRef, Component, ViewChild, inject } from "@angular/core";
-import { MatButtonModule } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
 import { Subscription, filter, of } from "rxjs";
-import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanPatch } from "./experimental-plan";
-import { ExperimentalPlanFormComponent } from "./experimental-plan-form.component";
+import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanPatch } from "../experimental-plan";
+import { ExperimentalPlanFormComponent } from "../experimental-plan-form.component";
 import { ActivatedRoute, Router } from "@angular/router";
 
 
@@ -24,13 +21,6 @@ const experimentalPlanCreateFixture: ExperimentalPlanPatch = ({
 
 @Component({
     selector: 'lab-experimental-plan-create-page',
-    standalone: true,
-    imports: [
-        CommonModule,
-        MatButtonModule,
-        MatIconModule,
-        ExperimentalPlanFormComponent
-    ],
     template: `
         <lab-experimental-plan-form [controls]="controls"></lab-experimental-plan-form>
 
@@ -60,17 +50,8 @@ export class ExperimentalPlanCreatePage {
     experimentalPlanForm: ExperimentalPlanFormComponent;
 
     constructor() {
-        this._contextConnection = this._context.connect(of(null));
-
-        this._context.committed$.subscribe(committed => {
-            console.log('Got committed ', committed)
-        });
-
         this._context.committed$.pipe(
-            filter((committed): committed is ExperimentalPlan => {
-                console.log('ExperimentalPlanCreatePage reirect committed', committed);
-                return committed != null;
-            })
+            filter((committed): committed is ExperimentalPlan => committed != null)
         ).subscribe(committed => {
             console.log('committed');
             this._router.navigate(['../', committed.id], {relativeTo: this._activatedRoute})

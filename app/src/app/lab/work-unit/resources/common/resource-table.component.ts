@@ -10,6 +10,7 @@ import { animate, state, style, transition, trigger } from "@angular/animations"
 import { MatButtonModule } from "@angular/material/button";
 
 import { ResourceContainerContext } from "../resource-container";
+import { ExperimentalPlanFormPaneControlService } from "src/app/lab/experimental-plan/experimental-plan-form-pane-control.service";
 
 @Injectable()
 export abstract class ResourceTableDataSource<T extends Resource> extends DataSource<T> {
@@ -19,12 +20,16 @@ export abstract class ResourceTableDataSource<T extends Resource> extends DataSo
     readonly _containerContext = inject(ResourceContainerContext);
     readonly resourceContainer$ = this._containerContext.committed$;
 
-    getCreateLink(): any[] {
-        return ['../../', {outlets: {form: [this.resourceType, 'create']}}]
+    readonly _formPane = inject(ExperimentalPlanFormPaneControlService);
+
+    async openResourceCreateForm(): Promise<boolean> {
+        const containerPath = await this._containerContext.getContainerPath();
+        return this._formPane.open([...containerPath, this.resourceType, 'create']);
     }
 
-    getUpdateLink(elementIndex: number): any[] {
-        return ['./', {outlets: {form: [this.resourceType, 'update', `${elementIndex}`]}}];
+    async openResourceUpdateFormAt(index: number): Promise<boolean> {
+        const containerPath = await this._containerContext.getContainerPath();
+        return this._formPane.open([...containerPath, this.resourceType, `${index}`]);
     }
 
     deleteElementAt(elementIndex: number): void {
@@ -65,7 +70,9 @@ export abstract class ResourceTableDataSource<T extends Resource> extends DataSo
 })
 export class ResourceTableComponent<T extends Resource> implements AfterContentInit {
     dataSource: ResourceTableDataSource<T> = inject(ResourceTableDataSource);
+
     route = inject(ActivatedRoute);
+    _formPane = inject(ExperimentalPlanFormPaneControlService)
 
     @Input()
     get displayedColumns(): string[] {
@@ -108,6 +115,20 @@ export class ResourceTableComponent<T extends Resource> implements AfterContentI
     deleteElementAt(index: number, event: Event) {
         this.dataSource.deleteElementAt(index);
         event.stopPropagation();
+    }
+
+    openResourceCreateForm(event: Event) {
+        this.dataSource.openResourceCreateForm().then(
+            success => console.log('opened')
+        );
+        event.stopPropagation()
+    }
+
+    openResourceUpdateFormAt(index: number, event: Event) {
+        this.dataSource.openResourceUpdateFormAt(index).then(
+            success => console.log('opened update form')
+        );
+        event.stopPropagation()
     }
 
     get isActionsDisabled(): boolean {

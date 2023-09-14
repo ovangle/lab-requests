@@ -11,6 +11,7 @@ import { Observable, firstValueFrom, filter, map, Subscription, BehaviorSubject,
 import { Context } from "src/app/utils/models/model-context";
 import { ModelService } from "src/app/utils/models/model-service";
 import { Equipment } from "../../equipment/equipment";
+import { ExperimentalPlanFormPaneControlService } from "../../experimental-plan/experimental-plan-form-pane-control.service";
 
 export type ResourceContainerFormControls = {
     addEquipments: FormArray<EquipmentLeaseForm>;
@@ -254,4 +255,7 @@ export abstract class ResourceContainerFormService {
     getResourceAt$<T extends Resource>(type: ResourceType, index: number): Observable<T> {
         return this.getResources$<T>(type).pipe(map(resources => resources[index]));
     }
+
+
+    readonly _formPane = inject(ExperimentalPlanFormPaneControlService);
 }

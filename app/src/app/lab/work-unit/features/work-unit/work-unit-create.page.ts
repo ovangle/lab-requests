@@ -1,12 +1,12 @@
 import { ChangeDetectorRef, Component, ViewChild, inject } from "@angular/core";
 import { Campus } from "src/app/uni/campus/campus";
-import { hazardClassFromDivision } from "./resources/common/hazardous/hazardous";
-import { InputMaterial } from "./resources/material/input/input-material";
-import { Software } from "./resources/software/software";
-import { WorkUnit, WorkUnitContext, WorkUnitCreate } from "./work-unit";
+import { hazardClassFromDivision } from "../../resources/common/hazardous/hazardous";
+import { InputMaterial } from "../../resources/material/input/input-material";
+import { Software } from "../../resources/software/software";
+import { WorkUnit, WorkUnitContext, WorkUnitCreate } from "../../work-unit";
 import { Subscription, of } from "rxjs";
-import { WorkUnitFormComponent } from "./work-unit-form.component";
-import { WorkUnitForm } from "./work-unit-form.service";
+import { WorkUnitFormComponent } from "../../work-unit-form.component";
+import { WorkUnitForm } from "../../work-unit-form.service";
 import { CommonModule } from "@angular/common";
 
 const workUnitCreateFixture: Partial<WorkUnitCreate> = {
@@ -32,22 +32,13 @@ const workUnitCreateFixture: Partial<WorkUnitCreate> = {
 
 @Component({
     selector: 'lab-work-unit-create-page',
-    standalone: true,
-    imports: [
-        CommonModule,
-        WorkUnitFormComponent
-    ],
     template: `
-    <h1>New work unit</h1>
-    <lab-work-unit-form></lab-work-unit-form>
-    `,
-    providers: [
-        WorkUnitContext
-    ]
+        <h1>New work unit</h1>
+        <lab-work-unit-form></lab-work-unit-form>
+    `
 })
 export class WorkUnitCreatePage {
     _context = inject(WorkUnitContext);
-    _contextConnection: Subscription;
     _cdRef = inject(ChangeDetectorRef);
 
     @ViewChild(WorkUnitFormComponent, {static: true})
@@ -57,7 +48,6 @@ export class WorkUnitCreatePage {
         this._context.workUnit$.subscribe(
             workUnit => console.log(`context workUnit: ${workUnit}`)
         )
-        this._contextConnection = this._context.connect(of(null));
     }
 
     ngAfterViewInit() {
@@ -76,9 +66,4 @@ export class WorkUnitCreatePage {
         });
         this._cdRef.detectChanges();
     }
-
-    ngOnDestroy() {
-        this._contextConnection.unsubscribe();
-    }
-
 }

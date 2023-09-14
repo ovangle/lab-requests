@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, inject } from "@angular/core";
+import { Component, ViewChild, inject } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { RESOURCE_FORM_FACTORY, RESOURCE_TYPE, ResourceFormComponent, ResourceFormService } from "../common/resource-form.component";
@@ -23,7 +23,7 @@ import { ProvisionFormComponent } from "../common/provision/provision-form.compo
         ResourceFormComponent,
     ],
     template: `
-    <lab-req-resource-form #resourceForm>
+    <lab-generic-resource-form #resourceForm>
         <form *ngIf="resourceForm.form" [formGroup]="resourceForm.form">
             <mat-form-field>
                 <mat-label>Name</mat-label>
@@ -37,7 +37,7 @@ import { ProvisionFormComponent } from "../common/provision/provision-form.compo
             <lab-req-provision-form>
             </lab-req-provision-form>
         </form>
-    </lab-req-resource-form>
+    </lab-generic-resource-form>
     `,
     providers: [
         { provide: RESOURCE_TYPE, useValue: 'service'},
@@ -45,10 +45,11 @@ import { ProvisionFormComponent } from "../common/provision/provision-form.compo
     ]
 })
 export class ServiceResourceFormComponent {
-    readonly resourceFormService = inject(ResourceFormService<Service>);
+    @ViewChild(ResourceFormComponent, {static: true})
+    readonly resourceForm: ResourceFormComponent<Service, ServiceForm>;
 
-    get form(): ServiceForm  {
-        return this.resourceFormService.form as ServiceForm;
+    get form(): ServiceForm {
+        return this.resourceForm.form!;
     }
 
     get isLabTechService() {

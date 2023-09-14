@@ -45,7 +45,7 @@ export class ResourceFormService<T extends Resource, TPatch extends ResourcePatc
 }
 
 @Component({
-    selector: 'lab-req-resource-form',
+    selector: 'lab-generic-resource-form',
     standalone: true,
     imports: [
         CommonModule,

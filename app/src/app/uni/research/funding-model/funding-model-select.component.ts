@@ -46,8 +46,8 @@ export class FundingModelSelectContext extends FundingModelContext {
         return NEVER;
     }
 
-    override connect(input: Observable<FundingModel | 'other' | null>): Subscription {
-        const sSubscription = super.connect(of(null));
+    override sendCommitted(input: Observable<FundingModel | 'other' | null>): Subscription {
+        const sSubscription = super.sendCommitted(of(null));
         input.subscribe(this.inputSubject);
 
         // TODO: Remove me.
@@ -151,7 +151,7 @@ export class FundingModelSelectComponent implements ControlValueAccessor {
 
     constructor() {
         // Connect to the funding model with the 
-        this._fundingModelContextConnection = this._fundingModelContext.connect(
+        this._fundingModelContextConnection = this._fundingModelContext.sendCommitted(
             this.selectedControl.valueChanges.pipe(
                 map(value => value === 'other' ? null : value)
             )

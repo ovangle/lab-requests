@@ -223,13 +223,15 @@ export class WorkUnitContext extends Context<WorkUnit, WorkUnitPatch> {
 
 @Injectable()
 export class WorkUnitResourceContainerContext extends ResourceContainerContext<WorkUnit, WorkUnitPatch> {
+    
     _workUnitContext = inject(WorkUnitContext);
     readonly committed$ = this._workUnitContext.committed$;
 
     override commitContext(patch: WorkUnitPatch): Promise<WorkUnit> {
         return this._workUnitContext.commit(patch);
     }
-    async patchFromContainerPatch(containerPatch: ResourceContainerPatch): Promise<WorkUnitPatch> {
+    
+    override async patchFromContainerPatch(containerPatch: ResourceContainerPatch): Promise<WorkUnitPatch> {
         const workUnit = await firstValueFrom(this._workUnitContext.workUnit$);
         if (workUnit == null) {
             throw new Error('Cannot access resources in empty context');
@@ -238,5 +240,13 @@ export class WorkUnitResourceContainerContext extends ResourceContainerContext<W
             ...workUnitPatchFromWorkUnit(workUnit),
             ...containerPatch
         };
+    }
+
+    override async getContainerPath(): Promise<string[]> {
+        const workUnit = await firstValueFrom(this.committed$);
+        if (workUnit == null) {
+            throw new Error('Cannot access resources in empty context');
+        }
+        return ['work-units', `${workUnit.index || 0}`];
     }
 }

@@ -1,7 +1,7 @@
 import { CommonModule } from "@angular/common";
 import { Component, ViewChild, inject } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
-import { ResourceFormComponent, RESOURCE_TYPE, ResourceFormService, RESOURCE_FORM_FACTORY } from "../../common/resource-form.component";
+import { ResourceFormComponent, RESOURCE_TYPE, RESOURCE_FORM_FACTORY } from "../../common/resource-form.component";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { OutputMaterial, OutputMaterialForm, createOutputMaterialForm, disableDependentControlsWithBaseUnitValidity } from "./output-material";
@@ -25,7 +25,7 @@ import { HazardClassesSelectComponent } from "../../common/hazardous/hazard-clas
         HazardClassesSelectComponent
     ],
     template: `
-    <lab-req-resource-form #resourceForm>
+    <lab-generic-resource-form #resourceForm>
         <ng-container [formGroup]="resourceForm.form">
             <mat-form-field>
                 <mat-label>Name</mat-label>
@@ -54,7 +54,7 @@ import { HazardClassesSelectComponent } from "../../common/hazardous/hazard-clas
                 </lab-req-hazard-classes-select>
             </ng-container>
         </ng-container>
-    </lab-req-resource-form>
+    </lab-generic-resource-form>
     `,
     providers: [
         { provide: RESOURCE_TYPE, useValue: 'output-material' },

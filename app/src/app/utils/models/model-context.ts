@@ -1,24 +1,20 @@
 import { Injectable } from "@angular/core";
-import { Observable, Subject, Subscription, firstValueFrom, shareReplay } from "rxjs";
+import { BehaviorSubject, EMPTY, NEVER, Observable, Subject, Subscription, connectable, firstValueFrom, shareReplay } from "rxjs";
 import { ModelService } from "./model-service";
 
 @Injectable()
 export abstract class Context<T extends { readonly id: string}, TPatch = unknown, TCreate extends TPatch = TPatch> {
     abstract readonly models: ModelService<T, TPatch, TCreate>;
 
-    readonly committedSubject = new Subject<T | null>();
+    readonly committedSubject = new BehaviorSubject<T | null>(null);
     readonly committed$: Observable<T | null> = this.committedSubject.pipe(
         shareReplay(1)
     );
 
-    connect(fromContext$: Observable<T | null>): Subscription {
-        const keepaliveCommitted = this.committed$.subscribe();
-        fromContext$.subscribe((value) => this.committedSubject.next(value));
-
-        return new Subscription(() => {
-            this.committedSubject.complete();
-            keepaliveCommitted.unsubscribe();
-        });
+    sendCommitted(setCommitted$: Observable<T | null>): Subscription {
+        return setCommitted$.subscribe(
+            (committed) => this.committedSubject.next(committed)
+        );
     }
 
     abstract _doCreate(request: TCreate): Observable<T>;

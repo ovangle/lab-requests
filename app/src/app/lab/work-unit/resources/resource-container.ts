@@ -1,18 +1,16 @@
-import { FormArray, FormGroup, ValidationErrors } from "@angular/forms";
-import { Software, SoftwareForm, SoftwareFormErrors, createSoftwareForm, softwareFromJson, softwareToJson } from "./software/software";
-import { InputMaterial, InputMaterialForm, InputMaterialFormErrors, createInputMaterialForm, inputMaterialFromJson, inputMaterialToJson } from "./material/input/input-material";
-import { OutputMaterial, OutputMaterialForm, OutputMaterialFormErrors, createOutputMaterialForm, outputMaterialFromJson, outputMaterialToJson } from "./material/output/output-material";
-import { ALL_RESOURCE_TYPES, Resource, ResourceType } from "./common/resource";
 import { Injectable, inject } from "@angular/core";
-import { BehaviorSubject, Observable, Subscription, filter, firstValueFrom, map } from "rxjs";
-import { Service, ServiceForm, ServiceFormErrors, serviceForm, serviceFromJson, serviceToJson } from "./service/service";
-import { EquipmentLease, EquipmentLeaseForm, EquipmentLeaseFormErrors, equipmentLeaseFromJson, equipmentLeaseToJson } from "./equipment/equipment-lease";
-import { ModelService } from "src/app/utils/models/model-service";
-import { Context } from "src/app/utils/models/model-context";
-import { ResourceContainerForm } from "./resource-container-form";
+import { ValidationErrors } from "@angular/forms";
+import { Observable, firstValueFrom, map } from "rxjs";
+import { ExperimentalPlanFormPaneControlService } from "../../experimental-plan/experimental-plan-form-pane-control.service";
+import { ALL_RESOURCE_TYPES, Resource, ResourceType } from "./common/resource";
+import { EquipmentLease, EquipmentLeaseFormErrors, equipmentLeaseFromJson, equipmentLeaseToJson } from "./equipment/equipment-lease";
+import { InputMaterial, InputMaterialFormErrors, inputMaterialFromJson, inputMaterialToJson } from "./material/input/input-material";
+import { OutputMaterial, OutputMaterialFormErrors, outputMaterialFromJson, outputMaterialToJson } from "./material/output/output-material";
+import { Service, ServiceFormErrors, serviceFromJson, serviceToJson } from "./service/service";
+import { Software, SoftwareFormErrors, softwareFromJson, softwareToJson } from "./software/software";
 
 
-export class ResourceContainer {
+export abstract class ResourceContainer {
     equipments: EquipmentLease[];
     services: Service[];
     softwares: Software[];
@@ -198,6 +196,7 @@ export abstract class ResourceContainerContext<T extends ResourceContainer & { r
 
     abstract commitContext(patch: TPatch): Promise<T>;
     abstract patchFromContainerPatch(patch: ResourceContainerPatch): Promise<TPatch>;
+    abstract getContainerPath(): Promise<string[]>;
 
     committedResources$<TResource extends Resource>(resourceType: ResourceType): Observable<readonly TResource[]> {
         return this.committed$.pipe(
@@ -219,4 +218,5 @@ export abstract class ResourceContainerContext<T extends ResourceContainer & { r
         );
         return this.commitContext(patch);
     }
+
 }

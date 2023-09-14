@@ -25,7 +25,7 @@ import { ProvisionFormComponent } from "../common/provision/provision-form.compo
         ResourceFormComponent,
     ],
     template: `
-    <lab-req-resource-form #resourceForm>
+    <lab-generic-resource-form #resourceForm>
         <form *ngIf="resourceForm.form" [formGroup]="resourceForm.form">
             <mat-form-field>
                     <mat-label>Name</mat-label>
@@ -59,7 +59,7 @@ import { ProvisionFormComponent } from "../common/provision/provision-form.compo
                 provisioningUnit="per license">
             </lab-req-provision-form>
         </form>
-    </lab-req-resource-form>
+    </lab-generic-resource-form>
     `,
     styles: [`
 
