@@ -11,7 +11,7 @@ import { CommonModule } from "@angular/common";
 
 const workUnitCreateFixture: Partial<WorkUnitCreate> = {
     planId: 'e7a33211-1227-4d1d-994d-85a480c15ac0',
-    campus: new Campus({code: 'ROK', name: 'Rockhampton'} as any),
+    campus: 'ROK',
     labType: 'ICT',
     technician: 'hello@world.com',
     addSoftwares: [
@@ -38,6 +38,7 @@ const workUnitCreateFixture: Partial<WorkUnitCreate> = {
         WorkUnitFormComponent
     ],
     template: `
+    <h1>New work unit</h1>
     <lab-work-unit-form></lab-work-unit-form>
     `,
     providers: [

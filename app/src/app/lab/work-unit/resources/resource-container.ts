@@ -193,11 +193,11 @@ export type ResourceContainerPatchErrors = ValidationErrors & {
 }
 
 @Injectable()
-export abstract class ResourceContainerContext<T extends ResourceContainer & { readonly id: string; }, TPatch extends ResourceContainerPatch = ResourceContainerPatch> {
+export abstract class ResourceContainerContext<T extends ResourceContainer & { readonly id: string; }, TPatch> {
     abstract readonly committed$: Observable<T | null>;
 
     abstract commitContext(patch: TPatch): Promise<T>;
-    abstract patchFromContainerPatch(containerPatch: ResourceContainerPatch): TPatch;
+    abstract patchFromContainerPatch(patch: ResourceContainerPatch): Promise<TPatch>;
 
     committedResources$<TResource extends Resource>(resourceType: ResourceType): Observable<readonly TResource[]> {
         return this.committed$.pipe(
@@ -205,16 +205,18 @@ export abstract class ResourceContainerContext<T extends ResourceContainer & { r
         );
     }
 
-    async commit(patch: TPatch): Promise<T> {
+    async commit(patch: ResourceContainerPatch): Promise<T> {
         const committed = await firstValueFrom(this.committed$);
         if (!committed) {
             throw new Error('Cannot commit resources until container exists');
         }
-        return this.commitContext(patch);
+        return this.commitContext(await this.patchFromContainerPatch(patch));
     }
     
     async deleteResourceAt(resourceType: ResourceType, index: number) {
-        const patch = this.patchFromContainerPatch(delResourcePatch(resourceType, [index]));
+        const patch = await this.patchFromContainerPatch(
+            delResourcePatch(resourceType, [index])
+        );
         return this.commitContext(patch);
     }
 }

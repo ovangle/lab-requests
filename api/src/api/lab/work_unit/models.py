@@ -43,6 +43,7 @@ class WorkUnit_(ResourceContainer, Base):
     def __init__(self, 
                  plan_id: UUID, 
                  index: int, *, 
+                 campus_id: UUID,
                  lab_type: LabType, 
                  technician_email: str, 
                  process_summary: str, 
@@ -52,6 +53,7 @@ class WorkUnit_(ResourceContainer, Base):
         super().__init__()
         self.plan_id = plan_id
         self.index = index
+        self.campus_id = campus_id
         self.lab_type = lab_type
         self.technician_email = technician_email
         self.process_summary = process_summary

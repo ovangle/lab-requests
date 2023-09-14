@@ -1,8 +1,8 @@
 import { CommonModule } from "@angular/common";
 import { Component, Injectable, inject } from "@angular/core";
-import { WorkUnit, WorkUnitContext, WorkUnitModelService } from "./work-unit";
+import { WorkUnit, WorkUnitContext, WorkUnitModelService, WorkUnitPatch, WorkUnitResourceContainerContext, workUnitPatchFromWorkUnit } from "./work-unit";
 import { ActivatedRoute } from "@angular/router";
-import { Observable, Subscription, defer, map, of, switchMap, withLatestFrom } from "rxjs";
+import { Observable, Subscription, defer, firstValueFrom, map, of, switchMap, withLatestFrom } from "rxjs";
 import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanModelService } from "../experimental-plan/experimental-plan";
 import { EquipmentLeaseTableComponent } from "./resources/equipment/equipment-lease-table.component";
 import { SoftwareResourceTableComponent } from "./resources/software/software-resource-table.component";
@@ -12,6 +12,7 @@ import { MatCardModule } from "@angular/material/card";
 import { WorkUnitResourceCardComponent } from "./resources/resource-card.component";
 import { ALL_RESOURCE_TYPES, RESOURCE_TYPE_NAMES, Resource, ResourceType } from "./resources/common/resource";
 import { WorkUnitBaseInfoComponent } from "./base-info/work-unit-base-info.component";
+import { ResourceContainerContext, ResourceContainerPatch } from "./resources/resource-container";
 
 class WorkUnitContextError extends Error {}
 
@@ -43,6 +44,8 @@ function workUnitFromDetailRoute(): Observable<WorkUnit | null> {
         })
     );
 }
+
+
 @Component({
     standalone: true,
     imports: [
@@ -67,7 +70,10 @@ function workUnitFromDetailRoute(): Observable<WorkUnit | null> {
     `,
     providers: [
         WorkUnitContext,
-        ExperimentalPlanContext
+        {
+            provide: ResourceContainerContext,
+            useClass: WorkUnitResourceContainerContext
+        }
     ]
 })
 export class WorkUnitDetailPage {

@@ -100,6 +100,7 @@ export function workUnitPatchFromWorkUnit(workUnit: WorkUnit): WorkUnitPatch {
 }
 
 export function workUnitPatchToJson(patch: WorkUnitPatch): {[k: string]: any} {
+    debugger;
     return {
         campus: isCampus(patch.campus) ? patch.campus.id : patch.campus,
         labType: patch.labType,
@@ -222,13 +223,20 @@ export class WorkUnitContext extends Context<WorkUnit, WorkUnitPatch> {
 
 @Injectable()
 export class WorkUnitResourceContainerContext extends ResourceContainerContext<WorkUnit, WorkUnitPatch> {
-    readonly workUnitContext = inject(WorkUnitContext);
-    override committed$ = this.workUnitContext.committed$;
+    _workUnitContext = inject(WorkUnitContext);
+    readonly committed$ = this._workUnitContext.committed$;
 
     override commitContext(patch: WorkUnitPatch): Promise<WorkUnit> {
-        return this.workUnitContext.commit(patch);
-    };
-    override patchFromContainerPatch(containerPatch: ResourceContainerPatch): WorkUnitPatch {
-        return containerPatch as WorkUnitPatch; 
+        return this._workUnitContext.commit(patch);
+    }
+    async patchFromContainerPatch(containerPatch: ResourceContainerPatch): Promise<WorkUnitPatch> {
+        const workUnit = await firstValueFrom(this._workUnitContext.workUnit$);
+        if (workUnit == null) {
+            throw new Error('Cannot access resources in empty context');
+        }
+        return {
+            ...workUnitPatchFromWorkUnit(workUnit),
+            ...containerPatch
+        };
     }
 }

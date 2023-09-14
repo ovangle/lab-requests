@@ -36,7 +36,7 @@ class ExperimentalPlanBase(BaseModel):
 
     async def prepare_fields(self, db):
         if isinstance(self.researcher_base_campus, CampusCode):
-            campus = await Campus.get_by_campus_code(db, self.researcher_base_campus)
+            campus = await Campus.get_for_campus_code(db, self.researcher_base_campus)
             self.researcher_base_campus = campus
 
         if isinstance(self.funding_model, FundingModelCreate):

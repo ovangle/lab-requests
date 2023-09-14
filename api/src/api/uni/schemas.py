@@ -43,7 +43,11 @@ class Campus(CampusBase, ApiModel[models.Campus]):
         return models.Campus.get_for_id(db, self.id)
 
     @classmethod
-    async def get_by_campus_code(cls, db: LocalSession, code: CampusCode):
+    async def get_for_id(cls, db: LocalSession, id: UUID):
+        return await cls.from_model(await models.Campus.get_for_id(db, id))
+
+    @classmethod
+    async def get_for_campus_code(cls, db: LocalSession, code: CampusCode):
         return await cls.from_model(await models.Campus.get_for_campus_code(db, code))
 
 

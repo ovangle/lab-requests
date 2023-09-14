@@ -50,14 +50,11 @@ export function resourceContainerFormControls(): ResourceContainerFormControls {
 
 export type ResourceContainerForm<TPatch extends ResourceContainerPatch = ResourceContainerPatch> = FormGroup<ResourceContainerFormControls>;
 
-export function resourceContainerPatchFromForm<TPatch extends ResourceContainerPatch>(
-    form: ResourceContainerForm<TPatch>, 
-    patchFromResourceContainerPatch: (p: ResourceContainerPatch) => TPatch
-): TPatch {
+export function resourceContainerPatchFromForm(form: ResourceContainerForm<any>): ResourceContainerPatch {
     if (!form.valid) {
         throw new Error('Cannot get patch from invalid form');
     }
-    return patchFromResourceContainerPatch(form.value as ResourceContainerPatch);
+    return form.value as ResourceContainerPatch;
 }
 
 export function resourceContainerPatchErrorsFromForm(form: ResourceContainerForm<any>): ResourceContainerPatchErrors | null {
@@ -146,20 +143,17 @@ function revertReplaceFormAt(form: ResourceContainerForm<any>, resourceType: Res
  * equipments, softwares, inputMaterials and outputMaterials.
  */
 @Injectable()
-export abstract class ResourceContainerFormService<
-        T extends ResourceContainer & { readonly id: string; }, 
-        TPatch extends ResourceContainerPatch 
-> {
-    readonly _context = inject(ResourceContainerContext<T,TPatch>);
+export abstract class ResourceContainerFormService {
+    readonly _context = inject(ResourceContainerContext<any,any>);
 
     readonly container$ = this._context.committed$;
-    _commitContainer(patch: TPatch) {
+    _commitContainer(patch: ResourceContainerPatch) {
         return this._context.commitContext(patch);
     }
 
-    readonly patchValue$ = defer(() => this.form.statusChanges.pipe( 
+    readonly patchValue$: Observable<ResourceContainerPatch> = defer(() => this.form.statusChanges.pipe( 
         filter((status) => status === 'VALID'),
-        map(() => resourceContainerPatchFromForm(this.form, (p) => this.patchFromContainerPatch(p)))
+        map(() => resourceContainerPatchFromForm(this.form))
     ));
 
     abstract readonly form: ResourceContainerForm;
@@ -172,7 +166,7 @@ export abstract class ResourceContainerFormService<
         if (!this.form.valid) {
             throw new Error('Cannot commit invalid form');
         }
-        const patch = resourceContainerPatchFromForm<TPatch>(this.form, (p) => this.patchFromContainerPatch(p))
+        const patch = resourceContainerPatchFromForm(this.form);
         return await this._commitContainer(patch);
     }
 
@@ -252,7 +246,7 @@ export abstract class ResourceContainerFormService<
 
     getResources$<TResource extends Resource>(type: ResourceType): Observable<readonly TResource[]> {
         return this.container$.pipe(
-            filter((p): p is T => p !== null),
+            filter((p): p is ResourceContainer => p !== null),
             map((c) => c?.getResources<TResource>(type) || [])
         );
     }

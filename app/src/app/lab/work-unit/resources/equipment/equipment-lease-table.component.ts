@@ -24,7 +24,7 @@ export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<Equip
     ],
     template: `
     <lab-req-resource-table
-        [displayedColumns]="['name']"
+        [displayedColumns]="['name', 'is-trained', 'requires-assistance', 'requires-setup']"
         [detailTemplate]="detailTemplate">
         <lab-req-resource-table-info-header>
             Equipment represent permanent fixtures of the lab.
@@ -36,24 +36,24 @@ export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<Equip
         </ng-container>
 
         <ng-container matColumnDef="is-trained">
-            <th mat-header-cell *matHeaderCellDef="is-trained">Has completed required training</th>
+            <th mat-header-cell *matHeaderCellDef>Has completed required training</th>
             <td mat-cell *matCellDef="let element">{{element.isTrainingCompleted ? 'Yes': 'No'}}</td>
         </ng-container>
 
         <ng-container matColumnDef="requires-assistance">
-            <th mat-header-cell *matHeaderCellDef="requires-assistance">Requests assistance</th>
+            <th mat-header-cell *matHeaderCellDef>Requests assistance</th>
             <td mat-cell *matCellDef="let element">{{element.requreAssistance ? 'Yes' : 'No'}}</td>
         </ng-container>
 
         <ng-container matColumnDef="requires-setup">
-            <th mat-header-cell *matHeaderCellDef="requires-setup">Requires setup</th> 
+            <th mat-header-cell *matHeaderCellDef>Requires setup</th> 
             <td mat-cell *matCellDef="let element">
                 {{element.setupInstructions ? 'Yes' : "No"}}
             </td>
         </ng-container>
 
         <ng-container matColumnDef="usage-cost">
-            <th mat-header-cell *matHeaderCellDef="usage-cost">Usage cost (est)</th>
+            <th mat-header-cell *matHeaderCellDef>Usage cost (est)</th>
             <td mat-cell *matCellDef="let element">
                 {{element.costEstimate ? element.costEstimate.estimatedCost : 'unknown'}}
             </td>

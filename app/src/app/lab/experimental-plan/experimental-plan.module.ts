@@ -5,7 +5,6 @@ import { ExperimentalPlanIndexPage } from "./experimental-plan-index.page";
 import { ExperimentalPlanDetailPage } from "./experimental-plan-detail.page";
 import { ExperimentalPlanModelService } from "./experimental-plan";
 import { ExperimentalPlanCreatePage } from "./experimental-plan-create.page";
-import { WORK_UNIT_FROM_PLAN_ROUTES } from "../work-unit/work-unit.module";
 
 
 const EXPERIMENTAL_PLAN_ROUTES: Routes = [

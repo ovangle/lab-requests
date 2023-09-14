@@ -102,9 +102,6 @@ export class ExperimentalPlanFormService {
     _formValidator(form: ExperimentalPlanForm): ExperimentalPlanPatchErrors | null {
         let errors: any = null;
         for (const [name, control] of Object.entries(form.controls)) {
-            if (control.invalid) {
-                console.log(name, 'invalid', control.errors)
-            }
             if (control.touched && control.invalid) {
                 errors = errors || {};
                 errors[name] = control.errors;
@@ -130,7 +127,6 @@ export class ExperimentalPlanFormService {
             throw new Error('Cannot commit invalid form')
         }
         const isCreate = await firstValueFrom(this.isCreate$);
-        console.log('is create: ', isCreate);
 
         const patch = experimentalPlanPatchFromForm(this.patchForm)!;
         if (isCreate) {
@@ -141,7 +137,8 @@ export class ExperimentalPlanFormService {
     }
 
     reset() {
-        this._context.reset();
+        // TODO: Reset committed value?
+        this.patchForm.reset();
     }
 }
 
@@ -260,9 +257,12 @@ export class ExperimentalPlanFormComponent {
     }
     
     ngOnInit() {
+        this._formService._context.plan$.subscribe(
+            plan => console.log(`committed plan: ${plan}`)
+        );
         this._formServiceConnection = this._formService.committed$.subscribe(
             committed => console.log(`Committed: ${committed}`)
-        )
+        );
         this._formService.patchErrors$.subscribe(
             patchErrors => console.log('patch errors', patchErrors)
         );

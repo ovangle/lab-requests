@@ -2,9 +2,10 @@ import { CommonModule } from "@angular/common";
 import { ChangeDetectorRef, Component, ViewChild, inject } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
-import { Subscription, of } from "rxjs";
-import { ExperimentalPlanContext, ExperimentalPlanPatch } from "./experimental-plan";
+import { Subscription, filter, of } from "rxjs";
+import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanPatch } from "./experimental-plan";
 import { ExperimentalPlanFormComponent } from "./experimental-plan-form.component";
+import { ActivatedRoute, Router } from "@angular/router";
 
 
 const experimentalPlanCreateFixture: ExperimentalPlanPatch = ({
@@ -49,6 +50,9 @@ const experimentalPlanCreateFixture: ExperimentalPlanPatch = ({
 export class ExperimentalPlanCreatePage {
     _cdRef = inject(ChangeDetectorRef);
 
+    _router = inject(Router);
+    _activatedRoute = inject(ActivatedRoute);
+
     _context: ExperimentalPlanContext = inject(ExperimentalPlanContext);
     _contextConnection: Subscription;
 
@@ -56,10 +60,21 @@ export class ExperimentalPlanCreatePage {
     experimentalPlanForm: ExperimentalPlanFormComponent;
 
     constructor() {
-        this._context.plan$.subscribe(plan => {
-            console.log('context plan', plan)
-        });
         this._contextConnection = this._context.connect(of(null));
+
+        this._context.committed$.subscribe(committed => {
+            console.log('Got committed ', committed)
+        });
+
+        this._context.committed$.pipe(
+            filter((committed): committed is ExperimentalPlan => {
+                console.log('ExperimentalPlanCreatePage reirect committed', committed);
+                return committed != null;
+            })
+        ).subscribe(committed => {
+            console.log('committed');
+            this._router.navigate(['../', committed.id], {relativeTo: this._activatedRoute})
+        });
     }
 
     ngAfterViewInit() {
@@ -73,5 +88,4 @@ export class ExperimentalPlanCreatePage {
     ngOnDestroy() {
         this._contextConnection.unsubscribe();
     }
-
 }

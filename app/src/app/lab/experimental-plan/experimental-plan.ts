@@ -1,7 +1,7 @@
 
 import { Injectable, Provider, inject } from "@angular/core";
 import { ValidationErrors, FormArray, FormControl, FormGroup, Validators } from "@angular/forms";
-import { BehaviorSubject, Observable, Subject, Subscription, connectable, filter, firstValueFrom, map, of, share, shareReplay, switchMap } from "rxjs";
+import { BehaviorSubject, Observable, Subject, Subscription, connectable, defer, filter, firstValueFrom, map, of, share, shareReplay, switchMap } from "rxjs";
 import { __runInitializers } from "tslib";
 import { Campus, CampusCode, campusFromJson, isCampusCode } from "../../uni/campus/campus";
 import { Discipline } from "../../uni/discipline/discipline";
@@ -154,7 +154,7 @@ export class ExperimentalPlanModelService extends ModelService<ExperimentalPlan,
 @Injectable()
 export class ExperimentalPlanContext extends Context<ExperimentalPlan, ExperimentalPlanPatch> {
     override readonly models = inject(ExperimentalPlanModelService);
-    readonly plan$ = this.committed$;
+    readonly plan$ = defer(() => this.committed$);
 
     override _doCreate(create: ExperimentalPlanPatch): Observable<ExperimentalPlan> {
         return this.models.create(create);
@@ -162,5 +162,14 @@ export class ExperimentalPlanContext extends Context<ExperimentalPlan, Experimen
 
     override _doCommit(id: string, patch: ExperimentalPlanPatch): Observable<ExperimentalPlan> {
         return this.models.update(id, patch);
+    }
+
+    async save(patch: ExperimentalPlanPatch) {
+        const plan = await firstValueFrom(this.committed$);
+        if (plan == null) {
+            return await this.create(patch);
+        } else {
+            return await this.commit(patch);
+        }
     }
 }

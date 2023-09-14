@@ -1,4 +1,4 @@
-import { Component, Input, NgModule, ViewChild, inject, runInInjectionContext } from "@angular/core";
+import { Component, Input, ViewChild, inject} from "@angular/core";
 import { Equipment, EquipmentModelService, EquipmentPatch } from "./equipment";
 import { CommonModule } from "@angular/common";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
@@ -6,12 +6,14 @@ import { Observable, delay, map, of, switchMap, switchMapTo, timer } from "rxjs"
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from "@angular/forms";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { EquipmentForm, LabEquipmentFormComponent } from "./equipment-patch.form";
+import { LabEquipmentFormComponent } from "./equipment-patch.form";
 import { MatCardModule } from "@angular/material/card";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
+import { MatInputModule } from "@angular/material/input";
 
 @Component({
     selector: 'app-lab-equipment-search-option',
+    standalone: true,
     template: `
     {{equipment.name}}
     `
@@ -23,7 +25,18 @@ export class LabEquipmentSearchOptionComponent {
 
 @Component({
     selector: 'app-lab-equipment-search',
-    
+    standalone: true,
+    imports: [
+        CommonModule,
+
+        MatAutocompleteModule,
+        MatCardModule,
+        MatFormFieldModule,
+        MatInputModule,
+
+        LabEquipmentFormComponent,
+        LabEquipmentSearchOptionComponent
+    ],
     template: `
     <mat-form-field>
         <mat-label><ng-content select="mat-label"></ng-content></mat-label>
@@ -125,27 +138,4 @@ export class LabEquipmentSearchComponent implements ControlValueAccessor {
         this._onTouched = fn;
     }
     setDisabledState = disabledStateToggler(this.searchControl);
-}
-
-@NgModule({
-    imports: [
-        CommonModule,
-        ReactiveFormsModule,
-        MatCardModule,
-        MatAutocompleteModule,
-        MatFormFieldModule,
-
-        LabEquipmentFormComponent,
-        LabEquipmentSearchOptionComponent
-    ],
-    declarations: [
-        LabEquipmentSearchOptionComponent,
-        LabEquipmentSearchComponent
-    ],
-    exports: [
-        LabEquipmentSearchComponent
-    ]
-})
-export class LabEquipmentSearchModule {
-
 }

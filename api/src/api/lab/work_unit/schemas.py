@@ -16,6 +16,7 @@ from .resource.schemas import ResourceContainer, ResourceContainerPatch
 from . import models
 
 class WorkUnitBase(BaseModel):
+    campus: Campus | CampusCode | UUID;
     lab_type: LabType
     technician: str
 
@@ -86,10 +87,21 @@ class WorkUnitPatch(WorkUnitBase, ResourceContainerPatch, ModelPatch[WorkUnit, m
         return model
 
 
-
 class WorkUnitCreate(WorkUnitBase, ModelCreate[WorkUnit, models.WorkUnit_]):
     __api_model__ = WorkUnit
     plan_id: UUID
+
+    async def _resolve_campus_id(self, db: LocalSession) -> UUID:
+        match self.campus:
+            case Campus():
+                return self.campus.id
+            case CampusCode():
+                return (await Campus.get_for_campus_code(db, self.campus)).id
+            case UUID():
+                return self.campus
+            case _:
+                raise TypeError(f'Unexpected value for campus: {type(self.campus)}')
+
 
     async def next_plan_index(self, db: LocalSession) -> int:
         return (await db.scalars(
@@ -100,9 +112,12 @@ class WorkUnitCreate(WorkUnitBase, ModelCreate[WorkUnit, models.WorkUnit_]):
 
     async def do_create(self, db: LocalSession) -> models.WorkUnit_:
         plan = await models.ExperimentalPlan_.get_by_id(db, self.plan_id)
+
         work_unit = models.WorkUnit_(
             plan_id=plan.id,
             index=await self.next_plan_index(db),
+            
+            campus_id=await self._resolve_campus_id(db),
             lab_type=self.lab_type,
             technician_email=self.technician,
             process_summary=self.process_summary,
