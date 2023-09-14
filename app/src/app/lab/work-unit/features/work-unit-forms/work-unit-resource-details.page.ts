@@ -1,72 +1,54 @@
-import { Component, Injectable, inject } from "@angular/core";
-import { Resource, ResourceContext, ResourcePatch, ResourceType, isResourceType } from "../../resources/common/resource";
+import { Component, inject } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
-import { CommonModule } from "@angular/common";
 import { Observable, Subscription, combineLatest, map } from "rxjs";
-import { EquipmentLeaseFormComponent } from "../../resources/equipment/equipment-lease-form.component";
-import { ServiceResourceFormComponent } from "../../resources/service/service-resource-form.component";
-import { SoftwareResourceFormComponent } from "../../resources/software/software-resource-form.component";
-import { OutputMaterialResourceFormComponent } from "../../resources/material/output/output-material-resource-form.component";
-import { InputMaterialResourceFormComponent } from "../../resources/material/input/input-material-resource-form.component";
+import { ResourceContext, ResourceType, isResourceType } from "../../resources/common/resource";
 
-@Injectable()
-export class ResourceDetailsPageResourceContext<T extends Resource, TPatch extends ResourcePatch> extends ResourceContext<T, TPatch> {
-    readonly activatedRoute = inject(ActivatedRoute);
+export function typeIndexFromDetailRoute$(): Observable<[ResourceType, number | 'create']> {
+    const activatedRoute = inject(ActivatedRoute);
 
-    override readonly resourceTypeFromContext$ = this.activatedRoute.url.pipe(
-        map(segments => segments.filter(s => isResourceType(s.path))[0]),
-        map(segment => {
-            if (!segment) {
-                throw new Error('No resource type in route');
+    return combineLatest([
+        activatedRoute.paramMap,
+        activatedRoute.data
+    ]).pipe(
+        map(([paramMap, data]) => {
+            const resourceType = data['resourceType']
+            if (!isResourceType(resourceType)) {
+                throw new Error('No resource type in route data');
             }
-            return segment.path as ResourceType;
-        })
-    );
-
-    override readonly indexFromContext$ = this.activatedRoute.paramMap.pipe(
-        map(paramMap => {
-            const index = Number.parseInt(paramMap.get('index')!);
+            let index: number | 'create' = Number.parseInt(paramMap.get('resource_index')!);
             if (Number.isNaN(index)) {
-                throw new Error('No index in params');
+                index = 'create';
             }
-            return index;
-        })
-    );
+            return [resourceType, index]
+       })
+    )
 }
 
 @Component({
-    selector: 'lab-work-unit-resource-details-page',
+    selector: 'lab-work-unit-resource-page',
     template: `
     <ng-container [ngSwitch]="resourceType$ | async">
-        <ng-container *ngSwitchCase="'equipment'">
-            <lab-equipment-lease-form></lab-equipment-lease-form>
-        </ng-container>
-        <ng-container *ngSwitchCase="'software'">
-            <lab-software-resource-form></lab-software-resource-form>
-        </ng-container>
-        <ng-container *ngSwitchCase="'service'">
-            <lab-service-resource-form></lab-service-resource-form>
-        </ng-container>
-        <ng-container *ngSwitchCase="'input-material'">
-            <lab-input-material-resource-form></lab-input-material-resource-form>
-        </ng-container>
-        <ng-container *ngSwichCase="'output-material'">
-            <lab-output-material-resource-form></lab-output-material-resource-form>
-        </ng-container>
+        <lab-equipment-lease-form *ngSwitchCase="'equipment'"></lab-equipment-lease-form>
+        <lab-software-resource-form *ngSwitchCase="'software'"></lab-software-resource-form>
+        <lab-service-resource-form *ngSwitchCase="'service'"></lab-service-resource-form>
+        <lab-input-material-resource-form *ngSwitchCase="'input-material'"></lab-input-material-resource-form>
+        <lab-output-material-resource-form *ngSwitchCase="'output-material'"></lab-output-material-resource-form>
     </ng-container>
     `,
     providers: [
-        { provide: ResourceContext, useClass: ResourceDetailsPageResourceContext }
+        ResourceContext
     ]
 })
-export class WorkUnitResourceDetailsPage {
+export class WorkUnitResourcePage {
     readonly _context = inject(ResourceContext);
     _contextConnection: Subscription;
 
-    readonly resourceType$ = this._context.resourceTypeFromContext$;
+    readonly resourceType$ = this._context.resourceType$;
 
     constructor() {
-        this._contextConnection = this._context.connect();
+        this._contextConnection = this._context.sendTypeIndex(
+            typeIndexFromDetailRoute$()
+        );
     }
 
     ngOnDestroy() {

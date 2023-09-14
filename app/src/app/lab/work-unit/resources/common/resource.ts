@@ -1,18 +1,19 @@
 import { Inject, Injectable, inject } from "@angular/core";
 import { AbstractControl, FormArray, FormControl, FormGroup, ValidationErrors } from "@angular/forms";
 import { ActivatedRoute } from "@angular/router";
-import { BehaviorSubject, Observable, Subscription, combineLatest, filter, firstValueFrom, map, shareReplay, tap } from "rxjs";
+import { BehaviorSubject, Observable, Subject, Subscription, combineLatest, defer, filter, firstValueFrom, map, of, shareReplay, switchMap, tap } from "rxjs";
 import { InputMaterialResourceFormComponent } from "../material/input/input-material-resource-form.component";
 import { RESOURCE_TYPE } from "./resource-form.component";
-import { ResourceContainerContext } from "../resource-container";
+import { ResourceContainer, ResourceContainerContext } from "../resource-container";
 import { ResourceContainerForm, ResourceContainerFormService } from "../resource-container-form";
 
 export type ResourceType = 'software' | 'equipment' | 'service' | 'input-material' | 'output-material';
 
-
 export interface Resource {
     readonly type: ResourceType;
 }
+
+export type ResourceId = [ResourceType, number | 'create'];
 
 export interface ResourcePatch {
 
@@ -40,49 +41,39 @@ export function resourceTypeName(r: ResourceType) {
 }
 
 @Injectable()
-export abstract class ResourceContext<T extends Resource, TPatch extends ResourcePatch> {
+export class ResourceContext<T extends Resource, TPatch extends ResourcePatch> {
     readonly _containerContext = inject(ResourceContainerContext);
-    readonly container$ = this._containerContext.committed$;
+    readonly container$ = defer(() => this._containerContext.committed$.pipe(
+        filter((committed): committed is ResourceContainer => {
+            if (committed == null) {
+                throw new Error('no current container context.')
+            }
+            return true;
+        })
+    ));
 
-    readonly resourceTypeSubject = new BehaviorSubject<ResourceType | null>(null);
-    readonly resourceType$: Observable<ResourceType> = this.resourceTypeSubject.pipe(
-        filter((r): r is ResourceType => r != null)
-    );
+    readonly _committedTypeIndexSubject = new Subject<[ResourceType, number | 'create']>();
+    readonly committedTypeIndex$ = this._committedTypeIndexSubject.asObservable();
 
-    abstract readonly resourceTypeFromContext$: Observable<ResourceType | null>;
+    readonly resourceType$ = defer(() => this.committedTypeIndex$.pipe(map(([type, _]) => type)));
 
-    readonly indexSubject = new BehaviorSubject<number>(-1);
-    readonly index$ = this.indexSubject.asObservable();
-
-    abstract readonly indexFromContext$: Observable<number>;
-
-    readonly resourceSubject = new BehaviorSubject<T | null>(null);
-    readonly resource$: Observable<T | null> = combineLatest([
-        this.container$, 
-        this.resourceType$,
-        this.index$
+    readonly committed$: Observable<T | null> = combineLatest([
+        this.container$,
+        this.committedTypeIndex$
     ]).pipe(
-        map(([container, resourceType, index]) => resourceType && container.getResourceAt(resourceType, index) || null),
-        tap(this.resourceSubject),
+        map(([container, typeIndex]: [ResourceContainer, [ResourceType, number | 'create']]) => {
+            const [resourceType, index] = typeIndex;
+            
+            return index === 'create' ? null : container.getResourceAt<T>(resourceType, index);
+        }),
         shareReplay(1)
     );
 
-    get _typeIndex(): [ResourceType, number] {
-        const resourceType = this.resourceTypeSubject.value;
-        if (resourceType == null) {
-            throw new Error('Cannot access resource type yet');
-        }
-        const index = this.indexSubject.value;
-        return [resourceType!, index];
-    }
-
-    connect() {
-        this.resourceTypeFromContext$.subscribe(this.resourceTypeSubject);
-        this.indexFromContext$.subscribe(this.indexSubject);
+    sendTypeIndex(typeIndex$: Observable<[ResourceType, 'create' | number]>): Subscription {
+        typeIndex$.subscribe((typeIndex) => this._committedTypeIndexSubject.next(typeIndex));
 
         return new Subscription(() => {
-            this.resourceTypeSubject.complete();
-            this.indexSubject.complete();
+            this._committedTypeIndexSubject.complete();
         });
     }
 }

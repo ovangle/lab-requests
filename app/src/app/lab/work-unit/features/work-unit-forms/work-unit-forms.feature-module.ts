@@ -4,7 +4,7 @@ import { RouterModule, Routes } from "@angular/router";
 import { WorkUnitResourceFormOutlet } from "./work-unit-resource-form-outlet.component";
 import { WorkUnitContext, WorkUnitModelService, WorkUnitResourceContainerContext } from "../../work-unit";
 import { ALL_RESOURCE_TYPES } from "../../resources/common/resource";
-import { WorkUnitResourceDetailsPage } from "./work-unit-resource-details.page";
+import { WorkUnitResourcePage } from "./work-unit-resource-details.page";
 import { EquipmentLeaseFormComponent } from "../../resources/equipment/equipment-lease-form.component";
 import { InputMaterialResourceFormComponent } from "../../resources/material/input/input-material-resource-form.component";
 import { OutputMaterialResourceFormComponent } from "../../resources/material/output/output-material-resource-form.component";
@@ -13,10 +13,11 @@ import { SoftwareResourceFormComponent } from "../../resources/software/software
 import { ResourceContainerContext } from "../../resources/resource-container";
 
 const RESOURCE_ROUTES: Routes = ALL_RESOURCE_TYPES.flatMap(
-    (t) => [
+    (resourceType) => [
         {
-            path: t + '/:resource_index',
-            component: WorkUnitResourceDetailsPage,
+            path: resourceType + '/:resource_index',
+            component: WorkUnitResourcePage,
+            data: { resourceType }
         }
     ],
 )
@@ -28,7 +29,7 @@ const RESOURCE_ROUTES: Routes = ALL_RESOURCE_TYPES.flatMap(
             {
                 path: ':work_unit_index',
                 component: WorkUnitResourceFormOutlet,
-                children: RESOURCE_ROUTES
+                children: RESOURCE_ROUTES           
             }
         ]),
 
@@ -41,7 +42,7 @@ const RESOURCE_ROUTES: Routes = ALL_RESOURCE_TYPES.flatMap(
     ],
     declarations: [
         WorkUnitResourceFormOutlet,
-        WorkUnitResourceDetailsPage
+        WorkUnitResourcePage
     ],
     providers: [
         WorkUnitModelService,

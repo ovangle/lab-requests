@@ -193,16 +193,14 @@ export abstract class ResourceContainerFormService {
         return resourceCounts[resourceType] || -1;
     }
 
-    getResourceForm(resourceType: ResourceType, index: number): FormGroup<any> | null {
+    getResourceForm(resourceType: ResourceType, index: number | 'create'): FormGroup<any> | null {
         const count = this.getCommitedResourceCount(resourceType);
-        if (index >= count) {
+        if (index === 'create') {
             // This is a create form
             const addArr = getResourceAddArray(this.form, resourceType); 
-            return (addArr.controls[index - count] as FormGroup<any>) || null; 
-        } else if (index >= 0) {
-            return getReplaceFormAt(this.form, resourceType, index) || null;
+            return (addArr.controls[0] as FormGroup<any>) || null; 
         } else {
-            return null;
+            return getReplaceFormAt(this.form, resourceType, index) || null;
         }
     }
 

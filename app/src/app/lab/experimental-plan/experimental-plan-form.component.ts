@@ -15,7 +15,7 @@ import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanPatch, Exper
 import { FundingModelSelectComponent } from "../../uni/research/funding-model/funding-model-select.component";
 import { ExperimentalPlanResearcherFormComponent } from "./researcher/researcher-form.component";
 import { FundingModel, FundingModelCreate } from "../../uni/research/funding-model/funding-model";
-import { WorkUnitForm } from "../work-unit/work-unit-form.service";
+import { WorkUnitForm, WorkUnitFormService } from "../work-unit/work-unit-form.service";
 
 export type ExperimentalPlanControls = {
     title: FormControl<string>;
@@ -216,7 +216,6 @@ export class ExperimentalPlanFormService {
     `],
     providers: [
         ExperimentalPlanFormService, 
-        // WorkUnitFormService,
     ]
 })
 export class ExperimentalPlanFormComponent {

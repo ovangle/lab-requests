@@ -38,6 +38,7 @@ class WorkUnitResourceContainerFormService extends ResourceContainerFormService 
         <router-outlet></router-outlet>
     `,
     providers: [
+        WorkUnitFormService,
         {
             provide: ResourceContainerFormService,
             useClass: WorkUnitResourceContainerFormService

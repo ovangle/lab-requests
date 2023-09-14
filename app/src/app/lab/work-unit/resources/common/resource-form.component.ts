@@ -23,20 +23,32 @@ export class ResourceFormService<T extends Resource, TPatch extends ResourcePatc
 
     readonly containerFormService = inject(ResourceContainerFormService);
 
+    readonly _typeIndexSubject = new BehaviorSubject<[ResourceType, number | 'create'] | undefined>(undefined);
+    get _typeIndex(): [ResourceType, number | 'create'] {
+        if (this._typeIndexSubject.value === undefined) {
+            throw new Error('Cannot access type and index.');
+        }
+        return this._typeIndexSubject.value;
+    }
+
     get form(): FormGroup<any> | null {
-        const [resourceType, index] = this.resourceContext._typeIndex;
+        const [resourceType, index] = this._typeIndex;
         return this.containerFormService.getResourceForm(resourceType, index);
     }
 
     get isCreate(): boolean {
-        const [resourceType, index] = this.resourceContext._typeIndex;
-        return this.containerFormService.isCreateFormAt(resourceType, index);
+        const [resourceType, index] = this._typeIndex;
+        return index === 'create';
     }
 
     async commitForm(): Promise<T> {
-        const [resourceType, index] = this.resourceContext._typeIndex;
+        const [resourceType, index] = this._typeIndex;
         const container: ResourceContainer = await this.containerFormService.commit();
-        return container.getResourceAt<T>(resourceType, index);
+        if (index === 'create') {
+            const resources = container.getResources<T>(resourceType);
+            return resources[resources.length - 1];
+        }
+        return container.getResourceAt<T>(resourceType, index );
     }
 
     resetForm() {
