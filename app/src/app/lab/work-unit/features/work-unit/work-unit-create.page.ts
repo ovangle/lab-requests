@@ -45,6 +45,7 @@ export class WorkUnitCreatePage {
     workUnitForm: WorkUnitFormComponent;
 
     constructor() {
+        this._context.sendCommitted(of(null));
         this._context.workUnit$.subscribe(
             workUnit => console.log(`context workUnit: ${workUnit}`)
         )

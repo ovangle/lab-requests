@@ -100,7 +100,6 @@ export function workUnitPatchFromWorkUnit(workUnit: WorkUnit): WorkUnitPatch {
 }
 
 export function workUnitPatchToJson(patch: WorkUnitPatch): {[k: string]: any} {
-    debugger;
     return {
         campus: isCampus(patch.campus) ? patch.campus.id : patch.campus,
         labType: patch.labType,

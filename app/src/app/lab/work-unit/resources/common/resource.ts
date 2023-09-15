@@ -1,4 +1,4 @@
-import { Inject, Injectable, inject } from "@angular/core";
+import { Inject, Injectable, Pipe, PipeTransform, inject } from "@angular/core";
 import { AbstractControl, FormArray, FormControl, FormGroup, ValidationErrors } from "@angular/forms";
 import { ActivatedRoute } from "@angular/router";
 import { BehaviorSubject, Observable, Subject, Subscription, combineLatest, defer, filter, firstValueFrom, map, of, shareReplay, switchMap, tap } from "rxjs";
@@ -36,6 +36,24 @@ export function isResourceType(obj: any): obj is ResourceType {
         && Object.keys(RESOURCE_TYPE_NAMES).includes(obj);
 }
 
+export type ResourceTypeFormatOption = 'titleCase' | 'plural';
+
+@Pipe({name: 'resourceType', standalone: true})
+export class ResourceTypePipe implements PipeTransform {
+
+    transform(value: ResourceType, ...args: ResourceTypeFormatOption[]) {
+        let fmtValue: string = value;
+        if (args.includes('plural')) {
+            fmtValue += 's';
+        } 
+        if (args.includes('titleCase')) {
+            fmtValue    = fmtValue.substring(0, 1).toLocaleUpperCase()
+                        + fmtValue.substring(1); 
+        }
+        return fmtValue;
+    }
+}
+
 export function resourceTypeName(r: ResourceType) {
     return RESOURCE_TYPE_NAMES[r];
 }
@@ -56,6 +74,9 @@ export class ResourceContext<T extends Resource, TPatch extends ResourcePatch> {
     readonly committedTypeIndex$ = this._committedTypeIndexSubject.asObservable();
 
     readonly resourceType$ = defer(() => this.committedTypeIndex$.pipe(map(([type, _]) => type)));
+    readonly isCreate$ = defer(
+        () => this.committedTypeIndex$.pipe(map(([_, index]) => index === 'create'))
+    );
 
     readonly committed$: Observable<T | null> = combineLatest([
         this.container$,

@@ -15,8 +15,7 @@ export function experimentalPlanContextFromDetailRoute(): Observable<Experimenta
                 throw new Error('No experimental plan in params');
             }
             return models.fetch(experimentalPlanId);
-        }),        
-        shareReplay(1)
+        })
     );
 }
 

@@ -40,11 +40,6 @@ import { OutputMaterialResourceTableComponent } from "./resources/material/outpu
         OutputMaterialResourceTableComponent
     ],
     template: `
-    <!--
-    <lab-work-unit-base-info-form>
-    </lab-work-unit-base-info-form>
--->
-
     <ng-container *ngIf="form" [formGroup]="form">
         <!--
             the work unit data capture process is in two steps.

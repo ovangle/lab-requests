@@ -18,8 +18,9 @@
     {
       "name": "debug client app",
       "type": "chrome",
-      "request": "attach",
-      "url": "http://localhost:4200"
+      "request": "launch",
+      "url": "http://localhost:4200",
+      "webRoot": "${workspaceFolder}/app"
     }
   ]
 }

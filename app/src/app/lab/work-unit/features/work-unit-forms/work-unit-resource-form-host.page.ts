@@ -1,24 +1,37 @@
 import { Component, Injectable, inject } from "@angular/core";
 import { WorkUnit, WorkUnitContext, WorkUnitModelService, WorkUnitPatch, workUnitPatchFromWorkUnit } from "../../work-unit";
-import { Subscription, firstValueFrom, switchMap } from "rxjs";
+import { Subscription, combineLatest, filter, firstValueFrom, map, switchMap } from "rxjs";
 import { ActivatedRoute, RouterModule } from "@angular/router";
 import { CommonModule } from "@angular/common";
 import { ResourceContainerContext, ResourceContainerPatch } from "../../resources/resource-container";
 import { ResourceContainerForm, ResourceContainerFormService } from "../../resources/resource-container-form";
 import { WorkUnitFormService } from "../../work-unit-form.service";
+import { ExperimentalPlan, ExperimentalPlanContext } from "src/app/lab/experimental-plan/experimental-plan";
 
 function workUnitContextFromFormHostRoute() {
-    const activatedRoute = inject(ActivatedRoute);
-    const models = inject(WorkUnitModelService);
-
-    return activatedRoute.paramMap.pipe(
-        switchMap(paramMap => {
-            const workUnitId = paramMap.get('work_unit_index'); 
-            if (workUnitId == null) {
-                throw new Error('Work unit not found in route');
+    const planContext = inject(ExperimentalPlanContext);
+    const plan$ = planContext.plan$.pipe(
+        filter((plan): plan is ExperimentalPlan => {
+            if (plan == null) {
+                throw new Error('Cannot access work unit in empty plan context');
             }
-            return models.fetch(workUnitId);
+            return true;
         })
+    );
+
+    const activatedRoute = inject(ActivatedRoute);
+    const workUnitIndex$ = activatedRoute.paramMap.pipe(
+        map(paramMap => {
+            const workUnitIndex = Number.parseInt(paramMap.get('work_unit_index')!)
+            if (Number.isNaN(workUnitIndex)) {
+                throw new Error('no :work_unit_index in route');
+            }
+            return workUnitIndex;
+        })
+    );
+
+    return combineLatest([plan$, workUnitIndex$]).pipe(
+        map(([plan, workUnitIndex]) => plan.workUnits[workUnitIndex])
     )
 }
 
@@ -33,7 +46,7 @@ class WorkUnitResourceContainerFormService extends ResourceContainerFormService 
 
 
 @Component({
-    selector: 'lab-work-unit-form-outlet',
+    selector: 'lab-work-unit-resource-form-host-page',
     template: `
         <router-outlet></router-outlet>
     `,
@@ -45,7 +58,7 @@ class WorkUnitResourceContainerFormService extends ResourceContainerFormService 
         }
     ]
 })
-export class WorkUnitResourceFormOutlet {
+export class WorkUnitResourceFormHostPage {
     _workUnitContext = inject(WorkUnitContext);
     _workUnitContextConnection: Subscription;
 

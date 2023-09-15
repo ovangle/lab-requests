@@ -27,6 +27,14 @@ export function typeIndexFromDetailRoute$(): Observable<[ResourceType, number | 
 @Component({
     selector: 'lab-work-unit-resource-page',
     template: `
+    <lab-resource-form-page-title 
+        *ngIf="typeIndex$ | async as typeIndex"
+        [resourceType]="typeIndex[0]"
+        [index]="typeIndex[1]">
+    
+    </lab-resource-form-page-title>
+
+
     <ng-container [ngSwitch]="resourceType$ | async">
         <lab-equipment-lease-form *ngSwitchCase="'equipment'"></lab-equipment-lease-form>
         <lab-software-resource-form *ngSwitchCase="'software'"></lab-software-resource-form>
@@ -39,10 +47,11 @@ export function typeIndexFromDetailRoute$(): Observable<[ResourceType, number | 
         ResourceContext
     ]
 })
-export class WorkUnitResourcePage {
+export class WorkUnitResourceFormPage {
     readonly _context = inject(ResourceContext);
     _contextConnection: Subscription;
 
+    readonly typeIndex$ = this._context.committedTypeIndex$;
     readonly resourceType$ = this._context.resourceType$;
 
     constructor() {
