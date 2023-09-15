@@ -1,7 +1,7 @@
 import { Inject, Injectable, Pipe, PipeTransform, inject } from "@angular/core";
 import { AbstractControl, FormArray, FormControl, FormGroup, ValidationErrors } from "@angular/forms";
 import { ActivatedRoute } from "@angular/router";
-import { BehaviorSubject, Observable, Subject, Subscription, combineLatest, defer, filter, firstValueFrom, map, of, shareReplay, switchMap, tap } from "rxjs";
+import { BehaviorSubject, Observable, ReplaySubject, Subject, Subscription, combineLatest, defer, filter, firstValueFrom, map, of, shareReplay, switchMap, tap } from "rxjs";
 import { InputMaterialResourceFormComponent } from "../material/input/input-material-resource-form.component";
 import { RESOURCE_TYPE } from "./resource-form.component";
 import { ResourceContainer, ResourceContainerContext } from "../resource-container";
@@ -70,7 +70,7 @@ export class ResourceContext<T extends Resource, TPatch extends ResourcePatch> {
         })
     ));
 
-    readonly _committedTypeIndexSubject = new Subject<[ResourceType, number | 'create']>();
+    readonly _committedTypeIndexSubject = new ReplaySubject<[ResourceType, number | 'create']>(1);
     readonly committedTypeIndex$ = this._committedTypeIndexSubject.asObservable();
 
     readonly resourceType$ = defer(() => this.committedTypeIndex$.pipe(map(([type, _]) => type)));

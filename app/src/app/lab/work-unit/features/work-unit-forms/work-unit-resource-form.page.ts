@@ -1,6 +1,6 @@
 import { Component, inject } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
-import { Observable, Subscription, combineLatest, map } from "rxjs";
+import { Observable, Subscription, combineLatest, defer, map } from "rxjs";
 import { ResourceContext, ResourceType, isResourceType } from "../../resources/common/resource";
 
 export function typeIndexFromDetailRoute$(): Observable<[ResourceType, number | 'create']> {
@@ -25,15 +25,13 @@ export function typeIndexFromDetailRoute$(): Observable<[ResourceType, number | 
 }
 
 @Component({
-    selector: 'lab-work-unit-resource-page',
+    selector: 'lab-work-unit-resource-form-page',
     template: `
     <lab-resource-form-page-title 
         *ngIf="typeIndex$ | async as typeIndex"
         [resourceType]="typeIndex[0]"
         [index]="typeIndex[1]">
-    
     </lab-resource-form-page-title>
-
 
     <ng-container [ngSwitch]="resourceType$ | async">
         <lab-equipment-lease-form *ngSwitchCase="'equipment'"></lab-equipment-lease-form>
@@ -51,10 +49,13 @@ export class WorkUnitResourceFormPage {
     readonly _context = inject(ResourceContext);
     _contextConnection: Subscription;
 
-    readonly typeIndex$ = this._context.committedTypeIndex$;
+    readonly typeIndex$ = defer(() => this._context.committedTypeIndex$);
     readonly resourceType$ = this._context.resourceType$;
 
     constructor() {
+        this._context.committedTypeIndex$.subscribe((typeIndex) => {
+            console.log('received type index', typeIndex)
+        })
         this._contextConnection = this._context.sendTypeIndex(
             typeIndexFromDetailRoute$()
         );

@@ -11,6 +11,7 @@ import { BodyScrollbarHidingService } from "src/app/utils/body-scrollbar-hiding.
 import { ResourceContainer } from "../resource-container";
 import { isThisWeek } from "date-fns";
 import { ResourceContainerFormService } from "../resource-container-form";
+import { ExperimentalPlanFormPaneControlService } from "src/app/lab/experimental-plan/experimental-plan-form-pane-control.service";
 
 export const RESOURCE_TYPE = new InjectionToken<ResourceType>('RESOURCE_TYPE');
 export const RESOURCE_FORM_FACTORY = new InjectionToken<() => FormGroup<any>>('RESOURCE_FORM_FACTORY');
@@ -53,6 +54,16 @@ export class ResourceFormService<T extends Resource, TPatch extends ResourcePatc
 
     resetForm() {
         this.form?.reset();
+    }
+
+    connectToContext(): Subscription {
+        const syncTypeIndexSubscription = this.resourceContext.committedTypeIndex$.subscribe(
+            (typeIndex) => this._typeIndexSubject.next(typeIndex)
+        );
+        return new Subscription(() => {
+            syncTypeIndexSubscription.unsubscribe();
+            this._typeIndexSubject.complete();
+        });
     }
 }
 
@@ -129,6 +140,9 @@ export class ResourceFormComponent<T extends Resource, F extends FormGroup<any>>
     readonly resourceContainerFormService = inject(ResourceContainerFormService);
     protected _resourceContainerFormServiceConnection: Subscription;
     readonly resourceFormService = inject(ResourceFormService<T, F>);
+    protected _formServiceConnection: Subscription;
+
+    readonly _formPane = inject(ExperimentalPlanFormPaneControlService);
 
     readonly resourceType = inject(RESOURCE_TYPE);
 
@@ -142,11 +156,13 @@ export class ResourceFormComponent<T extends Resource, F extends FormGroup<any>>
 
     ngOnInit() {
         this._resourceContainerFormServiceConnection = this.resourceContainerFormService.connect();
+        this._formServiceConnection = this.resourceFormService.connectToContext();
         this.bodyScrollbarHiding.hideScrollbar();
     }
 
     ngOnDestroy() {
         this._resourceContainerFormServiceConnection.unsubscribe();
+        this._formServiceConnection.unsubscribe();
         this.bodyScrollbarHiding.unhideScrollbar();
     }
 
@@ -161,10 +177,7 @@ export class ResourceFormComponent<T extends Resource, F extends FormGroup<any>>
     }
 
     _close() {
-        this.router.navigate(
-            ['./', { outlets: { form: null } }],
-            { relativeTo: this.route.parent }
-        );
+        this._formPane.close();
     }
 
     _resourceTypeName(r: ResourceType): string {
