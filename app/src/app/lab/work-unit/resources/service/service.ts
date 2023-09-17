@@ -1,5 +1,5 @@
 import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
-import { CostEstimate, Resource, costEstimateFromJson, costEstimateToJson } from "../common/resource";
+import { CostEstimate, Resource, costEstimateFromJson, costEstimateToJson } from "../../resource/resource";
 
 
 
@@ -10,6 +10,7 @@ import { CostEstimate, Resource, costEstimateFromJson, costEstimateToJson } from
  */
 export class Service implements Resource {
     readonly type = 'service';
+    readonly index: number | 'create';
 
     readonly name: string;
 
@@ -22,6 +23,7 @@ export class Service implements Resource {
             throw new Error('A service name is required');
         }
         this.name = params.name;
+        this.index = params.index || 'create';
 
         this.isLabTechService = !!params.isLabTechService;
         this.costEstimate = params.costEstimate || null;

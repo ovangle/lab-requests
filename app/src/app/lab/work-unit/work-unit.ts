@@ -1,16 +1,16 @@
+import { HttpParams } from "@angular/common/http";
+import { Inject, Injectable, Optional, SkipSelf, inject } from "@angular/core";
 import { ValidationErrors } from "@angular/forms";
-import { Campus, CampusCode, CampusPatch, campusFromJson, isCampus } from "../../uni/campus/campus";
-import { isDiscipline } from "../../uni/discipline/discipline";
-import { ResourceContainer, ResourceContainerContext, researchContainerFieldsFromJson, resourceContainerPatchFromContainer } from "./resources/resource-container";
-import { LabType } from "../type/lab-type";
-import { ResourceContainerPatch } from "./resources/resource-container";
-import { ModelService } from "src/app/utils/models/model-service";
-import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanModelService } from "../experimental-plan/experimental-plan";
-import { BehaviorSubject, Observable, Subscription, defer, filter, firstValueFrom, map, of, skipWhile, switchMap, take, withLatestFrom } from "rxjs";
-import { Injectable, inject } from "@angular/core";
-import { Context } from "src/app/utils/models/model-context";
 import { formatISO, parseISO } from "date-fns";
+import { Observable, filter, firstValueFrom, skipWhile, switchMap, take } from "rxjs";
+import { Context } from "src/app/utils/models/model-context";
+import { Lookup, ModelService } from "src/app/utils/models/model-service";
 import urlJoin from "url-join";
+import { Campus, campusFromJson, isCampus } from "../../uni/campus/campus";
+import { isDiscipline } from "../../uni/discipline/discipline";
+import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanModelService } from "../experimental-plan/experimental-plan";
+import { LabType } from "../type/lab-type";
+import { ResourceContainer, ResourceContainerContext, ResourceContainerPatch, researchContainerFieldsFromJson, resourceContainerPatchFromContainer } from "./resource/resource-container";
 
 
 /**
@@ -150,6 +150,12 @@ export type WorkUnitCreateErrors = WorkUnitPatchErrors & {
     }
 }
 
+export interface WorkUnitLookup extends Lookup<WorkUnit> {}
+export function workUnitLookupToHttpParams(lookup: Partial<WorkUnitLookup>) {
+    return new HttpParams();
+}
+
+
 export class WorkUnitModelService extends ModelService<WorkUnit, WorkUnitPatch, WorkUnitCreate> {
     readonly _planModels = inject(ExperimentalPlanModelService);
     override resourcePath = '/lab/work-units';
@@ -160,6 +166,7 @@ export class WorkUnitModelService extends ModelService<WorkUnit, WorkUnitPatch, 
     override readonly modelFromJson = workUnitFromJson;
     override readonly patchToJson = workUnitPatchToJson;
     override readonly createToJson = workUnitCreateToJson;
+    override readonly lookupToHttpParams = workUnitLookupToHttpParams;
 
     readByPlanAndIndex(plan: ExperimentalPlan, index: number): Observable<WorkUnit> {
         return this.fetch(`${index}`, { resourcePath: this.resourcePathFromPlan(plan) });
@@ -195,6 +202,15 @@ export class WorkUnitContext extends Context<WorkUnit, WorkUnitPatch> {
 
     models: WorkUnitModelService = inject(WorkUnitModelService);
     readonly workUnit$ = this.committed$;
+
+    constructor(
+        @Optional() 
+        @SkipSelf() 
+        @Inject(WorkUnitContext)
+        parentContext: WorkUnitContext | undefined
+    ) {
+        super(parentContext)
+    }
 
     override _doCreate(request: WorkUnitCreate): Observable<WorkUnit> {
         return this.plan$.pipe(

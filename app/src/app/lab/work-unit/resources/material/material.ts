@@ -1,9 +1,10 @@
 import { AbstractControl, FormControl, FormGroup } from "@angular/forms";
-import { Resource } from "../common/resource";
+import { Resource } from "../../resource/resource";
 
 
 export class Material implements Resource {
     readonly type: 'input-material' | 'output-material';
+    readonly index: number | 'create';
 }
 
 export type MaterialForm = FormGroup<{

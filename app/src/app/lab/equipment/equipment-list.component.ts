@@ -3,7 +3,7 @@ import { Component } from "@angular/core";
 
 
 @Component({
-    selector: 'app-lab-equipment-list',
+    selector: 'lab-equipment-list',
     standalone: true,
     imports: [
         CommonModule
@@ -11,5 +11,4 @@ import { Component } from "@angular/core";
     template: ``
 })
 export class LabEquipmentListComponent {
-
 }

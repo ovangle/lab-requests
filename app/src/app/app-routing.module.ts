@@ -32,18 +32,8 @@ const routes: Routes = [
   },
   {
     path: 'lab',
-    children: [
-      {
-        path: 'equipment', 
-        loadChildren: () => import('./lab/equipment/equipment.feature-module')
-            .then(module => module.EquipmentFeatureModule)
-      },
-      {
-        path: 'experimental-plans',
-        loadChildren: () => import('./lab/experimental-plan/_features/experimental-plan.feature-module')
-          .then(module => module.ExperimentalPlanFeatureModule)
-      }
-    ]
+    loadChildren: () => import('./lab/_features/lab.feature-module')
+      .then(module => module.LabFeatureModule)
   },
   {
     path: 'uni/campuses',

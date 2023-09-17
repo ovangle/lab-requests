@@ -1,8 +1,9 @@
 import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
-import { Resource } from "../common/resource";
+import { Resource } from "../../resource/resource";
 
 export class Software implements Resource {
     readonly type = 'software';
+    readonly index: number;
 
     name: string;
     description: string;
@@ -14,6 +15,7 @@ export class Software implements Resource {
 
     constructor(software: Partial<Software>) {
         this.name = software.name || '';
+        this.index = software.index!;
         this.description = software.description || '';
         this.minVersion = software.minVersion || '';
 

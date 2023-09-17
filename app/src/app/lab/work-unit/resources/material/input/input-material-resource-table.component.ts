@@ -1,10 +1,10 @@
 import { Component, Injectable } from "@angular/core";
-import { ResourceTableComponent, ResourceTableDataSource } from "../../common/resource-table.component";
 import { InputMaterial } from "./input-material";
 import { CommonModule } from "@angular/common";
 import { MatTableModule } from "@angular/material/table";
-import { HazardClassLabelsComponent } from "../../common/hazardous/hazard-classes-labels.component";
-import { ResourceStorageDetailsComponent } from "../../common/storage/resource-storage-details.component";
+import { ResourceTableDataSource, ResourceTableComponent } from "../../../resource/common/resource-table.component";
+import { ResourceStorageDetailsComponent } from "../../../resource/storage/resource-storage-details.component";
+import { HazardClassLabelsComponent } from "../../../resource/hazardous/hazard-classes-labels.component";
 
 
 @Injectable()
@@ -26,7 +26,7 @@ export class InputMaterialResourceTableDataSource extends ResourceTableDataSourc
         HazardClassLabelsComponent
     ],
     template: `
-        <lab-req-resource-table
+        <lab-resource-table
             [displayedColumns]="['name', 'numUnitsRequired', 'storage', 'hazards']"
             [detailTemplate]="detailTemplate">
             <tr matColumnDef="name">
@@ -53,15 +53,15 @@ export class InputMaterialResourceTableDataSource extends ResourceTableDataSourc
             <tr matColumnDef="hazards">
                 <th mat-header-cell *matHeaderCellDef>Hazard classes</th>
                 <td mat-cell *matCellDef="let element">
-                    <lab-req-hazard-class-labels [hazardClasses]="element.hazardClasses">
-                    </lab-req-hazard-class-labels>
+                    <lab-hazard-class-labels [hazardClasses]="element.hazardClasses">
+                    </lab-hazard-class-labels>
                 </td>
             </tr>
-        </lab-req-resource-table>
+        </lab-resource-table>
 
         <ng-template #detailTemplate let-element>
-            <lab-req-resource-storage [storage]="element.storage">
-            </lab-req-resource-storage>
+            <lab-resource-storage [storage]="element.storage">
+            </lab-resource-storage>
         </ng-template>
     `,
     providers: [

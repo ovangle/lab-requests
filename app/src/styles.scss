@@ -1,9 +1,75 @@
-/* You can add global styles to this file, and also import other style files */
+@use '@angular/material' as mat;
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 
+/** Setup the core theme */
 
+@include mat.core();
+
+$cqu_primary_palette: (
+    900: #245f93,
+    800: #2e7fb5,
+    700: #3290C9,
+    600: #3496CE,
+    500: #39A3DD,
+    400: #47B1E2,
+    300: #5FBDE6,
+    200: #87D1EE,
+    100: #B5E3F5,
+    50: #E2F4FB,
+    contrast: (
+        50: rgba(black, 0.87),
+        100: rgba(black, 0.87),
+        200: rgba(black, 0.87),
+        300: rgba(black, 0.87),
+        400: rgba(black, 0.87),
+        500: rgba(black, 0.87),
+        600: white,
+        700: white,
+        800: white,
+        900: white
+    )
+);
+
+$cqu_secondary_palette: (
+    900: #7E7200,
+    800: #9A9810,
+    700: #ACAF18,
+    600: #BCC520,
+    500: #CBD630,
+    400: #CBD626,
+    300: #D2DC4B,
+    200: #E5EB96,
+    100: #F0F2BF,
+    50: #F9FAE6,
+    contrast: (
+        50: rgba(black, 0.87),
+        100: rgba(black, 0.87),
+        200: rgba(black, 0.87),
+        300: rgba(black, 0.87),
+        400: rgba(black, 0.87),
+        500: rgba(black, 0.87),
+        600: white,
+        700: white,
+        800: white,
+        900: white
+    )
+);
+
+$primary: mat.define-palette($cqu_primary_palette, 800);
+$accent: mat.define-palette($cqu_secondary_palette, 300);
+
+$theme: mat.define-light-theme((
+    color: (
+        primary: $primary,
+        accent: $accent,
+    ),
+    typography: mat.define-typography-config(),
+    density: 0
+));
+
+@include mat.all-component-themes($theme);
 /**
  * Hiding scrollbars without setting overflow: hidden.
  * Every browser does it differently :D
@@ -14,7 +80,7 @@ body.hide-scrollbar::-webkit-scrollbar {
 }
 body.hide-scrollbar {
     -ms-overflow-style: none;
-    padding-right: 16px;
+    // padding-right: 16px;
 }
 html:has(body.hide-scrollbar) {
     scrollbar-width: 0;

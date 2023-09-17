@@ -1,8 +1,8 @@
 import { Component, Injectable } from "@angular/core";
-import { ResourceTableComponent, ResourceTableDataSource } from "../../common/resource-table.component";
 import { OutputMaterial } from "./output-material";
 import { CommonModule } from "@angular/common";
 import { MatTableModule } from "@angular/material/table";
+import { ResourceTableDataSource, ResourceTableComponent } from "../../../resource/common/resource-table.component";
 
 
 @Injectable()
@@ -21,7 +21,7 @@ export class OutputMaterialResourceTableDataSource extends ResourceTableDataSour
         ResourceTableComponent
     ],
     template: `
-        <lab-req-resource-table
+        <lab-resource-table
             [displayedColumns]="['name']"
             [detailTemplate]="detailTemplate">
 
@@ -31,7 +31,7 @@ export class OutputMaterialResourceTableDataSource extends ResourceTableDataSour
                     {{element.name}}
                 </td>
             </tr>
-        </lab-req-resource-table>
+        </lab-resource-table>
 
         <ng-template #detailTemplate>
         </ng-template>

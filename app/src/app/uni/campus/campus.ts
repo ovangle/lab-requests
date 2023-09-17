@@ -5,7 +5,7 @@ import { formatISO, parseISO } from "date-fns";
 import { Observable, catchError, firstValueFrom, map, switchMap } from "rxjs";
 import { Context } from "src/app/utils/models/model-context";
 
-import { ModelService } from "src/app/utils/models/model-service";
+import { Lookup, ModelService } from "src/app/utils/models/model-service";
 
 
 export type CampusCode = string;
@@ -33,7 +33,6 @@ export class Campus {
         this.createdAt = params.createdAt;
         this.updatedAt = params.updatedAt;
     }
-
 }
 
 export function isCampus(obj: any): obj is Campus {
@@ -68,11 +67,19 @@ export type CampusPatchErrors = ValidationErrors & {
     name?: Readonly<{required: string | null}>;
 }
 
+export interface CampusLookup extends Lookup<Campus> {
+}
+
+function campusLookupToHttpParams(lookup: CampusLookup) {
+    return new HttpParams();
+}
+
 @Injectable()
 export class CampusModelService extends ModelService<Campus, CampusPatch> {
     override readonly resourcePath = '/uni/campuses'
     override readonly modelFromJson = campusFromJson;
     override readonly patchToJson = campusPatchToJson;
+    override readonly lookupToHttpParams = campusLookupToHttpParams;
 
     searchCampuses(name: string | null): Observable<Campus[]> {
         console.log(`searching campuses where name starts with ${name}`);

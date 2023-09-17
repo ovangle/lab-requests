@@ -1,10 +1,10 @@
 import { Component, Injectable } from "@angular/core";
-import { ResourceTableComponent, ResourceTableDataSource } from "../common/resource-table.component";
 import { Service } from "./service";
 import { CommonModule } from "@angular/common";
 import { MatTableModule } from "@angular/material/table";
-import { ResourceTableInfoHeaderComponent } from "../common/resource-table-info-header.component";
 import { ServiceResourceDetailsComponent } from "./service-resource-details.component";
+import { ResourceTableInfoHeaderComponent } from "../../resource/common/resource-table-info-header.component";
+import { ResourceTableDataSource, ResourceTableComponent } from "../../resource/common/resource-table.component";
 
 @Injectable()
 export class ServiceResourceTableDataSource extends ResourceTableDataSource<Service> {
@@ -25,22 +25,22 @@ export class ServiceResourceTableDataSource extends ResourceTableDataSource<Serv
         ServiceResourceDetailsComponent
     ],
     template: `
-    <lab-req-resource-table
+    <lab-resource-table
         [displayedColumns]="['name']"
         [detailTemplate]="detailTemplate">
-        <lab-req-resource-table-info-header>
-        </lab-req-resource-table-info-header>
+        <lab-resource-table-info-header>
+        </lab-resource-table-info-header>
 
         <ng-container matColumnDef="name">
             <th mat-header-cell *matHeaderCellDef>Name</th>
             <td mat-cell *matCellDef="let element">{{element.name}}</td>
         </ng-container>
 
-    </lab-req-resource-table>
+    </lab-resource-table>
 
     <ng-template #detailTemplate let-element let-index="index">
-        <lab-req-service-resource-details [service]="element">
-        </lab-req-service-resource-details>
+        <lab-service-resource-details [service]="element">
+        </lab-service-resource-details>
     </ng-template>
     `,
     providers: [

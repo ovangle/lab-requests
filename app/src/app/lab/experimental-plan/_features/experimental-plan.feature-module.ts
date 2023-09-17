@@ -31,14 +31,14 @@ const EXPERIMENTAL_PLAN_ROUTES: Routes = [
         children: [
             {
                 path: 'work-units',
-                loadChildren: () => import('src/app/lab/work-unit/features/work-unit/work-unit.feature-module').then(
+                loadChildren: () => import('src/app/lab/work-unit/_features/work-unit/work-unit.feature-module').then(
                     module => module.FromPlanWorkUnitModule
                 )
             },
             {
                 path: 'work-units',
                 outlet: 'form',
-                loadChildren: () => import('src/app/lab/work-unit/features/work-unit-forms/work-unit-forms.feature-module').then(
+                loadChildren: () => import('src/app/lab/work-unit/_features/work-unit-forms/work-unit-forms.feature-module').then(
                     module => module.WorkUnitFormsFeatureModule
                 )
             }

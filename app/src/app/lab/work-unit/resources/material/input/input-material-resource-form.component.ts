@@ -1,13 +1,13 @@
 import { CommonModule } from "@angular/common";
-import { Component, ViewChild } from "@angular/core";
+import { Component, ViewChild, inject } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
-import { RESOURCE_FORM_FACTORY, RESOURCE_TYPE, ResourceFormComponent } from "../../common/resource-form.component";
-import { HazardClassesSelectComponent } from "../../common/hazardous/hazard-classes-select.component";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { ResourceStorageFormComponent } from "../../common/storage/resource-storage-form.component";
 import { MatInputModule } from "@angular/material/input";
-import { ProvisionFormComponent } from "../../common/provision/provision-form.component";
 import { InputMaterial, InputMaterialForm, createInputMaterialForm } from "./input-material";
+import { ResourceFormService } from "../../../resource/resource-form.service";
+import { HazardClassesSelectComponent } from "../../../resource/hazardous/hazard-classes-select.component";
+import { ProvisionFormComponent } from "../../../resource/provision/provision-form.component";
+import { ResourceStorageFormComponent } from "../../../resource/storage/resource-storage-form.component";
 
 
 @Component({
@@ -23,41 +23,38 @@ import { InputMaterial, InputMaterialForm, createInputMaterialForm } from "./inp
         HazardClassesSelectComponent,
         ResourceStorageFormComponent,
         ProvisionFormComponent,
-        ResourceFormComponent,
     ],
     template: `
-    <lab-generic-resource-form #resourceForm>
-        <form [formGroup]="resourceForm.form">
+    <lab-generic-resource-form [formGroup]="form">
+        <mat-form-field>
+            <mat-label>Name</mat-label>
+            <input matInput formControlName="name">
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-label>Base unit</mat-label>
+            <input matInput formControlName="baseUnit" />
+        </mat-form-field>
+
+        <ng-container *ngIf="baseUnit">
             <mat-form-field>
-                <mat-label>Name</mat-label>
-                <input matInput formControlName="name">
+                <mat-label>Estimated amount required</mat-label>
+                <input matInput formControlName="numUnitsRequired" />
+                <div matTextSuffix>{{baseUnit}}</div>
             </mat-form-field>
 
-            <mat-form-field>
-                <mat-label>Base unit</mat-label>
-                <input matInput formControlName="baseUnit" />
-            </mat-form-field>
+            <lab-resource-provision-form [form]="form"
+                [provisioningUnit]="'per\u00A0' + form.value.baseUnit"
+                [resourceType]="resourceType">
+            </lab-resource-provision-form>
 
-            <ng-container *ngIf="baseUnit">
-                <mat-form-field>
-                    <mat-label>Estimated amount required</mat-label>
-                    <input matInput formControlName="numUnitsRequired" />
-                    <div matTextSuffix>{{baseUnit}}</div>
-                </mat-form-field>
+            <lab-req-resource-storage-form formGroupName="storage">
+            </lab-req-resource-storage-form>
 
-                <lab-req-provision-form [form]="resourceForm.form"
-                    [provisioningUnit]="'per\u00A0' + resourceForm.form.value.baseUnit"
-                    [resourceType]="resourceForm.resourceType">
-                </lab-req-provision-form>
-
-                <lab-req-resource-storage-form formGroupName="storage">
-                </lab-req-resource-storage-form>
-
-                <lab-req-hazard-classes-select formControlName="hazardClasses">
-                    <span class="label">Hazard classes</span>
-                </lab-req-hazard-classes-select>
-            </ng-container>
-        </form>
+            <lab-req-hazard-classes-select formControlName="hazardClasses">
+                <span class="label">Hazard classes</span>
+            </lab-req-hazard-classes-select>
+        </ng-container>
     </lab-generic-resource-form>
     `,
     styles: [`
@@ -68,16 +65,19 @@ import { InputMaterial, InputMaterialForm, createInputMaterialForm } from "./inp
         align-items: stretch;
     }
     `],
-    providers: [
-        { provide: RESOURCE_TYPE, useValue: 'input-material' },
-        { provide: RESOURCE_FORM_FACTORY, useValue: () => createInputMaterialForm({}) }
-    ]
 })
 export class InputMaterialResourceFormComponent {
-    @ViewChild(ResourceFormComponent, {static: true})
-    resourceForm: ResourceFormComponent<InputMaterial, InputMaterialForm>;
+    readonly formService = inject(ResourceFormService<InputMaterial, InputMaterialForm>);
+
+    get resourceType() {
+        return this.formService.resourceType;
+    }
+
+    get form(): InputMaterialForm {
+        return this.formService.form;
+    }
 
     get baseUnit(): string {
-        return this.resourceForm.form?.value?.baseUnit || '';
+        return this.form.value?.baseUnit || '';
     }
 }

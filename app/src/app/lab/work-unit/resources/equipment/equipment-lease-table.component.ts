@@ -1,9 +1,9 @@
 import { Component, Injectable } from "@angular/core";
-import { ResourceTableComponent, ResourceTableDataSource } from "../common/resource-table.component";
 import { EquipmentLease } from "./equipment-lease";
-import { ResourceTableInfoHeaderComponent } from "../common/resource-table-info-header.component";
 import { MatTableModule } from "@angular/material/table";
 import { CommonModule } from "@angular/common";
+import { ResourceTableComponent, ResourceTableDataSource } from "../../resource/common/resource-table.component";
+import { ResourceTableInfoHeaderComponent } from "../../resource/common/resource-table-info-header.component";
 
 
 @Injectable()
@@ -23,12 +23,12 @@ export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<Equip
         ResourceTableInfoHeaderComponent,
     ],
     template: `
-    <lab-req-resource-table
+    <lab-resource-table
         [displayedColumns]="['name', 'is-trained', 'requires-assistance', 'requires-setup']"
         [detailTemplate]="detailTemplate">
-        <lab-req-resource-table-info-header>
+        <lab-resource-table-info-header>
             Equipment represent permanent fixtures of the lab.
-        </lab-req-resource-table-info-header>
+        </lab-resource-table-info-header>
 
         <ng-container matColumnDef="name">
             <th mat-header-cell *matHeaderCellDef>Name</th>
@@ -58,7 +58,7 @@ export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<Equip
                 {{element.costEstimate ? element.costEstimate.estimatedCost : 'unknown'}}
             </td>
         </ng-container>
-    </lab-req-resource-table>
+    </lab-resource-table>
 
     <ng-template #detailTemplate let-element>
     </ng-template>

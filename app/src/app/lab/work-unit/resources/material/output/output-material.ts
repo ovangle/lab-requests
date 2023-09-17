@@ -1,15 +1,15 @@
 import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { Material } from "../material";
-import { Resource } from "../../common/resource";
-import { ResourceStorage, ResourceStorageForm, createResourceStorageForm, isResourceStorageType, resourceStorageFromJson, resourceStorageToJson } from "../../common/storage/resource-storage";
-import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../common/hazardous/hazardous";
-import { ResourceDisposal, ResourceDisposalForm, createResourceDisposalForm, isResourceDisposalType, resourceDisposalFromJson, resourceDisposalToJson } from "../../common/disposal/resource-disposal";
 import { groupDisabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { Subscription, map, tap } from "rxjs";
+import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../../resource/hazardous/hazardous";
+import { ResourceDisposal, isResourceDisposalType, resourceDisposalFromJson, resourceDisposalToJson, ResourceDisposalForm, createResourceDisposalForm } from "../../../resource/disposal/resource-disposal";
+import { ResourceStorage, isResourceStorageType, resourceStorageFromJson, resourceStorageToJson, ResourceStorageForm, createResourceStorageForm } from "../../../resource/storage/resource-storage";
 
 export class OutputMaterial extends Material {
     override readonly type = 'output-material';
+    override readonly index: number | 'create';
 
     name: string;
     baseUnit: string;
@@ -25,6 +25,8 @@ export class OutputMaterial extends Material {
         super();
 
         this.name = input.name
+        this.index = input.index!;
+
         this.baseUnit = input.baseUnit;
 
         this.numUnitsProduced = input.numUnitsProduced || 0;

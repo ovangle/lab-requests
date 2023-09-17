@@ -9,7 +9,17 @@ export abstract class Context<T extends { readonly id: string}, TPatch = unknown
     readonly committedSubject = new ReplaySubject<T | null>(1);
     readonly committed$: Observable<T | null> = this.committedSubject.asObservable();
 
+    constructor(_parentContext?: Context<T>) {
+        if (_parentContext) {
+            this.committedSubject = _parentContext.committedSubject;
+            this.committed$ = _parentContext.committed$;
+            this._doCreate = _parentContext._doCreate.bind(this);
+            this._doCommit = _parentContext._doCommit.bind(this);
+        }
+    }
+
     sendCommitted(setCommitted$: Observable<T | null>): Subscription {
+        console.log('setCommitted$', setCommitted$);
         return setCommitted$.subscribe(
             (committed) => {
                 console.log('committed', committed);

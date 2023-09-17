@@ -4,8 +4,8 @@ import { Observable, map, firstValueFrom, defer, filter, tap, shareReplay } from
 import { Campus, CampusPatch } from "src/app/uni/campus/campus";
 import { Discipline } from "src/app/uni/discipline/discipline";
 import { LabType } from "../type/lab-type";
-import { ResourceContainerFormControls, resourceContainerFormControls } from "./resources/resource-container-form";
 import { WorkUnitModelService, WorkUnitContext, WorkUnitPatch, WorkUnitPatchErrors, workUnitPatchFromWorkUnit } from "./work-unit";
+import { ResourceContainerFormControls, resourceContainerFormControls } from "./resource/resource-container-form.service";
 
 export type WorkUnitForm = FormGroup<{
     campus: FormControl<Campus | string | null>;

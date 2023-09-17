@@ -1,8 +1,9 @@
+import { HttpParams } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { Observable, ReplaySubject, connectable, firstValueFrom } from "rxjs";
 import { Context } from "src/app/utils/models/model-context";
 
-import { ModelService } from "src/app/utils/models/model-service";
+import { Lookup, ModelService } from "src/app/utils/models/model-service";
 
 export class FundingModel {
     readonly id: string;
@@ -46,6 +47,13 @@ export interface FundingModelCreate extends FundingModelPatch {}
 export function fundingModelCreateToJson(create: FundingModelCreate) {
     return fundingModelPatchToJson(create);
 }
+
+export interface FundingModelLookup extends Lookup<FundingModel> {
+}
+function fundingModelLookupToHttpParams(lookup: Partial<FundingModelLookup>) {
+    return new HttpParams();
+}
+
 @Injectable()
 export class FundingModelService extends ModelService<FundingModel, FundingModelPatch, FundingModelCreate> {
    
@@ -53,6 +61,7 @@ export class FundingModelService extends ModelService<FundingModel, FundingModel
     override readonly modelFromJson = fundingModelFromJson;
     override readonly patchToJson = fundingModelPatchToJson;
     override readonly createToJson = fundingModelCreateToJson;
+    override readonly lookupToHttpParams = fundingModelLookupToHttpParams;
 
     fetchByDescription(description: string) {
         return this.fetch(description);

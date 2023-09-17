@@ -4,7 +4,7 @@ import { Service } from "./service";
 
 
 @Component({
-    selector: 'lab-req-service-resource-details',
+    selector: 'lab-service-resource-details',
     standalone: true,
     imports: [
         CommonModule

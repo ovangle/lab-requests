@@ -1,5 +1,5 @@
 
-import { Injectable, Provider, inject } from "@angular/core";
+import { Inject, Injectable, Optional, Provider, SkipSelf, inject } from "@angular/core";
 import { ValidationErrors, FormArray, FormControl, FormGroup, Validators } from "@angular/forms";
 import { BehaviorSubject, Observable, Subject, Subscription, connectable, defer, filter, firstValueFrom, map, of, share, shareReplay, switchMap } from "rxjs";
 import { __runInitializers } from "tslib";
@@ -7,11 +7,12 @@ import { Campus, CampusCode, campusFromJson, isCampusCode } from "../../uni/camp
 import { Discipline } from "../../uni/discipline/discipline";
 
 import { WorkUnit, WorkUnitCreate, workUnitFromJson } from "../work-unit/work-unit";
-import { ModelService } from "src/app/utils/models/model-service";
+import { Lookup, ModelService } from "src/app/utils/models/model-service";
 import { ActivatedRoute } from "@angular/router";
 import { Context } from "src/app/utils/models/model-context";
 import { FundingModel, FundingModelCreate, fundingModelFromJson } from "../../uni/research/funding-model/funding-model";
 import { parseISO } from "date-fns";
+import { HttpParams } from "@angular/common/http";
 
 
 export interface ExperimentalPlanBase {
@@ -135,12 +136,19 @@ export type ExperimentalPlanPatchErrors = ValidationErrors & {
     }
 }
 
+export interface ExperimentalPlanLookup extends Lookup<ExperimentalPlan> {
+}
+export function experimentalPlanLookupToHttpParams(lookup: Partial<ExperimentalPlanLookup>): HttpParams {
+    return new HttpParams();
+}
+
 
 @Injectable()
 export class ExperimentalPlanModelService extends ModelService<ExperimentalPlan, ExperimentalPlanPatch> {
     override readonly resourcePath = '/lab/experimental-plans'
     override readonly modelFromJson = experimentalPlanFromJson;
     override readonly patchToJson = experimentalPlanPatchToJson;
+    override readonly lookupToHttpParams = experimentalPlanLookupToHttpParams;
 
     updatePlan(plan: ExperimentalPlan, patch: ExperimentalPlanPatch): Observable<ExperimentalPlan> {
         return this.update(plan.id, patch)
@@ -155,6 +163,15 @@ export class ExperimentalPlanModelService extends ModelService<ExperimentalPlan,
 export class ExperimentalPlanContext extends Context<ExperimentalPlan, ExperimentalPlanPatch> {
     override readonly models = inject(ExperimentalPlanModelService);
     readonly plan$ = defer(() => this.committed$);
+
+    constructor(
+        @Optional() 
+        @SkipSelf() 
+        @Inject(ExperimentalPlanContext)
+        parentContext: ExperimentalPlanContext | undefined
+    ) {
+        super(parentContext)
+    }
 
     override _doCreate(create: ExperimentalPlanPatch): Observable<ExperimentalPlan> {
         return this.models.create(create);

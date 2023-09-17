@@ -1,11 +1,12 @@
 import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { Material } from "../material";
-import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../common/hazardous/hazardous";
-import { ResourceStorage, ResourceStorageForm, createResourceStorageForm, isResourceStorageType, resourceStorageFromJson, resourceStorageToJson } from "../../common/storage/resource-storage";
-import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "../../common/resource";
+import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "../../../resource/resource";
+import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../../resource/hazardous/hazardous";
+import { ResourceStorage, ResourceStorageForm, createResourceStorageForm, isResourceStorageType, resourceStorageFromJson, resourceStorageToJson } from "../../../resource/storage/resource-storage";
 
 export class InputMaterial extends Material {
     override readonly type = 'input-material';
+    override readonly index: number | 'create';
 
     name: string;
     baseUnit: string;
@@ -20,6 +21,7 @@ export class InputMaterial extends Material {
     constructor(input: { name: string; baseUnit: string } & Partial<InputMaterial>) {
         super();
         this.name = input.name;
+        this.index = input.index!;
         this.baseUnit = input.baseUnit;
 
         this.numUnitsRequired = input.numUnitsRequired || 0;
@@ -31,8 +33,6 @@ export class InputMaterial extends Material {
             ? new ResourceStorage(input.storage!)
             : {type: 'general'}
         );
-
-
         this.hazardClasses = input?.hazardClasses || [];
     }
 }

@@ -1,8 +1,6 @@
-import { Directive, ElementRef, Injectable, Renderer2, RendererFactory2, RendererStyleFlags2, inject } from "@angular/core";
-import { ExperimentalPlanContext } from "./experimental-plan";
-import { ActivatedRoute, Router, UrlSegment } from "@angular/router";
-import { Resource, ResourceType } from "../work-unit/resources/common/resource";
-import { BehaviorSubject, Observable, Subscription, defer, map, of, shareReplay, switchMap } from "rxjs";
+import { Injectable, inject } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { Observable, defer, map, of, shareReplay, switchMap } from "rxjs";
 
 
 @Injectable()

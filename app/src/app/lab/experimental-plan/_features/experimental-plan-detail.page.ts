@@ -1,6 +1,6 @@
 import { Component, ElementRef, ViewChild, inject } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
-import { Observable, Subscription, map, shareReplay, switchMap } from "rxjs";
+import { Observable, Subscription, defer, map, shareReplay, switchMap } from "rxjs";
 import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanModelService } from "../experimental-plan";
 import { ExperimentalPlanFormPaneControlService } from "../experimental-plan-form-pane-control.service";
 
@@ -8,7 +8,7 @@ export function experimentalPlanContextFromDetailRoute(): Observable<Experimenta
     const activatedRoute = inject(ActivatedRoute);
     const models = inject(ExperimentalPlanModelService);
 
-    return activatedRoute.paramMap.pipe(
+    return defer(() => activatedRoute.paramMap.pipe(
         map(paramMap => paramMap.get('experimental_plan_id')),
         switchMap(experimentalPlanId => {
             if (experimentalPlanId == null) {
@@ -16,7 +16,7 @@ export function experimentalPlanContextFromDetailRoute(): Observable<Experimenta
             }
             return models.fetch(experimentalPlanId);
         })
-    );
+    ));
 }
 
 @Component({

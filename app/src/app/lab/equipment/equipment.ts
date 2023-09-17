@@ -1,9 +1,11 @@
 import { FormArray, FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { LabType } from "../type/lab-type";
 import { Injectable, inject } from "@angular/core";
-import { ModelService } from "src/app/utils/models/model-service";
+import { Lookup, ModelService } from "src/app/utils/models/model-service";
 import { Context } from "src/app/utils/models/model-context";
 import { Observable, firstValueFrom } from "rxjs";
+import { HttpParams } from "@angular/common/http";
+import { ModelCollection } from "src/app/utils/models/model-collection";
 
 
 export class Equipment {
@@ -78,11 +80,26 @@ export type EquipmentPatchErrors = ValidationErrors & {
     };
 };
 
+export interface EquipmentCreate extends EquipmentPatch {}
+
+export interface EquipmentLookup extends Lookup<Equipment> {
+}
+
+export function equipmentLookupToHttpParams(lookup: Partial<EquipmentLookup>) {
+    return new HttpParams();
+}
+
 @Injectable()
 export class EquipmentModelService extends ModelService<Equipment, EquipmentPatch> {
     override readonly resourcePath: string = '/lab/equipment'
     override readonly modelFromJson = equipmentFromJson;
     override readonly patchToJson = equipmentPatchToJson;
+    override readonly lookupToHttpParams = equipmentLookupToHttpParams;
+}
+
+@Injectable()
+export class EquipmentCollection extends ModelCollection<Equipment, EquipmentLookup> {
+    readonly models = inject(EquipmentModelService);
 }
 
 @Injectable()

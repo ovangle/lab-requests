@@ -1,12 +1,9 @@
-import { CollectionViewer } from "@angular/cdk/collections";
-import { Observable } from "rxjs";
-import { Resource } from "../common/resource";
-import { ResourceTableComponent, ResourceTableDataSource } from "../common/resource-table.component";
 import { Software } from "./software";
 import { Component, Injectable, inject } from "@angular/core";
 import { MatTableModule } from "@angular/material/table";
-import { ResourceTableInfoHeaderComponent } from "../common/resource-table-info-header.component";
 import { CommonModule } from "@angular/common";
+import { ResourceTableComponent, ResourceTableDataSource } from "../../resource/common/resource-table.component";
+import { ResourceTableInfoHeaderComponent } from "../../resource/common/resource-table-info-header.component";
 
 @Injectable()
 export class SoftwareResourceTableDataSource extends ResourceTableDataSource<Software> {
@@ -25,14 +22,14 @@ export class SoftwareResourceTableDataSource extends ResourceTableDataSource<Sof
         MatTableModule
     ],
     template: `
-    <lab-req-resource-table
+    <lab-resource-table
         [displayedColumns]="['name', 'min-version']"
         [detailTemplate]="detailTemplate">
 
-        <lab-req-resource-table-info-header>
+        <lab-resource-table-info-header>
             Software which must be installed on the computers available in the lab.
             Software only used outside the lab should be omitted
-        </lab-req-resource-table-info-header>
+        </lab-resource-table-info-header>
 
         <ng-container matColumnDef="name">
             <th mat-header-cell *matHeaderCellDef>Name</th>
@@ -50,7 +47,7 @@ export class SoftwareResourceTableDataSource extends ResourceTableDataSource<Sof
             <td mat-cell *matCellDef="let element">{{element.requiresLicence ? 'Yes' : 'No'}}</td>
         </ng-container>
         -->
-    </lab-req-resource-table>
+    </lab-resource-table>
 
     <ng-template #detailTemplate let-element let-dataIndex="dataIndex">
         {{element.description}}

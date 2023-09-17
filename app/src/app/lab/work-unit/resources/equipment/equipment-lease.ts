@@ -1,9 +1,10 @@
 import { Equipment, EquipmentPatch, equipmentFromJson, equipmentPatchToJson, isEquipmentPatch } from "src/app/lab/equipment/equipment";
-import { Resource, CostEstimate, CostEstimateForm, costEstimateForm, costEstimateFromJson, costEstimateToJson } from "../common/resource";
 import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
+import { Resource, CostEstimate, costEstimateFromJson, costEstimateToJson, CostEstimateForm, costEstimateForm } from "../../resource/resource";
 
 export class EquipmentLease implements Resource {
     readonly type = 'equipment';
+    readonly index: number | 'create'; 
     equipment: Equipment | EquipmentPatch;
 
     isTrainingCompleted: boolean;
