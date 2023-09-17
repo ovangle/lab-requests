@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, ElementRef, Input, OnDestroy, OnInit, TemplateRef, ViewChild, inject } from "@angular/core";
+import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, TemplateRef, ViewChild, inject } from "@angular/core";
 import { AbstractControl, FormArray, FormControl, FormGroup, FormGroupDirective, ReactiveFormsModule, Validators } from "@angular/forms";
 
 import { Equipment, EquipmentPatch, EquipmentPatchErrors, EquipmentModelService, equipmentPatchFromEquipment, EquipmentContext } from './equipment';
@@ -10,7 +10,9 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatInputModule } from "@angular/material/input";
 import { MatIconModule } from "@angular/material/icon";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { EquipmentFormService } from "./equipment-form.service";
+import { EquipmentForm, EquipmentFormService, equipmentPatchFromForm } from "./equipment-form.service";
+import { MatListModule } from "@angular/material/list";
+import { EquipmentTrainingListFormComponent } from "./training/training-list-form.component";
 
 export const equipmentFixtures: Equipment[] = [];
 
@@ -25,7 +27,9 @@ export const equipmentFixtures: Equipment[] = [];
         MatCheckboxModule,
         MatIconModule,
         MatFormFieldModule,
-        MatInputModule
+        MatInputModule,
+
+        EquipmentTrainingListFormComponent
     ],
     template: `
     <form [formGroup]="form" (ngSubmit)="commitForm()">
@@ -34,23 +38,31 @@ export const equipmentFixtures: Equipment[] = [];
             <input matInput 
                 id="equipment-name" 
                 formControlName="name" />
-            <ng-container *ngIf="nameErrors$ | async as nameErrors">
-                <mat-error *ngIf="nameErrors.required">
-                    REQUIRED
-                </mat-error>
-                <mat-error *ngIf="nameErrors.notUnique">
-                    NOT UNIQUE
-                </mat-error>
-            </ng-container>
+            <mat-error *ngIf="nameErrors?.required">
+                A value is required
+            </mat-error>
+            <mat-error *ngIf="nameErrors?.notUnique">
+                An equipment already exists with that name
+            </mat-error>
         </mat-form-field> 
 
+        <mat-form-field>
+            <mat-label>Description</mat-label>
+            <textarea matInput formControlName="description">
+            </textarea>
+        </mat-form-field>  
+
         <mat-checkbox formControlName="requiresTraining">
-                This equipment requires induction before use
+            This equipment requires induction before use
         </mat-checkbox>
 
-        <ng-container *ngIf="form.controls.requiresTraining">
-            <!-- TODO: Training required descriptions -->
-        </ng-container>
+        <ng-container *ngIf="isTrainingRequired">
+            <lab-equipment-training-list-form 
+                [committed]="committedTrainingDescriptions"
+                [form]="trainingDescripionsFormArr"
+                (requestCommit)="requestTrainingCommitted($event)">
+            </lab-equipment-training-list-form>
+        </ng-container> 
 
         <div class="form-actions"> 
             <ng-container [ngTemplateOutlet]="formActionControls"></ng-container>
@@ -69,24 +81,52 @@ export const equipmentFixtures: Equipment[] = [];
     exportAs: 'form'
 })
 export class LabEquipmentFormComponent {
-    readonly _formService = inject(EquipmentFormService);
+    @Input()
+    committed: Equipment | null = null;
+
+    get isCreate() {
+        return this.committed == null;
+    }
+
+    @Input({required: true})
+    form: EquipmentForm;
+
+    @Output()
+    requestCommit = new EventEmitter<EquipmentPatch>();
+
+    @Output()
+    requestReset = new EventEmitter<void>();
 
     @ViewChild('formActionControls', {static: true})
     formActionControls: TemplateRef<any>;
 
-    get form() {
-        return this._formService.form;
+    get nameErrors(): EquipmentPatchErrors['name'] | null {
+        return this.form.controls.name.errors as any; 
     }
 
-    readonly patchValue$ = this._formService.patchValue$;
-    readonly nameErrors$ = this._formService.patchErrors$.pipe(
-        map(patchErrors => patchErrors?.name)
-    );
+    get isTrainingRequired() {
+        return this.form.controls.requiresTraining.value;
+    }
+
+    get committedTrainingDescriptions(): string[] {
+        return this.committed?.trainingDescriptions || [];
+    }
+
+    get trainingDescripionsFormArr(): FormArray<FormControl<string>> {
+        return this.form.controls.trainingDescriptions;
+    }
+
+    requestTrainingCommitted(descriptions: string[]) {
+        // TODO: What works here in both create and update?
+        // Sometimes it's too early to commit.
+        this.commitForm();
+    }
 
     commitForm() {
-        this._formService.commit();
+        const patch = equipmentPatchFromForm(this.form);
+        this.requestCommit.next(patch)
     }
     resetForm() {
-        this._formService.reset();
+        this.requestReset.next();
     }
 }

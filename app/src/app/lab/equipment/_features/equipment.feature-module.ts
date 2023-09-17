@@ -4,8 +4,9 @@ import { RouterModule, Routes } from "@angular/router";
 import { EquipmentIndexPage } from "./equipment-index.page";
 import { EquipmentCreatePage } from "./equipment-create.page";
 import { EquipmentDetailPage } from "./equipment-detail.page";
-import { EquipmentModelService } from "../equipment";
+import { EquipmentContext, EquipmentModelService } from "../equipment";
 import { LabEquipmentListComponent } from "../equipment-list.component";
+import { LabEquipmentFormComponent } from "../equipment-form.component";
 
 const EQUIPMENT_ROUTES: Routes = [
     {
@@ -28,6 +29,7 @@ const EQUIPMENT_ROUTES: Routes = [
         CommonModule,
         RouterModule.forChild(EQUIPMENT_ROUTES),
 
+        LabEquipmentFormComponent,
         LabEquipmentListComponent
     ],
     declarations: [
@@ -37,6 +39,7 @@ const EQUIPMENT_ROUTES: Routes = [
     ],
     providers: [
         EquipmentModelService,
+        EquipmentContext
     ]
 })
 export class EquipmentFeatureModule {}

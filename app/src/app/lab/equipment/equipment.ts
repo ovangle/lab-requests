@@ -1,11 +1,12 @@
 import { FormArray, FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { LabType } from "../type/lab-type";
-import { Injectable, inject } from "@angular/core";
+import { Inject, Injectable, Optional, SkipSelf, inject } from "@angular/core";
 import { Lookup, ModelService } from "src/app/utils/models/model-service";
 import { Context } from "src/app/utils/models/model-context";
 import { Observable, firstValueFrom } from "rxjs";
 import { HttpParams } from "@angular/common/http";
 import { ModelCollection } from "src/app/utils/models/model-collection";
+import { EquipmentTag } from "./tag/equipment-tag";
 
 
 export class Equipment {
@@ -14,6 +15,7 @@ export class Equipment {
     name: string;
     description: string;
 
+    tags: EquipmentTag[]; 
     availableInLabTypes: LabType[] | 'all';
 
     requiresTraining: boolean;
@@ -43,6 +45,9 @@ export function equipmentFromJson(json: {[k: string]: any}): Equipment {
 export interface EquipmentPatch {
     name: string;
     description: string;
+
+    tags: EquipmentTag[];
+
     availableInLabTypes: LabType[] | 'all';
     requiresTraining: boolean;
     trainingDescriptions: string[];
@@ -57,6 +62,7 @@ export function equipmentPatchToJson(patch: EquipmentPatch) {
     return {
         name: patch.name,
         description: patch.description,
+        tags: patch.tags,
         availableInLabTypes: patch.availableInLabTypes, 
         requiresTraining: patch.requiresTraining,
         trainingDescriptions: patch.trainingDescriptions
@@ -66,6 +72,7 @@ export function equipmentPatchToJson(patch: EquipmentPatch) {
 export function equipmentPatchFromEquipment(equipment: Equipment): EquipmentPatch {
     return {
         name: equipment.name,
+        tags: equipment.tags,
         description: equipment.description,
         availableInLabTypes: equipment.availableInLabTypes,
         requiresTraining: equipment.requiresTraining,
@@ -74,15 +81,16 @@ export function equipmentPatchFromEquipment(equipment: Equipment): EquipmentPatc
 }
 
 export type EquipmentPatchErrors = ValidationErrors & {
-    name?: {
+    name: {
         notUnique: string | null;
         required: string;
-    };
+    } | null;
 };
 
 export interface EquipmentCreate extends EquipmentPatch {}
 
 export interface EquipmentLookup extends Lookup<Equipment> {
+    readonly searchText: string;
 }
 
 export function equipmentLookupToHttpParams(lookup: Partial<EquipmentLookup>) {
@@ -107,6 +115,13 @@ export class EquipmentContext extends Context<Equipment, EquipmentPatch> {
     
     override readonly models: EquipmentModelService = inject(EquipmentModelService);
     readonly equipment$ = this.committed$;
+
+    constructor(
+        @Optional() @SkipSelf() @Inject(EquipmentContext)
+        parentContext?: EquipmentContext
+    ) {
+        super(parentContext);
+    }
 
     override create(patch: EquipmentPatch): Promise<Equipment> {
         return firstValueFrom(this.models.create(patch));

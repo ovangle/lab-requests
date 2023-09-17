@@ -2,13 +2,50 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 from uuid import UUID
+from fastapi import HTTPException
 
 from pydantic import BaseModel
+
 from db import LocalSession
 from api.base.schemas import ApiModel, ModelCreate, ModelPatch
 
 from ..types import LabType
 from . import models
+
+class EquipmentTagBase(BaseModel):
+    id: UUID | None
+    name: str
+
+class EquipmentTag(EquipmentTagBase, ApiModel[models.EquipmentTag]):
+    id: UUID
+
+    @classmethod
+    def from_model(cls, equipment: EquipmentTag | models.EquipmentTag):
+        return cls(
+            id=equipment.id,
+            name=equipment.name,
+            created_at=equipment.created_at,
+            updated_at=equipment.updated_at
+        )
+
+    async def to_model(self, db: LocalSession):
+        return await models.EquipmentTag.fetch_for_id(db, self.id)
+
+class EquipmentTagPatch(EquipmentTagBase, ModelPatch[EquipmentTag, models.EquipmentTag]):
+    async def do_update(self, db: LocalSession, tag: models.EquipmentTag):
+        if self.id and self.id != tag.id:
+            raise HTTPException(409, 'Mismatched tags')
+        if tag.name != self.name:
+            tag.name = self.name
+            db.add(tag)
+        
+
+class EquipmentTagCreate(EquipmentTagBase, ModelCreate[EquipmentTag, models.EquipmentTag]):
+    async def do_create(self, db: LocalSession):
+        instance = models.EquipmentTag(id=self.id, name=self.name)
+        db.add(instance)
+        return instance
+
 
 class EquipmentBase(BaseModel):
     name: str

@@ -3,18 +3,20 @@ import { FormGroup, FormControl, FormArray, Validators, AbstractControl } from "
 import { Observable, map, share, firstValueFrom } from "rxjs";
 import { LabType } from "../type/lab-type";
 import { EquipmentPatch, EquipmentPatchErrors, EquipmentModelService, EquipmentContext, Equipment, equipmentPatchFromEquipment } from "./equipment";
+import { EquipmentTag } from "./tag/equipment-tag";
 
 export type EquipmentForm = FormGroup<{
     name: FormControl<string>;
     description: FormControl<string>;
     availableInLabTypes: FormControl<LabType[] | 'all'>;
+    tags: FormControl<EquipmentTag[]>,
     requiresTraining: FormControl<boolean>;
     trainingDescriptions: FormArray<FormControl<string>>;
 }>;
 
-function equipmentPatchFromForm(form: EquipmentForm): EquipmentPatch | null {
+export function equipmentPatchFromForm(form: EquipmentForm): EquipmentPatch {
     if (!form.valid) {
-        return null;
+        throw new Error('Invalid form has no patch');
     }
     return form.value as EquipmentPatch;
 }
@@ -36,10 +38,13 @@ export class EquipmentFormService {
             { 
                 nonNullable: true, 
                 validators: [Validators.required], 
-                asyncValidators: [this._isEquipmentNameUnique] 
+                asyncValidators: [
+                    (c) => this._isEquipmentNameUnique(c)
+                ]
             }
         ),
         description: new FormControl<string>('', { nonNullable: true }),
+        tags: new FormControl<EquipmentTag[]>([], { nonNullable: true }),
         availableInLabTypes: new FormControl<LabType[] | 'all'>('all', {nonNullable: true}),
         requiresTraining: new FormControl<boolean>(false, {nonNullable: true}),
         trainingDescriptions: new FormArray<FormControl<string>>([])
@@ -64,6 +69,10 @@ export class EquipmentFormService {
         const control = formArr.controls[formArr.length - 1];
         formArr.removeAt(formArr.length - 1);
         return control;
+    }
+
+    get tags() {
+        return this.form.controls.tags;
     }
 
     _isEquipmentNameUnique(nameControl: AbstractControl<string>): Observable<{'notUnique': string} | null> {

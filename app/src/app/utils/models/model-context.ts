@@ -1,6 +1,7 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, EMPTY, NEVER, Observable, ReplaySubject, Subject, Subscription, connectable, firstValueFrom, shareReplay } from "rxjs";
+import { BehaviorSubject, EMPTY, NEVER, Observable, ReplaySubject, Subject, Subscription, connectable, firstValueFrom, of, shareReplay } from "rxjs";
 import { ModelService } from "./model-service";
+import { isWorkUnitCreate } from "src/app/lab/work-unit/work-unit";
 
 @Injectable()
 export abstract class Context<T extends { readonly id: string}, TPatch = unknown, TCreate extends TPatch = TPatch> {
@@ -26,6 +27,10 @@ export abstract class Context<T extends { readonly id: string}, TPatch = unknown
                 this.committedSubject.next(committed)
             }
         );
+    }
+
+    initCreateContext() {
+        this.sendCommitted(of(null));
     }
 
     abstract _doCreate(request: TCreate): Observable<T>;

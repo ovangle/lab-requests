@@ -1,8 +1,8 @@
 import { Component, Injectable, Input, ViewChild, inject} from "@angular/core";
-import { Equipment, EquipmentModelService, EquipmentPatch, EquipmentCreate, isEquipmentPatch, EquipmentContext } from "./equipment";
+import { Equipment, EquipmentModelService, EquipmentPatch, EquipmentCreate, isEquipmentPatch, EquipmentContext, EquipmentLookup } from "./equipment";
 import { CommonModule } from "@angular/common";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
-import { Observable, defer, delay, map, of, switchMap, switchMapTo, timer } from "rxjs";
+import { Observable, defer, delay, filter, map, of, skip, switchMap, switchMapTo, timer, zip } from "rxjs";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { AbstractControl, ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule, ValidationErrors } from "@angular/forms";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
@@ -12,6 +12,7 @@ import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler"
 import { MatInputModule } from "@angular/material/input";
 import { ModelCollection, provideFocusedModelContext } from "src/app/utils/models/model-collection";
 import { ModelService } from "src/app/utils/models/model-service";
+import { EquipmentForm, EquipmentFormService } from "./equipment-form.service";
 
 @Injectable()
 export class EquipmentModelCollection extends ModelCollection<Equipment> {
@@ -41,7 +42,6 @@ export class EquipmentModelCollection extends ModelCollection<Equipment> {
             [matAutocomplete]="autocomplete"
             [formControl]="searchControl" />
 
-
         <mat-autocomplete #autocomplete 
                           [displayWith]="_displaySearch">
             <ng-container *ngIf="searchOptions$ | async as searchOptions">
@@ -50,7 +50,7 @@ export class EquipmentModelCollection extends ModelCollection<Equipment> {
                 </mat-option>
             </ng-container>
 
-            <mat-option [value]="">
+            <mat-option [value]="_NEW_EQUIPMENT_">
                 The required equipment was not in this list
             </mat-option>
         </mat-autocomplete>
@@ -60,7 +60,8 @@ export class EquipmentModelCollection extends ModelCollection<Equipment> {
         <mat-card>
             <mat-card-header>Request other equipment</mat-card-header>
             <mat-card-content>
-                <lab-equipment-form #labEquipmentForm="form"></lab-equipment-form>
+                <lab-equipment-form [form]="form" [committed]="null">
+                </lab-equipment-form>
             </mat-card-content>
             <mat-card-footer #createFormControls>
             </mat-card-footer>
@@ -70,10 +71,8 @@ export class EquipmentModelCollection extends ModelCollection<Equipment> {
     providers: [
         EquipmentModelService,
         EquipmentModelCollection,
-        provideFocusedModelContext(
-            EquipmentModelCollection,
-            EquipmentContext
-        ),
+        EquipmentContext,
+        EquipmentFormService,
         { 
             provide: NG_VALUE_ACCESSOR, 
             multi: true,
@@ -84,7 +83,7 @@ export class EquipmentModelCollection extends ModelCollection<Equipment> {
 export class EquipmentSearchComponent implements ControlValueAccessor {
     readonly _NEW_EQUIPMENT_ = Symbol('_NEW_EQUIPMENT_');
 
-    readonly equipments = inject(EquipmentModelCollection)
+    readonly equipments = inject(EquipmentModelCollection);
     readonly searchControl = new FormControl<Equipment | Symbol | string>(
         '', 
         {
@@ -93,13 +92,40 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
                 (c) => this._validateNewEquipment(c as FormControl<Equipment | Symbol | string>)
             ]
         }
-
     );
+
+    readonly equipmentContext = inject(EquipmentContext);
+
     readonly searchOptions$ = defer(() => this.equipments.items$);
 
     readonly isNewEquipment$ = this.searchControl.valueChanges.pipe(
         map(value => value === this._NEW_EQUIPMENT_)
     );
+
+    readonly _formService = inject(EquipmentFormService);
+    get form(): EquipmentForm {
+        return this._formService.form;
+    }
+    
+    constructor() {
+        this.equipments.connectQuery(this.searchControl.valueChanges.pipe( takeUntilDestroyed(),
+            map(searchText => ({ searchText } as EquipmentLookup))
+        ));
+        this.equipmentContext.initCreateContext();
+
+        // Prepopulate the new input with the value from the search text.
+        this.searchControl.valueChanges.pipe(
+            filter((v): v is (Equipment | string) => v != this._NEW_EQUIPMENT_),
+            map(v => {
+                if (typeof v === 'string') {
+                    return v;
+                }
+                return v.name;
+            }) 
+        ).subscribe(
+            name => this.form.patchValue({name})
+        )
+    }
 
     @ViewChild(LabEquipmentFormComponent, {static: false})
     _labEquipmentForm: LabEquipmentFormComponent | null;
@@ -110,11 +136,12 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
                 return { 
                     newEquipmentNotReady: 'Cannot be valid until the created equipment is valid'
                 };
+            } 
+            if (this.form.invalid) {
+                return {
+                    newEquipmentInvalid: 'The new equipment is invalid',
+                }
             }
-            return {
-                newEquipmentInvalid: 'The new equipment is invalid',
-            }
-
         }
         return null;
     }

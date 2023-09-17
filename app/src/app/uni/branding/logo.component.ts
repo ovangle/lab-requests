@@ -4,7 +4,7 @@ import { Component } from "@angular/core";
     selector: 'uni-logo',
     standalone: true,
     template: `
-    <img [attr.src]="logoSrc" alt="cqu logo" />
+        <img [attr.src]="logoSrc" alt="cqu logo" />
     `
 })
 export class UniLogoComponent {

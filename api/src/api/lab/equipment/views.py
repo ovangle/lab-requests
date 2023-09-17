@@ -2,10 +2,31 @@ from typing import Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends
 
+from sqlalchemy import select
+from api.lab.equipment.queries import query_equipment_tags
+
 from db import get_db
 from api.base.schemas import PagedResultList
 
-from .schemas import Equipment, EquipmentPatch
+from .schemas import Equipment, EquipmentPatch, EquipmentTag
+
+from . import models
+
+lab_equipment_tags = APIRouter(
+    prefix="/lab/equipments/tags",
+    tags=["lab-equipment", "lab-equipment-tags"]
+)
+
+@lab_equipment_tags.get('/')
+async def index_equipment_tags(
+    name_istartswith: Optional[str] = None,
+    db = Depends(get_db)
+) -> PagedResultList[EquipmentTag]: 
+    return await PagedResultList[EquipmentTag].from_selection(
+        EquipmentTag,
+        db,
+        query_equipment_tags(name_istartswith=name_istartswith),
+    )
 
 lab_equipments = APIRouter(
     prefix="/lab/equipments",
@@ -40,3 +61,4 @@ async def update_equipment(
     db = Depends(get_db)
 ) -> Equipment:
     raise NotImplementedError
+
