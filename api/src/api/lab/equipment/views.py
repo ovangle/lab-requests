@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from sqlalchemy import select
-from api.lab.equipment.queries import query_equipment_tags
+from api.lab.equipment.queries import query_equipment_tags, query_equipments
 
 from db import get_db
 from api.base.schemas import PagedResultList
@@ -19,13 +19,13 @@ lab_equipment_tags = APIRouter(
 
 @lab_equipment_tags.get('/')
 async def index_equipment_tags(
-    name_istartswith: Optional[str] = None,
+    name_startswith: Optional[str] = None,
     db = Depends(get_db)
 ) -> PagedResultList[EquipmentTag]: 
     return await PagedResultList[EquipmentTag].from_selection(
         EquipmentTag,
         db,
-        query_equipment_tags(name_istartswith=name_istartswith),
+        query_equipment_tags(name_istartswith=name_startswith),
     )
 
 lab_equipments = APIRouter(
@@ -34,12 +34,16 @@ lab_equipments = APIRouter(
 )
 
 @lab_equipments.get('/')
-async def query_equipments(
-    name_starts_with: Optional[str] = None,
+async def index_equipments(
+    name_startswith: Optional[str] = None,
     name: Optional[str] = None,
     db = Depends(get_db)
 ) -> PagedResultList[Equipment]:
-    raise NotImplementedError()
+    return await PagedResultList[Equipment].from_selection(
+        Equipment,
+        db,
+        query_equipments(name_istartswith=name_startswith, name_eq=name)
+    )
 
 @lab_equipments.post('/')
 async def create_equipment(

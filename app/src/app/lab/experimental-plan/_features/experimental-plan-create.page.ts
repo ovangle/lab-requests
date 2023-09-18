@@ -3,6 +3,7 @@ import { Subscription, filter, of } from "rxjs";
 import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanPatch } from "../experimental-plan";
 import { ExperimentalPlanFormComponent } from "../experimental-plan-form.component";
 import { ActivatedRoute, Router } from "@angular/router";
+import { ExperimentalPlanFormService } from "../experimental-plan-form.service";
 
 
 const experimentalPlanCreateFixture: ExperimentalPlanPatch = ({
@@ -22,7 +23,12 @@ const experimentalPlanCreateFixture: ExperimentalPlanPatch = ({
 @Component({
     selector: 'lab-experimental-plan-create-page',
     template: `
-        <lab-experimental-plan-form [controls]="controls"></lab-experimental-plan-form>
+        <lab-experimental-plan-form 
+            [form]="_formService.form"
+            [controls]="controls"
+            (requestCommit)="_formService.save()"
+            (requestReset)="_formService.reset()">
+        </lab-experimental-plan-form>
 
         <ng-template #controls let-committable="committable" let-commit="doCommit">
             <button mat-raised-button 
@@ -35,6 +41,7 @@ const experimentalPlanCreateFixture: ExperimentalPlanPatch = ({
     `,
     providers: [
         ExperimentalPlanContext,
+        ExperimentalPlanFormService
     ]
 })
 export class ExperimentalPlanCreatePage {
@@ -44,12 +51,11 @@ export class ExperimentalPlanCreatePage {
     _activatedRoute = inject(ActivatedRoute);
 
     _context: ExperimentalPlanContext = inject(ExperimentalPlanContext);
-    _contextConnection: Subscription;
 
-    @ViewChild(ExperimentalPlanFormComponent, {static: true})
-    experimentalPlanForm: ExperimentalPlanFormComponent;
+    _formService = inject(ExperimentalPlanFormService);
 
     constructor() {
+        this._context.initCreateContext();
         this._context.committed$.pipe(
             filter((committed): committed is ExperimentalPlan => committed != null)
         ).subscribe(committed => {
@@ -59,14 +65,10 @@ export class ExperimentalPlanCreatePage {
     }
 
     ngAfterViewInit() {
-        this.experimentalPlanForm.form.setValue({
+        this._formService.form.setValue({
             ...experimentalPlanCreateFixture,
             addWorkUnits: []
         })
         this._cdRef.detectChanges();
-    }
-
-    ngOnDestroy() {
-        this._contextConnection.unsubscribe();
     }
 }

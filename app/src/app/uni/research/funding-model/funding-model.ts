@@ -1,5 +1,5 @@
 import { HttpParams } from "@angular/common/http";
-import { Injectable, inject } from "@angular/core";
+import { Inject, Injectable, Optional, SkipSelf, inject } from "@angular/core";
 import { Observable, ReplaySubject, connectable, firstValueFrom } from "rxjs";
 import { Context } from "src/app/utils/models/model-context";
 
@@ -75,6 +75,13 @@ export class FundingModelService extends ModelService<FundingModel, FundingModel
 @Injectable()
 export class FundingModelContext extends Context<FundingModel, FundingModelPatch, FundingModelCreate> {
     override readonly models = inject(FundingModelService);
+
+    constructor(
+        @Optional() @SkipSelf() @Inject(FundingModelContext)
+        parentContext: FundingModelContext | undefined
+    ) {
+        super(parentContext);
+    }
 
     override _doCreate(request: FundingModelCreate): Observable<FundingModel> {
         return this.models.create(request);

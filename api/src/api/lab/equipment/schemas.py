@@ -72,6 +72,9 @@ class Equipment(EquipmentBase, ApiModel[models.Equipment]):
             updated_at=equipment.updated_at
         )
 
+    async def to_model(self, db: LocalSession):
+        return models.Equipment.get_for_id(db, self.id)
+
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID):
         model = await models.Equipment.get_for_id(db, id)

@@ -4,7 +4,7 @@ import { CommonModule } from "@angular/common";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { Observable, defer, delay, filter, map, of, skip, switchMap, switchMapTo, timer, zip } from "rxjs";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { AbstractControl, ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule, ValidationErrors } from "@angular/forms";
+import { AbstractControl, ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule, ValidationErrors, Validators } from "@angular/forms";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { LabEquipmentFormComponent } from "./equipment-form.component";
 import { MatCardModule } from "@angular/material/card";
@@ -95,9 +95,7 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
     );
 
     readonly equipmentContext = inject(EquipmentContext);
-
     readonly searchOptions$ = defer(() => this.equipments.items$);
-
     readonly isNewEquipment$ = this.searchControl.valueChanges.pipe(
         map(value => value === this._NEW_EQUIPMENT_)
     );
@@ -117,7 +115,7 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
         this.searchControl.valueChanges.pipe(
             filter((v): v is (Equipment | string) => v != this._NEW_EQUIPMENT_),
             map(v => {
-                if (typeof v === 'string') {
+                if (typeof v === 'string' || v == null) {
                     return v;
                 }
                 return v.name;

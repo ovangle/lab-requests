@@ -97,7 +97,9 @@ export class FundingModelSelectContext extends FundingModelContext {
                     <mat-option value="other">Other...</mat-option>
                 </mat-select>
 
-                <ng-content select="mat-error"></ng-content>
+                <mat-error>
+                    <ng-content select="mat-error"></ng-content>
+                </mat-error>
             </mat-form-field>
         </section>
 

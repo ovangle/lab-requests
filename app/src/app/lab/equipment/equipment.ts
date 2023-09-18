@@ -99,7 +99,7 @@ export function equipmentLookupToHttpParams(lookup: Partial<EquipmentLookup>) {
 
 @Injectable()
 export class EquipmentModelService extends ModelService<Equipment, EquipmentPatch> {
-    override readonly resourcePath: string = '/lab/equipment'
+    override readonly resourcePath: string = '/lab/equipments'
     override readonly modelFromJson = equipmentFromJson;
     override readonly patchToJson = equipmentPatchToJson;
     override readonly lookupToHttpParams = equipmentLookupToHttpParams;

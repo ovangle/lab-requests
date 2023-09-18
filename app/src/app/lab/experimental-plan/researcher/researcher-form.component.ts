@@ -6,8 +6,8 @@ import { MatInputModule } from "@angular/material/input";
 import { CampusSearchComponent } from "src/app/uni/campus/campus-search.component";
 import { DisciplineSelectComponent } from "src/app/uni/discipline/discipline-select.component";
 import { WorkUnitForm } from "../../work-unit/work-unit-form.service";
-import { ExperimentalPlanForm } from "../experimental-plan-form.component";
 import { ExperimentalPlanPatchErrors } from "../experimental-plan";
+import { ExperimentalPlanForm } from "../experimental-plan-form.service";
 
 @Component({
     selector: 'lab-experimental-plan-researcher-form',
