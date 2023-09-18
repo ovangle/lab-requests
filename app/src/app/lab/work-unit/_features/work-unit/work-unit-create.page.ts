@@ -5,7 +5,7 @@ import { Software } from "../../resources/software/software";
 import { WorkUnit, WorkUnitContext, WorkUnitCreate } from "../../work-unit";
 import { Subscription, of } from "rxjs";
 import { WorkUnitFormComponent } from "../../work-unit-form.component";
-import { WorkUnitForm } from "../../work-unit-form.service";
+import { WorkUnitForm, WorkUnitFormService } from "../../work-unit-form.service";
 import { CommonModule } from "@angular/common";
 import { hazardClassFromDivision } from "../../resource/hazardous/hazardous";
 
@@ -34,12 +34,21 @@ const workUnitCreateFixture: Partial<WorkUnitCreate> = {
     selector: 'lab-work-unit-create-page',
     template: `
         <h1>New work unit</h1>
-        <lab-work-unit-form></lab-work-unit-form>
-    `
+        <lab-work-unit-form
+            [committed]="_formService.committed$ | async"
+            [form]="_formService.form"
+            (requestCommit)="_formService.save()">
+        </lab-work-unit-form>
+    `,
+    providers: [
+        WorkUnitFormService
+    ]
 })
 export class WorkUnitCreatePage {
     _context = inject(WorkUnitContext);
     _cdRef = inject(ChangeDetectorRef);
+
+    _formService = inject(WorkUnitFormService);
 
     @ViewChild(WorkUnitFormComponent, {static: true})
     workUnitForm: WorkUnitFormComponent;

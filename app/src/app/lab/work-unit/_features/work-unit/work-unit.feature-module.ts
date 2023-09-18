@@ -8,6 +8,7 @@ import { CommonModule } from "@angular/common";
 import { WorkUnitBaseInfoComponent } from "../../base-info/work-unit-base-info.component";
 import { WorkUnitFormComponent } from "../../work-unit-form.component";
 import { ResourceContainerContext } from "../../resource/resource-container";
+import { WorkUnitResourceCardComponent } from "../../resource/resource-card.component";
 
 
 const WORK_UNIT_FROM_PLAN_ROUTES: Routes = [
@@ -34,6 +35,8 @@ const WORK_UNIT_FROM_PLAN_ROUTES: Routes = [
 
         WorkUnitBaseInfoComponent,
         WorkUnitFormComponent,
+
+        WorkUnitResourceCardComponent
     ],
     declarations: [
         WorkUnitCreatePage,

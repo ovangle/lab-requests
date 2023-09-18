@@ -174,9 +174,6 @@ export abstract class ResourceContainerFormService {
     readonly _context = inject(ResourceContainerContext<any,any>);
 
     readonly container$ = this._context.committed$;
-    _commitContainer(patch: ResourceContainerPatch) {
-        return this._context.commitContext(patch);
-    }
 
     readonly patchValue$: Observable<ResourceContainerPatch> = defer(() => this.form.statusChanges.pipe( 
         filter((status) => status === 'VALID'),
@@ -185,7 +182,7 @@ export abstract class ResourceContainerFormService {
 
     abstract readonly form: ResourceContainerForm;
 
-    patchFromContainerPatch(patch: ResourceContainerPatch) {
+    async patchFromContainerPatch(patch: ResourceContainerPatch) {
         return this._context.patchFromContainerPatch(patch);
     }
 
@@ -194,28 +191,7 @@ export abstract class ResourceContainerFormService {
             throw new Error('Cannot commit invalid form');
         }
         const patch = resourceContainerPatchFromForm(this.form);
-        return await this._commitContainer(patch);
-    }
-
-
-    readonly resourceCountsSubject = new BehaviorSubject<Partial<Record<ResourceType, number>>>({});
-
-    connect() {
-        const syncCountsSubscription = this.container$.pipe(
-            map(container => {
-                const counts: [ResourceType, number][] = ALL_RESOURCE_TYPES.map(t => [t, container.countResources(t)]) 
-                return Object.fromEntries(counts); 
-            })
-        ).subscribe(this.resourceCountsSubject);
-
-        return new Subscription(() => {
-            this.resourceCountsSubject.complete();
-        });
-    }
-
-    getCommitedResourceCount(resourceType: ResourceType) {
-        const resourceCounts = this.resourceCountsSubject.value;
-        return resourceCounts[resourceType] || -1;
+        return await this._context.commit(patch);
     }
 
     async initResourceForm(resourceType: ResourceType, index: number | 'create'): Promise<void> { 
@@ -240,7 +216,6 @@ export abstract class ResourceContainerFormService {
     }
 
     getResourceForm(resourceType: ResourceType, index: number | 'create'): FormGroup<any> | null {
-        const count = this.getCommitedResourceCount(resourceType);
         if (index === 'create') {
             // This is a create form
             const addArr = getResourceAddArray(this.form, resourceType); 
@@ -298,7 +273,4 @@ export abstract class ResourceContainerFormService {
     getResourceAt$<T extends Resource>(type: ResourceType, index: number): Observable<T> {
         return this.getResources$<T>(type).pipe(map(resources => resources[index]));
     }
-
-
-    readonly _formPane = inject(ExperimentalPlanFormPaneControlService);
 }

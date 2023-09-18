@@ -5,7 +5,6 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { OutputMaterial, OutputMaterialForm, createOutputMaterialForm, disableDependentControlsWithBaseUnitValidity } from "./output-material";
 import { ResourceFormService } from "../../../resource/resource-form.service";
-import { ResourceFormComponent } from "../../../resource/common/resource-form.component";
 import { ResourceDisposalFormComponent } from "../../../resource/disposal/resource-disposal-form.component";
 import { HazardClassesSelectComponent } from "../../../resource/hazardous/hazard-classes-select.component";
 import { ResourceStorageFormComponent } from "../../../resource/storage/resource-storage-form.component";
@@ -20,13 +19,12 @@ import { ResourceStorageFormComponent } from "../../../resource/storage/resource
         MatFormFieldModule,
         MatInputModule,
 
-        ResourceFormComponent,
         ResourceStorageFormComponent,
         ResourceDisposalFormComponent,
         HazardClassesSelectComponent
     ],
     template: `
-    <lab-resource-form [formGroup]="form">
+    <form [formGroup]="form">
         <mat-form-field>
             <mat-label>Name</mat-label>
             <input matInput formControlName="name" />
@@ -53,7 +51,7 @@ import { ResourceStorageFormComponent } from "../../../resource/storage/resource
             <lab-req-hazard-classes-select formControlName="hazardClasses">
             </lab-req-hazard-classes-select>
         </ng-container>
-    </lab-resource-form>
+    </form>
     `
 })
 export class OutputMaterialResourceFormComponent {

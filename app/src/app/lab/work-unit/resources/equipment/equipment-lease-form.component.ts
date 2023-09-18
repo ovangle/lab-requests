@@ -6,7 +6,6 @@ import { MatInputModule } from "@angular/material/input";
 import { EquipmentLease, EquipmentLeaseForm, equipmentLeaseForm } from "./equipment-lease";
 import { defer, filter, map } from "rxjs";
 import { EquipmentSearchComponent } from "src/app/lab/equipment/equipment-search.component";
-import { ResourceFormComponent } from "../../resource/common/resource-form.component";
 import { ResourceFormService } from "../../resource/resource-form.service";
 
 
@@ -20,12 +19,10 @@ import { ResourceFormService } from "../../resource/resource-form.service";
         MatFormFieldModule,
         MatInputModule,
 
-        ResourceFormComponent,
-
         EquipmentSearchComponent
     ],
     template: `
-    <lab-generic-resource-form [formGroup]="form">
+    <form [formGroup]="form">
         <lab-equipment-search formControlName="equipment">
             <mat-label>Equipment</mat-label>
         </lab-equipment-search>
@@ -40,7 +37,7 @@ import { ResourceFormService } from "../../resource/resource-form.service";
             </mat-checkbox>
 
         </ng-container>
-    </lab-generic-resource-form>
+    </form>
     `,
 })
 export class EquipmentLeaseFormComponent {

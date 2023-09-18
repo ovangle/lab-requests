@@ -10,7 +10,7 @@ import { Campus, campusFromJson, isCampus } from "../../uni/campus/campus";
 import { isDiscipline } from "../../uni/discipline/discipline";
 import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanModelService } from "../experimental-plan/experimental-plan";
 import { LabType } from "../type/lab-type";
-import { ResourceContainer, ResourceContainerContext, ResourceContainerPatch, researchContainerFieldsFromJson, resourceContainerPatchFromContainer } from "./resource/resource-container";
+import { ResourceContainer, ResourceContainerContext, ResourceContainerPatch, researchContainerFieldsFromJson, resourceContainerPatchFromContainer} from "./resource/resource-container";
 
 
 /**
@@ -37,6 +37,8 @@ export class WorkUnit extends ResourceContainer {
         params: Partial<WorkUnit>
     ) {
         super(params);
+        this.id = params.id!;
+
         if (!isCampus(params['campus']))
             throw new Error('WorkUnit lab requires a campus');
         this.campus = params.campus;

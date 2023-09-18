@@ -9,7 +9,6 @@ import { ServiceResourceTableComponent } from "../../../resources/service/servic
 import { OutputMaterialResourceFormComponent } from "../../../resources/material/output/output-material-resource-form.component";
 import { InputMaterialResourceFormComponent } from "../../../resources/material/input/input-material-resource-form.component";
 import { ResourceFormTitleComponent } from "../../common/resource-form-title.component";
-import { ResourceFormComponent } from "../../common/resource-form.component";
 import { ServiceResourceFormComponent } from "../../../resources/service/service-resource-form.component";
 
 const RESOURCE_FORM_ROUTES: Routes = ALL_RESOURCE_TYPES.flatMap(
@@ -28,7 +27,6 @@ const RESOURCE_FORM_ROUTES: Routes = ALL_RESOURCE_TYPES.flatMap(
         RouterModule.forChild(RESOURCE_FORM_ROUTES),
 
         ResourceFormTitleComponent,
-        ResourceFormComponent,
 
         EquipmentLeaseFormComponent,
         SoftwareResourceFormComponent,

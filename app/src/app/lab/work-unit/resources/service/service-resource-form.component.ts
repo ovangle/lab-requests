@@ -6,7 +6,6 @@ import { Service, ServiceForm, serviceForm } from "./service";
 import { MatInputModule } from "@angular/material/input";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { ResourceFormService } from "../../resource/resource-form.service";
-import { ResourceFormComponent } from "../../resource/common/resource-form.component";
 import { ProvisionFormComponent } from "../../resource/provision/provision-form.component";
 
 @Component({
@@ -21,10 +20,9 @@ import { ProvisionFormComponent } from "../../resource/provision/provision-form.
         MatInputModule,
 
         ProvisionFormComponent,
-        ResourceFormComponent
     ],
     template: `
-    <lab-generic-resource-form [formGroup]="form">
+    <form [formGroup]="form">
         <mat-form-field>
             <mat-label>Name</mat-label>
             <input matInput formControlName="name" />
@@ -36,7 +34,7 @@ import { ProvisionFormComponent } from "../../resource/provision/provision-form.
 
         <lab-resource-provision-form [form]="form">
         </lab-resource-provision-form>
-    </lab-generic-resource-form>
+    </form>
     `
 })
 export class ServiceResourceFormComponent {

@@ -6,7 +6,7 @@ from db import LocalSession, get_db
 from api.base.schemas import PagedResultList
 from api.lab.plan.schemas import ExperimentalPlan
 
-from .schemas import WorkUnit, WorkUnitCreate
+from .schemas import WorkUnit, WorkUnitCreate, WorkUnitPatch
 
 lab_work_units = APIRouter(
     prefix="/lab/work-units",
@@ -42,3 +42,9 @@ async def create_work_unit(create: WorkUnitCreate, db: LocalSession = Depends(ge
 async def get_work_unit(work_unit_id: UUID, db: LocalSession = Depends(get_db)) -> WorkUnit:
     return await WorkUnit.get_by_id(db, work_unit_id)
 
+@lab_work_units.put(
+    "/{work_unit_id}"
+)
+async def put_work_unit(work_unit_id: UUID, patch: WorkUnitPatch, db: LocalSession = Depends(get_db)) -> WorkUnit:
+    work_unit = await WorkUnit.get_by_id(db, work_unit_id)
+    return await patch(db, work_unit)

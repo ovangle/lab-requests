@@ -95,6 +95,10 @@ export class ResourceContainerPatch {
     delOutputMaterials?: number[]
 }
 
+export function resourceContainerPatchFromContainer(container: any) {
+    return {};
+}
+
 export function resourceContainerPatchToJson(patch: ResourceContainerPatch): {[k: string]: any} {
     let json: {[k: string]: any} = {};
     for (const resourceType of ALL_RESOURCE_TYPES) {
@@ -170,9 +174,6 @@ function delResourcePatch(resourceType: ResourceType, toDel: number[]): Resource
             return {delOutputMaterials: toDel}
     }
 }
-export function resourceContainerPatchFromContainer(container: ResourceContainer): ResourceContainerPatch {
-    return {}
-}
 
 export type ResourceContainerPatchErrors = ValidationErrors & {
     addEquipments?: (EquipmentLeaseFormErrors | null)[];
@@ -214,6 +215,10 @@ export abstract class ResourceContainerContext<T extends ResourceContainer & { r
     }
     
     async deleteResourceAt(resourceType: ResourceType, index: number) {
+        const committed = await firstValueFrom(this.committed$);
+        if (committed == null) {
+            throw new Error('Cannot delete resources until container')
+        }
         const patch = await this.patchFromContainerPatch(
             delResourcePatch(resourceType, [index])
         );

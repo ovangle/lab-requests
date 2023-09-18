@@ -5,10 +5,11 @@ import dataclasses
 from typing import TYPE_CHECKING, Dict, Optional, Type, TypeVar, Any, Union, cast
 
 from humps import decamelize
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from api.base.models import Base
 from api.base.schemas import ApiModel, ModelPatch
+from db import LocalSession
 
 from .equipment_lease.schemas import EquipmentLease
 from .software.schemas import Software
@@ -28,6 +29,7 @@ def is_resource(obj):
     return any(isinstance(obj, t) for t in RESOURCE_TYPES)
 
 TResource = TypeVar('TResource', bound=Resource)
+
 def resource_name(resource: TResource | Type[TResource]) -> str:
     if isinstance(resource, type):
         return decamelize(resource.__name__.lower())
@@ -97,19 +99,40 @@ class ResourceContainerPatch(BaseModel):
             jsonb_resources[index] = to_replace[index]
         self._replace_all(resource_type, model, jsonb_resources)
 
-    def update_resource(self, resource_type: Type[TResource], model: models.ResourceContainer):
-        all_items: list[Any]     = getattr(self, resource_name(resource_type))
+    def _remove_resource(self, resource_type: Type[TResource], model: models.ResourceContainer, to_remove: list[int]):
+        raise NotImplementedError()
 
-        items_to_add: list[Any] | None = getattr(self, f'add_{resource_type}')
-        items_to_replace: dict[int, TResource] | None = getattr(self, f'replace_{resource_type}')
+    def _update_fields_for_type(self, resource_type: Type[TResource]) -> tuple[list[TResource], dict[int, TResource], list[int]]:
+        r_name = resource_name(resource_type)
+        to_add: list[TResource] = getattr(self, f'add_{r_name}s', [])
+        to_replace: dict[int, TResource] = {
+            int(k): v for k, v in getattr(self, f'replace_{r_name}s', {}).items()
+        }
+        to_remove: list[int] = getattr(self, f'del_{r_name}s', [])
+        return (to_add, to_replace, to_remove)
 
-        if all_items:
-            if items_to_add or items_to_replace:
-                raise ValueError(f'Cannot supply add_{resource_type} if {resource_type} is provided')
-            self._replace_all(resource_type, model, all_items)
-        else:
-            if items_to_replace:
-                self._replace_resource(resource_type, model, items_to_replace)
-            if items_to_add:
-                self._add_resources(resource_type, model, items_to_add)
+    def _update_resources_of_type(self, resource_type: Type[TResource], model: models.ResourceContainer):
+        (items_to_add, items_to_replace, items_to_remove) = self._update_fields_for_type(resource_type)
+        if items_to_add:
+            if items_to_replace or items_to_remove:
+                raise ValidationError(f'Cannot replace or remove {resource_name(resource_type)} in same request as add')
+            self._add_resources(resource_type, model, items_to_add)
+                
+        if items_to_replace:
+            if items_to_remove:
+                raise ValidationError('Cannot replace and remove {resource_type} in same request as replace')
+            self._replace_resource(resource_type, model, items_to_replace)
+        
+        if items_to_remove:
+            self._remove_resource(resource_type, model, items_to_remove)
 
+
+    def _is_update_to_resources_of_type(self, resource_type: Type[TResource]):
+        (to_add, to_replace, to_remove) = self._update_fields_for_type(resource_type)
+        return to_add or to_replace or to_remove
+
+    async def update_model_resources(self, db: LocalSession, model: models.ResourceContainer):
+        for resource_type in ALL_RESOURCE_TYPES:
+            if self._is_update_to_resources_of_type(resource_type):
+                self._update_resources_of_type(resource_type, model)
+                db.add(model)

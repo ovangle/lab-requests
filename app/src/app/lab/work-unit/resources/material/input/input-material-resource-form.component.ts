@@ -25,7 +25,7 @@ import { ResourceStorageFormComponent } from "../../../resource/storage/resource
         ProvisionFormComponent,
     ],
     template: `
-    <lab-generic-resource-form [formGroup]="form">
+    <form [formGroup]="form">
         <mat-form-field>
             <mat-label>Name</mat-label>
             <input matInput formControlName="name">
@@ -55,7 +55,7 @@ import { ResourceStorageFormComponent } from "../../../resource/storage/resource
                 <span class="label">Hazard classes</span>
             </lab-req-hazard-classes-select>
         </ng-container>
-    </lab-generic-resource-form>
+    </form>
     `,
     styles: [`
     form {

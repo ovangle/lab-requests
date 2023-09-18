@@ -77,12 +77,19 @@ class WorkUnitPatch(WorkUnitBase, ResourceContainerPatch, ModelPatch[WorkUnit, m
     __api_model__ = WorkUnit
 
     async def do_update(self, db: LocalSession, model: models.WorkUnit_) -> models.WorkUnit_:
-        for attr in ('lab_type', 'technician_email', 'process_summary', 
+        for attr in ('lab_type', 'process_summary', 
                      'start_date', 'end_date'):
             s_attr = getattr(self, attr)
             if getattr(model, attr) != s_attr:
                 setattr(model, attr, getattr(self, attr))
                 db.add(model)
+
+        if model.technician_email != self.technician:
+            model.technician_email = self.technician
+            db.add(model)
+
+        if self.has_resource_container_updates(model):
+            self.update_resources_of_type(WorkUnit, )
 
         return model
 

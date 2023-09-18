@@ -94,7 +94,7 @@ export abstract class ModelService<T extends Model, TPatch, TCreate extends TPat
 
     update(identifier: string, patch: TPatch, options?: {resourcePath?: string}): Observable<T> {
         const url = this._resourceUrl(identifier, options);
-        return this.httpClient.post(url, this.patchToJson(patch)).pipe(
+        return this.httpClient.put(url, this.patchToJson(patch)).pipe(
             map(result => this.modelFromJson(result))
         );
     }

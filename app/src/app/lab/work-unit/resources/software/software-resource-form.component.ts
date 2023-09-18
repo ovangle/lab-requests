@@ -6,7 +6,6 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { Software, SoftwareForm, createSoftwareForm } from "./software";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { ResourceFormComponent } from "../../resource/common/resource-form.component";
 import { ResourceFormService } from "../../resource/resource-form.service";
 import { ProvisionFormComponent } from "../../resource/provision/provision-form.component";
 
@@ -23,10 +22,9 @@ import { ProvisionFormComponent } from "../../resource/provision/provision-form.
         MatSelectModule,
 
         ProvisionFormComponent,
-        ResourceFormComponent,
     ],
     template: `
-    <lab-resource-form [formGroup]="form">
+    <form [formGroup]="form">
         <mat-form-field>
                 <mat-label>Name</mat-label>
                 <input matInput
@@ -58,7 +56,7 @@ import { ProvisionFormComponent } from "../../resource/provision/provision-form.
             [canResearcherSupply]="false"
             provisioningUnit="per license">
         </lab-resource-provision-form>
-    </lab-resource-form>
+    </form>
     `,
     styles: [`
         form {

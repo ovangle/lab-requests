@@ -43,6 +43,11 @@ class WorkUnitResourceContainerFormService extends ResourceContainerFormService 
     get form() {
         return this._workUnitFormService.form as any;
     }
+
+    constructor() {
+        super();
+        this._workUnitFormService.committed$.subscribe();
+    }
 }
 
 

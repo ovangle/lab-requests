@@ -6,6 +6,7 @@ import { ResourceType, isResourceType } from "../../resource-type";
 import { ResourceContext } from "../../resource";
 import { ResourceFormService } from "../../resource-form.service";
 import { BodyScrollbarHidingService } from "src/app/utils/body-scrollbar-hiding.service";
+import { ExperimentalPlanFormPaneControlService } from "src/app/lab/experimental-plan/experimental-plan-form-pane-control.service";
 
 export function typeIndexFromDetailRoute$(): Observable<[ResourceType, number | 'create']> {
     const activatedRoute = inject(ActivatedRoute);
@@ -67,6 +68,8 @@ export class WorkUnitResourceFormPage {
     readonly _formService = inject(ResourceFormService);
     readonly _formConnection: Subscription;
 
+    readonly _formPane = inject(ExperimentalPlanFormPaneControlService);
+
     readonly typeIndex$ = defer(() => this._context.committedTypeIndex$);
     readonly resourceType$ = defer(() => this._context.resourceType$);
 
@@ -93,9 +96,10 @@ export class WorkUnitResourceFormPage {
     }
 
     async close() {
-
+        this._formPane.close();
     }
     async saveAndClose() {
-
+        await this._formService.save();
+        await this.close();
     }
 }

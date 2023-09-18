@@ -50,8 +50,9 @@ app.add_middleware(
     allow_headers=['*']
 )
 
-from api.lab.equipment.views import lab_equipments
+from api.lab.equipment.views import lab_equipments, lab_equipment_tags
 app.include_router(lab_equipments)
+app.include_router(lab_equipment_tags)
 
 from api.lab.plan.views import lab_plans
 app.include_router(lab_plans)

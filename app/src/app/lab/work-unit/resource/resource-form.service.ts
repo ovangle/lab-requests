@@ -62,7 +62,7 @@ export class ResourceFormService<T extends Resource, TForm extends FormGroup<any
         return index === 'create';
     }
 
-    async commitForm(): Promise<T> {
+    async save(): Promise<T> {
         const [resourceType, index] = this._typeIndex;
         const container: ResourceContainer = await this.containerFormService.commit();
         if (index === 'create') {
