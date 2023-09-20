@@ -5,10 +5,10 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from api.lab.equipment.queries import query_equipment_tags, query_equipments
 
-from db import get_db
+from db import LocalSession, get_db
 from api.base.schemas import PagedResultList
 
-from .schemas import Equipment, EquipmentPatch, EquipmentTag
+from .schemas import Equipment, EquipmentCreate, EquipmentPatch, EquipmentTag
 
 from . import models
 
@@ -47,9 +47,11 @@ async def index_equipments(
 
 @lab_equipments.post('/')
 async def create_equipment(
-    equipment: EquipmentPatch
+    create_req: EquipmentCreate,
+    db: LocalSession = Depends(get_db)
 ) -> Equipment:
-    raise NotImplementedError
+    return await create_req(db)
+
 
 @lab_equipments.get('/{equipment_id}')
 async def read_equipment(

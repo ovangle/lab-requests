@@ -7,6 +7,7 @@ import { EquipmentDetailPage } from "./equipment-detail.page";
 import { EquipmentContext, EquipmentModelService } from "../equipment";
 import { LabEquipmentListComponent } from "../equipment-list.component";
 import { LabEquipmentFormComponent } from "../equipment-form.component";
+import { MatButtonModule } from "@angular/material/button";
 
 const EQUIPMENT_ROUTES: Routes = [
     {
@@ -28,6 +29,8 @@ const EQUIPMENT_ROUTES: Routes = [
     imports: [
         CommonModule,
         RouterModule.forChild(EQUIPMENT_ROUTES),
+
+        MatButtonModule,
 
         LabEquipmentFormComponent,
         LabEquipmentListComponent

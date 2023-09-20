@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, inject } from "@angular/core";
+import { Component, ElementRef, ViewChild, ViewEncapsulation, inject } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
 import { Observable, Subscription, defer, map, shareReplay, switchMap } from "rxjs";
 import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanModelService } from "../experimental-plan";
@@ -59,11 +59,6 @@ export function experimentalPlanContextFromDetailRoute(): Observable<Experimenta
     </div>
     `,
     styles: [`
-    :host {
-        display: block;
-        position: relative;
-    }
-
     .resource-form-pane {
         position: absolute;
         top: 0;

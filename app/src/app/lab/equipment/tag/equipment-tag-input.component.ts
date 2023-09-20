@@ -26,24 +26,24 @@ interface EquipmentTag {
     ],
     template: `
     <mat-form-field>
-        <mat-label><ng-content select="mat-label"></ng-content></mat-label>
         <mat-chip-grid #chipGrid>
             <mat-chip-row *ngFor="let tag of tags"
                            (removed)="remove(tag)"
                            [editable]="true"
-                           (edited)="edit(tag, $event)">
-                {{tag.name}}
+                           (edited)="edit(tag, $event)"
+                           [disabled]="_isDisabled">
+                {{tag}}
                 <button matChipRemove>
                     <mat-icon>cancel</mat-icon>
                 </button>
             </mat-chip-row>
 
-            <input placeholder="New tag..." 
+            <input placeholder="Add tag..." 
                 [matChipInputFor]="chipGrid"
                 [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
                 matChipInputAddOnBlur
-                (matChipInputTokenEnd)="add($event)" />
-
+                (matChipInputTokenEnd)="add($event)" 
+                [disabled]="_isDisabled" />
             <!-- TODO: Autocomplete -->
         </mat-chip-grid>
     </mat-form-field>
@@ -59,23 +59,23 @@ interface EquipmentTag {
 })
 export class EquipmentTagInputComponent implements ControlValueAccessor {
     readonly separatorKeysCodes = [ENTER, COMMA] as const;
-    tags: EquipmentTag[] = [];
+    tags: string[] = [];
 
     add(event: MatChipInputEvent) {
         const name = event.value.trim().toLocaleLowerCase();
         if (name) {
-            this.tags.push({ id: uuid.v4(), name });
+            this.tags.push(name);
         }
         event.chipInput!.clear();
         this._onChange([...this.tags]);
     }
 
-    remove(tag: EquipmentTag) {
-        this.tags = this.tags.filter(t => t.id == tag.id);
+    remove(tag: string) {
+        this.tags = this.tags.filter(t => t !== tag);
         this._onChange([...this.tags]);
     }
 
-    edit(tag: EquipmentTag, evt: MatChipEditedEvent) {
+    edit(tag: string, evt: MatChipEditedEvent) {
         const name = evt.value.trim().toLocaleLowerCase();
         if (!name) {
             this.remove(tag);
@@ -84,10 +84,10 @@ export class EquipmentTagInputComponent implements ControlValueAccessor {
         this._onChange([...this.tags]);
     }
 
-    writeValue(obj: EquipmentTag[]): void {
+    writeValue(obj: string[]): void {
         this.tags = [...obj];
     }
-    _onChange = (value: EquipmentTag[]) => {}
+    _onChange = (value: string[]) => {}
     registerOnChange(fn: any): void {
         this._onChange = fn;
     }
@@ -96,6 +96,7 @@ export class EquipmentTagInputComponent implements ControlValueAccessor {
         this._onTouched = fn;
     }
     setDisabledState?(isDisabled: boolean): void {
-        throw new Error("Method not implemented.");
+        this._isDisabled = isDisabled;
     }
+    _isDisabled: boolean; 
 }

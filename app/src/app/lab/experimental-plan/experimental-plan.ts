@@ -136,6 +136,23 @@ export type ExperimentalPlanPatchErrors = ValidationErrors & {
     }
 }
 
+export interface ExperimentalPlanCreate extends ExperimentalPlanPatch {
+    createDefaultWorkUnitForResearcher: boolean;
+    technicianForDefaultWorkUnit: string | null;
+}
+
+export function experimentalPlanCreateToJson(create: ExperimentalPlanCreate) {
+    const patchJson = experimentalPlanPatchToJson(create);
+
+    return {
+        ...patchJson,
+        createDefaultWorkUnitForResearcher: create.createDefaultWorkUnitForResearcher,
+        technicianForDefaultWorkUnit: create.technicianForDefaultWorkUnit
+    };
+
+
+}
+
 export interface ExperimentalPlanLookup extends Lookup<ExperimentalPlan> {
 }
 export function experimentalPlanLookupToHttpParams(lookup: Partial<ExperimentalPlanLookup>): HttpParams {

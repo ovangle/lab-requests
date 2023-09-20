@@ -6,7 +6,7 @@ from uuid import UUID
 
 from datetime import date, datetime
 from typing import Iterable, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic.dataclasses import dataclass
@@ -167,6 +167,9 @@ class ExperimentalPlanPatch(ExperimentalPlanBase, ModelPatch[ExperimentalPlan, m
 
 class ExperimentalPlanCreate(ExperimentalPlanBase, ModelCreate[ExperimentalPlan, models.ExperimentalPlan_]):
     __api_model__ = ExperimentalPlan
+
+    create_default_work_unit_for_researcher: bool = field(default=True)
+    default_work_unit_technician: str | None = field(default=None)
     add_work_units: list[WorkUnitPatch] = field(default_factory=list)
 
     async def do_create(self, db: LocalSession) -> models.ExperimentalPlan_:
@@ -176,12 +179,32 @@ class ExperimentalPlanCreate(ExperimentalPlanBase, ModelCreate[ExperimentalPlan,
         self._set_model_fields(instance)
 
         db.add(instance)
-        if list(instance.work_units):
-            raise ValueError('Can not be applied after work units created')
+
+        if self.create_default_work_unit_for_researcher:
+            if self.add_work_units:
+                raise ValidationError('Cannot provide both add_work_unit and create_default_work_unit_for_researcher')
+
+            if not self.default_work_unit_technician:
+                # TODO: Should look this up somewhere?
+                raise ValidationError('Must provide a technician for the default work unit')
+            
+            add_work_units = [
+                WorkUnitCreate(
+                    plan_id=instance.id, 
+                    lab_type=LabType.for_discipline(self.researcher_discipline),
+                    campus=self.researcher_base_campus,
+                    technician=self.default_work_unit_technician
+                ) 
+            ] 
+        else:
+            add_work_units = [
+                WorkUnitCreate(plan_id=instance.id, **patch.model_dump())
+                for patch in self.add_work_units
+            ]
+
 
         new_work_units = []
-        for work_unit in self.add_work_units:
-            work_unit_create = WorkUnitCreate(plan_id=instance.id, **work_unit.model_dump())
+        for work_unit_create in add_work_units:
             new_work_units.append(await work_unit_create(db))
 
         db.add(instance)

@@ -132,7 +132,8 @@ class ResourceContainerPatch(BaseModel):
         return to_add or to_replace or to_remove
 
     async def update_model_resources(self, db: LocalSession, model: models.ResourceContainer):
-        for resource_type in ALL_RESOURCE_TYPES:
-            if self._is_update_to_resources_of_type(resource_type):
-                self._update_resources_of_type(resource_type, model)
+        for resource_type in RESOURCE_TYPES:
+            resource_type_ = cast(Type, resource_type)
+            if self._is_update_to_resources_of_type(resource_type_):
+                self._update_resources_of_type(resource_type_, model)
                 db.add(model)

@@ -15,10 +15,9 @@ export class Equipment {
     name: string;
     description: string;
 
-    tags: EquipmentTag[]; 
+    tags: string[]; 
     availableInLabTypes: LabType[] | 'all';
 
-    requiresTraining: boolean;
     trainingDescriptions: string[]
 
     constructor(params: Partial<Equipment>) {
@@ -26,9 +25,9 @@ export class Equipment {
         this.name = params.name!;
         this.description = params.description!;
         this.availableInLabTypes = params.availableInLabTypes!;
-        this.requiresTraining = params.requiresTraining!;
         this.trainingDescriptions = params.trainingDescriptions!;
    }
+
 }
 
 export function equipmentFromJson(json: {[k: string]: any}): Equipment {
@@ -36,8 +35,7 @@ export function equipmentFromJson(json: {[k: string]: any}): Equipment {
         id: json['id'],
         name: json['name'],
         description: json['description'],
-        availableInLabTypes: Array.from(json['availableInLabTypes']), 
-        requiresTraining: json['requiresTraining'],
+        availableInLabTypes: Array.from(json['availableInLabTypes'] || []), 
         trainingDescriptions: Array.from(json['trainingDescriptions'])
     })
 }
@@ -46,10 +44,9 @@ export interface EquipmentPatch {
     name: string;
     description: string;
 
-    tags: EquipmentTag[];
+    tags: string[];
 
     availableInLabTypes: LabType[] | 'all';
-    requiresTraining: boolean;
     trainingDescriptions: string[];
 }
 
@@ -64,7 +61,6 @@ export function equipmentPatchToJson(patch: EquipmentPatch) {
         description: patch.description,
         tags: patch.tags,
         availableInLabTypes: patch.availableInLabTypes, 
-        requiresTraining: patch.requiresTraining,
         trainingDescriptions: patch.trainingDescriptions
     }
 }
@@ -75,7 +71,6 @@ export function equipmentPatchFromEquipment(equipment: Equipment): EquipmentPatc
         tags: equipment.tags,
         description: equipment.description,
         availableInLabTypes: equipment.availableInLabTypes,
-        requiresTraining: equipment.requiresTraining,
         trainingDescriptions: equipment.trainingDescriptions
     }
 }

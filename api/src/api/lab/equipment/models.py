@@ -1,7 +1,8 @@
 from __future__ import annotations
+from typing import Iterable
 
 from uuid import UUID, uuid4
-from sqlalchemy import ARRAY, TEXT, VARCHAR, Column, ForeignKey, Table, select
+from sqlalchemy import ARRAY, INTEGER, TEXT, VARCHAR, Column, ForeignKey, Table, select
 from sqlalchemy.dialects import postgresql as pg_dialect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -13,23 +14,14 @@ from db.orm import uuid_pk
 from ..types import LabType
 from .errors import EquipmentDoesNotExist, EquipmentTagDoesNotExist
 
-_equipment_tag_association_table = Table(
-    "_equipment_tag_associations",
-    Base.metadata,
-    Column('equipment_id', ForeignKey('equipments.id'), primary_key=True),
-    Column('tag_id', ForeignKey('equipment_tags.id'), primary_key=True)
-)
 
 class EquipmentTag(Base):
     __tablename__ = 'equipment_tags'
 
     id: Mapped[uuid_pk]
-    name: Mapped[str] = mapped_column(VARCHAR(64), unique=True)
+    name: Mapped[str] = mapped_column(VARCHAR(128), unique=True)
 
-    equipments: Mapped[list[Equipment]] = relationship(
-        secondary=_equipment_tag_association_table,
-        back_populates='tags'
-    )
+    frequency: Mapped[int] = mapped_column(INTEGER, default=0)
 
     def __init__(self, *, id: UUID | None = None, name: str):
         super().__init__()
@@ -70,17 +62,12 @@ class Equipment(Base):
     name: Mapped[str] = mapped_column(VARCHAR(128), unique=True)
     description: Mapped[str] = mapped_column(TEXT, server_default='')
 
-    tags: Mapped[set[EquipmentTag]] = relationship(
-        secondary=_equipment_tag_association_table,
-        back_populates='equipments'
-    )
-
+    tags: Mapped[list[str]] = mapped_column(ARRAY(VARCHAR(128)), server_default='{}')
     available_in_lab_types: Mapped[list[LabType]] = mapped_column(
         ARRAY(pg_dialect.ENUM(LabType)), 
         server_default="{}"
     )
 
-    requires_training: Mapped[bool] = mapped_column()
     training_descriptions: Mapped[list[str]] = mapped_column(ARRAY(TEXT), server_default="{}")
 
     @staticmethod
@@ -91,3 +78,16 @@ class Equipment(Base):
         if not result:
             raise EquipmentDoesNotExist.for_id(id)
         return result[0]
+
+    def __init__(
+        self, 
+        *, 
+        name: str, 
+        description: str = '',
+        tags: Iterable[str] | None = None,
+        training_descriptions: Iterable[str] | None = None
+    ):
+        self.name = name
+        self.description = description
+        self.tags = sorted(list(tags or {}))
+        self.training_descriptions = list(training_descriptions or [])

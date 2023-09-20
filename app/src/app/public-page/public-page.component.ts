@@ -15,7 +15,7 @@ import { RouterModule } from "@angular/router";
     template: `
         <button mat-button (click)="loginContext.login('microsoft')">Login via microsoft</button>
 
-        <a mat-button routerLink="/lab">Lab requests</a>
+        <a mat-button routerLink="/lab">MyLab</a>
     `
 })
 export class PublicPageComponent {

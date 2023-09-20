@@ -1,18 +1,16 @@
 import { CommonModule } from "@angular/common";
-import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, TemplateRef, ViewChild, inject } from "@angular/core";
-import { AbstractControl, FormArray, FormControl, FormGroup, FormGroupDirective, ReactiveFormsModule, Validators } from "@angular/forms";
+import { Component, EventEmitter, Input, Output, TemplateRef, ViewChild } from "@angular/core";
+import { FormControl, ReactiveFormsModule } from "@angular/forms";
 
-import { Equipment, EquipmentPatch, EquipmentPatchErrors, EquipmentModelService, equipmentPatchFromEquipment, EquipmentContext } from './equipment';
-import { LabType } from "../type/lab-type";
-import { BehaviorSubject, Observable, Subscription, firstValueFrom, map, share } from "rxjs";
-import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatButtonModule } from "@angular/material/button";
-import { MatInputModule } from "@angular/material/input";
-import { MatIconModule } from "@angular/material/icon";
 import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { Equipment, EquipmentPatch, EquipmentPatchErrors } from './equipment';
 import { EquipmentForm, EquipmentFormService, equipmentPatchFromForm } from "./equipment-form.service";
-import { MatListModule } from "@angular/material/list";
-import { EquipmentTrainingListFormComponent } from "./training/training-list-form.component";
+import { EquipmentTagInputComponent } from "./tag/equipment-tag-input.component";
+import { EquipmentTrainingDescriptionsInputComponent } from "./training/training-descriptions-input.component";
 
 export const equipmentFixtures: Equipment[] = [];
 
@@ -29,10 +27,11 @@ export const equipmentFixtures: Equipment[] = [];
         MatFormFieldModule,
         MatInputModule,
 
-        EquipmentTrainingListFormComponent
+        EquipmentTagInputComponent,
+        EquipmentTrainingDescriptionsInputComponent
     ],
     template: `
-    <form [formGroup]="form" (ngSubmit)="commitForm()">
+    <form [formGroup]="form" (ngSubmit)="commitForm($event)">
         <mat-form-field>
             <mat-label>Name</mat-label>
             <input matInput 
@@ -52,29 +51,27 @@ export const equipmentFixtures: Equipment[] = [];
             </textarea>
         </mat-form-field>  
 
-        <mat-checkbox formControlName="requiresTraining">
-            This equipment requires induction before use
-        </mat-checkbox>
+        <lab-equipment-tags-input formControlName="tags">
+            <mat-label>Tags</mat-label>
+        </lab-equipment-tags-input>
 
-        <ng-container *ngIf="isTrainingRequired">
-            <lab-equipment-training-list-form 
-                [committed]="committedTrainingDescriptions"
-                [form]="trainingDescripionsFormArr"
-                (requestCommit)="requestTrainingCommitted($event)">
-            </lab-equipment-training-list-form>
-        </ng-container> 
+        <lab-equipment-training-descriptions-input formControlName="trainingDescriptions">
+        </lab-equipment-training-descriptions-input>
 
         <div class="form-actions"> 
-            <ng-container [ngTemplateOutlet]="formActionControls"></ng-container>
+            <button mat-raised-button type="submit" 
+                color="primary"
+                [disabled]="form.invalid">
+                <mat-icon>save</mat-icon> save
+            </button>
         </div>
     </form>
-
-    <ng-template #formActionControls>
-        <button mat-button type="submit" [disabled]="form.invalid">
-            <mat-icon>save</mat-icon>
-        </button>
-    </ng-template>
     `,
+    styles: [`
+    .form-actions button {
+        float: right;
+    }
+    `],
     providers: [
         EquipmentFormService
     ],
@@ -104,29 +101,20 @@ export class LabEquipmentFormComponent {
         return this.form.controls.name.errors as any; 
     }
 
-    get isTrainingRequired() {
-        return this.form.controls.requiresTraining.value;
-    }
-
     get committedTrainingDescriptions(): string[] {
         return this.committed?.trainingDescriptions || [];
     }
 
-    get trainingDescripionsFormArr(): FormArray<FormControl<string>> {
+    get trainingDescripionsFormArr(): FormControl<string[]> {
         return this.form.controls.trainingDescriptions;
     }
 
-    requestTrainingCommitted(descriptions: string[]) {
-        // TODO: What works here in both create and update?
-        // Sometimes it's too early to commit.
-        this.commitForm();
-    }
-
-    commitForm() {
+    commitForm(evt: Event) {
         const patch = equipmentPatchFromForm(this.form);
-        this.requestCommit.next(patch)
+        this.requestCommit.emit(patch)
+        evt.preventDefault();
     }
     resetForm() {
-        this.requestReset.next();
+        this.requestReset.emit();
     }
 }

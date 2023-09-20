@@ -18,9 +18,9 @@ from . import models
 class WorkUnitBase(BaseModel):
     campus: Campus | CampusCode | UUID;
     lab_type: LabType
-    technician: str
+    technician: str 
 
-    process_summary: str
+    process_summary: str = ''
 
     start_date: Optional[date] = None
     end_date: Optional[date] = None
@@ -88,8 +88,7 @@ class WorkUnitPatch(WorkUnitBase, ResourceContainerPatch, ModelPatch[WorkUnit, m
             model.technician_email = self.technician
             db.add(model)
 
-        if self.has_resource_container_updates(model):
-            self.update_resources_of_type(WorkUnit, )
+        await self.update_model_resources(db, model)
 
         return model
 

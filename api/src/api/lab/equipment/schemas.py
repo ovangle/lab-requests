@@ -51,10 +51,8 @@ class EquipmentBase(BaseModel):
     name: str
     description: str
 
-    available_in_lab_types: list[LabType]
-
-    requires_training: bool
     training_descriptions: list[str]
+    tags: set[str]
 
 class Equipment(EquipmentBase, ApiModel[models.Equipment]):
     id: UUID
@@ -65,9 +63,8 @@ class Equipment(EquipmentBase, ApiModel[models.Equipment]):
             id=equipment.id,
             name=equipment.name,
             description=equipment.description,
-            available_in_lab_types=equipment.available_in_lab_types,
-            requires_training=equipment.requires_training,
-            training_descriptions=equipment.training_descriptions,
+            training_descriptions=list(equipment.training_descriptions),
+            tags=set(equipment.tags),
             created_at=equipment.created_at,
             updated_at=equipment.updated_at
         )
@@ -91,11 +88,23 @@ class EquipmentPatch(EquipmentBase, ModelPatch[Equipment, models.Equipment]):
         if model.description != self.description:
             model.description = self.description
             db.add(model)
+
+        if model.training_descriptions != self.training_descriptions:
+            model.training_descriptions = list(self.training_descriptions)
+            db.add(model)
+
+        if set(model.tags) != self.tags:
+            model.tags = sorted(self.tags)
+            db.add(model)
         return model
 
 class EquipmentCreate(EquipmentBase, ModelCreate[Equipment, models.Equipment]):
+    __api_model__ = Equipment
+
     async def do_create(self, db: LocalSession):
-        raise NotImplementedError()
+        equipment = models.Equipment(**self.model_dump())
+        db.add(equipment)
+        return equipment
 
 
 

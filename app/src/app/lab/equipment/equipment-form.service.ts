@@ -9,9 +9,8 @@ export type EquipmentForm = FormGroup<{
     name: FormControl<string>;
     description: FormControl<string>;
     availableInLabTypes: FormControl<LabType[] | 'all'>;
-    tags: FormControl<EquipmentTag[]>,
-    requiresTraining: FormControl<boolean>;
-    trainingDescriptions: FormArray<FormControl<string>>;
+    tags: FormControl<string[]>,
+    trainingDescriptions: FormControl<string[]>;
 }>;
 
 export function equipmentPatchFromForm(form: EquipmentForm): EquipmentPatch {
@@ -44,10 +43,9 @@ export class EquipmentFormService {
             }
         ),
         description: new FormControl<string>('', { nonNullable: true }),
-        tags: new FormControl<EquipmentTag[]>([], { nonNullable: true }),
+        tags: new FormControl<string[]>([], { nonNullable: true }),
         availableInLabTypes: new FormControl<LabType[] | 'all'>('all', {nonNullable: true}),
-        requiresTraining: new FormControl<boolean>(false, {nonNullable: true}),
-        trainingDescriptions: new FormArray<FormControl<string>>([])
+        trainingDescriptions: new FormControl<string[]>([], {nonNullable: true})
     });
 
     readonly patchValue$: Observable<EquipmentPatch | null> = this.form.statusChanges.pipe(
@@ -58,18 +56,6 @@ export class EquipmentFormService {
         map(() => equipmentPatchErrorsFromForm(this.form)),
         share()
     );
-
-    pushTrainingDescriptionForm() {
-        const formArr = this.form.controls.trainingDescriptions;
-        formArr.push(new FormControl<string>('', {nonNullable: true}));
-    }
-
-    popTrainingDescriptionForm(): AbstractControl<string> {
-        const formArr = this.form.controls.trainingDescriptions;
-        const control = formArr.controls[formArr.length - 1];
-        formArr.removeAt(formArr.length - 1);
-        return control;
-    }
 
     get tags() {
         return this.form.controls.tags;

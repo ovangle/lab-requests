@@ -1,17 +1,36 @@
 import { CommonModule } from "@angular/common";
-import { Component } from "@angular/core";
+import { Component, inject } from "@angular/core";
+import { EquipmentCollection } from "../equipment";
+import { map } from "rxjs";
 
 @Component({
     selector: 'lab-equipment-index-page',
     template: `
-    <div>
-        <a mat-button routerLink="./create">
+    <h1>
+        Equipment
+        <a mat-raised-button class="create-button" 
+            color="primary"
+            routerLink="./create">
             + Create
         </a>
-    </div>
+    </h1>
 
-    <lab-equipment-list>
-    </lab-equipment-list>
-    `
+    <ng-container *ngIf="equipments$ | async as equipments">
+        <lab-equipment-list [equipments]="equipments">
+        </lab-equipment-list>
+    </ng-container>
+    `,
+    styles: [`
+    a.create-button {
+        float: right;
+    }
+    `]
 })
-export class EquipmentIndexPage {}
+export class EquipmentIndexPage {
+    readonly equipmentCollection = inject(EquipmentCollection);
+
+    readonly equipments$ = this.equipmentCollection.resultPage$.pipe(
+        map(resultPage => resultPage.items)
+    );
+
+}

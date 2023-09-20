@@ -8,5 +8,5 @@
     "python.analysis.autoSearchPaths": false,
     "python.analysis.extraPaths": [
         "api/src/"
-    ],
+    ]
 }

@@ -1,5 +1,5 @@
 import { DOCUMENT } from "@angular/common";
-import { Injectable, Inject, Provider, inject, InjectionToken } from "@angular/core";
+import { Injectable, Inject, Provider, inject, InjectionToken, Pipe } from "@angular/core";
 import { ActivatedRoute, ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree } from "@angular/router";
 import { LoginContext } from "../oauth/login-context";
 
@@ -59,4 +59,5 @@ export async function requiresAuthorizationGuard(
     }
     return true;
 }
+
 

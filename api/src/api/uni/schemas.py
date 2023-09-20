@@ -39,8 +39,8 @@ class Campus(CampusBase, ApiModel[models.Campus]):
             updated_at=model.updated_at
         )
 
-    def to_model(self, db: LocalSession):
-        return models.Campus.get_for_id(db, self.id)
+    async def to_model(self, db: LocalSession):
+        return await models.Campus.get_for_id(db, self.id)
 
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID):

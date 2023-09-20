@@ -7,7 +7,7 @@ import { EquipmentTag } from "./equipment-tag";
 
 
 @Component({
-    selector: 'lab-equipment-tag-labels',
+    selector: 'lab-equipment-tag-chips',
     standalone: true,
     imports: [
         CommonModule,
@@ -21,7 +21,7 @@ import { EquipmentTag } from "./equipment-tag";
     </mat-chip-listbox>
     `
 })
-export class EquipmentTagComponent {
+export class EquipmentTagChipsComponent {
     @Input()
-    tags: EquipmentTag[];
+    tags: string[];
 }
