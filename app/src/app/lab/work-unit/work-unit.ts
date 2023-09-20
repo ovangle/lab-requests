@@ -112,7 +112,7 @@ export function workUnitPatchToJson(patch: WorkUnitPatch): {[k: string]: any} {
     };
 }
 
-export type WorkUnitPatchErrors = ValidationErrors & {
+export interface WorkUnitPatchErrors {
     campus: {
         required: string | null;
     } | null;
@@ -130,6 +130,7 @@ export type WorkUnitPatchErrors = ValidationErrors & {
         afterStartDate: string | null;
     } | null;
 }
+
 
 export interface WorkUnitCreate extends WorkUnitPatch {
     planId: string;

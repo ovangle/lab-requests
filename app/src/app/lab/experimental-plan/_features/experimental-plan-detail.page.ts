@@ -59,6 +59,10 @@ export function experimentalPlanContextFromDetailRoute(): Observable<Experimenta
     </div>
     `,
     styles: [`
+    mat-card-header {
+        padding: 0;
+    }
+
     .resource-form-pane {
         position: absolute;
         top: 0;

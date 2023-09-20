@@ -14,6 +14,7 @@ import { Equipment } from "../equipment/equipment";
 import { ExperimentalPlan, ExperimentalPlanPatch, ExperimentalPlanPatchErrors } from "./experimental-plan";
 import { ExperimentalPlanResearcherFormComponent } from "./researcher/researcher-form.component";
 import { ExperimentalPlanForm, experimentalPlanPatchFromForm } from "./experimental-plan-form.service";
+import { ExperimentalPlanCreateDefaultWorkUnitForm } from "./work-units/create-default-work-unit-form.component";
 
 
 @Component({
@@ -30,7 +31,8 @@ import { ExperimentalPlanForm, experimentalPlanPatchFromForm } from "./experimen
         DisciplineSelectComponent,
         FundingModelSelectComponent,
         CampusSearchComponent,
-        ExperimentalPlanResearcherFormComponent
+        ExperimentalPlanResearcherFormComponent,
+        ExperimentalPlanCreateDefaultWorkUnitForm
     ],
     template: `
     <form [formGroup]="form">
@@ -62,6 +64,13 @@ import { ExperimentalPlanForm, experimentalPlanPatchFromForm } from "./experimen
             </mat-error>
         </uni-research-funding-model-select>
 
+        <ng-container *ngIf="isCreate">
+
+            <lab-experimental-plan-create-default-work-unit-form 
+                [form]="form">
+            </lab-experimental-plan-create-default-work-unit-form>
+        </ng-container>
+
         <ng-container [ngTemplateOutlet]="controls" [ngTemplateOutletContext]="formControlContext$ | async">
         </ng-container>
     </form>
@@ -82,7 +91,7 @@ import { ExperimentalPlanForm, experimentalPlanPatchFromForm } from "./experimen
 })
 export class ExperimentalPlanFormComponent {
     @Input()
-    committed: Equipment | null;
+    committed: Equipment | null = null;
 
     @Input({required: true})
     form: ExperimentalPlanForm;
@@ -92,6 +101,10 @@ export class ExperimentalPlanFormComponent {
 
     @Output()
     requestReset = new EventEmitter<void>();
+
+    get isCreate() {
+        return this.committed === null;
+    }
 
     get titleErrors(): ExperimentalPlanPatchErrors['title'] | null {
         return this.form.controls['title'].errors || null as any;

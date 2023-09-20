@@ -18,11 +18,42 @@ export type WorkUnitForm = FormGroup<{
 
 } & ResourceContainerFormControls>;
 
-function workUnitPatchFromForm(form: WorkUnitForm): WorkUnitPatch {
+export function workUnitPatchFromForm(form: WorkUnitForm): WorkUnitPatch {
     if (!form.valid) {
         throw new Error('Cannot create patch from invalid form');
     }
     return form.value as WorkUnitPatch;
+}
+
+const errFields = ['campus', 'labType', 'technician', 'startDate', 'endDate'] as Array<keyof WorkUnitPatchErrors>
+function workUnitPatchErrorsFromForm(form: WorkUnitForm): WorkUnitPatchErrors {
+    function getControlErrors(key: keyof WorkUnitPatchErrors) {
+        return form.controls[key].errors;
+    }
+    return Object.fromEntries(
+        errFields.map(field => [field,  getControlErrors(field)])
+    ) as unknown as WorkUnitPatchErrors;
+}
+
+export function workUnitForm(): WorkUnitForm {
+    return new FormGroup({
+        campus: new FormControl<Campus | string | null>(null, {validators: [Validators.required]}),
+        labType: new FormControl<LabType | null>(null, {validators: [Validators.required]}),
+        technician: new FormControl('', {
+            nonNullable: true,
+            validators: [
+                Validators.required,
+                Validators.email
+            ]
+        }),
+        processSummary: new FormControl('', {nonNullable: true}),
+
+        startDate: new FormControl<Date | null>(null),
+        endDate: new FormControl<Date | null>(null),
+
+        ...resourceContainerFormControls()
+    });
+
 }
 
 @Injectable()
@@ -62,23 +93,7 @@ export class WorkUnitFormService {
         endDate: new FormControl<Date | null>(null),
 
         ...resourceContainerFormControls()
-    }, {
-        validators: [(c) => this._collectErrors(c as WorkUnitForm)]
     });
-
-    _collectErrors(form: WorkUnitForm): Partial<WorkUnitPatchErrors> | null {
-        if (form.valid) {
-            return null;
-        }
-        let errors: Partial<WorkUnitPatchErrors> | null = null;
-        for (const [key, control] of Object.entries(form.controls)) {
-            if (control.touched && !control.valid) {
-                errors = errors || {};
-                errors[key] = control.errors;
-            }
-        }
-        return errors;
-    }
 
     readonly patchValue$: Observable<WorkUnitPatch | null> = defer(() => this.form.valueChanges.pipe(
         filter(() => this.form.valid),

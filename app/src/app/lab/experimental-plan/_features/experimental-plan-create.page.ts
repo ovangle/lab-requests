@@ -52,15 +52,14 @@ export class CreateExperimentalPlanWorkUnitContext extends WorkUnitContext {
 @Component({
     selector: 'lab-experimental-plan-create-page',
     template: `
+        <h1>Create experimental plan</h1>
+
         <lab-experimental-plan-form 
             [form]="_formService.form"
             [controls]="controls"
             (requestCommit)="_formService.save()"
             (requestReset)="_formService.reset()">
         </lab-experimental-plan-form>
-
-        <lab-experimental-plan-create-options-form>
-        </lab-experimental-plan-create-options-form>
 
         <ng-template #controls let-committable="committable" let-commit="doCommit">
             <button mat-raised-button 

@@ -33,13 +33,23 @@ const workUnitCreateFixture: Partial<WorkUnitCreate> = {
 @Component({
     selector: 'lab-work-unit-create-page',
     template: `
-        <h1>New work unit</h1>
         <lab-work-unit-form
             [committed]="_formService.committed$ | async"
             [form]="_formService.form"
             (requestCommit)="_formService.save()">
         </lab-work-unit-form>
+
+        <div class="form-actions">
+            <button mat-raised-button (click)="_formService.save(); $event.stopPropagation()">
+                <mat-icon>save</mat-icon>save
+            </button>
+        </div>
     `,
+    styles: [`
+    .form-actions button {
+        float: left;
+    }
+    `],
     providers: [
         WorkUnitFormService
     ]

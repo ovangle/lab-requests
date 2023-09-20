@@ -9,6 +9,8 @@ import { WorkUnitBaseInfoComponent } from "../../base-info/work-unit-base-info.c
 import { WorkUnitFormComponent } from "../../work-unit-form.component";
 import { ResourceContainerContext } from "../../resource/resource-container";
 import { WorkUnitResourceCardComponent } from "../../resource/resource-card.component";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
 
 
 const WORK_UNIT_FROM_PLAN_ROUTES: Routes = [
@@ -32,6 +34,9 @@ const WORK_UNIT_FROM_PLAN_ROUTES: Routes = [
     imports: [
         CommonModule,
         RouterModule.forChild(WORK_UNIT_FROM_PLAN_ROUTES),
+
+        MatButtonModule,
+        MatIconModule,
 
         WorkUnitBaseInfoComponent,
         WorkUnitFormComponent,

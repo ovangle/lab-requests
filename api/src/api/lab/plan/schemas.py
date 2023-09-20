@@ -180,27 +180,10 @@ class ExperimentalPlanCreate(ExperimentalPlanBase, ModelCreate[ExperimentalPlan,
 
         db.add(instance)
 
-        if self.create_default_work_unit_for_researcher:
-            if self.add_work_units:
-                raise ValidationError('Cannot provide both add_work_unit and create_default_work_unit_for_researcher')
-
-            if not self.default_work_unit_technician:
-                # TODO: Should look this up somewhere?
-                raise ValidationError('Must provide a technician for the default work unit')
-            
-            add_work_units = [
-                WorkUnitCreate(
-                    plan_id=instance.id, 
-                    lab_type=LabType.for_discipline(self.researcher_discipline),
-                    campus=self.researcher_base_campus,
-                    technician=self.default_work_unit_technician
-                ) 
-            ] 
-        else:
-            add_work_units = [
-                WorkUnitCreate(plan_id=instance.id, **patch.model_dump())
-                for patch in self.add_work_units
-            ]
+        add_work_units = [
+            WorkUnitCreate(plan_id=instance.id, **patch.model_dump())
+            for patch in self.add_work_units
+        ]
 
 
         new_work_units = []

@@ -11,13 +11,9 @@ import { CampusInfoComponent } from "src/app/uni/campus/campus-info.component";
         CampusInfoComponent
     ],
     template: `
-    <h3>
-        <uni-campus-info [campus]="workUnit.campus" nameOnly>
-        </uni-campus-info>    
-        - {{workUnit.labType}} lab</h3>
     <dl>
         <dt>Technician</dt><dd>{{workUnit.technician}}</dd>
-        <dt>Process</dt><dd>{{workUnit.processSummary}}</dd>
+        <dt>Process Summary</dt><dd>{{workUnit.processSummary}}</dd>
     </dl>
     `
 })

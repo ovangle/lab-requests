@@ -14,7 +14,6 @@ import { MatListModule } from "@angular/material/list";
 import { ExperimentalPlanIndexPage } from "./experimental-plan-index.page";
 import { ExperimentalPlanDetailPage } from "./experimental-plan-detail.page";
 import { ExperimentalPlanCreatePage } from "./experimental-plan-create.page";
-import { ExperimentalPlanCreateOptionsFormComponent } from "../experimental-plan-create-options-form.component";
 
 const EXPERIMENTAL_PLAN_ROUTES: Routes = [
     {
@@ -60,7 +59,6 @@ const EXPERIMENTAL_PLAN_ROUTES: Routes = [
         MatTabsModule,
 
         ExperimentalPlanFormComponent,
-        ExperimentalPlanCreateOptionsFormComponent,
         ExperimentalPlanInfoComponent
     ],
     declarations: [

@@ -50,8 +50,7 @@ import { OutputMaterialResourceTableComponent } from "./resources/material/outpu
         -->
         <ng-container *ngIf="isEditingCampusInfo$ | async; else campusDisciplineInfo">
             <lab-work-unit-base-info-form 
-                [form]="form"
-                (requestCommit)="requestCommit.emit($event)">
+                [form]="form">
             </lab-work-unit-base-info-form>
         </ng-container>
 
