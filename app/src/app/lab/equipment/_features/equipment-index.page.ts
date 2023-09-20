@@ -24,7 +24,10 @@ import { map } from "rxjs";
     a.create-button {
         float: right;
     }
-    `]
+    `],
+    providers: [
+        EquipmentCollection
+    ]
 })
 export class EquipmentIndexPage {
     readonly equipmentCollection = inject(EquipmentCollection);

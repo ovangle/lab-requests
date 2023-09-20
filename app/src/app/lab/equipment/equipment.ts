@@ -7,6 +7,7 @@ import { Observable, firstValueFrom } from "rxjs";
 import { HttpParams } from "@angular/common/http";
 import { ModelCollection } from "src/app/utils/models/model-collection";
 import { EquipmentTag } from "./tag/equipment-tag";
+import { Router } from "@angular/router";
 
 
 export class Equipment {
@@ -24,8 +25,9 @@ export class Equipment {
         this.id = params.id!;
         this.name = params.name!;
         this.description = params.description!;
+        this.tags = Array.from(params.tags!);
         this.availableInLabTypes = params.availableInLabTypes!;
-        this.trainingDescriptions = params.trainingDescriptions!;
+        this.trainingDescriptions = Array.from(params.trainingDescriptions!);
    }
 
 }
@@ -36,6 +38,7 @@ export function equipmentFromJson(json: {[k: string]: any}): Equipment {
         name: json['name'],
         description: json['description'],
         availableInLabTypes: Array.from(json['availableInLabTypes'] || []), 
+        tags: Array.from(json['tags'] || []),
         trainingDescriptions: Array.from(json['trainingDescriptions'])
     })
 }

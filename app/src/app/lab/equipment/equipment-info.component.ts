@@ -4,6 +4,10 @@ import { CommonModule } from "@angular/common";
 import { RouterModule } from "@angular/router";
 
 import {EquipmentTagChipsComponent } from './tag/equipment-tag-chips.component';
+import { MatButtonModule } from "@angular/material/button";
+import { EquipmentTrainingDescriptionListComponent } from "./training/training-description-list.component";
+import { EquipmentTrainingAcknowlegementComponent } from "./training/training-acknowlegment-input.component";
+import { EquipmentTrainingDescriptionsInfoComponent } from "./training/training-descriptions-info.component";
 
 
 @Component({
@@ -13,17 +17,25 @@ import {EquipmentTagChipsComponent } from './tag/equipment-tag-chips.component';
         CommonModule,
         RouterModule,
 
+        MatButtonModule,
+
+        EquipmentTrainingDescriptionsInfoComponent,
         EquipmentTagChipsComponent
     ],
     template: `
-    <h2>
-        <a [routerLink]="['/lab/equipments', equipment.id]">{{equipment.name}}</a>
-    </h2>
+    <h1>
+        {{equipment.name}}
+        <lab-equipment-tag-chips [tags]="equipment.tags">
+        </lab-equipment-tag-chips> 
+    </h1>
 
+    <h3>Description</h3>
     <p>{{equipment.description}}</p>
 
-    <lab-equipment-tag-chips [tags]="equipment.tags">
-    </lab-equipment-tag-chips> 
+
+    <lab-equipment-training-descriptions-info
+        [trainingDescriptions]="equipment.trainingDescriptions">
+    </lab-equipment-training-descriptions-info>
     `,
     styles: [`
     `]

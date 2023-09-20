@@ -3,12 +3,14 @@ import { Component, Injectable, inject } from "@angular/core";
 import { ActivatedRoute, RouterModule } from "@angular/router";
 import { Equipment, EquipmentContext, EquipmentModelService } from "../equipment";
 import { Observable, Subscription, shareReplay, switchMap } from "rxjs";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 function equipmentContextFromDetailRoute() {
     const route = inject(ActivatedRoute);
     const models = inject(EquipmentModelService);
 
     return route.paramMap.pipe(
+        takeUntilDestroyed(),
         switchMap(params => {
             const equipmentId = params.get('equipment_id');
             if (!equipmentId) {
@@ -25,27 +27,15 @@ function equipmentContextFromDetailRoute() {
     selector: 'lab-equipment-detail-page',
     template: `
     <ng-container *ngIf="context.equipment$ | async as equipment">
-        <div>
-            Name <br/>
-            ==== <br />
-            {{equipment.name}}
-        </div>
-        <div>
-            Description <br />
-            =========== <br />
-            {{equipment.description}}
-        </div>
+        <lab-equipment-info [equipment]="equipment"></lab-equipment-info>
     </ng-container>
-    `,
-    providers: [
-        EquipmentContext,
-    ]
+    `
 })
 export class EquipmentDetailPage {
     readonly context = inject(EquipmentContext);
     _contextConnection: Subscription;
 
-    ngOnInit() {
+    constructor() {
         this._contextConnection = this.context.sendCommitted(
             equipmentContextFromDetailRoute()
         );

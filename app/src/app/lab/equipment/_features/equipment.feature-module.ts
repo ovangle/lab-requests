@@ -1,6 +1,6 @@
 import { CommonModule } from "@angular/common";
-import { NgModule } from "@angular/core";
-import { RouterModule, Routes } from "@angular/router";
+import { Injectable, NgModule, inject } from "@angular/core";
+import { Router, RouterModule, Routes } from "@angular/router";
 import { EquipmentIndexPage } from "./equipment-index.page";
 import { EquipmentCreatePage } from "./equipment-create.page";
 import { EquipmentDetailPage } from "./equipment-detail.page";
@@ -8,6 +8,7 @@ import { EquipmentContext, EquipmentModelService } from "../equipment";
 import { LabEquipmentListComponent } from "../equipment-list.component";
 import { LabEquipmentFormComponent } from "../equipment-form.component";
 import { MatButtonModule } from "@angular/material/button";
+import { EquipmentInfoComponent } from "../equipment-info.component";
 
 const EQUIPMENT_ROUTES: Routes = [
     {
@@ -25,6 +26,7 @@ const EQUIPMENT_ROUTES: Routes = [
     }
 ]
 
+
 @NgModule({
     imports: [
         CommonModule,
@@ -33,7 +35,8 @@ const EQUIPMENT_ROUTES: Routes = [
         MatButtonModule,
 
         LabEquipmentFormComponent,
-        LabEquipmentListComponent
+        LabEquipmentListComponent,
+        EquipmentInfoComponent
     ],
     declarations: [
         EquipmentCreatePage,

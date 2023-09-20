@@ -2,16 +2,17 @@ import { Component, Input } from "@angular/core";
 import { ControlValueAccessor, FormArray, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from "@angular/forms";
 import { CommonModule, formatNumber } from "@angular/common";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { EquipmentTrainingDescriptionsInfoComponent } from "./training-descriptions-info.component";
 import { Subscription } from "rxjs";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
 import { MatCardModule } from "@angular/material/card";
 import { MatListModule } from "@angular/material/list";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
+import { EquipmentTrainingDescriptionList__Empty } from "./training-description-list--empty.component";
 
 
 @Component({
-    selector: 'lab-equipment-training-acknowledgement-input',
+    selector: 'lab-equipment-training-acknowledgement',
     standalone: true,
     imports: [
         CommonModule,
@@ -20,19 +21,28 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
         MatCheckboxModule,
         MatListModule,
 
-        EquipmentTrainingDescriptionsInfoComponent
+        EquipmentTrainingDescriptionList__Empty
     ],
     template: `
     <mat-card [class.readonly]="readonly">
         <mat-card-header>
-            Required Training
+            <h2>Required Training</h2>
         </mat-card-header>
 
         <mat-card-content>
-            <mat-selection-list [formControl]="selectedControl">
-                <mat-list-item *ngFor="let description of descriptions">
-                    {{description}}
-                </mat-list-item>
+            <mat-selection-list [formControl]="selectedControl" [disabled]="readonly">
+                <ng-container *ngIf="trainingDescriptions.length > 0; else listEmpty">
+                    <mat-list-item *ngFor="let description of trainingDescriptions">
+                        {{description}}
+                    </mat-list-item>
+                </ng-container>
+
+                <ng-template #listEmpty>
+                    <mat-list-item disabled>
+                        <lab-equipment-training-description-list--empty>
+                        </lab-equipment-training-description-list--empty>
+                    </mat-list-item>
+                </ng-template>
             </mat-selection-list>
         </mat-card-content>
 
@@ -56,10 +66,16 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 })
 export class EquipmentTrainingAcknowlegementComponent implements ControlValueAccessor {
     @Input({required: true})
-    descriptions: string[];
+    trainingDescriptions: string[];
 
     @Input()
-    readonly: boolean = false;
+    get readonly(): boolean {
+        return this._readonly;
+    }
+    set readonly(input: BooleanInput) {
+        this._readonly = coerceBooleanProperty(input);
+    }
+    _readonly: boolean = false;
     
     readonly selectedControl = new FormControl<string[]>([], {nonNullable: true});
 

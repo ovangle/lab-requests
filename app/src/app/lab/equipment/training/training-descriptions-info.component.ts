@@ -1,7 +1,7 @@
 import { CommonModule } from "@angular/common";
 import { Component, Input } from "@angular/core";
-import { MatIconModule } from "@angular/material/icon";
-import { MatListModule } from "@angular/material/list";
+import { MatCardModule } from "@angular/material/card";
+import { EquipmentTrainingDescriptionListComponent } from "./training-description-list.component";
 
 
 @Component({
@@ -9,36 +9,26 @@ import { MatListModule } from "@angular/material/list";
     standalone: true,
     imports: [
         CommonModule,
-        MatIconModule,
-        MatListModule
+
+        MatCardModule,
+
+        EquipmentTrainingDescriptionListComponent
     ],
     template: `
-    <mat-list> 
-        <ng-container *ngIf="trainingDescriptions.length > 0; else noTrainingRequired">
-            <mat-list-item *ngFor="let description of trainingDescriptions">
-                {{description}}
-            </mat-list-item>
-        </ng-container>
-
-        <ng-template #noTrainingRequired>
-            <mat-list-item>
-                <mat-icon>warning</mat-icon>
-                No training required
-            </mat-list-item>
-        </ng-template>
-    </mat-list>
+    <mat-card>
+        <mat-card-header>
+            <h3>Training required</h3>
+        </mat-card-header>
+        <mat-card-content>
+            <lab-equipment-training-description-list
+                [trainingDescriptions]="trainingDescriptions">
+            </lab-equipment-training-description-list>
+        </mat-card-content>
+    </mat-card>
     `,
-    styles: [`
-    mat-icon {
-        width: inherit;
-        height: inherit;
-        font-size: inherit;
-        line-height: inherit;
-        vertical-align: bottom;
-    }
-    `]
 })
 export class EquipmentTrainingDescriptionsInfoComponent {
     @Input({required: true})
     trainingDescriptions: string[];
+
 }

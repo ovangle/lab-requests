@@ -14,7 +14,6 @@ from db.orm import uuid_pk, email
 from api.base.models import Base
 from api.uni.models import Campus
 from api.lab.types import LabType
-from api.lab.models import Lab
 from api.lab.plan.models import ExperimentalPlan_
 
 from .errors import WorkUnitDoesNotExist
@@ -34,7 +33,7 @@ class WorkUnit_(ResourceContainer, Base):
     index: Mapped[int] = mapped_column()
 
     lab_type: Mapped[LabType] = mapped_column(pg_dialect.ENUM(LabType))
-    technician_email: Mapped[email | None]
+    technician_email: Mapped[email]
 
     process_summary: Mapped[str] = mapped_column(TEXT)
 

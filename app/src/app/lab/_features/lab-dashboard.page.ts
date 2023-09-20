@@ -12,7 +12,7 @@ import { Component } from "@angular/core";
             <a mat-list-item 
                 routerLink="./equipments" >
                 <mat-icon matListItemIcon></mat-icon>
-                <span matListItemTitlle>Equipments</span>
+                <span matListItemTitlle>Equipment</span>
             </a>
             <a mat-list-item 
                 routerLink="./experimental-plans">
@@ -30,6 +30,9 @@ import { Component } from "@angular/core";
     }
     main {
         max-width: 60vw;
+        margin-left: 1em;
+        padding-left: 1em;
+        box-sizing: border-box;
     }
     `],
     styleUrls: [

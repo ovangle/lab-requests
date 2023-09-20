@@ -3,6 +3,7 @@ import { ChangeDetectorRef, Component, inject } from "@angular/core";
 import { Equipment, EquipmentContext, EquipmentPatch } from "../equipment";
 import { Subscription, of } from "rxjs";
 import { EquipmentForm, EquipmentFormService } from "../equipment-form.service";
+import { Router } from "@angular/router";
 
 const equipmentCreateFixture: EquipmentPatch = {
     name: 'HP Elitebook',
@@ -32,6 +33,7 @@ const equipmentCreateFixture: EquipmentPatch = {
 })
 export class EquipmentCreatePage {
     readonly _cdRef = inject(ChangeDetectorRef);
+    readonly _router = inject(Router);
 
     readonly context = inject(EquipmentContext);
 
@@ -49,8 +51,9 @@ export class EquipmentCreatePage {
         this._cdRef.markForCheck();
     }
 
-    createEquipment(patch: EquipmentPatch) {
-        return this.context.create(patch);
+    async createEquipment(patch: EquipmentPatch) {
+        const equipment = await this.context.create(patch)
+        await this._router.navigate(['lab', 'equipments', equipment.id])
     }
 
 }

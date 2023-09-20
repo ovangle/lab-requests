@@ -62,17 +62,11 @@ import { ExperimentalPlanForm, experimentalPlanPatchFromForm } from "./experimen
             </mat-error>
         </uni-research-funding-model-select>
 
-        <p>Funding model {{ form.value.fundingModel }}</p>
-
         <ng-container [ngTemplateOutlet]="controls" [ngTemplateOutletContext]="formControlContext$ | async">
         </ng-container>
     </form>
     `,
     styles: [`
-        form {
-            padding: 0px 2em;
-        }
-
         mat-card + mat-card {
             margin-top: 1em;
         }

@@ -13,7 +13,7 @@ import { MatListModule } from "@angular/material/list";
 import { BehaviorSubject, Observable, delay, map, share, shareReplay, timer } from "rxjs";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
 import { parseTrainingDescriptions } from "./training-descriptions";
-import { EquipmentTrainingDescriptionsInfoComponent } from "./training-descriptions-info.component";
+import { EquipmentTrainingDescriptionListComponent } from "./training-description-list.component";
 
 
 @Component({
@@ -29,7 +29,7 @@ import { EquipmentTrainingDescriptionsInfoComponent } from "./training-descripti
         MatInputModule,
         MatIconModule,
 
-        EquipmentTrainingDescriptionsInfoComponent
+        EquipmentTrainingDescriptionListComponent
     ],
     template: ` 
     <mat-card tabindex="0"
@@ -53,10 +53,10 @@ import { EquipmentTrainingDescriptionsInfoComponent } from "./training-descripti
             </ng-container>
 
             <ng-template #readonlyDescriptions>
-                <lab-equipment-training-descriptions-info
+                <lab-equipment-training-description-list
                     *ngIf="descriptions$ | async as descriptions"
                     [trainingDescriptions]="descriptions">
-                </lab-equipment-training-descriptions-info>
+                </lab-equipment-training-description-list>
             </ng-template> 
         </mat-card-content>
         <mat-card-footer>
