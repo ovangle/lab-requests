@@ -67,7 +67,6 @@ const EXPERIMENTAL_PLAN_ROUTES: Routes = [
         ExperimentalPlanIndexPage,
     ],
     providers: [
-        ExperimentalPlanModelService,
         ExperimentalPlanContext
     ],
     exports: [RouterModule]

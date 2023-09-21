@@ -89,7 +89,7 @@ export interface ExperimentalPlanPatch {
     researcherBaseCampus: Campus | CampusCode;
     researcherDiscipline: Discipline | null;
 
-    fundingModel: FundingModel | FundingModelCreate;
+    fundingModel: FundingModel | string;
     supervisor: string | null;
     processSummary: string;
 
@@ -123,17 +123,27 @@ export function experimentalPlanPatchToJson(patch: ExperimentalPlanPatch): {[k: 
 }
 
 export type ExperimentalPlanPatchErrors = ValidationErrors & {
-    title?: { required: string | null };
-    researcher?: {
+    title: { 
+        required: string | null 
+    };
+    researcher: {
         email: string | null;
         required: string | null;
-    };
-    researcherBaseCampus?: { required: string | null; };
-    researcherDiscipline?: { required: string | null; };
-    fundingType?: { required: string | null; };
-    supervisor?: {
+    } | null;
+    researcherBaseCampus: { 
+        required: string | null; 
+        notACampus: string | null;
+    } | null;
+    researcherDiscipline: { 
+        required: string | null; 
+    } | null;
+    fundingType: { 
+        required: string | null; 
+        notAFundingModel: string | null;
+    } | null;
+    supervisor: {
         email: string | null;
-    }
+    } | null;
 }
 
 export interface ExperimentalPlanCreate extends ExperimentalPlanPatch {
@@ -206,4 +216,10 @@ export class ExperimentalPlanContext extends Context<ExperimentalPlan, Experimen
             return await this.commit(patch);
         }
     }
+}
+
+export function labExperimentalPlanModelServiceProviders(): Provider[] {
+    return [
+        ExperimentalPlanModelService
+    ];
 }

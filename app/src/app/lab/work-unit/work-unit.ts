@@ -1,5 +1,5 @@
 import { HttpParams } from "@angular/common/http";
-import { Inject, Injectable, Optional, SkipSelf, inject } from "@angular/core";
+import { Inject, Injectable, Optional, Provider, SkipSelf, inject } from "@angular/core";
 import { ValidationErrors } from "@angular/forms";
 import { formatISO, parseISO } from "date-fns";
 import { Observable, filter, firstValueFrom, skipWhile, switchMap, take } from "rxjs";
@@ -267,4 +267,10 @@ export class WorkUnitResourceContainerContext extends ResourceContainerContext<W
         }
         return ['work-units', `${workUnit.index || 0}`];
     }
+}
+
+export function labWorkUnitModelServiceProviders(): Provider[] {
+    return [
+        WorkUnitModelService
+    ]
 }

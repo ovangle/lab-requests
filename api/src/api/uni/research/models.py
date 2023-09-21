@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from uuid import UUID
-from sqlalchemy import select
+from sqlalchemy import TEXT, select
 from sqlalchemy.types import VARCHAR
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -15,11 +15,13 @@ class FundingModel_(Base):
     __tablename__ = 'uni_research_funding_model'
     id: Mapped[uuid_pk]
 
-    description: Mapped[str] = mapped_column(VARCHAR(128))
+    name: Mapped[str] = mapped_column(VARCHAR(32), unique=True)
+    description: Mapped[str] = mapped_column(TEXT)
     requires_supervisor: Mapped[bool] = mapped_column()
 
-    def __init__(self, description: str, requires_supervisor: bool = True):
+    def __init__(self, name: str, description: str = '', requires_supervisor: bool = True):
         super().__init__()
+        self.name = name
         self.description = description
         self.requires_supervisor = requires_supervisor
 
@@ -28,6 +30,15 @@ class FundingModel_(Base):
         instance = await db.get(FundingModel_, id)
         if instance is None:
             raise FundingModelDoesNotExist.for_id(id)
+        return instance
+
+    @staticmethod
+    async def get_for_name(db: LocalSession, name: str) -> FundingModel_:
+        instance = await db.scalar(
+            select(FundingModel_).where(FundingModel_.name == name)
+        )
+        if instance is None:
+            raise FundingModelDoesNotExist.for_name(name)
         return instance
 
 

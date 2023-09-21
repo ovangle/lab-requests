@@ -124,7 +124,6 @@ export class FundingModelSelectContext extends FundingModelContext {
     }
     `],
     providers: [
-        FundingModelService,
         {
             provide: FundingModelContext,
             useClass: FundingModelSelectContext

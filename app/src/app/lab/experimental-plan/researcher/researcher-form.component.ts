@@ -7,7 +7,7 @@ import { CampusSearchComponent } from "src/app/uni/campus/campus-search.componen
 import { DisciplineSelectComponent } from "src/app/uni/discipline/discipline-select.component";
 import { WorkUnitForm } from "../../work-unit/work-unit-form.service";
 import { ExperimentalPlanPatchErrors } from "../experimental-plan";
-import { ExperimentalPlanForm } from "../experimental-plan-form.service";
+import { ExperimentalPlanForm } from "../experimental-plan-form";
 
 @Component({
     selector: 'lab-experimental-plan-researcher-form',

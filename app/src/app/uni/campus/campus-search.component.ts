@@ -1,5 +1,5 @@
 import { Component, HostBinding, inject } from "@angular/core";
-import { Campus, CampusModelService, isCampus } from "./campus";
+import { Campus, CampusModelService, isCampus, isCampusCode } from "./campus";
 import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from "@angular/forms";
 import { CommonModule } from "@angular/common";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
@@ -50,7 +50,6 @@ import { CampusInfoComponent } from "./campus-info.component";
     }
     `],
     providers: [
-        CampusModelService,
         { provide: NG_VALUE_ACCESSOR, multi: true, useExisting: CampusSearchComponent }
     ]
 })
@@ -80,7 +79,7 @@ export class CampusSearchComponent implements ControlValueAccessor {
         return !isCampus(this.searchControl.value);
     }
 
-    @HostBinding('[attr].required')
+    @HostBinding('[attr.required]')
     get required(): boolean {
         return this._required;
     }

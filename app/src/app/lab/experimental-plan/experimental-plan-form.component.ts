@@ -6,15 +6,15 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { defer, map } from "rxjs";
 import { CampusSearchComponent } from "src/app/uni/campus/campus-search.component";
 import { DisciplineSelectComponent } from "src/app/uni/discipline/discipline-select.component";
 import { FundingModelSelectComponent } from "../../uni/research/funding-model/funding-model-select.component";
 import { Equipment } from "../equipment/equipment";
-import { ExperimentalPlan, ExperimentalPlanPatch, ExperimentalPlanPatchErrors } from "./experimental-plan";
+import { ExperimentalPlanPatch, ExperimentalPlanPatchErrors } from "./experimental-plan";
 import { ExperimentalPlanResearcherFormComponent } from "./researcher/researcher-form.component";
-import { ExperimentalPlanForm, experimentalPlanPatchFromForm } from "./experimental-plan-form.service";
+import { ExperimentalPlanForm, experimentalPlanPatchFromForm } from "./experimental-plan-form";
 import { ExperimentalPlanCreateDefaultWorkUnitForm } from "./work-units/create-default-work-unit-form.component";
+import { FundingModelSearchComponent } from "src/app/uni/research/funding-model/funding-model-search.component";
 
 
 @Component({
@@ -30,6 +30,7 @@ import { ExperimentalPlanCreateDefaultWorkUnitForm } from "./work-units/create-d
 
         DisciplineSelectComponent,
         FundingModelSelectComponent,
+        FundingModelSearchComponent,
         CampusSearchComponent,
         ExperimentalPlanResearcherFormComponent,
         ExperimentalPlanCreateDefaultWorkUnitForm
@@ -56,13 +57,13 @@ import { ExperimentalPlanCreateDefaultWorkUnitForm } from "./work-units/create-d
             [form]="form">
         </lab-experimental-plan-researcher-form>
 
-        <uni-research-funding-model-select formControlName="fundingModel">
+        <uni-research-funding-model-search formControlName="fundingModel">
             <mat-label>Funding source</mat-label>
 
             <mat-error *ngIf="fundingModelErrors?.required">
                 A value is required
             </mat-error>
-        </uni-research-funding-model-select>
+        </uni-research-funding-model-search>
 
         <ng-container *ngIf="isCreate">
 
@@ -71,8 +72,8 @@ import { ExperimentalPlanCreateDefaultWorkUnitForm } from "./work-units/create-d
             </lab-experimental-plan-create-default-work-unit-form>
         </ng-container>
 
-        <ng-container [ngTemplateOutlet]="controls" [ngTemplateOutletContext]="formControlContext$ | async">
-        </ng-container>
+        <ng-content select=".form-controls">
+        </ng-content>
     </form>
     `,
     styles: [`
@@ -135,16 +136,4 @@ export class ExperimentalPlanFormComponent {
             this.form.enable();
         }
     }
-    
-    readonly formControlContext$ = defer(() => this.form.statusChanges.pipe(
-        map(() => ({
-            $implicit: this.form,
-            committable: this.form.valid,
-            doCommit: () => {
-                const patch = experimentalPlanPatchFromForm(this.form)
-                this.requestCommit.emit(patch);
-            },
-            doReset: () => this.requestReset.emit()
-        }))
-    ));
 }

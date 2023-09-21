@@ -1,6 +1,6 @@
 import { FormArray, FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { LabType } from "../type/lab-type";
-import { Inject, Injectable, Optional, SkipSelf, inject } from "@angular/core";
+import { Inject, Injectable, Optional, Provider, SkipSelf, inject } from "@angular/core";
 import { Lookup, ModelService } from "src/app/utils/models/model-service";
 import { Context } from "src/app/utils/models/model-context";
 import { Observable, firstValueFrom } from "rxjs";
@@ -131,4 +131,10 @@ export class EquipmentContext extends Context<Equipment, EquipmentPatch> {
     override _doCommit(identifier: string, patch: EquipmentPatch): Observable<Equipment> {
         return this.models.update(identifier, patch);
     }
+}
+
+export function labEquipmentModelServiceProviders(): Provider[] {
+    return [
+        EquipmentModelService
+    ]
 }

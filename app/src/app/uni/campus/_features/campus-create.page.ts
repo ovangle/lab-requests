@@ -1,7 +1,7 @@
 import { Component, Injectable, OnDestroy, OnInit, inject } from "@angular/core";
-import { Campus, CampusContext } from "./campus";
+import { Campus, CampusContext } from "../campus";
 import { Observable, Subscription, of } from "rxjs";
-import { CampusFormComponent } from "./campus-form.component";
+import { CampusFormComponent } from "../campus-form.component";
 
 @Component({
     standalone: true,

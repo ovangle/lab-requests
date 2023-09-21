@@ -1,19 +1,16 @@
 import { ChangeDetectorRef, Component, Inject, Injectable, Optional, SkipSelf, ViewChild, inject } from "@angular/core";
-import { Subject, Subscription, filter, first, map, of } from "rxjs";
+import { Subject, Subscription, filter, first, firstValueFrom, map, of } from "rxjs";
 import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanPatch } from "../experimental-plan";
 import { ExperimentalPlanFormComponent } from "../experimental-plan-form.component";
 import { ActivatedRoute, Router } from "@angular/router";
-import { ExperimentalPlanFormService } from "../experimental-plan-form.service";
 import { WorkUnitContext, WorkUnitCreate, WorkUnitModelService } from "../../work-unit/work-unit";
+import { experimentalPlanForm, experimentalPlanPatchFromForm } from "../experimental-plan-form";
 
 
 const experimentalPlanCreateFixture: ExperimentalPlanPatch = ({
     title: 'The importance of being earnest',
     processSummary: 'Behave earnestly, then deceptively and observe changes.',
-    fundingModel: {
-        description: 'Custom funding model',
-        requiresSupervisor: false
-    },
+    fundingModel: 'Custom funding model',
     researcher: 'hello@world.com',
     researcherDiscipline: 'ICT',
     researcherBaseCampus: 'MEL',
@@ -24,8 +21,6 @@ const experimentalPlanCreateFixture: ExperimentalPlanPatch = ({
 @Injectable()
 export class CreateExperimentalPlanWorkUnitContext extends WorkUnitContext {
     readonly createRequestsSubject = new Subject<WorkUnitCreate>();
-
-    readonly _formService = inject(ExperimentalPlanFormService);
 
     constructor(
         @Optional() @SkipSelf() @Inject(WorkUnitContext)
@@ -54,27 +49,21 @@ export class CreateExperimentalPlanWorkUnitContext extends WorkUnitContext {
     template: `
         <h1>Create experimental plan</h1>
 
-        <lab-experimental-plan-form 
-            [form]="_formService.form"
-            [controls]="controls"
-            (requestCommit)="_formService.save()"
-            (requestReset)="_formService.reset()">
+        <lab-experimental-plan-form [form]="form">
+            <div class="form-controls">
+                <button mat-raised-button [disabled]="form.valid" (click)="save(); $event.stopPropagation()">
+                    <mat-icon>save</mat-icon> SAVE
+                </button>
+            </div>
         </lab-experimental-plan-form>
-
-        <ng-template #controls let-committable="committable" let-commit="doCommit">
-            <button mat-raised-button 
-                    [disabled]="!committable"
-                    (click)="commit()">
-                <mat-icon>save</mat-icon>
-                NEXT
-            </button>
-        </ng-template>
     `,
+    styles: [`
+        .form-controls button {
+            float: right;
+        }
+    `],
     providers: [
         ExperimentalPlanContext,
-        ExperimentalPlanFormService,
-
-        WorkUnitModelService,
         {
             provide: WorkUnitContext,
             useClass: CreateExperimentalPlanWorkUnitContext
@@ -82,14 +71,15 @@ export class CreateExperimentalPlanWorkUnitContext extends WorkUnitContext {
     ]
 })
 export class ExperimentalPlanCreatePage {
-    _cdRef = inject(ChangeDetectorRef);
+    readonly _cdRef = inject(ChangeDetectorRef);
 
-    _router = inject(Router);
-    _activatedRoute = inject(ActivatedRoute);
+    readonly _router = inject(Router);
+    readonly _activatedRoute = inject(ActivatedRoute);
 
-    _context: ExperimentalPlanContext = inject(ExperimentalPlanContext);
+    readonly _context: ExperimentalPlanContext = inject(ExperimentalPlanContext);
 
-    _formService = inject(ExperimentalPlanFormService);
+    readonly form = experimentalPlanForm();
+    readonly patch$ = experimentalPlanPatchFromForm(this.form);
 
     constructor() {
         this._context.initCreateContext();
@@ -102,10 +92,18 @@ export class ExperimentalPlanCreatePage {
     }
 
     ngAfterViewInit() {
-        this._formService.form.setValue({
+        this.form.setValue({
             ...experimentalPlanCreateFixture,
             addWorkUnits: []
         })
         this._cdRef.detectChanges();
+    }
+
+    async save() {
+        if (!this.form.valid) {
+            throw new Error('Cannot save invalid form');
+        }
+        const patch = await firstValueFrom(this.patch$);
+        return this._context.save(patch);
     }
 }

@@ -81,13 +81,20 @@ export class CampusModelService extends ModelService<Campus, CampusPatch> {
     override readonly patchToJson = campusPatchToJson;
     override readonly lookupToHttpParams = campusLookupToHttpParams;
 
-    searchCampuses(name: string | null): Observable<Campus[]> {
-        console.log(`searching campuses where name starts with ${name}`);
-        return this.query({ name_startswith: name || '' });
+    getForId(id: string) {
+        return this.fetch(id);
+    }
+
+    getForCode(code: CampusCode) {
+        return this.fetch(code);
+    }
+
+    searchCampuses(nameOrCode: string | null): Observable<Campus[]> {
+        return this.query({ text: nameOrCode || '' });
     }
 
     getCampusesByCode(code: string): Observable<Campus[]> {
-        return this.query({params: {code}});
+        return this.query({params: {code_eq: code}});
     }
 
     protected _validateCodeUnique(control: AbstractControl<string>): Observable<{[k: string]: any} | null> {
@@ -114,4 +121,3 @@ export class CampusContext extends Context<Campus, CampusPatch> {
         return this.models.update(identifier, patch);
     }
 }
-

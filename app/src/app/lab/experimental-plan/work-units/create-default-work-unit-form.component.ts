@@ -5,7 +5,7 @@ import { CommonModule } from "@angular/common";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { WorkUnitForm, WorkUnitFormService, workUnitForm, workUnitPatchFromForm } from "../../work-unit/work-unit-form.service";
 import { WorkUnitBaseInfoFormComponent } from "../../work-unit/base-info/work-unit-base-info-form.component";
-import { ExperimentalPlanForm } from "../experimental-plan-form.service";
+import { ExperimentalPlanForm } from "../experimental-plan-form";
 import { ExperimentalPlanCreate } from "../experimental-plan";
 import { Subscription, combineLatest, distinctUntilChanged, distinctUntilKeyChanged, filter, map, takeUntil } from "rxjs";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
@@ -69,8 +69,10 @@ export class ExperimentalPlanCreateDefaultWorkUnitForm {
 
     ngOnInit() {
         this._prefillFormSubscription = this.form.valueChanges.pipe(
-            map(({ researcherBaseCampus, researcherDiscipline }) => ({ researcherBaseCampus, researcherDiscipline })),
-            distinctUntilChanged()
+            distinctUntilChanged((curr, next) => {
+                return curr.researcherBaseCampus === next.researcherBaseCampus 
+                    && curr.researcherDiscipline === next.researcherDiscipline;
+            })
         ).subscribe(({ researcherBaseCampus, researcherDiscipline }) => {
             this.workUnitForm.patchValue({
                 campus: researcherBaseCampus,

@@ -37,7 +37,7 @@ const routes: Routes = [
   },
   {
     path: 'uni/campuses',
-    loadChildren: () => import('./uni/campus/campus.feature-module')
+    loadChildren: () => import('./uni/campus/_features/campus.feature-module')
       .then(module => module.CampusFeature)
   }
 ]

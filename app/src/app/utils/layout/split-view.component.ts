@@ -41,7 +41,7 @@ import { Component, Input } from "@angular/core";
     `],
     animations: [
         trigger('enterFromLeft', [
-            state('hidden', style({width: '0px', minWidth: 0})),
+            state('hidden', style({width: '0px', minWidth: 0, maxHeight: '0px'})),
             state('visible', style({width: '*'})),
             transition('hidden <=> visible', animate('225ms cubic-bezier(0.4, 0.0, 0.2, 1)'))
         ])

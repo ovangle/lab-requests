@@ -69,7 +69,6 @@ export class EquipmentModelCollection extends ModelCollection<Equipment> {
     </ng-container>
     `,
     providers: [
-        EquipmentModelService,
         EquipmentModelCollection,
         EquipmentContext,
         EquipmentFormService,

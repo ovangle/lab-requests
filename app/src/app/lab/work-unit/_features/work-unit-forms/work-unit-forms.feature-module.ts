@@ -23,7 +23,6 @@ import { ResourceContainerContext } from "../../resource/resource-container";
         WorkUnitResourceFormHostPage,
     ],
     providers: [
-        WorkUnitModelService,
         WorkUnitContext,
         { 
             provide: ResourceContainerContext, 

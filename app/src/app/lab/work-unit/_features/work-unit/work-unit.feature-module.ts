@@ -49,7 +49,6 @@ const WORK_UNIT_FROM_PLAN_ROUTES: Routes = [
         WorkUnitIndexPage
     ],
     providers: [
-        WorkUnitModelService,
         WorkUnitContext,
         {
             provide: ResourceContainerContext,

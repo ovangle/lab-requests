@@ -44,7 +44,6 @@ const EQUIPMENT_ROUTES: Routes = [
         EquipmentIndexPage,
     ],
     providers: [
-        EquipmentModelService,
         EquipmentContext
     ]
 })

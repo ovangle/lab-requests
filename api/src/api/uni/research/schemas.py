@@ -10,6 +10,7 @@ from db import LocalSession
 from . import models
 
 class FundingModelBase(BaseModel):
+    name: str 
     description: str = Field(max_length=128)
     requires_supervisor: bool = True
 
@@ -20,11 +21,20 @@ class FundingModel(FundingModelBase, ApiModel[models.FundingModel_]):
     async def from_model(cls, model: FundingModel | models.FundingModel_):
         return cls(
             id=model.id,
+            name=model.name,
             description=model.description,
             requires_supervisor=model.requires_supervisor,
             created_at=model.created_at,
             updated_at=model.updated_at
         )
+
+    @classmethod
+    async def get_for_id(cls, db: LocalSession, id: UUID):
+        return await cls.from_model(await models.FundingModel_.get_for_id(db, id))
+    
+    @classmethod
+    async def get_for_name(cls, db: LocalSession, name: str):
+        return await cls.from_model(await models.FundingModel_.get_for_name(db, name))
 
     def to_model(self, db: LocalSession):
         return models.FundingModel_.get_for_id(db, self.id)

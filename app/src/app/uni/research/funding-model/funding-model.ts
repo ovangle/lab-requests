@@ -1,12 +1,13 @@
 import { HttpParams } from "@angular/common/http";
 import { Inject, Injectable, Optional, SkipSelf, inject } from "@angular/core";
-import { Observable, ReplaySubject, connectable, firstValueFrom } from "rxjs";
+import { Observable, ReplaySubject, connectable, firstValueFrom, map } from "rxjs";
 import { Context } from "src/app/utils/models/model-context";
 
 import { Lookup, ModelService } from "src/app/utils/models/model-service";
 
 export class FundingModel {
     readonly id: string;
+    readonly name: string;
     readonly description: string;
     readonly requiresSupervisor: boolean;
     readonly createdAt: Date;
@@ -14,6 +15,7 @@ export class FundingModel {
 
     constructor(instance: Partial<FundingModel>) {
         this.id = instance.id!;
+        this.name = instance.name!;
         this.description = instance.description!;
         this.requiresSupervisor = instance.requiresSupervisor!;
         this.createdAt = instance.createdAt!;
@@ -22,13 +24,14 @@ export class FundingModel {
 }
 
 export function fundingModelFromJson(json: {[k: string]: any}): FundingModel {
-    return {
+    return new FundingModel({
         id: json['id'],
+        name: json['name'],
         description: json['description'],
         requiresSupervisor: json['requiresSupervisor'],
         createdAt: json['createdAt'],
         updatedAt: json['updatedAt']
-    };
+    });
 }
 
 export interface FundingModelPatch {
@@ -49,6 +52,10 @@ export function fundingModelCreateToJson(create: FundingModelCreate) {
 }
 
 export interface FundingModelLookup extends Lookup<FundingModel> {
+    // Searches for funding models with this exact name
+    name_eq: string;
+    // Searches for the instance of this text anywhere in the funding model
+    text: string;
 }
 function fundingModelLookupToHttpParams(lookup: Partial<FundingModelLookup>) {
     return new HttpParams();
@@ -63,12 +70,26 @@ export class FundingModelService extends ModelService<FundingModel, FundingModel
     override readonly createToJson = fundingModelCreateToJson;
     override readonly lookupToHttpParams = fundingModelLookupToHttpParams;
 
+    getById(id: string): Observable<FundingModel> {
+        return this.fetch(id);
+    }
+
+    getByName(name: string): Observable<FundingModel> {
+        return this.fetch(name);
+    }
+
     fetchByDescription(description: string) {
         return this.fetch(description);
     }
 
+    isNameUnique(name: string): Observable<boolean> {
+        return this.queryPage({name_eq: name} as FundingModelLookup).pipe(
+            map(page => page.totalItemCount === 0)
+        );
+    }
+
     search(input: string): Observable<FundingModel[]> {
-        return this.query({description_like: input});
+        return this.query({text: input});
     }
 }
 
