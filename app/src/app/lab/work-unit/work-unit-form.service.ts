@@ -8,6 +8,7 @@ import { WorkUnitModelService, WorkUnitContext, WorkUnitPatch, workUnitPatchFrom
 import { ResourceContainerFormControls, resourceContainerFormControls } from "./resource/resource-container-form.service";
 import { ResourceContainerPatchErrors } from "./resource/resource-container";
 import { V } from "@angular/cdk/keycodes";
+import { subcontrolValidator } from "src/app/utils/forms/validators";
 
 export type WorkUnitForm = FormGroup<{
     campus: FormControl<Campus | string | null>;
@@ -28,54 +29,28 @@ export function workUnitPatchFromForm(form: WorkUnitForm): WorkUnitPatch {
 }
 
 export interface WorkUnitFormErrors extends ResourceContainerPatchErrors {
-    campus: {
-        required: string | null;
-    } | null;
-    labType: {
-        required: string | null;
-    } | null; 
-    technician: {
-        required: string | null;
-        email: string | null;
-    } | null;
-    startDate: {
-        afterToday: string | null;
-    } | null;
+    campus?: {
+        required?: string;
+    };
+    labType?: {
+        required?: string;
+    };
+    technician?: {
+        required?: string;
+        email?: string;
+    };
+    startDate?: {
+        afterToday?: string ;
+    };
     endDate: {
-        afterStartDate: string | null;
-    } | null;
+        afterStartDate?: string ;
+    };
 }
 
 type ErrKey = keyof WorkUnitForm['controls'] & keyof WorkUnitFormErrors;
 const BASE_ERR_FIELDS: ErrKey[] = ['campus', 'labType', 'technician', 'startDate', 'endDate'];
 
 export function workUnitForm(): WorkUnitForm {
-    function getErrors<K extends ErrKey>(form: WorkUnitForm, key: K): WorkUnitFormErrors[K] {
-        const control = form.controls[key];
-        if (control.status == 'PENDING') {
-            return control.statusChanges.pipe(
-                filter(status => status != 'PENDING'),
-                map(() => control.errors as WorkUnitFormErrors[K]),
-                first(),
-            )
-        }
-        return of(control.errors as WorkUnitFormErrors[K]);
-    }
-
-    function collectErrors(form: WorkUnitForm): Observable<WorkUnitFormErrors | null> {
-        const fieldErrors: Observable<any>[] = BASE_ERR_FIELDS.map((k) => getErrors(form, k))
-        return forkJoin(fieldErrors).pipe(
-            map(results => {
-                if (results.every(item => item == null)) {
-                    return null;
-                }
-                return Object.fromEntries(
-                    BASE_ERR_FIELDS.map((k, i) => [k, results[i]])
-                ) as WorkUnitFormErrors;
-            })
-        );
-    }
-
     return new FormGroup({
         campus: new FormControl<Campus | string | null>(null, {validators: [Validators.required]}),
         labType: new FormControl<LabType | null>(null, {validators: [Validators.required]}),
@@ -93,16 +68,17 @@ export function workUnitForm(): WorkUnitForm {
 
         ...resourceContainerFormControls()
     }, {
-        asyncValidators: [(c) => collectErrors(c as WorkUnitForm)]
+        asyncValidators: [subcontrolValidator]
     });
 
 }
 
-export function workUnitFormErrors(form: WorkUnitForm): WorkUnitFormErrors | null {
-    if (form.status === 'PENDING') {
-        console.warn('WORK UNIT FORM PENDING');
-    }
-    return form.errors as WorkUnitFormErrors | null;
+export function workUnitFormErrors(form: WorkUnitForm): Observable<WorkUnitFormErrors | null> {
+    return form.statusChanges.pipe(
+        startWith(form.status),
+        filter(status => status != 'PENDING'),
+        map(() => form.errors as WorkUnitFormErrors)
+    );
 }
 
 @Injectable()

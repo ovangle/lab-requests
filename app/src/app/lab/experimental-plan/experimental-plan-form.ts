@@ -7,6 +7,7 @@ import { FundingModel, FundingModelCreate, FundingModelService } from "src/app/u
 import { WorkUnitForm, WorkUnitFormErrors, workUnitFormErrors } from "../work-unit/work-unit-form.service";
 import { ExperimentalPlanContext, patchFromExperimentalPlan, ExperimentalPlanPatch, ExperimentalPlan } from "./experimental-plan";
 import { HttpErrorResponse } from "@angular/common/http";
+import { subcontrolValidator } from "src/app/utils/forms/validators";
 
 export type ExperimentalPlanControls = {
     title: FormControl<string>;
@@ -51,25 +52,6 @@ export interface ExperimentalPlanFormErrors {
     } | null;
     addWorkUnits: ReadonlyArray<WorkUnitFormErrors | null>;
 }
-
-type ErrKey = keyof ExperimentalPlanControls & keyof ExperimentalPlanFormErrors;
-const FORM_CONTROL_ERROR_KEYS: readonly ErrKey[] = [
-    'title', 'fundingModel', 'processSummary',
-    'researcher', 'researcherBaseCampus', 'researcherDiscipline',
-    'supervisor',
-] as const;
-function _isFormControlErrKey(key: ErrKey): key is Exclude<ErrKey, 'addWorkUnits'> {
-    return FORM_CONTROL_ERROR_KEYS.includes(key);
-}
-
-const FORM_ARRAY_ERROR_KEYS: readonly ErrKey[] = [
-    'addWorkUnits'
-] as const;
-function _isFormArrayErrKey(key: ErrKey): key is 'addWorkUnits' {
-    return key === 'addWorkUnits';
-}
-
-const FORM_ERR_KEYS = [...FORM_CONTROL_ERROR_KEYS, ...FORM_ARRAY_ERROR_KEYS];
 
 function isCampusOrCampusCodeValidator(): AsyncValidatorFn {
     const campuses = inject(CampusModelService);
@@ -126,44 +108,6 @@ function isFundingModelOrNameValidator(): AsyncValidatorFn {
 }
 
 export function experimentalPlanForm(): ExperimentalPlanForm {
-
-    function getErrors<K extends ErrKey>(form: ExperimentalPlanForm, key: K): Observable<ExperimentalPlanFormErrors[K]> {
-        if (_isFormArrayErrKey(key)) {
-            const formArr = form.controls[key] as FormArray<WorkUnitForm>;
-            return of(formArr.controls.map(workUnitForm => workUnitFormErrors(workUnitForm)) as any);
-        } else if (_isFormControlErrKey(key)) {
-            const control: FormControl = form.controls[key];
-            if (control.status === 'PENDING') {
-                return control.statusChanges.pipe(
-                    filter(status => status != 'PENDING'),
-                    map(() => control.errors as ExperimentalPlanFormErrors[K]),
-                    first()
-                );
-            }
-            return of(control.errors as ExperimentalPlanFormErrors[K]);
-        } else {
-            throw new Error('Expected an error key')
-        }
-    }
-
-    function collectErrors(form: ExperimentalPlanForm): Observable<ExperimentalPlanFormErrors | null> {
-        const errors = FORM_ERR_KEYS.map(key => getErrors(form, key));
-        return forkJoin(errors).pipe(
-            map(errors => {
-                if (errors.every(err => {
-                    if (Array.isArray(err)) {
-                        return err.every(item => item == null);
-                    }
-                    return err == null;
-                })) {
-                    return null;
-                }
-                const errEntries = FORM_ERR_KEYS.map((k, i) => [k, errors[i]]);
-                return Object.fromEntries(errEntries) as ExperimentalPlanFormErrors;
-            })
-        );
-    }
-
     return new FormGroup({
         title: new FormControl<string>('', { nonNullable: true, validators: [Validators.required] }),
         researcher: new FormControl<string>('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
@@ -188,7 +132,7 @@ export function experimentalPlanForm(): ExperimentalPlanForm {
             []
         )
     }, {
-        asyncValidators: [(c) => collectErrors(c as ExperimentalPlanForm)]
+        asyncValidators: [subcontrolValidator]
     });
 }
 

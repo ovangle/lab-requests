@@ -97,28 +97,28 @@ export class WorkUnitBaseInfoFormComponent {
         return this._fields === 'all' || this._fields.includes(name);
     }
 
-    get _campusErrors(): WorkUnitFormErrors['campus'] {
+    get _campusErrors(): WorkUnitFormErrors['campus'] | null {
         const campusControl = this.form.controls.campus;
-        return campusControl.errors as WorkUnitFormErrors['campus'] || null;
+        return campusControl.errors;
     }
 
-    get _labTypeErrors(): WorkUnitFormErrors['labType'] {
+    get _labTypeErrors(): WorkUnitFormErrors['labType'] | null {
         const control = this.form.controls.labType;
-        return control.errors as WorkUnitFormErrors['labType']
+        return control.errors;
     }
 
-    get _technicianErrors(): WorkUnitFormErrors['technician'] {
+    get _technicianErrors(): WorkUnitFormErrors['technician'] | null {
         const control = this.form.controls.technician;
-        return control.errors as WorkUnitFormErrors['technician'];
+        return control.errors;
     }
 
-    get startDateErrors(): WorkUnitFormErrors['startDate'] {
+    get startDateErrors(): WorkUnitFormErrors['startDate'] | null {
         const control = this.form.controls.startDate;
-        return control.errors as WorkUnitFormErrors['startDate']
+        return control.errors;
     }
 
-    get endDateErrors(): WorkUnitFormErrors['endDate'] {
+    get endDateErrors(): WorkUnitFormErrors['endDate'] | null {
         const control = this.form.controls.endDate;
-        return control.errors as WorkUnitFormErrors['endDate'];
+        return control.errors;
     }
 }
