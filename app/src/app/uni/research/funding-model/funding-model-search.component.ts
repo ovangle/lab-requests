@@ -1,8 +1,8 @@
 import { CommonModule } from "@angular/common";
-import { Component, HostBinding, inject } from "@angular/core";
+import { Component, ContentChildren, ElementRef, HostBinding, QueryList, ViewChildren, inject } from "@angular/core";
 import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
-import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatError, MatFormFieldModule } from "@angular/material/form-field";
 import { FundingModelInfoComponent } from "./funding-model-info.component";
 import { FundingModel, FundingModelService } from "./funding-model";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
@@ -10,6 +10,8 @@ import { Observable, map, of, startWith, switchMap } from "rxjs";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 import { MatInputModule } from "@angular/material/input";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
 
 
 @Component({
@@ -20,7 +22,9 @@ import { MatInputModule } from "@angular/material/input";
         ReactiveFormsModule,
         
         MatAutocompleteModule,
+        MatButtonModule,
         MatFormFieldModule,
+        MatIconModule,
         MatInputModule,
 
         FundingModelInfoComponent
@@ -34,10 +38,15 @@ import { MatInputModule } from "@angular/material/input";
         <input matInput [matAutocomplete]="autocomplete"
                         [formControl]="searchControl"
                         [required]="required" />
+        
+
+        <button class="reset-button" mat-icon-button matIconSuffix (click)="searchControl.reset()">
+            <mat-icon>cancel</mat-icon>
+        </button>
 
         <mat-error>
-            <ng-content select="mat-error"></ng-content>
-        </mat-error>
+            <ng-content select=".error"></ng-content>
+        </mat-error> 
     </mat-form-field>
 
     <mat-autocomplete #autocomplete [displayWith]="_displayFundingModelInfo">
@@ -48,6 +57,11 @@ import { MatInputModule } from "@angular/material/input";
         </mat-option>
     </mat-autocomplete>
     `,
+    styles: [`
+    .reset-button {
+        color: var(--mat-datepicker-toggle-icon-color);
+    }
+    `],
     providers: [
         { 
             provide: NG_VALUE_ACCESSOR, 
@@ -59,7 +73,18 @@ import { MatInputModule } from "@angular/material/input";
 export class FundingModelSearchComponent implements ControlValueAccessor {
     readonly fundingModelService = inject(FundingModelService);
 
-    readonly searchControl = new FormControl<FundingModel | string>('', {nonNullable: true});
+    @ContentChildren('.error')
+    _viewErrors: QueryList<ElementRef>;
+
+    readonly searchControl = new FormControl<FundingModel | string>(
+        '', 
+        {
+            nonNullable: true,
+            validators: [
+                (c) => (this._viewErrors?.length || 0) > 0 ? {'viewErrors': 'associated form control has errors'} : null
+            ]
+        }
+    );
 
     @HostBinding('attr.required')
     get required(): boolean {
@@ -82,10 +107,20 @@ export class FundingModelSearchComponent implements ControlValueAccessor {
         })
     );
 
-    readonly selected$: Observable<FundingModel | null> = this.searchControl.valueChanges.pipe(
+    readonly selected$: Observable<FundingModel | string | null> = this.searchControl.valueChanges.pipe(
         takeUntilDestroyed(),
-        map(value => value instanceof FundingModel ? value : null)
     );
+
+    constructor() {
+        this.selected$.subscribe(value => this._onChange(value))
+    }
+
+    ngAfterViewInit() {
+        this._viewErrors.changes.subscribe(change => {
+            console.log('view errors changed', change);
+            this.searchControl.markAsTouched();
+        });
+    }
 
     _displayFundingModelInfo(fundingModel: FundingModel | string) {
         if (fundingModel instanceof FundingModel) {
@@ -97,11 +132,11 @@ export class FundingModelSearchComponent implements ControlValueAccessor {
     writeValue(obj: FundingModel | string | null): void {
         this.searchControl.setValue(obj || '');
     }
-    _onChange: (value: FundingModel | null) => void;
+    _onChange = (value: FundingModel | string | null) => {};
     registerOnChange(fn: any): void {
         this._onChange = fn;
     }
-    _onTouched: () => void;
+    _onTouched = () => {};
     registerOnTouched(fn: any): void {
         this._onTouched = fn;
     }

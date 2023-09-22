@@ -10,11 +10,12 @@ import { CampusSearchComponent } from "src/app/uni/campus/campus-search.componen
 import { DisciplineSelectComponent } from "src/app/uni/discipline/discipline-select.component";
 import { FundingModelSelectComponent } from "../../uni/research/funding-model/funding-model-select.component";
 import { Equipment } from "../equipment/equipment";
-import { ExperimentalPlanPatch, ExperimentalPlanPatchErrors } from "./experimental-plan";
+import { ExperimentalPlanPatch } from "./experimental-plan";
 import { ExperimentalPlanResearcherFormComponent } from "./researcher/researcher-form.component";
-import { ExperimentalPlanForm, experimentalPlanPatchFromForm } from "./experimental-plan-form";
+import { ExperimentalPlanForm, experimentalPlanPatchFromForm, ExperimentalPlanFormErrors } from "./experimental-plan-form";
 import { ExperimentalPlanCreateDefaultWorkUnitForm } from "./work-units/create-default-work-unit-form.component";
 import { FundingModelSearchComponent } from "src/app/uni/research/funding-model/funding-model-search.component";
+import { FundingModel } from "src/app/uni/research/funding-model/funding-model";
 
 
 @Component({
@@ -60,11 +61,18 @@ import { FundingModelSearchComponent } from "src/app/uni/research/funding-model/
         <uni-research-funding-model-search formControlName="fundingModel">
             <mat-label>Funding source</mat-label>
 
-            <mat-error *ngIf="fundingModelErrors?.required">
+            <span class="error" *ngIf="fundingModelErrors?.required">
                 A value is required
-            </mat-error>
+            </span>
+            <span class="error" *ngIf="fundingModelErrors?.notAFundingModel">
+                Unrecognised funding source
+            </span>
         </uni-research-funding-model-search>
-
+        <!--
+        <mat-error *ngIf="fundingModelErrors?.notAFundingModel">
+                Unrecognised funding source
+        </mat-error>
+        -->
         <ng-container *ngIf="isCreate">
 
             <lab-experimental-plan-create-default-work-unit-form 
@@ -107,11 +115,15 @@ export class ExperimentalPlanFormComponent {
         return this.committed === null;
     }
 
-    get titleErrors(): ExperimentalPlanPatchErrors['title'] | null {
+    get titleErrors(): ExperimentalPlanFormErrors['title'] {
         return this.form.controls['title'].errors || null as any;
     }
 
-    get fundingModelErrors(): ExperimentalPlanPatchErrors['fundingModel'] | null {
+    get fundingModel(): FundingModel | string | null {
+        return this.form.controls.fundingModel.value;
+    }
+
+    get fundingModelErrors(): ExperimentalPlanFormErrors['fundingModel'] {
         return this.form.controls['fundingModel'].errors || null as any;
     }
 

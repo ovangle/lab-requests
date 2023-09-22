@@ -122,7 +122,7 @@ export function experimentalPlanPatchToJson(patch: ExperimentalPlanPatch): {[k: 
     }
 }
 
-export type ExperimentalPlanPatchErrors = ValidationErrors & {
+export interface ExperimentalPlanPatchErrors {
     title: { 
         required: string | null 
     };

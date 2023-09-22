@@ -1,11 +1,13 @@
 import { Injectable, inject } from "@angular/core";
 import { FormGroup, FormControl, Validators } from "@angular/forms";
-import { Observable, map, firstValueFrom, defer, filter, tap, shareReplay } from "rxjs";
+import { Observable, map, firstValueFrom, defer, filter, tap, shareReplay, of, first, startWith, forkJoin } from "rxjs";
 import { Campus, CampusPatch } from "src/app/uni/campus/campus";
 import { Discipline } from "src/app/uni/discipline/discipline";
 import { LabType } from "../type/lab-type";
-import { WorkUnitModelService, WorkUnitContext, WorkUnitPatch, WorkUnitPatchErrors, workUnitPatchFromWorkUnit } from "./work-unit";
+import { WorkUnitModelService, WorkUnitContext, WorkUnitPatch, workUnitPatchFromWorkUnit } from "./work-unit";
 import { ResourceContainerFormControls, resourceContainerFormControls } from "./resource/resource-container-form.service";
+import { ResourceContainerPatchErrors } from "./resource/resource-container";
+import { V } from "@angular/cdk/keycodes";
 
 export type WorkUnitForm = FormGroup<{
     campus: FormControl<Campus | string | null>;
@@ -25,17 +27,55 @@ export function workUnitPatchFromForm(form: WorkUnitForm): WorkUnitPatch {
     return form.value as WorkUnitPatch;
 }
 
-const errFields = ['campus', 'labType', 'technician', 'startDate', 'endDate'] as Array<keyof WorkUnitPatchErrors>
-function workUnitPatchErrorsFromForm(form: WorkUnitForm): WorkUnitPatchErrors {
-    function getControlErrors(key: keyof WorkUnitPatchErrors) {
-        return form.controls[key].errors;
-    }
-    return Object.fromEntries(
-        errFields.map(field => [field,  getControlErrors(field)])
-    ) as unknown as WorkUnitPatchErrors;
+export interface WorkUnitFormErrors extends ResourceContainerPatchErrors {
+    campus: {
+        required: string | null;
+    } | null;
+    labType: {
+        required: string | null;
+    } | null; 
+    technician: {
+        required: string | null;
+        email: string | null;
+    } | null;
+    startDate: {
+        afterToday: string | null;
+    } | null;
+    endDate: {
+        afterStartDate: string | null;
+    } | null;
 }
 
+type ErrKey = keyof WorkUnitForm['controls'] & keyof WorkUnitFormErrors;
+const BASE_ERR_FIELDS: ErrKey[] = ['campus', 'labType', 'technician', 'startDate', 'endDate'];
+
 export function workUnitForm(): WorkUnitForm {
+    function getErrors<K extends ErrKey>(form: WorkUnitForm, key: K): WorkUnitFormErrors[K] {
+        const control = form.controls[key];
+        if (control.status == 'PENDING') {
+            return control.statusChanges.pipe(
+                filter(status => status != 'PENDING'),
+                map(() => control.errors as WorkUnitFormErrors[K]),
+                first(),
+            )
+        }
+        return of(control.errors as WorkUnitFormErrors[K]);
+    }
+
+    function collectErrors(form: WorkUnitForm): Observable<WorkUnitFormErrors | null> {
+        const fieldErrors: Observable<any>[] = BASE_ERR_FIELDS.map((k) => getErrors(form, k))
+        return forkJoin(fieldErrors).pipe(
+            map(results => {
+                if (results.every(item => item == null)) {
+                    return null;
+                }
+                return Object.fromEntries(
+                    BASE_ERR_FIELDS.map((k, i) => [k, results[i]])
+                ) as WorkUnitFormErrors;
+            })
+        );
+    }
+
     return new FormGroup({
         campus: new FormControl<Campus | string | null>(null, {validators: [Validators.required]}),
         labType: new FormControl<LabType | null>(null, {validators: [Validators.required]}),
@@ -52,8 +92,17 @@ export function workUnitForm(): WorkUnitForm {
         endDate: new FormControl<Date | null>(null),
 
         ...resourceContainerFormControls()
+    }, {
+        asyncValidators: [(c) => collectErrors(c as WorkUnitForm)]
     });
 
+}
+
+export function workUnitFormErrors(form: WorkUnitForm): WorkUnitFormErrors | null {
+    if (form.status === 'PENDING') {
+        console.warn('WORK UNIT FORM PENDING');
+    }
+    return form.errors as WorkUnitFormErrors | null;
 }
 
 @Injectable()
@@ -102,8 +151,8 @@ export class WorkUnitFormService {
         })
     ));
 
-    readonly formErrors$: Observable<WorkUnitPatchErrors | null> = this.form.statusChanges.pipe(
-        map((status) => status === 'INVALID' ? this.form.errors as WorkUnitPatchErrors : null)
+    readonly formErrors$: Observable<WorkUnitFormErrors | null> = this.form.statusChanges.pipe(
+        map((status) => status === 'INVALID' ? this.form.errors as WorkUnitFormErrors : null)
     )
 
     async save() {

@@ -7,16 +7,16 @@ import { WorkUnitContext, WorkUnitCreate, WorkUnitModelService } from "../../wor
 import { experimentalPlanForm, experimentalPlanPatchFromForm } from "../experimental-plan-form";
 
 
-const experimentalPlanCreateFixture: ExperimentalPlanPatch = ({
+const experimentalPlanCreateFixture: Partial<ExperimentalPlanPatch> = {
     title: 'The importance of being earnest',
     processSummary: 'Behave earnestly, then deceptively and observe changes.',
-    fundingModel: 'Custom funding model',
-    researcher: 'hello@world.com',
+    fundingModel: 'Grant',
+    researcher: 'a@researcher',
     researcherDiscipline: 'ICT',
     researcherBaseCampus: 'MEL',
     supervisor: null,
     addWorkUnits: []
-});
+};
 
 @Injectable()
 export class CreateExperimentalPlanWorkUnitContext extends WorkUnitContext {
@@ -50,17 +50,21 @@ export class CreateExperimentalPlanWorkUnitContext extends WorkUnitContext {
         <h1>Create experimental plan</h1>
 
         <lab-experimental-plan-form [form]="form">
-            <div class="form-controls">
-                <button mat-raised-button [disabled]="form.valid" (click)="save(); $event.stopPropagation()">
+            <div class="form-controls" (mouseenter)="_showAllFormErrors()">
+                <button mat-raised-button 
+                        [disabled]="form.invalid" 
+                        (mouseover)="_showAllFormErrors()"
+                        (click)="save(); $event.stopPropagation()">
                     <mat-icon>save</mat-icon> SAVE
                 </button>
             </div>
         </lab-experimental-plan-form>
     `,
     styles: [`
-        .form-controls button {
-            float: right;
-        }
+    .form-controls {
+        display: flex;
+        justify-content: right;
+    }
     `],
     providers: [
         ExperimentalPlanContext,
@@ -92,7 +96,7 @@ export class ExperimentalPlanCreatePage {
     }
 
     ngAfterViewInit() {
-        this.form.setValue({
+        this.form.patchValue({
             ...experimentalPlanCreateFixture,
             addWorkUnits: []
         })
@@ -103,7 +107,15 @@ export class ExperimentalPlanCreatePage {
         if (!this.form.valid) {
             throw new Error('Cannot save invalid form');
         }
+        console.log('saving...');
+        debugger;
         const patch = await firstValueFrom(this.patch$);
+        console.log('patch', patch);
         return this._context.save(patch);
+    }
+
+    _showAllFormErrors() {
+        console.log('show all form errors', this.form.errors);
+        this.form.markAllAsTouched();
     }
 }

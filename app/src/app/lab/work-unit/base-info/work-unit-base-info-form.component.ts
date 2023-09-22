@@ -5,8 +5,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
-import { WorkUnitForm } from "../work-unit-form.service";
-import { WorkUnitPatch, WorkUnitPatchErrors } from "../work-unit";
+import { WorkUnitForm, WorkUnitFormErrors } from "../work-unit-form.service";
 import { CampusSearchComponent } from "src/app/uni/campus/campus-search.component";
 import { LabTypeSelectComponent } from "../../type/lab-type-select.component";
 import { coerceStringArray } from "@angular/cdk/coercion";
@@ -98,28 +97,28 @@ export class WorkUnitBaseInfoFormComponent {
         return this._fields === 'all' || this._fields.includes(name);
     }
 
-    get _campusErrors(): WorkUnitPatchErrors['campus'] {
+    get _campusErrors(): WorkUnitFormErrors['campus'] {
         const campusControl = this.form.controls.campus;
-        return campusControl.errors as WorkUnitPatchErrors['campus'] || null;
+        return campusControl.errors as WorkUnitFormErrors['campus'] || null;
     }
 
-    get _labTypeErrors(): WorkUnitPatchErrors['labType'] {
+    get _labTypeErrors(): WorkUnitFormErrors['labType'] {
         const control = this.form.controls.labType;
-        return control.errors as WorkUnitPatchErrors['labType']
+        return control.errors as WorkUnitFormErrors['labType']
     }
 
-    get _technicianErrors(): WorkUnitPatchErrors['technician'] {
+    get _technicianErrors(): WorkUnitFormErrors['technician'] {
         const control = this.form.controls.technician;
-        return control.errors as WorkUnitPatchErrors['technician'];
+        return control.errors as WorkUnitFormErrors['technician'];
     }
 
-    get startDateErrors(): WorkUnitPatchErrors['startDate'] {
+    get startDateErrors(): WorkUnitFormErrors['startDate'] {
         const control = this.form.controls.startDate;
-        return control.errors as WorkUnitPatchErrors['startDate']
+        return control.errors as WorkUnitFormErrors['startDate']
     }
 
-    get endDateErrors(): WorkUnitPatchErrors['endDate'] {
+    get endDateErrors(): WorkUnitFormErrors['endDate'] {
         const control = this.form.controls.endDate;
-        return control.errors as WorkUnitPatchErrors['endDate'];
+        return control.errors as WorkUnitFormErrors['endDate'];
     }
 }

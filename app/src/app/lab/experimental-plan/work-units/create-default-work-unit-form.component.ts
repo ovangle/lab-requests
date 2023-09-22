@@ -7,7 +7,7 @@ import { WorkUnitForm, WorkUnitFormService, workUnitForm, workUnitPatchFromForm 
 import { WorkUnitBaseInfoFormComponent } from "../../work-unit/base-info/work-unit-base-info-form.component";
 import { ExperimentalPlanForm } from "../experimental-plan-form";
 import { ExperimentalPlanCreate } from "../experimental-plan";
-import { Subscription, combineLatest, distinctUntilChanged, distinctUntilKeyChanged, filter, map, takeUntil } from "rxjs";
+import { Subscription, combineLatest, distinctUntilChanged, distinctUntilKeyChanged, filter, map, startWith, takeUntil } from "rxjs";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatCardModule } from "@angular/material/card";
 
@@ -81,6 +81,7 @@ export class ExperimentalPlanCreateDefaultWorkUnitForm {
         })
 
         this._syncDefaultWorkUnitSubscription = this.addDefaultWorkUnitControl.valueChanges.pipe(
+            startWith(this.addDefaultWorkUnitControl.value),
             distinctUntilChanged()
         ).subscribe(isAddingWorkUnit => {
             if (isAddingWorkUnit && this._addWorkUnitsArray.length === 0) {

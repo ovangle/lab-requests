@@ -112,24 +112,6 @@ export function workUnitPatchToJson(patch: WorkUnitPatch): {[k: string]: any} {
     };
 }
 
-export interface WorkUnitPatchErrors {
-    campus: {
-        required: string | null;
-    } | null;
-    labType: {
-        required: string | null;
-    } | null; 
-    technician: {
-        required: string | null;
-        email: string | null;
-    } | null;
-    startDate: {
-        afterToday: string | null;
-    } | null;
-    endDate: {
-        afterStartDate: string | null;
-    } | null;
-}
 
 
 export interface WorkUnitCreate extends WorkUnitPatch {
@@ -145,12 +127,6 @@ export function workUnitCreateToJson(create: WorkUnitCreate) {
         ...workUnitPatchToJson(create),
         planId: create.planId
     };
-}
-
-export type WorkUnitCreateErrors = WorkUnitPatchErrors & {
-    planId?: { 
-        required: string | null;
-    }
 }
 
 export interface WorkUnitLookup extends Lookup<WorkUnit> {}

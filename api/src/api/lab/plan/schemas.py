@@ -13,6 +13,7 @@ from pydantic.dataclasses import dataclass
 from api.base.schemas import ApiModel, ModelCreate, ModelPatch, PagedResultList
 
 from api.uni.errors import CampusDoesNotExist
+from api.uni.research.errors import FundingModelDoesNotExist
 from api.uni.research.schemas import FundingModel, FundingModelCreate
 from api.uni.schemas import Campus, CampusCode
 from api.lab.types import LabType
@@ -26,7 +27,7 @@ class ExperimentalPlanBase(BaseModel):
     title: str
 
     process_summary: str
-    funding_model: FundingModel | FundingModelCreate | UUID
+    funding_model: FundingModel | UUID | str
 
     researcher: str
     researcher_base_campus: Campus | CampusCode | UUID
@@ -39,9 +40,12 @@ class ExperimentalPlanBase(BaseModel):
             campus = await Campus.get_for_campus_code(db, self.researcher_base_campus)
             self.researcher_base_campus = campus
 
-        if isinstance(self.funding_model, FundingModelCreate):
-            create_req = self.funding_model
-            self.funding_model = await create_req(db)
+        if isinstance(self.funding_model, str):
+            try:
+                funding_model = await FundingModel.get_for_name(db, self.funding_model)
+            except FundingModelDoesNotExist as e:
+                raise ValidationError(str(e))
+            self.funding_model = funding_model
 
     def _set_model_fields(self, instance: models.ExperimentalPlan_) -> bool: 
         is_modified = False

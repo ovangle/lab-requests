@@ -5,9 +5,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { CampusSearchComponent } from "src/app/uni/campus/campus-search.component";
 import { DisciplineSelectComponent } from "src/app/uni/discipline/discipline-select.component";
-import { WorkUnitForm } from "../../work-unit/work-unit-form.service";
-import { ExperimentalPlanPatchErrors } from "../experimental-plan";
-import { ExperimentalPlanForm } from "../experimental-plan-form";
+import { ExperimentalPlanForm, ExperimentalPlanFormErrors } from "../experimental-plan-form";
 
 @Component({
     selector: 'lab-experimental-plan-researcher-form',
@@ -51,6 +49,9 @@ import { ExperimentalPlanForm } from "../experimental-plan-form";
             <mat-error *ngIf="baseCampusErrors?.required">
                 A value is required
             </mat-error>
+            <mat-error *ngIf="baseCampusErrors?.notACampus">
+                Unrecognised campus
+            </mat-error>
         </uni-campus-search>
 
         <mat-form-field>
@@ -69,22 +70,22 @@ export class ExperimentalPlanResearcherFormComponent {
     @Input()
     form: ExperimentalPlanForm;
 
-    get researcherErrors(): ExperimentalPlanPatchErrors['researcher'] | null {
+    get researcherErrors(): ExperimentalPlanFormErrors['researcher'] | null {
         const nameControl = this.form.controls.researcher;
         return (nameControl.errors || null) as any;
     }
 
-    get disciplineErrors(): ExperimentalPlanPatchErrors['researcherDiscipline'] | null {
+    get disciplineErrors(): ExperimentalPlanFormErrors['researcherDiscipline'] | null {
         const disciplineControl = this.form.controls.researcherDiscipline;
         return (disciplineControl.errors || null) as any;
     }
 
-    get baseCampusErrors(): ExperimentalPlanPatchErrors['researcherBaseCampus'] | null {
+    get baseCampusErrors(): ExperimentalPlanFormErrors['researcherBaseCampus'] | null {
         const disciplineControl = this.form.controls.researcherBaseCampus;
         return (disciplineControl.errors || null) as any;
     }
 
-    get supervisorErrors(): ExperimentalPlanPatchErrors['supervisor'] {
+    get supervisorErrors(): ExperimentalPlanFormErrors['supervisor'] {
         const supervisorControl = this.form.controls.supervisor;
         return (supervisorControl.errors || null) as any;
     }
