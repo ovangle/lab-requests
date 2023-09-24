@@ -50,10 +50,12 @@ export class CreateExperimentalPlanWorkUnitContext extends WorkUnitContext {
         <h1>Create experimental plan</h1>
 
         <lab-experimental-plan-form [form]="form">
-            <div class="form-controls" (mouseenter)="_showAllFormErrors()">
+            <div class="form-controls" 
+                 (mouseenter)="_showAllFormErrors()">
+                {{form.status}}
+                {{form.errors | json}}
                 <button mat-raised-button 
-                        [disabled]="form.invalid" 
-                        (mouseover)="_showAllFormErrors()"
+                        [disabled]="!form.valid" 
                         (click)="save(); $event.stopPropagation()">
                     <mat-icon>save</mat-icon> SAVE
                 </button>

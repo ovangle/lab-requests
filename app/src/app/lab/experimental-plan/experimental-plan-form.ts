@@ -7,7 +7,7 @@ import { FundingModel, FundingModelCreate, FundingModelService } from "src/app/u
 import { WorkUnitForm, WorkUnitFormErrors, workUnitFormErrors } from "../work-unit/work-unit-form.service";
 import { ExperimentalPlanContext, patchFromExperimentalPlan, ExperimentalPlanPatch, ExperimentalPlan } from "./experimental-plan";
 import { HttpErrorResponse } from "@angular/common/http";
-import { subcontrolValidator } from "src/app/utils/forms/validators";
+import { collectFieldErrors } from "src/app/utils/forms/validators";
 
 export type ExperimentalPlanControls = {
     title: FormControl<string>;
@@ -132,7 +132,9 @@ export function experimentalPlanForm(): ExperimentalPlanForm {
             []
         )
     }, {
-        asyncValidators: [subcontrolValidator]
+        asyncValidators: [
+            (c) => collectFieldErrors(c as ExperimentalPlanForm)
+        ]
     });
 }
 

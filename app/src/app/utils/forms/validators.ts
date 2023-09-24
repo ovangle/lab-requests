@@ -1,11 +1,12 @@
 import { AbstractControl, ControlContainer, FormArray, FormControl, FormGroup, ValidationErrors } from "@angular/forms";
-import { Observable, filter, first, forkJoin, map, of, startWith, switchMap } from "rxjs";
+import { Observable, filter, first, forkJoin, map, of, startWith, switchMap, tap } from "rxjs";
 
 function _collectFormControlErrors(control: FormControl<any>): Observable<ValidationErrors | null> {
     return control.statusChanges.pipe(
         startWith(control.status),
         filter(status => status != 'PENDING'),
-        map(() => control.errors)
+        map(() => control.errors),
+        first()
     )
 }
 
@@ -19,7 +20,11 @@ function _collectFormArrayErrors(arr: FormArray<any>): Observable<{items: (Valid
             }
             const items: Observable<ValidationErrors | null>[] 
                 = arr.controls.map((c) => _collectAbstractControlErrors(c))
-            return forkJoin(items).pipe(map(items => ({items})));
+            console.log('items 0', items)
+            return forkJoin(items).pipe(
+                map((items) => { return {items}; }),
+                tap((items) => console.log('items', items))
+            );
         }),
         first()
     );
@@ -29,23 +34,7 @@ function _collectFormGroupErrors(grp: FormGroup<any>): Observable<ValidationErro
     return grp.statusChanges.pipe(
         startWith(grp.status),
         filter(status => status != 'PENDING'),
-        switchMap(() => {
-            if (grp.valid) {
-                return of(null);
-            }
-            const formKeys = Object.keys(grp.controls);
-            const fieldValidities = formKeys.map(
-                k => _collectAbstractControlErrors(grp.controls[k])
-            );
-            return forkJoin(fieldValidities).pipe(
-                map(values => { 
-                    const entries = formKeys
-                        .map((k, i) => [k, values[i]])
-                        .filter(([_, v]) => v != null);
-                    return Object.fromEntries(entries) as ValidationErrors;
-                })
-            );
-        }),
+        switchMap(() => collectFieldErrors(grp)),
         first()
     );
 }
@@ -65,9 +54,29 @@ function _collectAbstractControlErrors(control: AbstractControl<any>): Observabl
 /**
  * Adds an async validator to a form group which collects errors from subcontrols
  * 
- * @param control: AbstractControl<any>
+ * @param group: FormGroup<any>
  */
-export function subcontrolValidator(control: AbstractControl<any>): Observable<ValidationErrors | null> {
-    return _collectFormGroupErrors(control as FormGroup);
+export function collectFieldErrors(group: FormGroup<any>): Observable<ValidationErrors | null> {
+    if (group.valid) {
+        return of(null);
+    }
+    const formKeys = Object.keys(group.controls);
+    const fieldValidities = formKeys.map(k => {
+        const control = group.controls[k];
+        // console.log(k, 'control status: ', control.status)
+        return _collectAbstractControlErrors(group.controls[k]).pipe(
+          //  tap(errors => console.log(`${k} errors: ${errors}`))
+        )
+    });
+
+    return forkJoin(fieldValidities).pipe(
+        map(values => { 
+            const entries = formKeys
+                .map((k, i) => [k, values[i]])
+                .filter(([_, v]) => v != null);
+            console.log('entries', entries);
+            return Object.fromEntries(entries) as ValidationErrors;
+        })
+    );
 }
 

@@ -7,7 +7,8 @@ import { Discipline } from "src/app/uni/discipline/discipline";
 import { LabType } from "../type/lab-type";
 import { WorkUnitModelService, WorkUnitContext, WorkUnitPatch, workUnitPatchFromWorkUnit } from "./work-unit";
 import { ResourceContainerFormControls, resourceContainerFormControls } from "./resource/resource-container-form.service";
-import { subcontrolValidator } from "src/app/utils/forms/validators";
+import { collectFieldErrors } from "src/app/utils/forms/validators";
+import { ResourceContainerPatchErrors } from "./resource/resource-container";
 
 export type WorkUnitForm = FormGroup<{
     campus: FormControl<Campus | string | null>;
@@ -28,7 +29,7 @@ export function workUnitPatchFromForm(form: WorkUnitForm): Observable<WorkUnitPa
     );
 }
 
-export interface WorkUnitFormErrors {
+export interface WorkUnitFormErrors extends ResourceContainerPatchErrors {
     campus?: {
         notACampus?: string;
         required?: string;
@@ -44,8 +45,13 @@ export interface WorkUnitFormErrors {
     endDate?: {}
 }
 
-type ErrKey = keyof WorkUnitForm['controls'] & keyof WorkUnitFormErrors;
-const BASE_ERR_FIELDS: ErrKey[] = ['campus', 'labType', 'technician', 'startDate', 'endDate'];
+export function workUnitFormErrors(form: WorkUnitForm): Observable<WorkUnitFormErrors | null> {
+    return form.statusChanges.pipe(
+        startWith(form.status),
+        filter(status => status != 'PENDING'),
+        map(() => form.errors as WorkUnitFormErrors)
+    );
+}
 
 export function workUnitForm(): WorkUnitForm {
     return new FormGroup({
@@ -65,19 +71,9 @@ export function workUnitForm(): WorkUnitForm {
 
         ...resourceContainerFormControls()
     }, {
-        asyncValidators: [subcontrolValidator]
+        asyncValidators: [
+            (control) => collectFieldErrors(control as WorkUnitForm)
+        ]
     });
 
-}
-
-export interface WorkUnitFormErrors {
-
-}
-
-export function workUnitFormErrors(form: WorkUnitForm): Observable<WorkUnitFormErrors | null> {
-    return form.statusChanges.pipe(
-        startWith(form.status),
-        filter(status => status != 'PENDING'),
-        map(() => form.errors as WorkUnitFormErrors)
-    );
 }

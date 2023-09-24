@@ -2,7 +2,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import field
 import dataclasses
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from datetime import date, datetime
 from typing import Iterable, Optional
@@ -180,16 +180,15 @@ class ExperimentalPlanCreate(ExperimentalPlanBase, ModelCreate[ExperimentalPlan,
         await self.prepare_fields(db)
 
         instance = models.ExperimentalPlan_()
+        instance.id = uuid4()
         self._set_model_fields(instance)
 
         db.add(instance)
 
         add_work_units = [
-            WorkUnitCreate(plan_id=instance.id, **patch.model_dump())
+            WorkUnitCreate(**patch.model_dump(), plan_id=instance.id)
             for patch in self.add_work_units
         ]
-
-
         new_work_units = []
         for work_unit_create in add_work_units:
             new_work_units.append(await work_unit_create(db))
