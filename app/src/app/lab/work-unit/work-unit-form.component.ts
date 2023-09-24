@@ -11,7 +11,7 @@ import { MatInputModule } from "@angular/material/input";
 import { WorkUnitBaseInfoFormComponent } from "./base-info/work-unit-base-info-form.component";
 import { WorkUnitBaseInfoComponent } from "./base-info/work-unit-base-info.component";
 import { WorkUnit, WorkUnitPatch } from "./work-unit";
-import { WorkUnitForm, WorkUnitFormService } from "./work-unit-form.service";
+import { WorkUnitForm } from "./work-unit-form.service";
 import { EquipmentLeaseTableComponent } from "./resources/equipment/equipment-lease-table.component";
 import { SoftwareResourceTableComponent } from "./resources/software/software-resource-table.component";
 import { ServiceResourceTableComponent } from "./resources/service/service-resource-table.component";
@@ -86,9 +86,6 @@ import { OutputMaterialResourceTableComponent } from "./resources/material/outpu
         </ng-container>
     </ng-container>
     `,
-    providers: [
-        WorkUnitFormService,
-    ]
 })
 export class WorkUnitFormComponent {
     @Input()

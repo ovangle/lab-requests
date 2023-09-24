@@ -1,11 +1,12 @@
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { ChangeDetectorRef, Component, ViewChild, inject } from "@angular/core";
 import { Campus } from "src/app/uni/campus/campus";
 import { InputMaterial } from "../../resources/material/input/input-material";
 import { Software } from "../../resources/software/software";
 import { WorkUnit, WorkUnitContext, WorkUnitCreate } from "../../work-unit";
-import { Subscription, of } from "rxjs";
+import { Subscription, defer, firstValueFrom, of } from "rxjs";
 import { WorkUnitFormComponent } from "../../work-unit-form.component";
-import { WorkUnitForm, WorkUnitFormService } from "../../work-unit-form.service";
+import { WorkUnitForm, workUnitForm, workUnitPatchFromForm } from "../../work-unit-form.service";
 import { CommonModule } from "@angular/common";
 import { hazardClassFromDivision } from "../../resource/hazardous/hazardous";
 
@@ -33,45 +34,34 @@ const workUnitCreateFixture: Partial<WorkUnitCreate> = {
 @Component({
     selector: 'lab-work-unit-create-page',
     template: `
-        <lab-work-unit-form
-            [committed]="_formService.committed$ | async"
-            [form]="_formService.form"
-            (requestCommit)="_formService.save()">
+        <lab-work-unit-form [committed]="null" [form]="form">
         </lab-work-unit-form>
 
         <div class="form-actions">
-            <button mat-raised-button (click)="_formService.save(); $event.stopPropagation()">
+            <button mat-raised-button (click)="save(); $event.stopPropagation()">
                 <mat-icon>save</mat-icon>save
             </button>
         </div>
     `,
     styles: [`
     .form-actions button {
-        float: left;
+        float: right;
     }
     `],
-    providers: [
-        WorkUnitFormService
-    ]
 })
 export class WorkUnitCreatePage {
     _context = inject(WorkUnitContext);
     _cdRef = inject(ChangeDetectorRef);
 
-    _formService = inject(WorkUnitFormService);
-
-    @ViewChild(WorkUnitFormComponent, {static: true})
-    workUnitForm: WorkUnitFormComponent;
+    readonly form = workUnitForm();
+    readonly patch$ = defer(() => workUnitPatchFromForm(this.form));
 
     constructor() {
-        this._context.sendCommitted(of(null));
-        this._context.workUnit$.subscribe(
-            workUnit => console.log(`context workUnit: ${workUnit}`)
-        )
+        this._context.initCreateContext();
     }
 
     ngAfterViewInit() {
-        this.workUnitForm.form.patchValue({
+        this.form.patchValue({
             ...workUnitCreateFixture,
             addEquipments: [],
             replaceEquipments: {},
@@ -85,5 +75,13 @@ export class WorkUnitCreatePage {
             replaceOutputMaterials: {}
         });
         this._cdRef.detectChanges();
+    }
+
+    async save() {
+        if (!this.form.valid) {
+            throw new Error('Cannot save invallid form');
+        }
+        const patch = await firstValueFrom(this.patch$);
+        this._context.create(patch);
     }
 }
