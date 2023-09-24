@@ -11,23 +11,10 @@ import { ServiceForm, Service, serviceForm } from "../resources/service/service"
 import { SoftwareForm, Software, createSoftwareForm } from "../resources/software/software";
 import { ResourceType, ALL_RESOURCE_TYPES } from "./resource-type";
 
-type ReplaceResourceGroup<T, TForm extends FormGroup<any>> = FormGroup<{[k: string]: AbstractControl<T | null>}>;
+type ReplaceResourceGroup<T extends Resource, TForm extends FormGroup<any> = FormGroup<any>> = FormGroup<{[k: string]: TForm}>;
 
-function replaceResourceForm<T, TForm extends FormGroup<any>>(): ReplaceResourceGroup<T, TForm> {
+function replaceResourceForm<T extends Resource, TForm extends FormGroup<any> = FormGroup<any>>(): ReplaceResourceGroup<T, TForm> {
     return new FormGroup({});
-}
-
-function initReplaceResourceAt<T extends Resource, TForm extends FormGroup<any>>(replaceForm: ReplaceResourceGroup<T, TForm>, committed: Partial<T>, index: number) {
-    const form = resourceFormFactory(committed.type!, committed);
-    replaceForm.addControl(`${index}`, form);
-}
-
-function clearReplaceResourceAt<T extends Resource, TForm extends FormGroup<any>>(replaceForm: ReplaceResourceGroup<T, TForm>, index: number) {
-    replaceForm.removeControl(`${index}`);
-}
-
-function getReplaceResourceAt<T extends Resource, TForm extends FormGroup<any>>(replaceForm: ReplaceResourceGroup<T, TForm>, index: number): TForm | null {
-    return replaceForm.get(`${index}`) as TForm | null;
 }
 
 export type ResourceContainerFormControls = {
@@ -66,23 +53,23 @@ export function resourceContainerFormControls(): ResourceContainerFormControls {
     }
 }
 
-export type ResourceContainerForm<TPatch extends ResourceContainerPatch = ResourceContainerPatch> = FormGroup<ResourceContainerFormControls>;
+export type ResourceContainerForm = FormGroup<ResourceContainerFormControls>;
 
-export function resourceContainerPatchFromForm(form: ResourceContainerForm<any>): ResourceContainerPatch {
+export function resourceContainerPatchFromForm(form: ResourceContainerForm): ResourceContainerPatch {
     if (!form.valid) {
         throw new Error('Cannot get patch from invalid form');
     }
     return form.value as ResourceContainerPatch;
 }
 
-export function resourceContainerPatchErrorsFromForm(form: ResourceContainerForm<any>): ResourceContainerPatchErrors | null {
+export function resourceContainerPatchErrorsFromForm(form: ResourceContainerForm): ResourceContainerPatchErrors | null {
     if (form.valid) {
         return null;
     }
     return form.errors! as ResourceContainerPatchErrors;
 }
 
-function getResourceAddArray<TForm extends FormGroup<any>>(form: ResourceContainerForm<any>, resourceType: ResourceType): FormArray<TForm> {
+function getResourceAddArray<TForm extends FormGroup<any>>(form: ResourceContainerForm, resourceType: ResourceType): FormArray<TForm> {
     switch (resourceType) {
         case 'equipment':
             return form.controls['addEquipments'] as FormArray<any>;
@@ -97,7 +84,10 @@ function getResourceAddArray<TForm extends FormGroup<any>>(form: ResourceContain
     }
 }
 
-function getResourceReplaceGroup(form: ResourceContainerForm<any>, resourceType: ResourceType): ReplaceResourceGroup<any, any> {
+function getResourceReplaceGroup<T extends Resource>(
+    form: ResourceContainerForm, 
+    resourceType: T['type'] & ResourceType
+): ReplaceResourceGroup<T, any> {
     switch (resourceType) {
         case 'equipment':
             return form.controls['replaceEquipments'];
@@ -109,10 +99,15 @@ function getResourceReplaceGroup(form: ResourceContainerForm<any>, resourceType:
             return form.controls['replaceInputMaterials'];
         case 'output-material':
             return form.controls['replaceOutputMaterials'];
+        default:
+            throw new Error(`unrecognised resource type ${resourceType}`);
     }
 }
 
-function resourceFormFactory(resourceType: ResourceType, resource: Partial<Resource>) {
+function resourceFormFactory<TResource extends Resource>(
+    resourceType: ResourceType & TResource['type'], 
+    resource: Partial<TResource>
+): FormGroup<any> {
     switch (resourceType) {
         case 'equipment':
             return equipmentLeaseForm(resource as Partial<EquipmentLease>);
@@ -124,34 +119,36 @@ function resourceFormFactory(resourceType: ResourceType, resource: Partial<Resou
             return createInputMaterialForm(resource as Partial<InputMaterial>);
         case 'output-material':
             return createOutputMaterialForm(resource as Partial<OutputMaterial>);
+        default:
+            throw new Error(`Unexpected resource type ${resourceType}`);
     }
 }
 
-function pushResourceCreateForm(form: ResourceContainerForm<any>, resourceType: ResourceType) {
+function pushResourceCreateForm(form: ResourceContainerForm, resourceType: ResourceType) {
     const formArr = getResourceAddArray(form, resourceType);
     const createForm = resourceFormFactory(resourceType, {});
     formArr.push(createForm);
 }
 
-function popResourceCreateForm(form: ResourceContainerForm<any>, resourceType: ResourceType) {
+function popResourceCreateForm(form: ResourceContainerForm, resourceType: ResourceType) {
     const formArr = getResourceAddArray(form, resourceType);
     formArr.removeAt(formArr.length - 1);
 }
 
 
-function getReplaceFormAt(form: ResourceContainerForm<any>, resourceType: ResourceType, index: number): FormGroup<any> | null { 
+function getReplaceFormAt(form: ResourceContainerForm, resourceType: ResourceType, index: number): FormGroup<any> | null { 
     const formGroup = getResourceReplaceGroup(form, resourceType);
     return formGroup.get(`${index}`) as FormGroup<any> | null
 }
 
-function setReplaceForm(form: ResourceContainerForm<any>, resourceType: ResourceType, replaceEntry: [number, Partial<Resource>]) {
+function initReplaceForm(form: ResourceContainerForm, resourceType: ResourceType, replaceEntry: [number, Partial<Resource>]) {
     const formGroup = getResourceReplaceGroup(form, resourceType);
     const [replaceAt, committedValue] = replaceEntry;
     const updateForm = resourceFormFactory(resourceType, committedValue);
     formGroup.addControl(`${replaceAt}`, updateForm);
 }
 
-function clearReplaceForm(form: ResourceContainerForm<any>, resourceType: ResourceType, index: number) {
+function clearReplaceForm(form: ResourceContainerForm, resourceType: ResourceType, index: number) {
     const formGroup = getResourceReplaceGroup(form, resourceType);
     const key = `${index}`;
     if (!formGroup.get(key)) {
@@ -160,7 +157,7 @@ function clearReplaceForm(form: ResourceContainerForm<any>, resourceType: Resour
     formGroup.removeControl(key);
 }
 
-function revertReplaceFormAt(form: ResourceContainerForm<any>, resourceType: ResourceType, index: number) {
+function revertReplaceFormAt(form: ResourceContainerForm, resourceType: ResourceType, index: number) {
     const formGroup: FormGroup<any> = getResourceReplaceGroup(form, resourceType);
     formGroup.removeControl(`${index}`)
 }
@@ -199,11 +196,8 @@ export abstract class ResourceContainerFormService {
         if (index === 'create') {
             return this.pushResourceCreateForm(resourceType);
         }
-        const replaceGroup = getResourceReplaceGroup(this.form, resourceType);
         const committed = await firstValueFrom(this.getResourceAt$(resourceType, index));
-
-        console.log('initialized', resourceType, 'form', index);
-        return initReplaceResourceAt(replaceGroup, committed, index);
+        return initReplaceForm(this.form, resourceType, [index, committed]);
     }
 
     async clearResourceForm(resourceType: ResourceType, index: number | 'create'): Promise<void> {
@@ -211,8 +205,7 @@ export abstract class ResourceContainerFormService {
         if (index == 'create') {
             return this.popResourceCreateForm(resourceType);
         }
-        const replaceGroup = getResourceReplaceGroup(this.form, resourceType);
-        return clearReplaceResourceAt(replaceGroup, index);
+        return clearReplaceForm(this.form, resourceType, index);
     }
 
     getResourceForm(resourceType: ResourceType, index: number | 'create'): FormGroup<any> | null {
@@ -245,7 +238,7 @@ export abstract class ResourceContainerFormService {
             throw new Error('Index out of range');
         }
         const resource = committedResources[index]
-        return setReplaceForm(this.form, resourceType, [index, resource]); 
+        return initReplaceForm(this.form, resourceType, [index, resource]); 
     }
 
     async clearResourceUpdateAt(resourceType: ResourceType, index: number) {

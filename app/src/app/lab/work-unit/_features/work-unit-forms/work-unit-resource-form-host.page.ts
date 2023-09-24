@@ -1,12 +1,11 @@
 import { Component, Injectable, inject } from "@angular/core";
-import { WorkUnit, WorkUnitContext, WorkUnitModelService, WorkUnitPatch, workUnitPatchFromWorkUnit } from "../../work-unit";
+import { WorkUnitContext, WorkUnitPatch } from "../../work-unit";
 import { Subscription, combineLatest, defer, filter, firstValueFrom, map, switchMap } from "rxjs";
 import { ActivatedRoute, RouterModule } from "@angular/router";
-import { CommonModule } from "@angular/common";
-import { WorkUnitFormService } from "../../work-unit-form.service";
 import { ExperimentalPlan, ExperimentalPlanContext } from "src/app/lab/experimental-plan/experimental-plan";
-import { ResourceContainerFormService } from "../../resource/resource-container-form.service";
+import { ResourceContainerForm, ResourceContainerFormService } from "../../resource/resource-container-form.service";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { WorkUnitForm } from "../../work-unit-form.service";
 
 function workUnitContextFromFormHostRoute() {
     const planContext = inject(ExperimentalPlanContext);
@@ -38,15 +37,10 @@ function workUnitContextFromFormHostRoute() {
 
 @Injectable()
 class WorkUnitResourceContainerFormService extends ResourceContainerFormService {
-    readonly _workUnitFormService = inject(WorkUnitFormService);
+    readonly _formHost = inject(WorkUnitResourceFormHostPage);
 
-    get form() {
-        return this._workUnitFormService.form as any;
-    }
-
-    constructor() {
-        super();
-        this._workUnitFormService.committed$.subscribe();
+    get form(): ResourceContainerForm {
+        return this._formHost.form as any;
     }
 }
 
@@ -57,7 +51,6 @@ class WorkUnitResourceContainerFormService extends ResourceContainerFormService 
         <router-outlet></router-outlet>
     `,
     providers: [
-        WorkUnitFormService,
         {
             provide: ResourceContainerFormService,
             useClass: WorkUnitResourceContainerFormService
@@ -67,6 +60,8 @@ class WorkUnitResourceContainerFormService extends ResourceContainerFormService 
 export class WorkUnitResourceFormHostPage {
     _workUnitContext = inject(WorkUnitContext);
     _workUnitContextConnection: Subscription;
+
+    readonly form: WorkUnitForm;
 
     constructor() {
         this._workUnitContextConnection = this._workUnitContext.sendCommitted(
