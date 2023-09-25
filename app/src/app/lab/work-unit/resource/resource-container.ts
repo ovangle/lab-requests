@@ -75,23 +75,23 @@ export function researchContainerFieldsFromJson(json: {[k: string]: any}) {
 
 export class ResourceContainerPatch {
     addEquipments?: EquipmentLease[];
-    replaceEquipments?: {[k: number]: EquipmentLease | null};
+    replaceEquipments?: {[k: string]: EquipmentLease };
     delEquipments?: number[];
 
     addServices?: Service[];
-    replaceServices?: {[k: number]: Service | null};
+    replaceServices?: {[k: string]: Service };
     delServices?: number[];
 
     addSoftwares?: Software[];
-    replaceSoftwares?: {[k: number]: Software | null}
+    replaceSoftwares?: {[k: string]: Software }
     delSoftwares?: number[]
 
     addInputMaterials?: InputMaterial[]; 
-    replaceInputMaterials?: {[k: number]: InputMaterial | null};
+    replaceInputMaterials?: {[k: string]: InputMaterial };
     delInputMaterials?: number[]
 
     addOutputMaterials?: OutputMaterial[];
-    replaceOutputMaterials?: {[k: number]: OutputMaterial | null};
+    replaceOutputMaterials?: {[k: string]: OutputMaterial };
     delOutputMaterials?: number[]
 }
 
@@ -141,12 +141,12 @@ export function resourceContainerPatchToJson(patch: ResourceContainerPatch): {[k
         const fieldSuffix = getFieldSuffix(resourceType);
 
         const addField: keyof ResourceContainerPatch = `add${fieldSuffix}`;
-        if (addField in Object.keys(patch)) {
+        if (Object.keys(patch).includes(addField)) {
             json[addField] = patch[addField]!.map((item) => resourceToJson(item as any));
         }
 
         const replaceField: keyof ResourceContainerPatch = `replace${fieldSuffix}`;
-        if (replaceField in Object.keys(patch)) {
+        if (Object.keys(patch).includes(replaceField)) {
             const replaceEntries = Object.entries(patch[replaceField]!).map(
                 ([k, v]) => [k, resourceToJson(v)]
             );
@@ -154,7 +154,7 @@ export function resourceContainerPatchToJson(patch: ResourceContainerPatch): {[k
         }
 
         const delField: keyof ResourceContainerPatch = `del${fieldSuffix}`;
-        if (delField in Object.keys(patch)) {
+        if (Object.keys(patch).includes(delField)) {
             json[delField] = patch[delField];
         }
     }

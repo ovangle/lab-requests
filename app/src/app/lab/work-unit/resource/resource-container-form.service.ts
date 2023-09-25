@@ -192,7 +192,6 @@ export abstract class ResourceContainerFormService {
     }
 
     async initResourceForm(resourceType: ResourceType, index: number | 'create'): Promise<void> { 
-        console.log('initializing', resourceType, 'form', index);
         if (index === 'create') {
             return this.pushResourceCreateForm(resourceType);
         }

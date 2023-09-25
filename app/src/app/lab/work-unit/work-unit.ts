@@ -10,7 +10,7 @@ import { Campus, campusFromJson, isCampus } from "../../uni/campus/campus";
 import { isDiscipline } from "../../uni/discipline/discipline";
 import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanModelService } from "../experimental-plan/experimental-plan";
 import { LabType } from "../type/lab-type";
-import { ResourceContainer, ResourceContainerContext, ResourceContainerPatch, researchContainerFieldsFromJson, resourceContainerPatchFromContainer} from "./resource/resource-container";
+import { ResourceContainer, ResourceContainerContext, ResourceContainerPatch, researchContainerFieldsFromJson, resourceContainerPatchFromContainer, resourceContainerPatchToJson} from "./resource/resource-container";
 
 
 /**
@@ -108,7 +108,8 @@ export function workUnitPatchToJson(patch: WorkUnitPatch): {[k: string]: any} {
         technician: patch.technician,
         processSummary: patch.processSummary,
         startDate: patch.startDate && formatISO(patch.startDate),
-        endDate: patch.endDate && formatISO(patch.endDate)
+        endDate: patch.endDate && formatISO(patch.endDate),
+        ...resourceContainerPatchToJson(patch)
     };
 }
 

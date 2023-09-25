@@ -4,6 +4,8 @@ import { Resource } from "../../resource/resource";
 
 export class Material implements Resource {
     readonly type: 'input-material' | 'output-material';
+    readonly planId: string;
+    readonly workUnitId: string;
     readonly index: number | 'create';
 }
 

@@ -3,7 +3,7 @@ import { FormArray, FormControl, ReactiveFormsModule } from "@angular/forms";
 import { WorkUnitContext, WorkUnitPatch } from "../../work-unit/work-unit";
 import { CommonModule } from "@angular/common";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { WorkUnitForm, workUnitForm, workUnitPatchFromForm } from "../../work-unit/work-unit-form.service";
+import { WorkUnitForm, workUnitForm, workUnitPatchFromForm } from "../../work-unit/work-unit-form";
 import { WorkUnitBaseInfoFormComponent } from "../../work-unit/base-info/work-unit-base-info-form.component";
 import { ExperimentalPlanForm } from "../experimental-plan-form";
 import { ExperimentalPlanCreate } from "../experimental-plan";

@@ -1,9 +1,16 @@
 import { Equipment, EquipmentPatch, equipmentFromJson, equipmentPatchToJson, isEquipmentPatch } from "src/app/lab/equipment/equipment";
-import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
-import { Resource, CostEstimate, costEstimateFromJson, costEstimateToJson, CostEstimateForm, costEstimateForm } from "../../resource/resource";
+import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
+import { Resource, CostEstimate, costEstimateFromJson, costEstimateToJson, CostEstimateForm, costEstimateForm, ResourceParams } from "../../resource/resource";
+
+export interface EquipmentLeaseParams extends ResourceParams<EquipmentLease> {}
+
 
 export class EquipmentLease implements Resource {
     readonly type = 'equipment';
+
+    readonly planId: string;
+    readonly workUnitId: string;
+
     readonly index: number | 'create'; 
     equipment: Equipment | EquipmentPatch;
 
@@ -13,7 +20,10 @@ export class EquipmentLease implements Resource {
     setupInstructions: string;
     usageCostEstimate: CostEstimate | null;
 
-    constructor(params: Partial<EquipmentLease>) {
+    constructor(params: EquipmentLeaseParams) {
+        this.planId = params.planId;
+        this.workUnitId = params.workUnitId;
+        this.index = params.index;
         this.equipment = params.equipment!;
         this.isTrainingCompleted = params.isTrainingCompleted!;
         this.requiresAssistance = params.requiresAssistance!;
@@ -24,6 +34,9 @@ export class EquipmentLease implements Resource {
 
 export function equipmentLeaseFromJson(json: {[k: string]: any}): EquipmentLease {
     return new EquipmentLease({
+        planId: json['planId']!,
+        workUnitId: json['workUnitId'],
+        index: json['index'],
         equipment: equipmentFromJson(json['equipment']),
         isTrainingCompleted: json['isTrainingCompleted'],
         requiresAssistance: json['requiresAssistance'],
@@ -43,6 +56,9 @@ export function equipmentLeaseToJson(lease: EquipmentLease): {[k: string]: any} 
     }
 
     return {
+        planId: lease.planId,
+        workUnitId: lease.workUnitId,
+        index: lease.index,
         equipment,
         isTrainingCompleted: lease.isTrainingCompleted,
         requiresAssistance: lease.requiresAssistance,
@@ -57,7 +73,7 @@ export type EquipmentLeaseForm = FormGroup<{
     requiresAssistance: FormControl<boolean>;
 
     setupInstructions: FormControl<string>;
-    usageCostEstimate: CostEstimateForm 
+    usageCostEstimate: AbstractControl<CostEstimate | null>;
 }>;
 
 export function equipmentLeaseForm(lease?: Partial<EquipmentLease>): EquipmentLeaseForm {
@@ -78,7 +94,7 @@ export function equipmentLeaseForm(lease?: Partial<EquipmentLease>): EquipmentLe
             lease?.setupInstructions || '', 
             {nonNullable: true}
         ),
-        usageCostEstimate: costEstimateForm(lease?.usageCostEstimate || undefined)
+        usageCostEstimate: costEstimateForm(lease?.usageCostEstimate || undefined) as AbstractControl<CostEstimate | null>
     });
 }
 

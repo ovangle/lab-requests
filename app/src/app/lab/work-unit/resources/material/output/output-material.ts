@@ -3,12 +3,18 @@ import { Material } from "../material";
 import { groupDisabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { Subscription, map, tap } from "rxjs";
+import { ResourceParams } from "../../../resource/resource";
 import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../../resource/hazardous/hazardous";
 import { ResourceDisposal, isResourceDisposalType, resourceDisposalFromJson, resourceDisposalToJson, ResourceDisposalForm, createResourceDisposalForm } from "../../../resource/disposal/resource-disposal";
 import { ResourceStorage, isResourceStorageType, resourceStorageFromJson, resourceStorageToJson, ResourceStorageForm, createResourceStorageForm } from "../../../resource/storage/resource-storage";
+import { isThisSecond } from "date-fns";
+
+export interface OutputMaterialParams extends ResourceParams<OutputMaterial> {}
 
 export class OutputMaterial extends Material {
     override readonly type = 'output-material';
+    override readonly planId: string;
+    override readonly workUnitId: string;
     override readonly index: number | 'create';
 
     name: string;
@@ -21,12 +27,22 @@ export class OutputMaterial extends Material {
 
     hazardClasses: HazardClass[];
 
-    constructor(input: { name: string; baseUnit: string} & Partial<OutputMaterial>) {
+    constructor(input: OutputMaterialParams) {
         super();
 
-        this.name = input.name
+        this.planId = input.planId;
+        this.workUnitId = input.workUnitId;
+        
         this.index = input.index!;
 
+        if (!input.name) {
+            throw new Error('Invalid OutputMaterial. Name must be provided');
+        }
+        this.name = input.name;
+
+        if (!input.baseUnit) {
+            throw new Error('Invalid OutputMaterial. Base units must be provided');
+        }
         this.baseUnit = input.baseUnit;
 
         this.numUnitsProduced = input.numUnitsProduced || 0;
@@ -49,7 +65,9 @@ export class OutputMaterial extends Material {
 
 export function outputMaterialFromJson(json: {[k: string]: any}): OutputMaterial {
     return new OutputMaterial({
-        type: json['type'],
+        planId: json['planId'],
+        workUnitId: json['workUnitId'],
+        index: json['index'],
         name: json['name'],
         baseUnit: json['baseUnit'],
         numUnitsProduced: json['numUnitsProduced'],

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from abc import abstractmethod
 
 from dataclasses import field
 import dataclasses
@@ -52,11 +53,18 @@ class ResourceContainer(BaseModel):
                 return resource
             return resource.model_dump()
 
-        self.equipments = [EquipmentLease(**resource_json(item)) for item in model.equipments]
-        self.input_materials = [InputMaterial(**resource_json(item)) for item in model.input_materials]
-        self.output_materials = [OutputMaterial(**resource_json(item)) for item in model.output_materials]
-        self.services = [Service(**resource_json(item)) for item in model.services]
-        self.softwares = [Software(**resource_json(item)) for item in model.softwares]
+        self.equipments = [
+            EquipmentLease(**resource_json(item)) for item in model.equipments
+        ]
+        self.input_materials = [
+            InputMaterial(**resource_json(item)) for item in model.input_materials
+        ]
+        self.output_materials = [
+            OutputMaterial(**resource_json(item)) for item in model.output_materials
+        ]
+        self.services = [
+            Service(**resource_json(item)) for item in model.services
+        ]
 
 class ResourceContainerPatch(BaseModel):
     equipments: list[EquipmentLease] | None = None
@@ -89,24 +97,55 @@ class ResourceContainerPatch(BaseModel):
         jsonb_resources = [dict(r) for r in new_resources] #type: ignore
         setattr(model, resource_name(resource_type), jsonb_resources)
 
-    def _add_resources(self, resource_type, model, to_add: list[TResource]):
+    def _add_resources(self, resource_type, model: models.ResourceContainer, to_add: list[TResource]):
         current_resources = getattr(model, resource_name(resource_type))
-        current_resources.extend([dataclasses.asdict(item) for item in to_add ])
+
+        model_plan_id = model.get_plan_id()
+        model_work_unit_id = model.get_work_unit_id()
+        model_index = len(model.get_resources(resource_type))
+
+        # Ensure that all added resources have the correct plan_id, work_unit_id and index.
+        for item in to_add:
+            if item.plan_id and item.plan_id != model_plan_id:
+                raise ValidationError('Resource belongs to a different plan')
+            item.plan_id = model_plan_id
+            if item.work_unit_id and item.work_unit_id !=  model_work_unit_id:
+                raise ValidationError('Resource belongs to a differet work unit')
+            item.work_unit_id = model_work_unit_id
+
+            item.index = model_index
+            model_index += 1
+
+        current_resources.extend([item.model_dump_json() for item in to_add])
 
     def _replace_resource(self, resource_type: Type[TResource], model: models.ResourceContainer, to_replace: dict[int, TResource]):
         jsonb_resources = list(self._get_resources(resource_type, model))
+
+        model_plan_id = model.get_plan_id()
+        model_work_unit_id = model.get_work_unit_id()
+
         for index in to_replace:
-            jsonb_resources[index] = to_replace[index]
+            item = to_replace[index]
+            if item.plan_id != model_plan_id:
+                raise ValidationError(f'Cannot update plan_id of {resource_type}')
+            if item.work_unit_id != model_work_unit_id:
+                raise ValidationError(f'Cannot update work_unit_id of {resource_type}')
+            if item.index != index:
+                raise NotImplementedError(f'Should splice all these lists')
+            jsonb_resources[index] = item
+
         self._replace_all(resource_type, model, jsonb_resources)
 
     def _remove_resource(self, resource_type: Type[TResource], model: models.ResourceContainer, to_remove: list[int]):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def _update_fields_for_type(self, resource_type: Type[TResource]) -> tuple[list[TResource], dict[int, TResource], list[int]]:
         r_name = resource_name(resource_type)
         to_add: list[TResource] = getattr(self, f'add_{r_name}s', [])
+
+        replace_items = getattr(self, f'replace_{r_name}', None)
         to_replace: dict[int, TResource] = {
-            int(k): v for k, v in getattr(self, f'replace_{r_name}s', {}).items()
+            int(k): v for k, v in (replace_items or {}).items()
         }
         to_remove: list[int] = getattr(self, f'del_{r_name}s', [])
         return (to_add, to_replace, to_remove)
@@ -125,7 +164,6 @@ class ResourceContainerPatch(BaseModel):
         
         if items_to_remove:
             self._remove_resource(resource_type, model, items_to_remove)
-
 
     def _is_update_to_resources_of_type(self, resource_type: Type[TResource]):
         (to_add, to_replace, to_remove) = self._update_fields_for_type(resource_type)

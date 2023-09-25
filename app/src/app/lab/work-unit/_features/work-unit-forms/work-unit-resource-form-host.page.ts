@@ -1,11 +1,11 @@
 import { Component, Injectable, inject } from "@angular/core";
-import { WorkUnitContext, WorkUnitPatch } from "../../work-unit";
+import { WorkUnit, WorkUnitContext, WorkUnitPatch, workUnitPatchFromWorkUnit } from "../../work-unit";
 import { Subscription, combineLatest, defer, filter, firstValueFrom, map, switchMap } from "rxjs";
 import { ActivatedRoute, RouterModule } from "@angular/router";
 import { ExperimentalPlan, ExperimentalPlanContext } from "src/app/lab/experimental-plan/experimental-plan";
 import { ResourceContainerForm, ResourceContainerFormService } from "../../resource/resource-container-form.service";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { WorkUnitForm } from "../../work-unit-form.service";
+import { WorkUnitForm, workUnitForm } from "../../work-unit-form";
 
 function workUnitContextFromFormHostRoute() {
     const planContext = inject(ExperimentalPlanContext);
@@ -61,12 +61,18 @@ export class WorkUnitResourceFormHostPage {
     _workUnitContext = inject(WorkUnitContext);
     _workUnitContextConnection: Subscription;
 
-    readonly form: WorkUnitForm;
+    readonly form = workUnitForm();
 
     constructor() {
         this._workUnitContextConnection = this._workUnitContext.sendCommitted(
             workUnitContextFromFormHostRoute()
         );
+        this._workUnitContext.committed$.pipe(
+            filter((workUnit): workUnit is WorkUnit => workUnit != null),
+            map(workUnitPatchFromWorkUnit)
+        ).subscribe(patch => {
+            this.form.patchValue(patch);
+        });
     }
 
     ngOnDestroy() {

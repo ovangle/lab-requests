@@ -6,7 +6,7 @@ import { Software } from "../../resources/software/software";
 import { WorkUnit, WorkUnitContext, WorkUnitCreate } from "../../work-unit";
 import { Subscription, defer, firstValueFrom, of } from "rxjs";
 import { WorkUnitFormComponent } from "../../work-unit-form.component";
-import { WorkUnitForm, workUnitForm, workUnitPatchFromForm } from "../../work-unit-form.service";
+import { WorkUnitForm, workUnitForm, workUnitPatchFromForm } from "../../work-unit-form";
 import { CommonModule } from "@angular/common";
 import { hazardClassFromDivision } from "../../resource/hazardous/hazardous";
 
@@ -15,6 +15,7 @@ const workUnitCreateFixture: Partial<WorkUnitCreate> = {
     campus: 'ROK',
     labType: 'ICT',
     technician: 'hello@world.com',
+    /*
     addSoftwares: [
         new Software({ name: 'MATLAB', description: 'test', minVersion: '3.21' }),
         new Software({ name: 'Microsoft Word', description: 'Microsoft stuff', minVersion: '6304' })
@@ -29,6 +30,7 @@ const workUnitCreateFixture: Partial<WorkUnitCreate> = {
             ]
         })
     ]
+    */
 };
 
 @Component({

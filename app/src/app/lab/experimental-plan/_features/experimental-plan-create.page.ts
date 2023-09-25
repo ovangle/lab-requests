@@ -109,8 +109,6 @@ export class ExperimentalPlanCreatePage {
         if (!this.form.valid) {
             throw new Error('Cannot save invalid form');
         }
-        console.log('saving...');
-        debugger;
         const patch = await firstValueFrom(this.patch$);
         console.log('patch', patch);
         return this._context.save(patch);

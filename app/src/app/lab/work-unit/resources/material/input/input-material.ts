@@ -1,11 +1,15 @@
 import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { Material } from "../material";
-import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "../../../resource/resource";
+import { CostEstimate, ResourceParams, costEstimateFromJson, costEstimateToJson } from "../../../resource/resource";
 import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../../resource/hazardous/hazardous";
 import { ResourceStorage, ResourceStorageForm, createResourceStorageForm, isResourceStorageType, resourceStorageFromJson, resourceStorageToJson } from "../../../resource/storage/resource-storage";
 
+export interface InputMaterialParams extends ResourceParams<InputMaterial> {}
+
 export class InputMaterial extends Material {
     override readonly type = 'input-material';
+    override readonly planId: string;
+    override readonly workUnitId: string;
     override readonly index: number | 'create';
 
     name: string;
@@ -18,10 +22,20 @@ export class InputMaterial extends Material {
     storage: ResourceStorage;
     hazardClasses: HazardClass[];
 
-    constructor(input: { name: string; baseUnit: string } & Partial<InputMaterial>) {
+    constructor(input: InputMaterialParams) {
         super();
-        this.name = input.name;
+        this.planId = input.planId;
+        this.workUnitId = input.workUnitId;
         this.index = input.index!;
+
+        if (!input.name) {
+            throw new Error('Invalid InputMaterial. Must provide name')
+        }
+
+        this.name = input.name;
+        if (!input.baseUnit) {
+            throw new Error('Invalid InputMaterial. Must provide base units');
+        }
         this.baseUnit = input.baseUnit;
 
         this.numUnitsRequired = input.numUnitsRequired || 0;
@@ -39,6 +53,9 @@ export class InputMaterial extends Material {
 
 export function inputMaterialFromJson(json: {[k: string]: any}): InputMaterial {
     return new InputMaterial({
+        planId: json['planId'],
+        workUnitId: json['workUnitId'],
+        index: json['index'],
         name: json['name'],
         baseUnit: json['baseUnit'],
         numUnitsRequired: json['numUnitsRequired'],
@@ -51,6 +68,9 @@ export function inputMaterialFromJson(json: {[k: string]: any}): InputMaterial {
 
 export function inputMaterialToJson(inputMaterial: InputMaterial): {[k: string]: any} {
     return {
+        planId: inputMaterial.planId,
+        workUnitId: inputMaterial.workUnitId,
+        index: inputMaterial.index,
         name: inputMaterial.name,
         baseUnit: inputMaterial.baseUnit,
         numUnitsRequired: inputMaterial.numUnitsRequired,

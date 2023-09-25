@@ -5,7 +5,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
-import { WorkUnitForm, WorkUnitFormErrors } from "../work-unit-form.service";
+import { WorkUnitForm, WorkUnitFormErrors } from "../work-unit-form";
 import { CampusSearchComponent } from "src/app/uni/campus/campus-search.component";
 import { LabTypeSelectComponent } from "../../type/lab-type-select.component";
 import { coerceStringArray } from "@angular/cdk/coercion";

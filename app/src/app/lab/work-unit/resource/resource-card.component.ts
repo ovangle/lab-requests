@@ -23,18 +23,16 @@ import { OutputMaterialResourceTableComponent } from "../resources/material/outp
         OutputMaterialResourceTableComponent
     ],
     template: `
-    <mat-card>
-        <mat-card-content [ngSwitch]="resourceType">
+        <ng-container [ngSwitch]="resourceType">
             <lab-equipment-lease-table *ngSwitchCase="'equipment'"></lab-equipment-lease-table>
             <lab-software-resource-table *ngSwitchCase="'software'"></lab-software-resource-table>
             <lab-service-resource-table *ngSwitchCase="'service'"></lab-service-resource-table>
             <lab-input-material-resource-table *ngSwitchCase="'input-material'"></lab-input-material-resource-table>
             <lab-output-material-resource-table *ngSwitchCase="'output-material'"></lab-output-material-resource-table>
-        </mat-card-content>
-    </mat-card>
+        </ng-container>
     `
 })
-export class WorkUnitResourceCardComponent<T extends Resource> {
+export class WorkUnitResourceInfo<T extends Resource> {
     @Input({required: true})
     resourceType: ResourceType;
 

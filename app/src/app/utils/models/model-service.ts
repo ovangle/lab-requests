@@ -30,13 +30,8 @@ export abstract class ModelService<T extends Model, TPatch, TCreate extends TPat
     abstract readonly resourcePath: string;
 
     abstract modelFromJson(json: object): T;
-    patchToJson(patch: TPatch): object {
-        return {...patch} as object;
-    }
-    createToJson(create: TCreate): object {
-        return this.patchToJson(create);
-    }
-
+    abstract patchToJson(patch: TPatch): object; 
+    abstract createToJson(create: TCreate): object; 
     abstract lookupToHttpParams(lookup: Partial<Lookup<T>>): HttpParams; 
 
     protected _resourceUrl(identifier: string, options?: {resourcePath?: string}) {

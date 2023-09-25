@@ -4,7 +4,7 @@ import { tap, shareReplay, defer, map, Observable, filter, firstValueFrom, of, c
 import { Campus, CampusModelService } from "src/app/uni/campus/campus";
 import { Discipline } from "src/app/uni/discipline/discipline";
 import { FundingModel, FundingModelCreate, FundingModelService } from "src/app/uni/research/funding-model/funding-model";
-import { WorkUnitForm, WorkUnitFormErrors, workUnitFormErrors } from "../work-unit/work-unit-form.service";
+import { WorkUnitForm, WorkUnitFormErrors, workUnitFormErrors } from "../work-unit/work-unit-form";
 import { ExperimentalPlanContext, patchFromExperimentalPlan, ExperimentalPlanPatch, ExperimentalPlan } from "./experimental-plan";
 import { HttpErrorResponse } from "@angular/common/http";
 import { collectFieldErrors } from "src/app/utils/forms/validators";

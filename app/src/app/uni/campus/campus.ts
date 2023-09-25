@@ -79,6 +79,7 @@ export class CampusModelService extends ModelService<Campus, CampusPatch> {
     override readonly resourcePath = '/uni/campuses'
     override readonly modelFromJson = campusFromJson;
     override readonly patchToJson = campusPatchToJson;
+    override readonly createToJson = campusPatchToJson;
     override readonly lookupToHttpParams = campusLookupToHttpParams;
 
     getForId(id: string) {

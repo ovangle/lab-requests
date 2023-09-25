@@ -2,11 +2,15 @@ from __future__ import annotations
 from datetime import datetime
 from enum import Enum
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, GetCoreSchemaHandler
 from pydantic_core import core_schema
+
+if TYPE_CHECKING:
+    from api.lab.plan.schemas import ExperimentalPlan
+    from api.lab.work_unit.schemas import WorkUnit
 
 class ResourceType(Enum):
     EQUIPMENT = 'equipment'
@@ -44,8 +48,9 @@ class ResourceDisposal(BaseModel):
     estimated_cost: ResourceCostEstimate | None
 
 class Resource(BaseModel):
-    plan_id: UUID
-    index: int
+    plan_id: UUID | None = None
+    work_unit_id: UUID | None = None
+    index: int | Literal['create'] = 'create'
 
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime | None = None
+    updated_at: datetime | None = None

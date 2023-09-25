@@ -18,9 +18,6 @@ export class ResourceFormService<T extends Resource, TForm extends FormGroup<any
     readonly isReady: Promise<ResourceTypeIndex> = firstValueFrom(
         this.resourceContext.committedTypeIndex$.pipe(
             tap((typeIndex) => this._typeIndexSubject.next(typeIndex)),
-            tap(value => {
-                console.log('typeIndex value', value);
-            }),
             filter(isResourceTypeIndex),
             switchMap(async ([resourceType, index]) => {
                 console.log('typeIndex 2', resourceType, index);

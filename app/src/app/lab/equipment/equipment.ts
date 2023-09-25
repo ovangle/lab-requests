@@ -100,6 +100,7 @@ export class EquipmentModelService extends ModelService<Equipment, EquipmentPatc
     override readonly resourcePath: string = '/lab/equipments'
     override readonly modelFromJson = equipmentFromJson;
     override readonly patchToJson = equipmentPatchToJson;
+    override readonly createToJson = equipmentPatchToJson;
     override readonly lookupToHttpParams = equipmentLookupToHttpParams;
 }
 

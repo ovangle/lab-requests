@@ -14,7 +14,7 @@ interface Actor {
 
 const researcherFixture = {
     role: 'researcher',
-    email: 'hello@world.com'
+    email: 'a@researcher'
 }
 
 

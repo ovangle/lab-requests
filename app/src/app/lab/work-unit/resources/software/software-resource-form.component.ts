@@ -26,26 +26,26 @@ import { ProvisionFormComponent } from "../../resource/provision/provision-form.
     template: `
     <form [formGroup]="form">
         <mat-form-field>
-                <mat-label>Name</mat-label>
-                <input matInput
-                    id="software-name"
-                    formControlName="name"
-                    />
+            <mat-label>Name</mat-label>
+            <input matInput
+                id="software-name"
+                formControlName="name"
+            />
         </mat-form-field>
 
         <mat-form-field>
-                <mat-label>Description</mat-label>
-                <textarea matInput type="text"
-                    id="software-description"
-                    formControlName="description">
-                </textarea>
+            <mat-label>Description</mat-label>
+            <textarea matInput type="text"
+                id="software-description"
+                formControlName="description">
+            </textarea>
         </mat-form-field>
 
         <mat-form-field>
-                <mat-label>Minimum version</mat-label>
-                <input matInput type="text"
-                    id="software-min-version"
-                    formControlName="minVersion" />
+            <mat-label>Minimum version</mat-label>
+            <input matInput type="text"
+                id="software-min-version"
+                formControlName="minVersion" />
         </mat-form-field>
 
         <mat-checkbox formControlName="isLicenseRequired">

@@ -122,29 +122,6 @@ export function experimentalPlanPatchToJson(patch: ExperimentalPlanPatch): {[k: 
     }
 }
 
-export interface ExperimentalPlanPatchErrors {
-    title: { 
-        required: string | null 
-    };
-    researcher: {
-        email: string | null;
-        required: string | null;
-    } | null;
-    researcherBaseCampus: { 
-        required: string | null; 
-        notACampus: string | null;
-    } | null;
-    researcherDiscipline: { 
-        required: string | null; 
-    } | null;
-    fundingType: { 
-        required: string | null; 
-        notAFundingModel: string | null;
-    } | null;
-    supervisor: {
-        email: string | null;
-    } | null;
-}
 
 export interface ExperimentalPlanCreate extends ExperimentalPlanPatch {
     createDefaultWorkUnitForResearcher: boolean;
@@ -175,6 +152,7 @@ export class ExperimentalPlanModelService extends ModelService<ExperimentalPlan,
     override readonly resourcePath = '/lab/experimental-plans'
     override readonly modelFromJson = experimentalPlanFromJson;
     override readonly patchToJson = experimentalPlanPatchToJson;
+    override readonly createToJson = experimentalPlanCreateToJson;
     override readonly lookupToHttpParams = experimentalPlanLookupToHttpParams;
 
     updatePlan(plan: ExperimentalPlan, patch: ExperimentalPlanPatch): Observable<ExperimentalPlan> {
