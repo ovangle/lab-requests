@@ -6,6 +6,7 @@ import { MatListModule } from "@angular/material/list";
 import { MatButtonModule } from "@angular/material/button";
 import { LabHomePage } from "./lab-home.page";
 import { MatIconModule } from "@angular/material/icon";
+import { LabProfilePage } from "./lab-profile.page";
 
 
 const LAB_ROUTES: Routes = [
@@ -29,6 +30,10 @@ const LAB_ROUTES: Routes = [
                 loadChildren: () => import('../experimental-plan/_features/experimental-plan.feature-module').then(
                     module => module.ExperimentalPlanFeatureModule
                 )
+            },
+            {
+                path: ':lab_id',
+                component: LabProfilePage
             }
         ]
     }
@@ -45,7 +50,9 @@ const LAB_ROUTES: Routes = [
         MatListModule,
     ],
     declarations: [
-        LabDashboardPage
+        LabDashboardPage,
+        LabHomePage,
+        LabProfilePage
     ]
 })
 export class LabFeatureModule { }

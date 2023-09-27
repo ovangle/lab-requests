@@ -1,8 +1,8 @@
 from uuid import UUID
-from ..common.schemas import ResourceType, Resource
+from ..common.schemas import ResourceType, ResourceBase
 
 
-class Software(Resource):
+class Software(ResourceBase):
     type: ResourceType = ResourceType.SOFTWARE
     id: UUID
 

@@ -1,8 +1,8 @@
 from pydantic.dataclasses import dataclass
 
-from ..common.schemas import Resource, ResourceStorage, ResourceDisposal
+from ..common.schemas import ResourceBase, ResourceStorage, ResourceDisposal
 
-class OutputMaterial(Resource):
+class OutputMaterial(ResourceBase):
     # The base unit of consumption
     base_unit: str
 

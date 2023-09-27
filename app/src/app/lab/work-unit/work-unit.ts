@@ -10,8 +10,23 @@ import { Campus, campusFromJson, isCampus } from "../../uni/campus/campus";
 import { isDiscipline } from "../../uni/discipline/discipline";
 import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanModelService } from "../experimental-plan/experimental-plan";
 import { LabType } from "../type/lab-type";
-import { ResourceContainer, ResourceContainerContext, ResourceContainerPatch, researchContainerFieldsFromJson, resourceContainerPatchToJson} from "./resource/resource-container";
+import { ResourceContainer, ResourceContainerContext, ResourceContainerParams, ResourceContainerPatch, resourceContainerFieldsFromJson, resourceContainerPatchToJson} from "./resource/resource-container";
 
+
+export interface WorkUnitParams extends ResourceContainerParams {
+    planId: string;
+    id: string;
+    index: number;
+
+    campus: Campus;
+    labType: LabType;
+    technician: string;
+
+    processSummary: string;
+
+    startDate: Date | null;
+    endDate: Date | null;
+}
 
 /**
  * A WorkUnit is a portion of an experimental plan which is conducted
@@ -34,7 +49,7 @@ export class WorkUnit extends ResourceContainer {
     readonly endDate: Date | null;
 
     constructor(
-        params: Partial<WorkUnit>
+        params: WorkUnitParams
     ) {
         super(params);
         this.id = params.id!;
@@ -72,7 +87,7 @@ export function workUnitFromJson(json: {[k: string]: any}): WorkUnit {
         startDate: json['startDate'] && parseISO(json['startDate']),
         endDate: json['endDate'] && parseISO(json['endDate']),
 
-        ...researchContainerFieldsFromJson(json)
+        ...resourceContainerFieldsFromJson(json)
     })
 
 }
@@ -105,6 +120,7 @@ export function workUnitPatchFromWorkUnit(workUnit: WorkUnit): WorkUnitPatch {
 }
 
 export function workUnitPatchToJson(patch: WorkUnitPatch): {[k: string]: any} {
+    debugger;
     return {
         campus: isCampus(patch.campus) ? patch.campus.id : patch.campus,
         labType: patch.labType,

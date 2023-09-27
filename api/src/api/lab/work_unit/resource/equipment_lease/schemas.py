@@ -2,14 +2,11 @@ from typing import Optional
 from uuid import UUID
 from pydantic import Field
 
-from api.lab.equipment.schemas import EquipmentPatch
-from ..common.schemas import Resource, ResourceCostEstimate
+from api.lab.equipment.schemas import EquipmentRequest
+from ..common.schemas import ResourceBase, ResourceCostEstimate
 
-class EquipmentLease(Resource):
-    equipment_id: UUID | None
-
-    # A request to add new equipment.
-    equipment_request: EquipmentPatch | None
+class EquipmentLease(ResourceBase):
+    equipment: UUID | EquipmentRequest | None
 
     # Have any required inductions been 
     # previously completed?
@@ -17,7 +14,7 @@ class EquipmentLease(Resource):
 
     # Is the lab tech required in order to 
     # assist in the usage of the machine?
-    require_assistance: bool
+    requires_assistance: bool
 
     # Instructions to prepare for experiment
     setup_instructions: str
@@ -26,7 +23,3 @@ class EquipmentLease(Resource):
     # over the course of the research
     # including consumables
     usage_cost_estimate: ResourceCostEstimate | None
-
-    def __post_init__(self):
-        if self.equipment_id and self.equipment_request:
-            raise ValueError('Cannot have both equipment id and new equipment')

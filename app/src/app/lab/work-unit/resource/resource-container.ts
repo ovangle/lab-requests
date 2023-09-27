@@ -12,6 +12,15 @@ import { Software, SoftwareFormErrors, softwareFromJson, softwareToJson } from "
 import type { Resource } from './resource';
 import { startOfDay } from "date-fns";
 
+export interface ResourceContainerParams {
+    equipments: EquipmentLease[];
+    tasks: Task[];
+    softwares: Software[];
+
+    inputMaterials: InputMaterial[];
+    outputMaterials: OutputMaterial[];
+}
+
 export abstract class ResourceContainer {
     equipments: EquipmentLease[];
     tasks: Task[];
@@ -20,16 +29,13 @@ export abstract class ResourceContainer {
     inputMaterials: InputMaterial[];
     outputMaterials: OutputMaterial[];
 
-    constructor(params: Partial<ResourceContainer>) {
-        this.equipments = (params.equipments || [])
-            .map(e => new EquipmentLease(e));
-        this.tasks = (params.tasks || [])
-            .map(s => new Task(s));
-        this.softwares = (params.softwares || [])
-            .map(s => new Software(s));
-        this.inputMaterials = (params.inputMaterials || [])
+    constructor(params: ResourceContainerParams) {
+        this.equipments = params.equipments.map(e => new EquipmentLease(e));
+        this.tasks = params.tasks.map(s => new Task(s));
+        this.softwares = params.softwares.map(s => new Software(s));
+        this.inputMaterials = params.inputMaterials
             .map(inputMaterial => new InputMaterial(inputMaterial));
-        this.outputMaterials = (params.outputMaterials || [])
+        this.outputMaterials = params.outputMaterials
             .map(outputMaterial => new OutputMaterial(outputMaterial));
     }
 
@@ -54,11 +60,11 @@ export function resourceContainerAttr(type: ResourceType): keyof ResourceContain
     return (type.replace(/-([a-z])/, (match) => match[1].toUpperCase()) + 's') as keyof ResourceContainerPatch;
 }
 
-export function researchContainerFieldsFromJson(json: {[k: string]: any}) {
+export function resourceContainerFieldsFromJson(json: {[k: string]: any}) {
     return {
         equipments: Array.from<object>(json['equipments']).map(equip => equipmentLeaseFromJson(equip)),
         softwares: Array.from<object>(json['softwares']).map(software => softwareFromJson(software)), 
-        services: Array.from<object>(json['services']).map(service => taskFromJson(service)),
+        tasks: Array.from<object>(json['tasks']).map(task => taskFromJson(task)),
 
         inputMaterials: Array.from<object>(json['inputMaterials']).map(inputMaterial => inputMaterialFromJson(inputMaterial)),
         outputMaterials: Array.from<object>(json['outputMaterials']).map(outputMaterial => outputMaterialFromJson(outputMaterial))

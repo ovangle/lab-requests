@@ -66,7 +66,7 @@ export class ResourceFormService<T extends Resource, TForm extends FormGroup<any
             const resources = container.getResources<T>(resourceType);
             return resources[resources.length - 1];
         }
-        return container.getResourceAt<T>(resourceType, index );
+        return container.getResourceAt<T>(resourceType, index);
     }
 
     connect(): Subscription {

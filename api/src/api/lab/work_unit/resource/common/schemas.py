@@ -8,6 +8,8 @@ from uuid import UUID
 from pydantic import BaseModel, GetCoreSchemaHandler
 from pydantic_core import core_schema
 
+from api.base.schemas import SCHEMA_CONFIG
+
 if TYPE_CHECKING:
     from api.lab.plan.schemas import ExperimentalPlan
     from api.lab.work_unit.schemas import WorkUnit
@@ -15,7 +17,7 @@ if TYPE_CHECKING:
 class ResourceType(Enum):
     EQUIPMENT = 'equipment'
     SOFTWARE = 'software'
-    SERVICE = 'service'
+    TASK = 'task'
     INPUT_MATERIAL = 'input-material'
     OUTPUT_MATERIAL = 'output-material'
 
@@ -36,20 +38,27 @@ class HazardClass(str):
 
     
 class ResourceCostEstimate(BaseModel): 
+    model_config = SCHEMA_CONFIG
+
     is_university_supplied: bool
     estimated_cost: float = 0
 
 class ResourceStorage(BaseModel):
+    model_config = SCHEMA_CONFIG
+
     description: str
     estimated_cost: ResourceCostEstimate | None
 
 class ResourceDisposal(BaseModel):
+    model_config = SCHEMA_CONFIG
+
     description: str
     estimated_cost: ResourceCostEstimate | None
 
-class Resource(BaseModel):
-    plan_id: UUID | None = None
-    work_unit_id: UUID | None = None
+class ResourceBase(BaseModel):
+    model_config = SCHEMA_CONFIG
+
+    container_id:  UUID | None = None
     index: int | Literal['create'] = 'create'
 
     created_at: datetime | None = None

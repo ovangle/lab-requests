@@ -72,7 +72,7 @@ class ModelPatch(BaseModel, Generic[TApiModel, TModel], ABC):
         else:
             model = model_or_schema
 
-        updated_model = await self.do_update(db, model)
+        updated_model = await self.do_update(db, cast(TModel, model))
         await db.commit()
         return await self._api_model.from_model(updated_model)
 

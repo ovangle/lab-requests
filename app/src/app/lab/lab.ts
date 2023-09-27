@@ -1,14 +1,10 @@
-import { Provider } from "@angular/core";
-import { labEquipmentModelServiceProviders } from "./equipment/equipment";
-import { labExperimentalPlanModelServiceProviders } from "./experimental-plan/experimental-plan";
-import { labWorkUnitModelServiceProviders } from "./work-unit/work-unit";
+import { Campus } from "../uni/campus/campus";
+import { LabType } from "./type/lab-type";
 
 
+export interface Lab {
+    readonly type: LabType;
+    readonly campus: Campus;
 
-export function labModelServiceProviders(): Provider[] {
-    return [
-        ...labEquipmentModelServiceProviders(),
-        ...labExperimentalPlanModelServiceProviders(),
-        ...labWorkUnitModelServiceProviders()
-    ]
+    readonly technicians: string[];
 }

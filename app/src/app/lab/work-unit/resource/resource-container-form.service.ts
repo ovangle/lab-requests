@@ -1,5 +1,5 @@
 import { AbstractControl, FormArray, FormGroup } from "@angular/forms";
-import { ResourceContainer, ResourceContainerContext, ResourceContainerPatch } from "./resource-container";
+import { ResourceContainer, ResourceContainerContext, ResourceContainerPatch, resourceContainerAttr } from "./resource-container";
 import { Injectable, inject } from "@angular/core";
 import { Observable, firstValueFrom, filter, map, Subscription, BehaviorSubject, connectable, defer } from "rxjs";
 import { Resource } from "./resource";
@@ -60,7 +60,27 @@ export function resourceContainerPatchFromForm(form: ResourceContainerForm): Res
     if (!form.valid) {
         throw new Error('Cannot get patch from invalid form');
     }
-    return form.value as ResourceContainerPatch;
+    const patch: Partial<ResourceContainerPatch> = {};
+    for (const resourceType of ALL_RESOURCE_TYPES) {
+        const slices: any[] = [];
+        const addArray = getResourceAddArray(form, resourceType);
+        if (addArray.length > 0) {
+            slices.push({
+                start: -1,
+                items: addArray.value.map(value => value as Resource)
+            });
+        }
+
+        const replaceGroup = getResourceReplaceGroup(form, resourceType);
+        Object.entries(replaceGroup.controls).forEach(
+            ([sliceName, form]) => {
+                const start = Number.parseInt(sliceName);
+                slices.push({start, end: start + 1, items: [form.value]})
+            }
+        )
+        patch[resourceContainerAttr(resourceType)] = slices;
+    }
+    return patch as ResourceContainerPatch;
 }
 
 export function resourceContainerPatchErrorsFromForm(form: ResourceContainerForm): ResourceContainerFormErrors | null {
@@ -206,6 +226,7 @@ export abstract class ResourceContainerFormService {
         }
         const patch = resourceContainerPatchFromForm(this.form);
         return await this._context.commit(patch);
+
     }
 
     async initResourceForm(resourceType: ResourceType, index: number | 'create'): Promise<void> { 

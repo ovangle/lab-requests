@@ -17,7 +17,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { BodyScrollbarHidingService } from './utils/body-scrollbar-hiding.service';
 import { API_BASE_URL } from './utils/models/model-service';
 import { uniModelServiceProviders } from './uni/uni';
-import { labModelServiceProviders } from './lab/lab';
+import { labModelServiceProviders } from './lab/lab-model-providers';
 
 /**
  * This function is used internal to get a string instance of the `<base href="" />` value from `index.html`.

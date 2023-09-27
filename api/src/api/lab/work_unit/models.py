@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, select, Select
@@ -88,4 +88,5 @@ class WorkUnit_(ResourceContainer, Base):
     @staticmethod
     def list_for_technician(db: LocalSession, technician_email: str) -> Select[tuple[WorkUnit_]]:
         return select(WorkUnit_).where(WorkUnit_.technician_email == technician_email)
+
 

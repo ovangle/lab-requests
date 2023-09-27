@@ -77,6 +77,14 @@ class Equipment(EquipmentBase, ApiModel[models.Equipment]):
         model = await models.Equipment.get_for_id(db, id)
         return await cls.from_model(model)
 
+
+class EquipmentRequest(BaseModel):
+    """
+    Represents a request to create an equipment
+    """
+    name: str
+    description: str
+
 class EquipmentPatch(EquipmentBase, ModelPatch[Equipment, models.Equipment]):
     __api_model__ = Equipment
 

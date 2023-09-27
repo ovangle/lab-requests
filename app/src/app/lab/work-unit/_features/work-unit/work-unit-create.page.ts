@@ -65,7 +65,7 @@ export class WorkUnitCreatePage {
     ngAfterViewInit() {
         this.form.patchValue({
             ...workUnitCreateFixture,
-            addEquipments: [],
+            addEquipments: [], 
             replaceEquipments: {},
             addTasks: [],
             replaceTasks: {},

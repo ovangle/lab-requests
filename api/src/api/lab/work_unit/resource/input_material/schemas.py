@@ -1,8 +1,8 @@
 from typing import Literal
 
-from ..common.schemas import ResourceCostEstimate, HazardClass, Resource
+from ..common.schemas import ResourceCostEstimate, HazardClass, ResourceBase
 
-class InputMaterial(Resource):
+class InputMaterial(ResourceBase):
     base_unit: str
 
     estimated_cost_per_unit: ResourceCostEstimate | None
