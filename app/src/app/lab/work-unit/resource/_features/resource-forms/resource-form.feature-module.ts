@@ -5,11 +5,11 @@ import { RouterModule, Routes } from "@angular/router";
 import { ALL_RESOURCE_TYPES } from "../../resource-type";
 import { EquipmentLeaseFormComponent } from "../../../resources/equipment/equipment-lease-form.component";
 import { SoftwareResourceFormComponent } from "../../../resources/software/software-resource-form.component";
-import { ServiceResourceTableComponent } from "../../../resources/service/service-resource-table.component";
+import { ServiceResourceTableComponent } from "../../../resources/task/task-resource-table.component";
 import { OutputMaterialResourceFormComponent } from "../../../resources/material/output/output-material-resource-form.component";
 import { InputMaterialResourceFormComponent } from "../../../resources/material/input/input-material-resource-form.component";
 import { ResourceFormTitleComponent } from "../../common/resource-form-title.component";
-import { ServiceResourceFormComponent } from "../../../resources/service/service-resource-form.component";
+import { TaskResourceFormComponent } from "../../../resources/task/task-resource-form.component";
 
 const RESOURCE_FORM_ROUTES: Routes = ALL_RESOURCE_TYPES.flatMap(
     (resourceType) => [
@@ -31,7 +31,7 @@ const RESOURCE_FORM_ROUTES: Routes = ALL_RESOURCE_TYPES.flatMap(
         EquipmentLeaseFormComponent,
         SoftwareResourceFormComponent,
 
-        ServiceResourceFormComponent,
+        TaskResourceFormComponent,
         InputMaterialResourceFormComponent,
         OutputMaterialResourceFormComponent,
     ],

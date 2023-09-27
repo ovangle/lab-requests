@@ -1,19 +1,19 @@
 import { Component, Injectable } from "@angular/core";
-import { Service } from "./service";
+import { Task } from "./task";
 import { CommonModule } from "@angular/common";
 import { MatTableModule } from "@angular/material/table";
-import { ServiceResourceDetailsComponent } from "./service-resource-details.component";
+import { TaskResourceDetailsComponent } from "./task-resource-details.component";
 import { ResourceTableInfoHeaderComponent } from "../../resource/common/resource-table-info-header.component";
 import { ResourceTableDataSource, ResourceTableComponent } from "../../resource/common/resource-table.component";
 
 @Injectable()
-export class ServiceResourceTableDataSource extends ResourceTableDataSource<Service> {
-    override readonly resourceType = 'service';
-    override readonly resourceTitle = 'Service';
+export class ServiceResourceTableDataSource extends ResourceTableDataSource<Task> {
+    override readonly resourceType = 'task';
+    override readonly resourceTitle = 'Tasks';
 }
 
 @Component({
-    selector: 'lab-service-resource-table',
+    selector: 'lab-task-resource-table',
     standalone: true,
     imports: [
         CommonModule,
@@ -22,7 +22,7 @@ export class ServiceResourceTableDataSource extends ResourceTableDataSource<Serv
 
         ResourceTableComponent,
         ResourceTableInfoHeaderComponent,
-        ServiceResourceDetailsComponent
+        TaskResourceDetailsComponent
     ],
     template: `
     <lab-resource-table
@@ -39,8 +39,8 @@ export class ServiceResourceTableDataSource extends ResourceTableDataSource<Serv
     </lab-resource-table>
 
     <ng-template #detailTemplate let-element let-index="index">
-        <lab-service-resource-details [service]="element">
-        </lab-service-resource-details>
+        <lab-task-resource-details [task]="element">
+        </lab-task-resource-details>
     </ng-template>
     `,
     providers: [

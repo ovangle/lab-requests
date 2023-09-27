@@ -2,7 +2,7 @@ import { CommonModule } from "@angular/common";
 import { Component, ViewChild, inject } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { Service, ServiceForm, ServiceFormErrors, serviceForm } from "./service";
+import { Task, TaskForm, TaskFormErrors, serviceForm } from "./task";
 import { MatInputModule } from "@angular/material/input";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { ResourceFormService } from "../../resource/resource-form.service";
@@ -10,7 +10,7 @@ import { ProvisionFormComponent } from "../../resource/provision/provision-form.
 import { MatRadioModule } from "@angular/material/radio";
 
 @Component({
-    selector: 'lab-service-resource-form',
+    selector: 'lab-task-resource-form',
     standalone: true,
     imports: [
         CommonModule,
@@ -68,15 +68,15 @@ import { MatRadioModule } from "@angular/material/radio";
     </form>
     `
 })
-export class ServiceResourceFormComponent {
-    readonly formService = inject(ResourceFormService<Service, ServiceForm>);
+export class TaskResourceFormComponent {
+    readonly formService = inject(ResourceFormService<Task, TaskForm>);
 
-    get form(): ServiceForm {
+    get form(): TaskForm {
         return this.formService.form;
     }
 
-    get nameErrors(): ServiceFormErrors['name'] | null {
-        return this.form.controls.name.errors as ServiceFormErrors['name'] | null;
+    get nameErrors(): TaskFormErrors['name'] | null {
+        return this.form.controls.name.errors as TaskFormErrors['name'] | null;
     }
 
     get supplier(): 'technician' | 'researcher' | 'other' {

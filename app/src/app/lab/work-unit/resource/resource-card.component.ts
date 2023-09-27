@@ -5,7 +5,7 @@ import { EquipmentLeaseTableComponent } from "../resources/equipment/equipment-l
 import { MatCardModule } from "@angular/material/card";
 import { CommonModule } from "@angular/common";
 import { SoftwareResourceTableComponent } from "../resources/software/software-resource-table.component";
-import { ServiceResourceTableComponent } from "../resources/service/service-resource-table.component";
+import { ServiceResourceTableComponent } from "../resources/task/task-resource-table.component";
 import { InputMaterialResourceTableComponent } from "../resources/material/input/input-material-resource-table.component";
 import { OutputMaterialResourceTableComponent } from "../resources/material/output/output-material-resource-table.component";
 
@@ -26,7 +26,7 @@ import { OutputMaterialResourceTableComponent } from "../resources/material/outp
         <ng-container [ngSwitch]="resourceType">
             <lab-equipment-lease-table *ngSwitchCase="'equipment'"></lab-equipment-lease-table>
             <lab-software-resource-table *ngSwitchCase="'software'"></lab-software-resource-table>
-            <lab-service-resource-table *ngSwitchCase="'service'"></lab-service-resource-table>
+            <lab-task-resource-table *ngSwitchCase="'task'"></lab-task-resource-table>
             <lab-input-material-resource-table *ngSwitchCase="'input-material'"></lab-input-material-resource-table>
             <lab-output-material-resource-table *ngSwitchCase="'output-material'"></lab-output-material-resource-table>
         </ng-container>

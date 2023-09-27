@@ -6,14 +6,15 @@ import { ALL_RESOURCE_TYPES, ResourceType } from "./resource-type";
 import { EquipmentLease, EquipmentLeaseFormErrors, equipmentLeaseFromJson, equipmentLeaseToJson } from "../resources/equipment/equipment-lease";
 import { InputMaterial, InputMaterialFormErrors, inputMaterialFromJson, inputMaterialToJson } from "../resources/material/input/input-material";
 import { OutputMaterial, OutputMaterialFormErrors, outputMaterialFromJson, outputMaterialToJson } from "../resources/material/output/output-material";
-import { Service, ServiceFormErrors, serviceFromJson, serviceToJson } from "../resources/service/service";
+import { Task, TaskFormErrors, taskFromJson, taskToJson } from "../resources/task/task";
 import { Software, SoftwareFormErrors, softwareFromJson, softwareToJson } from "../resources/software/software";
 
 import type { Resource } from './resource';
+import { startOfDay } from "date-fns";
 
 export abstract class ResourceContainer {
     equipments: EquipmentLease[];
-    services: Service[];
+    tasks: Task[];
     softwares: Software[];
 
     inputMaterials: InputMaterial[];
@@ -22,8 +23,8 @@ export abstract class ResourceContainer {
     constructor(params: Partial<ResourceContainer>) {
         this.equipments = (params.equipments || [])
             .map(e => new EquipmentLease(e));
-        this.services = (params.services || [])
-            .map(s => new Service(s));
+        this.tasks = (params.tasks || [])
+            .map(s => new Task(s));
         this.softwares = (params.softwares || [])
             .map(s => new Software(s));
         this.inputMaterials = (params.inputMaterials || [])
@@ -33,20 +34,7 @@ export abstract class ResourceContainer {
     }
 
     getResources<T extends Resource>(t: ResourceType & T['type']): readonly T[] {
-        switch (t) {
-            case 'equipment':
-                return this.equipments as any[];
-            case 'software':
-                return this.softwares as any[];
-            case 'service':
-                return this.services as any[];
-            case 'input-material':
-                return this.inputMaterials as any[];
-            case 'output-material':
-                return this.outputMaterials as any[];
-            default:
-                throw new Error(`Unexpected resource type ${t}`)
-        }
+        return this[resourceContainerAttr(t)] as any[];
     }
 
     countResources(t: ResourceType): number {
@@ -62,47 +50,46 @@ export abstract class ResourceContainer {
     }
 }
 
+export function resourceContainerAttr(type: ResourceType): keyof ResourceContainerPatch {
+    return (type.replace(/-([a-z])/, (match) => match[1].toUpperCase()) + 's') as keyof ResourceContainerPatch;
+}
+
 export function researchContainerFieldsFromJson(json: {[k: string]: any}) {
     return {
         equipments: Array.from<object>(json['equipments']).map(equip => equipmentLeaseFromJson(equip)),
         softwares: Array.from<object>(json['softwares']).map(software => softwareFromJson(software)), 
-        services: Array.from<object>(json['services']).map(service => serviceFromJson(service)),
+        services: Array.from<object>(json['services']).map(service => taskFromJson(service)),
 
         inputMaterials: Array.from<object>(json['inputMaterials']).map(inputMaterial => inputMaterialFromJson(inputMaterial)),
         outputMaterials: Array.from<object>(json['outputMaterials']).map(outputMaterial => outputMaterialFromJson(outputMaterial))
     };
 }
 
-export class ResourceContainerPatch {
-    addEquipments?: EquipmentLease[];
-    replaceEquipments?: {[k: string]: EquipmentLease };
-    delEquipments?: number[];
-
-    addServices?: Service[];
-    replaceServices?: {[k: string]: Service };
-    delServices?: number[];
-
-    addSoftwares?: Software[];
-    replaceSoftwares?: {[k: string]: Software }
-    delSoftwares?: number[]
-
-    addInputMaterials?: InputMaterial[]; 
-    replaceInputMaterials?: {[k: string]: InputMaterial };
-    delInputMaterials?: number[]
-
-    addOutputMaterials?: OutputMaterial[];
-    replaceOutputMaterials?: {[k: string]: OutputMaterial };
-    delOutputMaterials?: number[]
+interface ResourceSplice<T> {
+    readonly start: number;
+    readonly end?: number;
+    readonly items: T[];
 }
 
-export function resourceContainerPatchFromContainer(container: any) {
-    return {};
+export class ResourceContainerPatch {
+    equipments: ResourceSplice<EquipmentLease>[];
+    tasks: ResourceSplice<Task>[];
+    softwares: ResourceSplice<Software>[];
+    inputMaterials: ResourceSplice<InputMaterial>[];
+    outputMaterials: ResourceSplice<OutputMaterial>[];
 }
 
 export function resourceContainerPatchToJson(patch: ResourceContainerPatch): {[k: string]: any} {
     let json: {[k: string]: any} = {};
     for (const resourceType of ALL_RESOURCE_TYPES) {
-        contributeResourceFieldsToOutput(resourceType);
+        const resourceToJson = resourceSerializer(resourceType);
+
+        const slices = patch[resourceContainerAttr(resourceType)];
+
+        json[resourceContainerAttr(resourceType)] = slices.map(slice => ({
+            ...slice,
+            items: slice.items.map(item => resourceToJson(item as any))
+        }))
     }
     return json;
 
@@ -112,92 +99,32 @@ export function resourceContainerPatchToJson(patch: ResourceContainerPatch): {[k
                 return equipmentLeaseToJson;
             case 'software':
                 return softwareToJson;
-            case 'service':
-                return serviceToJson;
+            case 'task':
+                return taskToJson;
             case 'input-material':
                 return inputMaterialToJson;
             case 'output-material':
                 return outputMaterialToJson;
         }
     }
-
-    function getFieldSuffix(resourceType: ResourceType) {
-        switch (resourceType) {
-            case 'equipment':
-                return 'Equipments';
-            case 'software':
-                return 'Softwares';
-            case 'service':
-                return 'Services';
-            case 'input-material':
-                return 'InputMaterials';
-            case 'output-material':
-                return 'OutputMaterials';
-        }
-    }
-
-    function contributeResourceFieldsToOutput(resourceType: ResourceType) {
-        const resourceToJson = resourceSerializer(resourceType);
-        const fieldSuffix = getFieldSuffix(resourceType);
-
-        const addField: keyof ResourceContainerPatch = `add${fieldSuffix}`;
-        if (Object.keys(patch).includes(addField)) {
-            json[addField] = patch[addField]!.map((item) => resourceToJson(item as any));
-        }
-
-        const replaceField: keyof ResourceContainerPatch = `replace${fieldSuffix}`;
-        if (Object.keys(patch).includes(replaceField)) {
-            const replaceEntries = Object.entries(patch[replaceField]!).map(
-                ([k, v]) => [k, resourceToJson(v)]
-            );
-            json[replaceField] = Object.fromEntries(replaceEntries);
-        }
-
-        const delField: keyof ResourceContainerPatch = `del${fieldSuffix}`;
-        if (Object.keys(patch).includes(delField)) {
-            json[delField] = patch[delField];
-        }
-    }
 }
 
-function delResourcePatch(resourceType: ResourceType, toDel: number[]): ResourceContainerPatch {
-    switch (resourceType) {
-        case 'equipment':
-            return {delEquipments: toDel}
-        case 'service':
-            return {delServices: toDel}
-        case 'software':
-            return {delSoftwares: toDel}
-        case 'input-material':
-            return {delInputMaterials: toDel}
-        case 'output-material':
-            return {delOutputMaterials: toDel}
-    }
+function delResourcePatch<T extends Resource>(
+    resourceType: T['type'] & ResourceType, 
+    toDel: number[]
+): Partial<ResourceContainerPatch> {
+    return {
+        [resourceContainerAttr(resourceType)]: toDel.map(toDel => ({start: toDel, end: toDel + 1, items: []}))
+    };
 }
 
-export type ResourceContainerPatchErrors = ValidationErrors & {
-    addEquipments?: (EquipmentLeaseFormErrors | null)[];
-    replaceEquipments?: {[k: string]: EquipmentLeaseFormErrors };
-
-    addSoftwares?: (SoftwareFormErrors | null)[];
-    replaceSoftwares?: {[k: string]: SoftwareFormErrors };
-
-    addServices?: (ServiceFormErrors | null)[];
-    replaceServices?: {[k: string]: ServiceFormErrors };
-
-    addInputMaterials?: (InputMaterialFormErrors | null)[];
-    replaceInputMaterials?: {[k: string]: InputMaterialFormErrors };
-
-    addOutputMaterials?: (OutputMaterialFormErrors | null)[];
-    replaceOutputMaterials?: {[k: string]: OutputMaterialFormErrors };
-}
 
 @Injectable()
 export abstract class ResourceContainerContext<T extends ResourceContainer & { readonly id: string; }, TPatch> {
     abstract readonly committed$: Observable<T | null>;
 
     abstract commitContext(patch: TPatch): Promise<T>;
-    abstract patchFromContainerPatch(patch: ResourceContainerPatch): Promise<TPatch>;
+    abstract patchFromContainerPatch(patch: Partial<ResourceContainerPatch>): Promise<TPatch>;
     abstract getContainerPath(): Promise<string[]>;
 
     committedResources$<TResource extends Resource>(resourceType: ResourceType): Observable<readonly TResource[]> {

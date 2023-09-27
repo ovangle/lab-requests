@@ -1,14 +1,14 @@
 import { AbstractControl, FormArray, FormGroup } from "@angular/forms";
-import { ResourceContainer, ResourceContainerContext, ResourceContainerPatch, ResourceContainerPatchErrors } from "./resource-container";
+import { ResourceContainer, ResourceContainerContext, ResourceContainerPatch } from "./resource-container";
 import { Injectable, inject } from "@angular/core";
 import { Observable, firstValueFrom, filter, map, Subscription, BehaviorSubject, connectable, defer } from "rxjs";
 import { Resource } from "./resource";
 import { ExperimentalPlanFormPaneControlService } from "../../experimental-plan/experimental-plan-form-pane-control.service";
-import { EquipmentLeaseForm, EquipmentLease, equipmentLeaseForm } from "../resources/equipment/equipment-lease";
-import { InputMaterialForm, InputMaterial, createInputMaterialForm } from "../resources/material/input/input-material";
-import { OutputMaterialForm, OutputMaterial, createOutputMaterialForm } from "../resources/material/output/output-material";
-import { ServiceForm, Service, serviceForm } from "../resources/service/service";
-import { SoftwareForm, Software, createSoftwareForm } from "../resources/software/software";
+import { EquipmentLeaseForm, EquipmentLease, equipmentLeaseForm, EquipmentLeaseFormErrors } from "../resources/equipment/equipment-lease";
+import { InputMaterialForm, InputMaterial, createInputMaterialForm, InputMaterialFormErrors } from "../resources/material/input/input-material";
+import { OutputMaterialForm, OutputMaterial, createOutputMaterialForm, OutputMaterialFormErrors } from "../resources/material/output/output-material";
+import { TaskForm, Task, serviceForm, TaskFormErrors } from "../resources/task/task";
+import { SoftwareForm, Software, createSoftwareForm, SoftwareFormErrors } from "../resources/software/software";
 import { ResourceType, ALL_RESOURCE_TYPES } from "./resource-type";
 
 type ReplaceResourceGroup<T extends Resource, TForm extends FormGroup<any> = FormGroup<any>> = FormGroup<{[k: string]: TForm}>;
@@ -17,12 +17,13 @@ function replaceResourceForm<T extends Resource, TForm extends FormGroup<any> = 
     return new FormGroup({});
 }
 
+
 export type ResourceContainerFormControls = {
     addEquipments: FormArray<EquipmentLeaseForm>;
     replaceEquipments: ReplaceResourceGroup<EquipmentLease, EquipmentLeaseForm>;
 
-    addServices: FormArray<ServiceForm>;
-    replaceServices: ReplaceResourceGroup<Service, ServiceForm>;
+    addTasks: FormArray<TaskForm>;
+    replaceTasks: ReplaceResourceGroup<Task, TaskForm>;
 
     addSoftwares: FormArray<SoftwareForm>;
     replaceSoftwares: ReplaceResourceGroup<Software, SoftwareForm>;
@@ -39,8 +40,8 @@ export function resourceContainerFormControls(): ResourceContainerFormControls {
         addEquipments: new FormArray<EquipmentLeaseForm>([]),
         replaceEquipments: replaceResourceForm<EquipmentLease, EquipmentLeaseForm>(),
 
-        addServices: new FormArray<ServiceForm>([]),
-        replaceServices: replaceResourceForm<Service, ServiceForm>(),
+        addTasks: new FormArray<TaskForm>([]),
+        replaceTasks: replaceResourceForm<Task, TaskForm>(),
 
         addSoftwares: new FormArray<SoftwareForm>([]),
         replaceSoftwares: replaceResourceForm<Software, SoftwareForm>(),
@@ -62,11 +63,11 @@ export function resourceContainerPatchFromForm(form: ResourceContainerForm): Res
     return form.value as ResourceContainerPatch;
 }
 
-export function resourceContainerPatchErrorsFromForm(form: ResourceContainerForm): ResourceContainerPatchErrors | null {
+export function resourceContainerPatchErrorsFromForm(form: ResourceContainerForm): ResourceContainerFormErrors | null {
     if (form.valid) {
         return null;
     }
-    return form.errors! as ResourceContainerPatchErrors;
+    return form.errors! as ResourceContainerFormErrors;
 }
 
 function getResourceAddArray<TForm extends FormGroup<any>>(form: ResourceContainerForm, resourceType: ResourceType): FormArray<TForm> {
@@ -75,8 +76,8 @@ function getResourceAddArray<TForm extends FormGroup<any>>(form: ResourceContain
             return form.controls['addEquipments'] as FormArray<any>;
         case 'software':
             return form.controls['addSoftwares'] as FormArray<any>;
-        case 'service':
-            return form.controls['addServices'] as FormArray<any>;
+        case 'task':
+            return form.controls['addTasks'] as FormArray<any>;
         case 'input-material': 
             return form.controls['addInputMaterials'] as FormArray<any>;
         case 'output-material':
@@ -93,8 +94,8 @@ function getResourceReplaceGroup<T extends Resource>(
             return form.controls['replaceEquipments'];
         case 'software':
             return form.controls['replaceSoftwares'];
-        case 'service':
-            return form.controls['replaceServices']; 
+        case 'task':
+            return form.controls['replaceTasks']; 
         case 'input-material':
             return form.controls['replaceInputMaterials'];
         case 'output-material':
@@ -111,8 +112,8 @@ function resourceFormFactory<TResource extends Resource>(
     switch (resourceType) {
         case 'equipment':
             return equipmentLeaseForm(resource as Partial<EquipmentLease>);
-        case 'service':
-            return serviceForm(resource as Partial<Service>);
+        case 'task':
+            return serviceForm(resource as Partial<Task>);
         case 'software':
             return createSoftwareForm(resource as Partial<Software>);
         case 'input-material':
@@ -162,6 +163,22 @@ function revertReplaceFormAt(form: ResourceContainerForm, resourceType: Resource
     formGroup.removeControl(`${index}`)
 }
 
+export interface ResourceContainerFormErrors {
+    addEquipments?: (EquipmentLeaseFormErrors | null)[];
+    replaceEquipments?: {[k: string]: EquipmentLeaseFormErrors };
+
+    addSoftwares?: (SoftwareFormErrors | null)[];
+    replaceSoftwares?: {[k: string]: SoftwareFormErrors };
+
+    addServices?: (TaskFormErrors | null)[];
+    replaceServices?: {[k: string]: TaskFormErrors };
+
+    addInputMaterials?: (InputMaterialFormErrors | null)[];
+    replaceInputMaterials?: {[k: string]: InputMaterialFormErrors };
+
+    addOutputMaterials?: (OutputMaterialFormErrors | null)[];
+    replaceOutputMaterials?: {[k: string]: OutputMaterialFormErrors };
+}
 /**
  * Abstract form service which represents a model and associated form containing
  * equipments, softwares, inputMaterials and outputMaterials.

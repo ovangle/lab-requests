@@ -1,12 +1,14 @@
 import { CommonModule } from "@angular/common";
 import { Component, ViewChild, inject } from "@angular/core";
-import { ReactiveFormsModule } from "@angular/forms";
+import { FormControl, ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { EquipmentLease, EquipmentLeaseForm, equipmentLeaseForm } from "./equipment-lease";
-import { defer, filter, map } from "rxjs";
+import { defer, filter, map, startWith } from "rxjs";
 import { EquipmentSearchComponent } from "src/app/lab/equipment/equipment-search.component";
 import { ResourceFormService } from "../../resource/resource-form.service";
+import { Equipment } from "src/app/lab/equipment/equipment";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 
 
 @Component({
@@ -16,6 +18,7 @@ import { ResourceFormService } from "../../resource/resource-form.service";
         CommonModule,
         ReactiveFormsModule,
 
+        MatCheckboxModule,
         MatFormFieldModule,
         MatInputModule,
 
@@ -32,10 +35,9 @@ import { ResourceFormService } from "../../resource/resource-form.service";
                 I have completed the following required training for this device
             </mat-checkbox>
 
-            <mat-checkbox formControlName="isAssistanceRequired">
-                I require additional instruction in the use of this equipment
+            <mat-checkbox formControlName="requiresAssistance">
+                I require additional assistance using this equipment
             </mat-checkbox>
-
         </ng-container>
     </form>
     `,
@@ -46,12 +48,17 @@ export class EquipmentLeaseFormComponent {
     get form() {
         return this.formService.form;
     }
-    
 
-    readonly selectedEquipment$ = defer(() => 
-        this.form.controls.equipment.valueChanges.pipe(
+    get equipmentControl(): FormControl<Equipment | string | null> {
+        return this.form.controls.equipment;
+    }
+
+    readonly selectedEquipment$ = defer(
+        () => this.equipmentControl.valueChanges.pipe(
+            startWith(this.equipmentControl.value),
             map((value) => {
-                if (!this.form.controls.equipment.valid) {
+                console.log('selected equipment', value);
+                if (!this.equipmentControl.valid) {
                     return null;
                 }
                 return value; 

@@ -44,7 +44,7 @@ export function typeIndexFromDetailRoute$(): Observable<[ResourceType, number | 
         <ng-container [ngSwitch]="typeIndex[0]">
             <lab-equipment-lease-form *ngSwitchCase="'equipment'"></lab-equipment-lease-form>
             <lab-software-resource-form *ngSwitchCase="'software'"></lab-software-resource-form>
-            <lab-service-resource-form *ngSwitchCase="'service'"></lab-service-resource-form>
+            <lab-task-resource-form *ngSwitchCase="'task'"></lab-task-resource-form>
             <lab-input-material-resource-form *ngSwitchCase="'input-material'"></lab-input-material-resource-form>
             <lab-output-material-resource-form *ngSwitchCase="'output-material'"></lab-output-material-resource-form>
         </ng-container>

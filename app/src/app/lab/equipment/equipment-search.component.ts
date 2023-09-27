@@ -1,8 +1,8 @@
 import { Component, Injectable, Input, ViewChild, inject} from "@angular/core";
-import { Equipment, EquipmentModelService, EquipmentPatch, EquipmentCreate, isEquipmentPatch, EquipmentContext, EquipmentLookup } from "./equipment";
+import { Equipment, EquipmentModelService, EquipmentPatch, EquipmentCreate, isEquipmentPatch, EquipmentContext, EquipmentLookup, EquipmentRequest, isEquipmentRequest } from "./equipment";
 import { CommonModule } from "@angular/common";
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
-import { Observable, defer, delay, filter, map, of, skip, switchMap, switchMapTo, timer, zip } from "rxjs";
+import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from "@angular/material/autocomplete";
+import { BehaviorSubject, Observable, combineLatest, defer, delay, filter, map, of, skip, startWith, switchMap, switchMapTo, timer, withLatestFrom, zip } from "rxjs";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { AbstractControl, ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule, ValidationErrors, Validators } from "@angular/forms";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
@@ -13,12 +13,17 @@ import { MatInputModule } from "@angular/material/input";
 import { ModelCollection, provideFocusedModelContext } from "src/app/utils/models/model-collection";
 import { ModelService } from "src/app/utils/models/model-service";
 import { EquipmentForm, EquipmentFormService } from "./equipment-form.service";
+import { patchFromExperimentalPlan } from "../experimental-plan/experimental-plan";
+import { EquipmentRequestFormComponent } from "./equipment-request-form.component";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
 
 @Injectable()
 export class EquipmentModelCollection extends ModelCollection<Equipment> {
     readonly models = inject(EquipmentModelService);
 }
 
+const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
 
 @Component({
     selector: 'lab-equipment-search',
@@ -28,11 +33,13 @@ export class EquipmentModelCollection extends ModelCollection<Equipment> {
         ReactiveFormsModule,
 
         MatAutocompleteModule,
+        MatButtonModule,
         MatCardModule,
+        MatIconModule,
         MatFormFieldModule,
         MatInputModule,
 
-        LabEquipmentFormComponent,
+        EquipmentRequestFormComponent
     ],
     template: `
     <mat-form-field>
@@ -43,7 +50,8 @@ export class EquipmentModelCollection extends ModelCollection<Equipment> {
             [formControl]="searchControl" />
 
         <mat-autocomplete #autocomplete 
-                          [displayWith]="_displaySearch">
+                          [displayWith]="_displaySearch(_equipmentRequest.value.name)"
+                          (optionSelected)="_optionSelected($event)">
             <ng-container *ngIf="searchOptions$ | async as searchOptions">
                 <mat-option *ngFor="let equipment of searchOptions" [value]="equipment">
                     {{equipment.name}} 
@@ -58,10 +66,19 @@ export class EquipmentModelCollection extends ModelCollection<Equipment> {
 
     <ng-container *ngIf="isNewEquipment$ | async">
         <mat-card>
-            <mat-card-header>Request other equipment</mat-card-header>
+            <mat-card-header>
+                <h3>Request other equipment</h3>
+                <button mat-icon-button
+                        (click)="_cancelNewEquipment()">
+                    <mat-icon>cancel</mat-icon>
+                </button>
+            </mat-card-header>
             <mat-card-content>
-                <lab-equipment-form [form]="form" [committed]="null">
-                </lab-equipment-form>
+                <lab-equipment-request-form 
+                    [name]="_equipmentRequest.value.name"
+                    [disabled]="_disabled"
+                    (equipmentRequestChange)="_equipmentRequestChange($event)">
+                </lab-equipment-request-form>
             </mat-card-content>
             <mat-card-footer #createFormControls>
             </mat-card-footer>
@@ -80,74 +97,83 @@ export class EquipmentModelCollection extends ModelCollection<Equipment> {
     ]
 })
 export class EquipmentSearchComponent implements ControlValueAccessor {
-    readonly _NEW_EQUIPMENT_ = Symbol('_NEW_EQUIPMENT_');
+    readonly _NEW_EQUIPMENT_ = _NEW_EQUIPMENT_;
 
     readonly equipments = inject(EquipmentModelCollection);
-    readonly searchControl = new FormControl<Equipment | Symbol | string>(
-        '', 
-        {
-            nonNullable: true,
-            validators: [
-                (c) => this._validateNewEquipment(c as FormControl<Equipment | Symbol | string>)
-            ]
-        }
-    );
+    readonly searchControl = new FormControl<Equipment | string>('', { nonNullable: true });
 
     readonly equipmentContext = inject(EquipmentContext);
     readonly searchOptions$ = defer(() => this.equipments.items$);
     readonly isNewEquipment$ = this.searchControl.valueChanges.pipe(
         map(value => value === this._NEW_EQUIPMENT_)
     );
+    readonly _equipmentRequest = new BehaviorSubject<EquipmentRequest>({name: '', description: ''});
 
-    readonly _formService = inject(EquipmentFormService);
-    get form(): EquipmentForm {
-        return this._formService.form;
-    }
-    
+    readonly value$: Observable<Equipment | EquipmentRequest | null> = defer(() => {
+        return this.searchControl.valueChanges.pipe(
+            startWith(this.searchControl.value),
+            switchMap(value => {
+                if (value === _NEW_EQUIPMENT_) {
+                    return this._equipmentRequest;
+                } else if (typeof value === 'string') {
+                    return of(null);
+                } else {
+                    return of(value);
+                }
+            })
+        );
+    });
     constructor() {
-        this.equipments.connectQuery(this.searchControl.valueChanges.pipe( takeUntilDestroyed(),
-            map(searchText => ({ searchText } as EquipmentLookup))
-        ));
+        this.equipments.connectQuery(this.searchControl.valueChanges.pipe( takeUntilDestroyed(), map(searchText => ({ searchText } as EquipmentLookup))));
         this.equipmentContext.initCreateContext();
 
-        // Prepopulate the new input with the value from the search text.
+        // Prefil the value of the equipment request with the value of the search input
         this.searchControl.valueChanges.pipe(
-            filter((v): v is (Equipment | string) => v != this._NEW_EQUIPMENT_),
-            map(v => {
-                if (typeof v === 'string' || v == null) {
-                    return v;
-                }
-                return v.name;
-            }) 
-        ).subscribe(
-            name => this.form.patchValue({name})
-        )
+            takeUntilDestroyed(),
+            filter((value): value is Equipment | string => value != _NEW_EQUIPMENT_),
+            map(value => {
+                if (value instanceof Equipment) {
+                    return value.name;
+                } 
+                return value;
+            }),
+            withLatestFrom(this._equipmentRequest),
+            map(([searchInput, request]) => ({name: searchInput, description: request.description}))
+        ).subscribe(this._equipmentRequest);
+
+        // Dispatch _onChange events
+        this.value$.pipe(takeUntilDestroyed()).subscribe((v) => {
+            console.log('value changed', v);
+            this._onChange(v)
+        });
     }
 
-    @ViewChild(LabEquipmentFormComponent, {static: false})
-    _labEquipmentForm: LabEquipmentFormComponent | null;
-
-    _validateNewEquipment(searchControl: AbstractControl<Equipment | Symbol | string>): ValidationErrors | null {
-        if (searchControl.value === this._NEW_EQUIPMENT_) {
-            if (this._labEquipmentForm == null) {
-                return { 
-                    newEquipmentNotReady: 'Cannot be valid until the created equipment is valid'
-                };
-            } 
-            if (this.form.invalid) {
-                return {
-                    newEquipmentInvalid: 'The new equipment is invalid',
-                }
-            }
+    _optionSelected(option: MatAutocompleteSelectedEvent) {
+        if (option.option.value === _NEW_EQUIPMENT_) {
+            this.searchControl.disable();
         }
-        return null;
     }
 
-    writeValue(obj: Equipment | EquipmentCreate | string): void {
-        if (isEquipmentPatch(obj)) {
-            this.searchControl.setValue(this._NEW_EQUIPMENT_);
-        } else {
+    _cancelNewEquipment() {
+        this.searchControl.setValue('');
+        this.searchControl.enable();
+    }
+
+    _equipmentRequestChange(request: EquipmentRequest) {
+        console.log('request', request);
+        this._equipmentRequest.next(request);
+    }
+
+
+    writeValue(obj: Equipment | EquipmentRequest | string | null): void {
+        if (typeof obj === 'string' || obj == null) {
+            this.searchControl.setValue(obj || '');
+        }
+        if (obj instanceof Equipment) {
             this.searchControl.setValue(obj);
+        } else if (isEquipmentRequest(obj)) {
+            this.searchControl.setValue(this._NEW_EQUIPMENT_);
+            this._equipmentRequest.next({...obj});
         }
     }
     
@@ -161,27 +187,21 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
     }
 
     protected _searchDisabled = disabledStateToggler(this.searchControl);
+    _disabled: boolean;
     setDisabledState(isDisabled: boolean): void {
         this._searchDisabled(isDisabled);
-
-        if (this._labEquipmentForm != null) {
-            const form = this._labEquipmentForm.form;
-            if (isDisabled && !form.disabled) {
-                form.disable();
-            }
-            if (!isDisabled && form.disabled) {
-                form.enable();
-            }
-        }
+        this._disabled = isDisabled;
     }
 
-    _displaySearch(search: Equipment | EquipmentCreate | string): string {
-        if (search instanceof Equipment) {
-            return search.name;
-        } else if (isEquipmentPatch(search)) {
-            return '(new )' + search.name;
-        } else {
-            return search;
+    _displaySearch(newEquipmentName: string) {
+        return function (search: Equipment | string): string {
+            if (search instanceof Equipment) {
+                return search.name;
+            } else if (search === _NEW_EQUIPMENT_) {
+                return '(new) ' + newEquipmentName;
+            } else {
+                return search;
+            }
         }
     }
 }

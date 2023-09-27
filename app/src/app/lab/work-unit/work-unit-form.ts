@@ -6,9 +6,8 @@ import { Campus } from "src/app/uni/campus/campus";
 import { Discipline } from "src/app/uni/discipline/discipline";
 import { LabType } from "../type/lab-type";
 import { WorkUnitModelService, WorkUnitContext, WorkUnitPatch, workUnitPatchFromWorkUnit } from "./work-unit";
-import { ResourceContainerFormControls, resourceContainerFormControls } from "./resource/resource-container-form.service";
+import { ResourceContainerFormControls, ResourceContainerFormErrors, resourceContainerFormControls } from "./resource/resource-container-form.service";
 import { collectFieldErrors } from "src/app/utils/forms/validators";
-import { ResourceContainerPatchErrors } from "./resource/resource-container";
 
 export type WorkUnitForm = FormGroup<{
     campus: FormControl<Campus | string | null>;
@@ -29,7 +28,7 @@ export function workUnitPatchFromForm(form: WorkUnitForm): Observable<WorkUnitPa
     );
 }
 
-export interface WorkUnitFormErrors extends ResourceContainerPatchErrors {
+export interface WorkUnitFormErrors extends ResourceContainerFormErrors {
     campus?: {
         notACampus?: string;
         required?: string;

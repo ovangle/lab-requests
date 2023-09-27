@@ -29,7 +29,6 @@ export class Equipment {
         this.availableInLabTypes = params.availableInLabTypes!;
         this.trainingDescriptions = Array.from(params.trainingDescriptions!);
    }
-
 }
 
 export function equipmentFromJson(json: {[k: string]: any}): Equipment {
@@ -40,6 +39,25 @@ export function equipmentFromJson(json: {[k: string]: any}): Equipment {
         availableInLabTypes: Array.from(json['availableInLabTypes'] || []), 
         tags: Array.from(json['tags'] || []),
         trainingDescriptions: Array.from(json['trainingDescriptions'])
+    })
+}
+
+/**
+ * Represents a request to obtain a specific equipment.
+ */
+export interface EquipmentRequest {
+    name: string;
+    description: string;
+}
+
+export function isEquipmentRequest(obj: any): obj is EquipmentRequest {
+    return typeof obj == 'object' && obj != null && typeof obj.name === 'string';
+}
+
+export function equipmentRequestForm() {
+    return new FormGroup({
+        name: new FormControl('', {nonNullable: true}),
+        description: new FormControl('', {nonNullable: true})
     })
 }
 

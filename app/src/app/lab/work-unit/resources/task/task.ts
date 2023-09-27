@@ -3,7 +3,7 @@ import { CostEstimate, Resource, ResourceParams, costEstimateFromJson, costEstim
 import { collectFieldErrors } from "src/app/utils/forms/validators";
 import { Observable, filter, map, startWith } from "rxjs";
 
-export interface ServiceParams extends ResourceParams<Service> {
+export interface TaskParams extends ResourceParams<Task> {
     
 }
 
@@ -12,10 +12,9 @@ export interface ServiceParams extends ResourceParams<Service> {
  * contracted out to a third party which is required to complete
  * the research plan.
  * 
- * TODO: Rename 'tasks'?
  */
-export class Service implements Resource {
-    readonly type = 'service';
+export class Task implements Resource {
+    readonly type = 'task';
     readonly planId: string;
     readonly workUnitId: string;
     readonly index: number | 'create';
@@ -28,7 +27,7 @@ export class Service implements Resource {
 
     readonly costEstimate: CostEstimate | null;
 
-    constructor(params: ServiceParams) {
+    constructor(params: TaskParams) {
         this.planId = params.planId;
         this.workUnitId = params.workUnitId;
         this.index = params.index;
@@ -50,8 +49,8 @@ export class Service implements Resource {
     }
 }
 
-export function serviceFromJson(json: {[k: string]: any}): Service {
-    return new Service({
+export function taskFromJson(json: {[k: string]: any}): Task {
+    return new Task({
         planId: json['planId'],
         workUnitId: json['workUnitId'],
         index: json['index'],
@@ -63,22 +62,21 @@ export function serviceFromJson(json: {[k: string]: any}): Service {
     })
 }
 
-export function serviceToJson(service: Service) {
+export function taskToJson(task: Task) {
     return {
-        planId: service.planId,
-        workUnitId: service.workUnitId,
-        index: service.index,
+        planId: task.planId,
+        workUnitId: task.workUnitId,
+        index: task.index,
 
-        name: service.name,
-        description: service.description,
-        supplier: service.supplier,
-        externalSupplierDescription: service.externalSupplierDescription,
-        costEstimate: service.costEstimate && costEstimateToJson(service.costEstimate)
+        name: task.name,
+        description: task.description,
+        supplier: task.supplier,
+        externalSupplierDescription: task.externalSupplierDescription,
+        costEstimate: task.costEstimate && costEstimateToJson(task.costEstimate)
     }
 }
 
-export type ServiceForm = FormGroup<{
-    type: FormControl<'service'>;
+export type TaskForm = FormGroup<{
     name: FormControl<string>;
     description: FormControl<string>;
     supplier: FormControl<'technician' | 'researcher' | 'other'>;
@@ -88,32 +86,31 @@ export type ServiceForm = FormGroup<{
     estimatedCost: FormControl<number>;
 }>;
 
-export function serviceForm(service: Partial<Service>): ServiceForm {
+export function serviceForm(task: Partial<Task>): TaskForm {
     return new FormGroup({
-        type: new FormControl('service', {nonNullable: true}),
-        name: new FormControl(service.name || '', {nonNullable: true, validators: [Validators.required]}),
-        description: new FormControl(service.description || '', {nonNullable: true}),
+        name: new FormControl(task.name || '', {nonNullable: true, validators: [Validators.required]}),
+        description: new FormControl(task.description || '', {nonNullable: true}),
         supplier: new FormControl<'researcher' | 'technician' | 'other'>('researcher', {nonNullable: true}),
         externalSupplierDescription: new FormControl<string>('', {nonNullable: true}),
-        isUniversitySupplied: new FormControl(!!service.costEstimate?.isUniversitySupplied, {nonNullable: true}),
-        estimatedCost: new FormControl(service.costEstimate?.estimatedCost || 0, {nonNullable: true}),
+        isUniversitySupplied: new FormControl(!!task.costEstimate?.isUniversitySupplied, {nonNullable: true}),
+        estimatedCost: new FormControl(task.costEstimate?.estimatedCost || 0, {nonNullable: true}),
     }, {
         asyncValidators: [
-            (c) => collectFieldErrors(c as ServiceForm)
+            (c) => collectFieldErrors(c as TaskForm)
         ]
     });
 }
 
-export type ServiceFormErrors = ValidationErrors & {
+export type TaskFormErrors = ValidationErrors & {
     name: { required: string | null };
 };
 
-export function serviceFormErrors(form: ServiceForm): Observable<ServiceFormErrors | null> {
+export function taskFormErrors(form: TaskForm): Observable<TaskFormErrors | null> {
     return form.statusChanges.pipe(
         startWith(form.status),
         filter(status => status != 'PENDING'),
-        map(() => form.errors as ServiceFormErrors)
-    ) ;
+        map(() => form.errors as TaskFormErrors)
+    );
 }
 
 

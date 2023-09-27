@@ -10,7 +10,7 @@ import { Campus, campusFromJson, isCampus } from "../../uni/campus/campus";
 import { isDiscipline } from "../../uni/discipline/discipline";
 import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanModelService } from "../experimental-plan/experimental-plan";
 import { LabType } from "../type/lab-type";
-import { ResourceContainer, ResourceContainerContext, ResourceContainerPatch, researchContainerFieldsFromJson, resourceContainerPatchFromContainer, resourceContainerPatchToJson} from "./resource/resource-container";
+import { ResourceContainer, ResourceContainerContext, ResourceContainerPatch, researchContainerFieldsFromJson, resourceContainerPatchToJson} from "./resource/resource-container";
 
 
 /**
@@ -96,8 +96,11 @@ export function workUnitPatchFromWorkUnit(workUnit: WorkUnit): WorkUnitPatch {
         processSummary: workUnit.processSummary,
         startDate: workUnit.startDate,
         endDate: workUnit.endDate,
-
-        ...resourceContainerPatchFromContainer(workUnit)
+        equipments: [],
+        softwares: [],
+        tasks: [],  
+        inputMaterials: [],
+        outputMaterials: []
     };
 }
 

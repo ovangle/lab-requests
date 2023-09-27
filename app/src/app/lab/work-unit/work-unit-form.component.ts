@@ -14,7 +14,7 @@ import { WorkUnit, WorkUnitPatch } from "./work-unit";
 import { WorkUnitForm } from "./work-unit-form";
 import { EquipmentLeaseTableComponent } from "./resources/equipment/equipment-lease-table.component";
 import { SoftwareResourceTableComponent } from "./resources/software/software-resource-table.component";
-import { ServiceResourceTableComponent } from "./resources/service/service-resource-table.component";
+import { ServiceResourceTableComponent } from "./resources/task/task-resource-table.component";
 import { InputMaterialResourceTableComponent } from "./resources/material/input/input-material-resource-table.component";
 import { OutputMaterialResourceTableComponent } from "./resources/material/output/output-material-resource-table.component";
 
