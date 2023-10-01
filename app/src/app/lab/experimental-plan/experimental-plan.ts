@@ -10,7 +10,7 @@ import { WorkUnit, WorkUnitCreate, workUnitFromJson } from "../work-unit/work-un
 import { Lookup, ModelService } from "src/app/utils/models/model-service";
 import { ActivatedRoute } from "@angular/router";
 import { Context } from "src/app/utils/models/model-context";
-import { FundingModel, FundingModelCreate, fundingModelFromJson } from "../../uni/research/funding-model/funding-model";
+import { FundingModel, FundingModelCreate, fundingModelFromJson } from "../../uni/research/funding/funding-model";
 import { parseISO } from "date-fns";
 import { HttpParams } from "@angular/common/http";
 

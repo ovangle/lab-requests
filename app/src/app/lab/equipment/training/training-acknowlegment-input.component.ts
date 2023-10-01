@@ -26,15 +26,17 @@ import { EquipmentTrainingDescriptionList__Empty } from "./training-description-
     template: `
     <mat-card [class.readonly]="readonly">
         <mat-card-header>
-            <h2>Required Training</h2>
+            <h3>Required Training</h3>
         </mat-card-header>
 
         <mat-card-content>
             <mat-selection-list [formControl]="selectedControl" [disabled]="readonly">
                 <ng-container *ngIf="trainingDescriptions.length > 0; else listEmpty">
-                    <mat-list-item *ngFor="let description of trainingDescriptions">
+                    <mat-list-option 
+                        *ngFor="let description of trainingDescriptions"
+                        [value]="description">
                         {{description}}
-                    </mat-list-item>
+                    </mat-list-option>
                 </ng-container>
 
                 <ng-template #listEmpty>

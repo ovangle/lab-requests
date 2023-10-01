@@ -1,6 +1,6 @@
 import { ThisReceiver } from "@angular/compiler";
 import { FormControl, FormGroup, Validators } from "@angular/forms";
-import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "../resource";
+import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
 
 export const RESOURCE_DISPOSAL_TYPES = [
     'general',

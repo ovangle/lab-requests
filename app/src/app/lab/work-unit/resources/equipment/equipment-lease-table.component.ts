@@ -1,15 +1,32 @@
-import { Component, Injectable } from "@angular/core";
+import { Component, Injectable, inject } from "@angular/core";
 import { EquipmentLease } from "./equipment-lease";
 import { MatTableModule } from "@angular/material/table";
 import { CommonModule } from "@angular/common";
 import { ResourceTableComponent, ResourceTableDataSource } from "../../resource/common/resource-table.component";
 import { ResourceTableInfoHeaderComponent } from "../../resource/common/resource-table-info-header.component";
+import { CollectionViewer } from "@angular/cdk/collections";
+import { Observable, forkJoin, switchMap } from "rxjs";
+import { EquipmentModelService } from "src/app/lab/equipment/equipment";
 
 
 @Injectable()
 export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<EquipmentLease> {
     override readonly resourceType = 'equipment';
     override readonly resourceTitle = 'Equipment';
+
+    readonly equipments = inject(EquipmentModelService);
+
+
+    override connect(collectionViewer: CollectionViewer): Observable<readonly EquipmentLease[]> {
+        return super.connect(collectionViewer).pipe(
+            switchMap(equipmentLeases => {
+                const resolved = equipmentLeases.map(lease => lease.resolveEquipment(this.equipments))
+                return forkJoin(resolved);
+            })
+        );
+    }
+
+
 }
 
 @Component({
@@ -32,7 +49,9 @@ export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<Equip
 
         <ng-container matColumnDef="name">
             <th mat-header-cell *matHeaderCellDef>Name</th>
-            <td mat-cell *matCellDef="let element">{{element.name}}</td>
+            <td mat-cell *matCellDef="let element">
+                {{element.equipment.name}}
+            </td>
         </ng-container>
 
         <ng-container matColumnDef="is-trained">

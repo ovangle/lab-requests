@@ -10,7 +10,7 @@ class EquipmentLease(ResourceBase):
 
     # Have any required inductions been 
     # previously completed?
-    is_training_completed: bool
+    equipment_training_completed: list[str] = Field(default_factory=list)
 
     # Is the lab tech required in order to 
     # assist in the usage of the machine?
@@ -22,4 +22,4 @@ class EquipmentLease(ResourceBase):
     # The estimated cost of usage of this equipment
     # over the course of the research
     # including consumables
-    usage_cost_estimate: ResourceCostEstimate | None
+    usage_cost_estimate: ResourceCostEstimate | None = None

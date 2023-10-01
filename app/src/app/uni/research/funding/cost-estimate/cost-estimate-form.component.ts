@@ -1,5 +1,5 @@
 import { Component, Input } from "@angular/core";
-import { CostEstimateForm } from "../resource";
+import { CostEstimateForm, costEstimateForm } from './cost-estimate-form';
 import { CommonModule } from "@angular/common";
 import { ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -7,7 +7,7 @@ import { MatSelectModule } from "@angular/material/select";
 
 
 @Component({
-    selector: 'lab-cost-estimate-form',
+    selector: 'uni-research-funding-cost-estimate-input',
     standalone: true,
     imports: [
         CommonModule,
@@ -35,8 +35,7 @@ import { MatSelectModule } from "@angular/material/select";
     `
 })
 export class CostEstimateFormComponent {
-    @Input()
-    form: CostEstimateForm;
+    form = costEstimateForm();
 
     get isSuppliedByUni() {
         return this.form.controls.isUniversitySupplied.value;

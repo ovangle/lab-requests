@@ -1,8 +1,9 @@
 import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { Material } from "../material";
-import { CostEstimate, ResourceParams, costEstimateFromJson, costEstimateToJson } from "../../../resource/resource";
+import { ResourceParams } from "../../../resource/resource";
 import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../../resource/hazardous/hazardous";
 import { ResourceStorage, ResourceStorageForm, createResourceStorageForm, isResourceStorageType, resourceStorageFromJson, resourceStorageToJson } from "../../../resource/storage/resource-storage";
+import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
 
 export interface InputMaterialParams extends ResourceParams<InputMaterial> {}
 

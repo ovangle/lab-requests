@@ -4,11 +4,12 @@ import { FormControl, ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { EquipmentLease, EquipmentLeaseForm, equipmentLeaseForm } from "./equipment-lease";
-import { defer, filter, map, startWith } from "rxjs";
+import { Observable, defer, filter, map, startWith } from "rxjs";
 import { EquipmentSearchComponent } from "src/app/lab/equipment/equipment-search.component";
 import { ResourceFormService } from "../../resource/resource-form.service";
-import { Equipment } from "src/app/lab/equipment/equipment";
+import { Equipment, EquipmentPatch, EquipmentRequest } from "src/app/lab/equipment/equipment";
 import { MatCheckboxModule } from "@angular/material/checkbox";
+import { EquipmentTrainingAcknowlegementComponent } from "src/app/lab/equipment/training/training-acknowlegment-input.component";
 
 
 @Component({
@@ -22,7 +23,8 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
         MatFormFieldModule,
         MatInputModule,
 
-        EquipmentSearchComponent
+        EquipmentSearchComponent,
+        EquipmentTrainingAcknowlegementComponent
     ],
     template: `
     <form [formGroup]="form">
@@ -30,11 +32,13 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
             <mat-label>Equipment</mat-label>
         </lab-equipment-search>
 
-        <ng-container *ngIf="selectedEquipment$ | async as equipment">
-            <mat-checkbox formControlName="isTrainingCompleted">
-                I have completed the following required training for this device
-            </mat-checkbox>
+        <ng-container *ngIf="selectedEquipmentTrainingDescriptions$ | async as trainingDescriptions">
+            <lab-equipment-training-acknowledgement
+                [trainingDescriptions]="trainingDescriptions"
+                formControlName="equipmentTrainingCompleted" />
+        </ng-container>
 
+        <ng-container *ngIf="selectedEquipment$ | async as equipment">
             <mat-checkbox formControlName="requiresAssistance">
                 I require additional assistance using this equipment
             </mat-checkbox>
@@ -45,23 +49,33 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
 export class EquipmentLeaseFormComponent {
     readonly formService = inject(ResourceFormService<EquipmentLease, EquipmentLeaseForm>);
 
-    get form() {
+    get form(): EquipmentLeaseForm {
         return this.formService.form;
     }
 
-    get equipmentControl(): FormControl<Equipment | string | null> {
+    get equipmentControl(): FormControl<Equipment | EquipmentRequest | null> {
         return this.form.controls.equipment;
     }
 
-    readonly selectedEquipment$ = defer(
+    readonly selectedEquipment$: Observable<Equipment | EquipmentRequest | null> = defer(
         () => this.equipmentControl.valueChanges.pipe(
             startWith(this.equipmentControl.value),
             map((value) => {
-                console.log('selected equipment', value);
                 if (!this.equipmentControl.valid) {
                     return null;
                 }
                 return value; 
+            })
+        )
+    );
+
+    readonly selectedEquipmentTrainingDescriptions$: Observable<string[] | null> = defer(
+        () => this.selectedEquipment$.pipe(
+            map(equipment => {
+                if (equipment instanceof Equipment) {
+                    return equipment.trainingDescriptions;
+                }
+                return null;
             })
         )
     );

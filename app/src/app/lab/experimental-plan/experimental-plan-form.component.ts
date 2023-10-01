@@ -8,14 +8,14 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { CampusSearchComponent } from "src/app/uni/campus/campus-search.component";
 import { DisciplineSelectComponent } from "src/app/uni/discipline/discipline-select.component";
-import { FundingModelSelectComponent } from "../../uni/research/funding-model/funding-model-select.component";
+import { FundingModelSelectComponent } from "../../uni/research/funding/funding-model-select.component";
 import { Equipment } from "../equipment/equipment";
 import { ExperimentalPlanPatch } from "./experimental-plan";
 import { ExperimentalPlanResearcherFormComponent } from "./researcher/researcher-form.component";
 import { ExperimentalPlanForm, experimentalPlanPatchFromForm, ExperimentalPlanFormErrors } from "./experimental-plan-form";
 import { ExperimentalPlanCreateDefaultWorkUnitForm } from "./work-units/create-default-work-unit-form.component";
-import { FundingModelSearchComponent } from "src/app/uni/research/funding-model/funding-model-search.component";
-import { FundingModel } from "src/app/uni/research/funding-model/funding-model";
+import { FundingModelSearchComponent } from "src/app/uni/research/funding/funding-model-search.component";
+import { FundingModel } from "src/app/uni/research/funding/funding-model";
 
 
 @Component({

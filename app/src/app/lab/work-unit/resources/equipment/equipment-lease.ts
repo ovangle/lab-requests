@@ -1,6 +1,11 @@
-import { Equipment, EquipmentPatch, equipmentFromJson, equipmentPatchToJson, isEquipmentPatch } from "src/app/lab/equipment/equipment";
+import { validate as validateIsUUID } from 'uuid';
+
+import { Equipment, EquipmentModelService, EquipmentPatch, EquipmentRequest, equipmentFromJson, equipmentPatchToJson, isEquipmentPatch } from "src/app/lab/equipment/equipment";
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
-import { Resource, CostEstimate, costEstimateFromJson, costEstimateToJson, CostEstimateForm, costEstimateForm, ResourceParams } from "../../resource/resource";
+import { Resource, ResourceParams } from "../../resource/resource";
+import { firstValueFrom } from 'rxjs';
+import { CostEstimate, costEstimateFromJson, costEstimateToJson } from 'src/app/uni/research/funding/cost-estimate/coste-estimate';
+import { costEstimateForm } from 'src/app/uni/research/funding/cost-estimate/cost-estimate-form';
 
 export interface EquipmentLeaseParams extends ResourceParams<EquipmentLease> {}
 
@@ -12,9 +17,9 @@ export class EquipmentLease implements Resource {
     readonly workUnitId: string;
 
     readonly index: number | 'create'; 
-    equipment: Equipment | EquipmentPatch;
+    equipment: Equipment | EquipmentRequest | string;
 
-    isTrainingCompleted: boolean;
+    equipmentTrainingCompleted: string[];
     requiresAssistance: boolean;
 
     setupInstructions: string;
@@ -24,21 +29,44 @@ export class EquipmentLease implements Resource {
         this.planId = params.planId;
         this.workUnitId = params.workUnitId;
         this.index = params.index;
-        this.equipment = params.equipment!;
-        this.isTrainingCompleted = params.isTrainingCompleted!;
+
+        if (typeof params.equipment === 'string') {
+            validateIsUUID(params.equipment);
+        } else if (typeof params.equipment !== 'object' || params.equipment == null) {
+            throw new Error('Equipment must be an object or uuid');
+        }
+        this.equipment = params.equipment;
+
+        this.equipmentTrainingCompleted = Array.from(params.equipmentTrainingCompleted! || []);
         this.requiresAssistance = params.requiresAssistance!;
         this.setupInstructions = params.setupInstructions!;
         this.usageCostEstimate = params.usageCostEstimate || null;
     }
+
+    async resolveEquipment(equipments: EquipmentModelService): Promise<EquipmentLease> {
+        if (typeof this.equipment === 'string') {
+            const equipment = await firstValueFrom(equipments.fetch(this.equipment));
+            return new EquipmentLease({...this, equipment});
+        }
+        return this;
+    }
+    get isEquipmentResolved() {
+        return typeof this.equipment !== 'string';
+    }
 }
 
 export function equipmentLeaseFromJson(json: {[k: string]: any}): EquipmentLease {
+    const jsonEquipment = json['equipment'];
+    const equipment = typeof jsonEquipment === 'string'
+            ? jsonEquipment
+            : equipmentFromJson(jsonEquipment);
+
     return new EquipmentLease({
         planId: json['planId']!,
         workUnitId: json['workUnitId'],
         index: json['index'],
-        equipment: equipmentFromJson(json['equipment']),
-        isTrainingCompleted: json['isTrainingCompleted'],
+        equipment,
+        equipmentTrainingCompleted: json['equipmentTrainingCompleted'],
         requiresAssistance: json['requiresAssistance'],
         setupInstructions: json['setupInstructions'],
         usageCostEstimate: json['usageCostEstimate'] ? costEstimateFromJson(json['usageCostEstimate']) : null
@@ -60,7 +88,7 @@ export function equipmentLeaseToJson(lease: EquipmentLease): {[k: string]: any} 
         workUnitId: lease.workUnitId,
         index: lease.index,
         equipment,
-        isTrainingCompleted: lease.isTrainingCompleted,
+        equipmentTrainingCompleted: lease.equipmentTrainingCompleted,
         requiresAssistance: lease.requiresAssistance,
         setupInstructions: lease.setupInstructions,
         usageCostEstimate: lease.usageCostEstimate && costEstimateToJson(lease.usageCostEstimate)
@@ -68,8 +96,8 @@ export function equipmentLeaseToJson(lease: EquipmentLease): {[k: string]: any} 
 }
 
 export type EquipmentLeaseForm = FormGroup<{
-    equipment: FormControl<Equipment | EquipmentPatch | null>;
-    isTrainingCompleted: FormControl<boolean>;
+    equipment: FormControl<Equipment | EquipmentRequest | null>;
+    equipmentTrainingCompleted: FormControl<string[]>;
     requiresAssistance: FormControl<boolean>;
 
     setupInstructions: FormControl<string>;
@@ -78,12 +106,12 @@ export type EquipmentLeaseForm = FormGroup<{
 
 export function equipmentLeaseForm(lease?: Partial<EquipmentLease>): EquipmentLeaseForm {
     return new FormGroup({
-        equipment: new FormControl(
-            lease?.equipment || null, 
+        equipment: new FormControl<Equipment | EquipmentRequest | null>(
+            lease?.equipment || null as any, 
             { validators: [Validators.required] }
         ),
-        isTrainingCompleted: new FormControl<boolean>(
-            !!(lease?.isTrainingCompleted), 
+        equipmentTrainingCompleted: new FormControl<string[]>(
+            lease?.equipmentTrainingCompleted|| [], 
             {nonNullable: true}
         ),
         requiresAssistance: new FormControl<boolean>(

@@ -1,22 +1,19 @@
-import { Component, Injectable, Input, ViewChild, inject} from "@angular/core";
-import { Equipment, EquipmentModelService, EquipmentPatch, EquipmentCreate, isEquipmentPatch, EquipmentContext, EquipmentLookup, EquipmentRequest, isEquipmentRequest } from "./equipment";
 import { CommonModule } from "@angular/common";
-import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from "@angular/material/autocomplete";
-import { BehaviorSubject, Observable, combineLatest, defer, delay, filter, map, of, skip, startWith, switchMap, switchMapTo, timer, withLatestFrom, zip } from "rxjs";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { AbstractControl, ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule, ValidationErrors, Validators } from "@angular/forms";
+import { Component, Injectable, inject } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { LabEquipmentFormComponent } from "./equipment-form.component";
-import { MatCardModule } from "@angular/material/card";
-import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
-import { MatInputModule } from "@angular/material/input";
-import { ModelCollection, provideFocusedModelContext } from "src/app/utils/models/model-collection";
-import { ModelService } from "src/app/utils/models/model-service";
-import { EquipmentForm, EquipmentFormService } from "./equipment-form.service";
-import { patchFromExperimentalPlan } from "../experimental-plan/experimental-plan";
-import { EquipmentRequestFormComponent } from "./equipment-request-form.component";
+import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from "@angular/forms";
+import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCardModule } from "@angular/material/card";
+import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { BehaviorSubject, Observable, defer, filter, map, of, startWith, switchMap, withLatestFrom } from "rxjs";
+import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
+import { ModelCollection } from "src/app/utils/models/model-collection";
+import { Equipment, EquipmentContext, EquipmentLookup, EquipmentModelService, EquipmentRequest, isEquipmentRequest } from "./equipment";
+import { EquipmentFormService } from "./equipment-form.service";
+import { EquipmentRequestFormComponent } from "./equipment-request-form.component";
 
 @Injectable()
 export class EquipmentModelCollection extends ModelCollection<Equipment> {
@@ -89,8 +86,8 @@ const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
         EquipmentModelCollection,
         EquipmentContext,
         EquipmentFormService,
-        { 
-            provide: NG_VALUE_ACCESSOR, 
+        {
+            provide: NG_VALUE_ACCESSOR,
             multi: true,
             useExisting: EquipmentSearchComponent
         }
@@ -107,7 +104,7 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
     readonly isNewEquipment$ = this.searchControl.valueChanges.pipe(
         map(value => value === this._NEW_EQUIPMENT_)
     );
-    readonly _equipmentRequest = new BehaviorSubject<EquipmentRequest>({name: '', description: ''});
+    readonly _equipmentRequest = new BehaviorSubject<EquipmentRequest>({ name: '', description: '' });
 
     readonly value$: Observable<Equipment | EquipmentRequest | null> = defer(() => {
         return this.searchControl.valueChanges.pipe(
@@ -124,7 +121,7 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
         );
     });
     constructor() {
-        this.equipments.connectQuery(this.searchControl.valueChanges.pipe( takeUntilDestroyed(), map(searchText => ({ searchText } as EquipmentLookup))));
+        this.equipments.connectQuery(this.searchControl.valueChanges.pipe(takeUntilDestroyed(), map(searchText => ({ searchText } as EquipmentLookup))));
         this.equipmentContext.initCreateContext();
 
         // Prefil the value of the equipment request with the value of the search input
@@ -134,11 +131,11 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
             map(value => {
                 if (value instanceof Equipment) {
                     return value.name;
-                } 
+                }
                 return value;
             }),
             withLatestFrom(this._equipmentRequest),
-            map(([searchInput, request]) => ({name: searchInput, description: request.description}))
+            map(([searchInput, request]) => ({ name: searchInput, description: request.description }))
         ).subscribe(this._equipmentRequest);
 
         // Dispatch _onChange events
@@ -173,15 +170,15 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
             this.searchControl.setValue(obj);
         } else if (isEquipmentRequest(obj)) {
             this.searchControl.setValue(this._NEW_EQUIPMENT_);
-            this._equipmentRequest.next({...obj});
+            this._equipmentRequest.next({ ...obj });
         }
     }
-    
-    _onChange = (value: any) => {};
+
+    _onChange = (value: any) => { };
     registerOnChange(fn: any): void {
         this._onChange = fn;
     }
-    _onTouched = () => {};
+    _onTouched = () => { };
     registerOnTouched(fn: any): void {
         this._onTouched = fn;
     }

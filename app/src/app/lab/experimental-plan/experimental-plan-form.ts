@@ -3,7 +3,7 @@ import { FormGroup, FormControl, Validators, FormArray, AbstractControl, Validat
 import { tap, shareReplay, defer, map, Observable, filter, firstValueFrom, of, catchError, throwError, first, concatMap, merge, forkJoin, switchMap, startWith } from "rxjs";
 import { Campus, CampusModelService } from "src/app/uni/campus/campus";
 import { Discipline } from "src/app/uni/discipline/discipline";
-import { FundingModel, FundingModelCreate, FundingModelService } from "src/app/uni/research/funding-model/funding-model";
+import { FundingModel, FundingModelCreate, FundingModelService } from "src/app/uni/research/funding/funding-model";
 import { WorkUnitForm, WorkUnitFormErrors, workUnitFormErrors } from "../work-unit/work-unit-form";
 import { ExperimentalPlanContext, patchFromExperimentalPlan, ExperimentalPlanPatch, ExperimentalPlan } from "./experimental-plan";
 import { HttpErrorResponse } from "@angular/common/http";

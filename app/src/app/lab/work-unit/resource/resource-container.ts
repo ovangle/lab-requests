@@ -1,16 +1,14 @@
-import { Injectable, inject } from "@angular/core";
-import { ValidationErrors } from "@angular/forms";
+import { Injectable } from "@angular/core";
 import { Observable, firstValueFrom, map } from "rxjs";
 import { ALL_RESOURCE_TYPES, ResourceType } from "./resource-type";
 
-import { EquipmentLease, EquipmentLeaseFormErrors, equipmentLeaseFromJson, equipmentLeaseToJson } from "../resources/equipment/equipment-lease";
-import { InputMaterial, InputMaterialFormErrors, inputMaterialFromJson, inputMaterialToJson } from "../resources/material/input/input-material";
-import { OutputMaterial, OutputMaterialFormErrors, outputMaterialFromJson, outputMaterialToJson } from "../resources/material/output/output-material";
-import { Task, TaskFormErrors, taskFromJson, taskToJson } from "../resources/task/task";
-import { Software, SoftwareFormErrors, softwareFromJson, softwareToJson } from "../resources/software/software";
+import { EquipmentLease, equipmentLeaseFromJson, equipmentLeaseToJson } from "../resources/equipment/equipment-lease";
+import { InputMaterial, inputMaterialFromJson, inputMaterialToJson } from "../resources/material/input/input-material";
+import { OutputMaterial, outputMaterialFromJson, outputMaterialToJson } from "../resources/material/output/output-material";
+import { Software, softwareFromJson, softwareToJson } from "../resources/software/software";
+import { Task, taskFromJson, taskToJson } from "../resources/task/task";
 
 import type { Resource } from './resource';
-import { startOfDay } from "date-fns";
 
 export interface ResourceContainerParams {
     equipments: EquipmentLease[];
@@ -60,10 +58,10 @@ export function resourceContainerAttr(type: ResourceType): keyof ResourceContain
     return (type.replace(/-([a-z])/, (match) => match[1].toUpperCase()) + 's') as keyof ResourceContainerPatch;
 }
 
-export function resourceContainerFieldsFromJson(json: {[k: string]: any}) {
+export function resourceContainerFieldsFromJson(json: { [k: string]: any }) {
     return {
         equipments: Array.from<object>(json['equipments']).map(equip => equipmentLeaseFromJson(equip)),
-        softwares: Array.from<object>(json['softwares']).map(software => softwareFromJson(software)), 
+        softwares: Array.from<object>(json['softwares']).map(software => softwareFromJson(software)),
         tasks: Array.from<object>(json['tasks']).map(task => taskFromJson(task)),
 
         inputMaterials: Array.from<object>(json['inputMaterials']).map(inputMaterial => inputMaterialFromJson(inputMaterial)),
@@ -85,8 +83,8 @@ export class ResourceContainerPatch {
     outputMaterials: ResourceSplice<OutputMaterial>[];
 }
 
-export function resourceContainerPatchToJson(patch: ResourceContainerPatch): {[k: string]: any} {
-    let json: {[k: string]: any} = {};
+export function resourceContainerPatchToJson(patch: ResourceContainerPatch): { [k: string]: any } {
+    let json: { [k: string]: any } = {};
     for (const resourceType of ALL_RESOURCE_TYPES) {
         const resourceToJson = resourceSerializer(resourceType);
 
@@ -116,11 +114,11 @@ export function resourceContainerPatchToJson(patch: ResourceContainerPatch): {[k
 }
 
 function delResourcePatch<T extends Resource>(
-    resourceType: T['type'] & ResourceType, 
+    resourceType: T['type'] & ResourceType,
     toDel: number[]
 ): Partial<ResourceContainerPatch> {
     return {
-        [resourceContainerAttr(resourceType)]: toDel.map(toDel => ({start: toDel, end: toDel + 1, items: []}))
+        [resourceContainerAttr(resourceType)]: toDel.map(toDel => ({ start: toDel, end: toDel + 1, items: [] }))
     };
 }
 
@@ -146,7 +144,7 @@ export abstract class ResourceContainerContext<T extends ResourceContainer & { r
         }
         return this.commitContext(await this.patchFromContainerPatch(patch));
     }
-    
+
     async deleteResourceAt(resourceType: ResourceType, index: number) {
         const committed = await firstValueFrom(this.committed$);
         if (committed == null) {

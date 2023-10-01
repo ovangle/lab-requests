@@ -1,4 +1,5 @@
 import contextlib
+import json
 import os
 from typing import Any
 from sqlalchemy import MetaData
@@ -12,7 +13,7 @@ db_settings = Settings()
 
 db_engine = create_async_engine(
     db_settings.db_url,
-    json_serializer=jsonable_encoder
+    json_serializer=lambda d: json.dumps(jsonable_encoder(d)),
 )
 
 class LocalSession(AsyncSession):

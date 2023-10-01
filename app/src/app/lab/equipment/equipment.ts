@@ -38,7 +38,7 @@ export function equipmentFromJson(json: {[k: string]: any}): Equipment {
         description: json['description'],
         availableInLabTypes: Array.from(json['availableInLabTypes'] || []), 
         tags: Array.from(json['tags'] || []),
-        trainingDescriptions: Array.from(json['trainingDescriptions'])
+        trainingDescriptions: Array.from(json['trainingDescriptions'] || [])
     })
 }
 

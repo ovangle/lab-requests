@@ -1,7 +1,8 @@
 import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
-import { CostEstimate, Resource, ResourceParams, costEstimateFromJson, costEstimateToJson } from "../../resource/resource";
+import { Resource, ResourceParams, } from "../../resource/resource";
 import { collectFieldErrors } from "src/app/utils/forms/validators";
 import { Observable, filter, map, startWith } from "rxjs";
+import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
 
 export interface TaskParams extends ResourceParams<Task> {
     
