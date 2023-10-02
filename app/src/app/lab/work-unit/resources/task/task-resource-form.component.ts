@@ -10,7 +10,7 @@ import { ProvisionFormComponent } from "../../resource/provision/provision-form.
 import { MatRadioModule } from "@angular/material/radio";
 import { Observable, startWith, filter, map } from "rxjs";
 import { collectFieldErrors } from "src/app/utils/forms/validators";
-import { CostEstimateForm, costEstimateForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form";
+import { CostEstimateForm, costEstimateForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
 
 export type TaskForm = FormGroup<{
     name: FormControl<string>;

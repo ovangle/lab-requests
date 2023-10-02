@@ -5,7 +5,6 @@ import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators }
 import { Resource, ResourceParams } from "../../resource/resource";
 import { firstValueFrom } from 'rxjs';
 import { CostEstimate, costEstimateFromJson, costEstimateToJson } from 'src/app/uni/research/funding/cost-estimate/coste-estimate';
-import { CostEstimateForm, costEstimateForm } from 'src/app/uni/research/funding/cost-estimate/cost-estimate-form';
 
 export interface EquipmentLeaseParams extends ResourceParams<EquipmentLease> {
     equipment: Equipment | EquipmentRequest | string;
@@ -101,39 +100,4 @@ export function equipmentLeaseToJson(lease: EquipmentLease): {[k: string]: any} 
         setupInstructions: lease.setupInstructions,
         usageCostEstimate: lease.usageCostEstimate && costEstimateToJson(lease.usageCostEstimate)
     }
-}
-
-export type EquipmentLeaseForm = FormGroup<{
-    equipment: FormControl<Equipment | EquipmentRequest | null>;
-    equipmentTrainingCompleted: FormControl<string[]>;
-    requiresAssistance: FormControl<boolean>;
-
-    setupInstructions: FormControl<string>;
-    usageCostEstimate: CostEstimateForm;
-}>;
-
-export function equipmentLeaseForm(lease?: Partial<EquipmentLease>): EquipmentLeaseForm {
-    return new FormGroup({
-        equipment: new FormControl<Equipment | EquipmentRequest | null>(
-            lease?.equipment || null as any, 
-            { validators: [Validators.required] }
-        ),
-        equipmentTrainingCompleted: new FormControl<string[]>(
-            lease?.equipmentTrainingCompleted|| [], 
-            {nonNullable: true}
-        ),
-        requiresAssistance: new FormControl<boolean>(
-            !!(lease?.requiresAssistance), 
-            {nonNullable: true}
-        ),
-        setupInstructions: new FormControl<string>(
-            lease?.setupInstructions || '', 
-            {nonNullable: true}
-        ),
-        usageCostEstimate: costEstimateForm()
-    });
-}
-
-export type EquipmentLeaseFormErrors = ValidationErrors & {
-    equipment?: { required: string | null; };
 }

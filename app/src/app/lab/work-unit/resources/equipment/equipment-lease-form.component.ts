@@ -10,7 +10,7 @@ import { ResourceFormService } from "../../resource/resource-form.service";
 import { Equipment, EquipmentPatch, EquipmentRequest } from "src/app/lab/equipment/equipment";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { EquipmentTrainingAcknowlegementComponent } from "src/app/lab/equipment/training/training-acknowlegment-input.component";
-import { CostEstimateForm, costEstimateForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form";
+import { CostEstimateForm, costEstimateForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
 
 export type EquipmentLeaseForm = FormGroup<{
     equipment: FormControl<Equipment | EquipmentRequest | null>;

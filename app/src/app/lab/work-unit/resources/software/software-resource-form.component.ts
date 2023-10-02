@@ -8,7 +8,7 @@ import { Software } from "./software";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { ResourceFormService } from "../../resource/resource-form.service";
 import { ProvisionFormComponent } from "../../resource/provision/provision-form.component";
-import { CostEstimateForm, costEstimateForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form";
+import { CostEstimateForm, costEstimateForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
 
 export type SoftwareForm = FormGroup<{
     name: FormControl<string>;

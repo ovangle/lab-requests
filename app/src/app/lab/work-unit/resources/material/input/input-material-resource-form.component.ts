@@ -7,11 +7,10 @@ import { InputMaterial } from "./input-material";
 import { ResourceFormService } from "../../../resource/resource-form.service";
 import { HazardClassesSelectComponent } from "../../../resource/hazardous/hazard-classes-select.component";
 import { ProvisionFormComponent } from "../../../resource/provision/provision-form.component";
-import { ResourceStorageForm, ResourceStorageFormComponent, createResourceStorageForm } from "../../../resource/storage/resource-storage-form.component";
+import { ResourceStorageForm, ResourceStorageFormComponent, resourceStorageForm } from "../../../resource/storage/resource-storage-form.component";
 import { CommonMeasurementUnitInputComponent } from "src/app/common/measurement/common-measurement-unit-input.component";
 import { CommonMeasurementUnitPipe } from "src/app/common/measurement/common-measurement-unit.pipe";
-import { CostEstimateFormComponent } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
-import { CostEstimateForm, costEstimateForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form";
+import { CostEstimateForm, CostEstimateFormComponent, costEstimateForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
 import { HazardClass } from "../../../resource/hazardous/hazardous";
 
 
@@ -27,7 +26,7 @@ export type InputMaterialForm = FormGroup<{
     perUnitCostEstimate: CostEstimateForm;
 }>;
 
-export function createInputMaterialForm(): InputMaterialForm {
+export function inputMaterialForm(): InputMaterialForm {
     return new FormGroup({
         name: new FormControl<string>(
             '',
@@ -42,7 +41,7 @@ export function createInputMaterialForm(): InputMaterialForm {
             {nonNullable: true}
         ),
         perUnitCostEstimate: costEstimateForm(),
-        storage: createResourceStorageForm(),
+        storage: resourceStorageForm(),
         hazardClasses: new FormControl<HazardClass[]>([], {nonNullable: true})
     });
 }
@@ -143,9 +142,6 @@ export class InputMaterialResourceFormComponent {
 
     get nameErrors(): InputMaterialFormErrors['name'] | null {
         const control = this.form.controls.name;
-        if (control.valid) {
-            debugger;
-        }
         return control.errors as InputMaterialFormErrors['name'] | null;
     }
 

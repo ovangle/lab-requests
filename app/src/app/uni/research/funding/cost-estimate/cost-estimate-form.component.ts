@@ -1,7 +1,6 @@
 import { Component, Input } from "@angular/core";
-import { CostEstimateForm, costEstimateForm } from './cost-estimate-form';
 import { CommonModule } from "@angular/common";
-import { ReactiveFormsModule } from "@angular/forms";
+import { FormControl, FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { CurrencyInputComponent } from "src/app/common/currency/currency-input.component";
@@ -11,7 +10,29 @@ import { FundingModel } from "../funding-model";
 import { MatOptionModule } from "@angular/material/core";
 import { MatRadioModule } from "@angular/material/radio";
 import { MatCheckboxModule } from "@angular/material/checkbox";
+import { CostEstimate } from "./coste-estimate";
 
+export type CostEstimateForm = FormGroup<{
+    isUniversitySupplied: FormControl<boolean>;
+    estimatedCost: FormControl<number>;
+}>;
+
+export function costEstimateForm(): CostEstimateForm {
+    return new FormGroup({
+        isUniversitySupplied: new FormControl(true, {nonNullable: true}),
+        estimatedCost: new FormControl(0, {nonNullable: true}),
+    });
+}
+
+export function costEstimatesFromFormValue(form: CostEstimateForm): CostEstimate {
+    if (!form.valid) {
+        throw new Error('Invalid form has no value');
+    }
+    return {
+        isUniversitySupplied: !!form.value.isUniversitySupplied,
+        estimatedCost: form.value.estimatedCost!
+    };
+}
 
 @Component({
     selector: 'uni-research-funding-cost-estimate-form',

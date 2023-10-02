@@ -1,7 +1,3 @@
-import { AbstractControl, FormControl, FormGroup, Validators } from "@angular/forms";
-import { isThisSecond } from "date-fns";
-import { map, switchMap } from "rxjs";
-import { CostEstimateForm, costEstimateForm, costEstimatesFromFormValue } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form";
 import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
 
 export const RESOURCE_STORAGE_TYPES = [
@@ -65,48 +61,3 @@ export function resourceStorageToJson(storage: ResourceStorage): {[k: string]: a
     };
 }
 
-
-export type ResourceStorageForm = FormGroup<{
-    type: FormControl<ResourceStorageType>;
-    description: FormControl<string>;
-    hasCostEstimates: FormControl<boolean>;
-    estimatedCost: CostEstimateForm;
-}>;
-
-export function createResourceStorageForm(): ResourceStorageForm {
-    return new FormGroup({
-        type: new FormControl<ResourceStorageType>('general', {nonNullable: true}),
-        description: new FormControl<string>(
-            '', 
-            {nonNullable: true, validators: [Validators.required]}
-        ),
-        hasCostEstimates: new FormControl(false, {nonNullable: true}),
-        estimatedCost: costEstimateForm()
-    });
-}
-
-export function resourceStorageFromFormValue(form: ResourceStorageForm): ResourceStorage {
-    if (!form.valid) {
-        throw new Error('Invalid form has no value');
-    }
-    const description = form.value.type === 'other'
-        ? form.value.description
-        : form.value.type!;
-
-    const estimatedCost = form.value.hasCostEstimates 
-        ? costEstimatesFromFormValue(form.controls.estimatedCost)
-        : null;
-    return new ResourceStorage({
-        description,
-        estimatedCost
-    });
-}
-
-export function patchResourceStorageFormValue(form: ResourceStorageForm, storage: ResourceStorage, options?: any) {
-    form.patchValue({
-        type: storage.type,
-        description: storage.description,
-        hasCostEstimates: storage.estimatedCost != null,
-        estimatedCost: storage.estimatedCost || {}
-    }, options);
-}

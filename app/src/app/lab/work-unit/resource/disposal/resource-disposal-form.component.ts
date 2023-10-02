@@ -5,7 +5,7 @@ import { CommonModule } from "@angular/common";
 import { MatSelectModule } from "@angular/material/select";
 import { SelectOtherDescriptionComponent } from "src/app/utils/forms/select-other-description.component";
 import { ProvisionFormComponent } from "../provision/provision-form.component";
-import { CostEstimateForm, costEstimateForm, costEstimatesFromFormValue } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form";
+import { CostEstimateForm, costEstimateForm, costEstimatesFromFormValue } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
 
 export type ResourceDisposalForm = FormGroup<{
     type: FormControl<ResourceDisposalType>;

@@ -8,7 +8,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatInputModule } from "@angular/material/input";
 import { MatCardModule } from "@angular/material/card";
 import { SelectOtherDescriptionComponent } from "src/app/utils/forms/select-other-description.component";
-import { CostEstimateForm, costEstimateForm, costEstimatesFromFormValue } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form";
+import { CostEstimateForm, costEstimateForm, costEstimatesFromFormValue } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
 
 export type ResourceStorageForm = FormGroup<{
     type: FormControl<ResourceStorageType>;
@@ -17,7 +17,7 @@ export type ResourceStorageForm = FormGroup<{
     estimatedCost: CostEstimateForm;
 }>;
 
-export function createResourceStorageForm(): ResourceStorageForm {
+export function resourceStorageForm(): ResourceStorageForm {
     return new FormGroup({
         type: new FormControl<ResourceStorageType>('general', { nonNullable: true }),
         description: new FormControl<string>(
@@ -61,7 +61,6 @@ export function patchResourceStorageFormValue(form: ResourceStorageForm, storage
     imports: [
         CommonModule,
         ReactiveFormsModule,
-        MatCardModule,
         MatFormFieldModule,
         MatInputModule,
         MatSelectModule,
@@ -69,9 +68,8 @@ export function patchResourceStorageFormValue(form: ResourceStorageForm, storage
         SelectOtherDescriptionComponent
     ],
     template: `
-    <mat-card>
-        <mat-card-header><h3>Storage</h3></mat-card-header>
-        <mat-card-content [formGroup]="form">
+        <h3>Storage</h3>
+        <ng-container [formGroup]="form">
             <div class="d-flex">
                 <mat-form-field>
                     <mat-label>Storage type</mat-label>
@@ -97,8 +95,6 @@ export function patchResourceStorageFormValue(form: ResourceStorageForm, storage
                     <div matTextSuffix>&nbsp;m<sup>2</sup></div>
                 </mat-form-field>
             </ng-container>
-        </mat-card-content>
-    </mat-card>
     `,
     styles: [`
     :host {

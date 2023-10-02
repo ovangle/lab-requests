@@ -7,7 +7,7 @@ import { OutputMaterial } from "./output-material";
 import { ResourceFormService } from "../../../resource/resource-form.service";
 import { ResourceDisposalForm, ResourceDisposalFormComponent, resourceDisposalForm } from "../../../resource/disposal/resource-disposal-form.component";
 import { HazardClassesSelectComponent } from "../../../resource/hazardous/hazard-classes-select.component";
-import { ResourceStorageForm, ResourceStorageFormComponent, createResourceStorageForm } from "../../../resource/storage/resource-storage-form.component";
+import { ResourceStorageForm, ResourceStorageFormComponent, resourceStorageForm } from "../../../resource/storage/resource-storage-form.component";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { Subscription, map } from "rxjs";
 import { groupDisabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
@@ -39,7 +39,7 @@ export function createOutputMaterialForm(): OutputMaterialForm {
             { nonNullable: true }
         ),
 
-        storage: createResourceStorageForm(),
+        storage: resourceStorageForm(),
         disposal: resourceDisposalForm(),
 
         hazardClasses: new FormControl<HazardClass[]>(

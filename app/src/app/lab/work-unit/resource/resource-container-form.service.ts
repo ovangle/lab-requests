@@ -3,7 +3,7 @@ import { FormArray, FormGroup } from "@angular/forms";
 import { Observable, defer, filter, firstValueFrom, map } from "rxjs";
 import { EquipmentLease } from "../resources/equipment/equipment-lease";
 import { InputMaterial } from "../resources/material/input/input-material";
-import { InputMaterialForm, InputMaterialFormErrors, createInputMaterialForm } from "../resources/material/input/input-material-resource-form.component";
+import { InputMaterialForm, InputMaterialFormErrors, inputMaterialForm } from "../resources/material/input/input-material-resource-form.component";
 import { OutputMaterial } from "../resources/material/output/output-material";
 import { OutputMaterialForm, OutputMaterialFormErrors, createOutputMaterialForm } from "../resources/material/output/output-material-resource-form.component";
 import { Software } from "../resources/software/software";
@@ -140,7 +140,7 @@ function resourceFormFactory<TResource extends Resource>(
         case 'software':
             return softwareForm();
         case 'input-material':
-            return createInputMaterialForm();
+            return inputMaterialForm();
         case 'output-material':
             return createOutputMaterialForm();
         default:
