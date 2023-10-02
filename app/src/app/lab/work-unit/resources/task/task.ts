@@ -5,7 +5,13 @@ import { Observable, filter, map, startWith } from "rxjs";
 import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
 
 export interface TaskParams extends ResourceParams<Task> {
-    
+    readonly name: string;
+    readonly description: string;
+
+    readonly supplier: 'researcher' | 'technician' | 'other';
+    readonly externalSupplierDescription: string;
+
+    readonly costEstimate: CostEstimate | null;
 }
 
 /**

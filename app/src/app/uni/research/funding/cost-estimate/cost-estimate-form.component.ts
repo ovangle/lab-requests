@@ -4,40 +4,91 @@ import { CommonModule } from "@angular/common";
 import { ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
+import { CurrencyInputComponent } from "src/app/common/currency/currency-input.component";
+import { CommonMeasurementUnitPipe } from "src/app/common/measurement/common-measurement-unit.pipe";
+import { NumberInput, coerceNumberProperty } from "@angular/cdk/coercion";
+import { FundingModel } from "../funding-model";
+import { MatOptionModule } from "@angular/material/core";
+import { MatRadioModule } from "@angular/material/radio";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 
 
 @Component({
-    selector: 'uni-research-funding-cost-estimate-input',
+    selector: 'uni-research-funding-cost-estimate-form',
     standalone: true,
     imports: [
         CommonModule,
         ReactiveFormsModule,
 
+        MatCheckboxModule,
         MatFormFieldModule,
-        MatSelectModule
+
+        CommonMeasurementUnitPipe,
+        CurrencyInputComponent
     ],
     template: `
     <form [formGroup]="form">
-        <mat-form-field>
-            <mat-label>Supplied by</mat-label>
-            <mat-select>
-                <mat-option [value]="false">Researcher</mat-option>
-                <mat-option [value]="true">Uni</mat-option>
-            </mat-select>
-        </mat-form-field>
+        <h4>Funding</h4>
 
-        <mat-form-field *ngIf="isSuppliedByUni">
-            <mat-label>Estimated cost</mat-label>
-            <input matInput type="number" formControlName="estimatedCost" />
-            <mat-hint>Leave blank if unknown</mat-hint>
-        </mat-form-field>
+        <mat-checkbox formControlName="isUniversitySupplied">
+            Include in project budget
+        </mat-checkbox>
+
+        <ng-container [ngSwitch]="includeInProjectFunding">
+            <ng-container *ngSwitchCase="true">
+                <common-currency-input
+                    formControlName="estimatedCost">
+
+                    <mat-label>Cost</mat-label>
+                    <span *ngIf="unitOfMeasurement" matTextSuffix>
+                        per <span [innerHTML]="unitOfMeasurement | commonMeasurementUnit"></span> 
+                    </span>
+                </common-currency-input>
+
+                <div *ngIf="unitOfMeasurement"> 
+                    <dl class="total-amount">
+                        <dl>Total (for <span [innerHTML]="unitOfMeasurement | commonMeasurementUnit"></span></dl>
+                        <dd>{{estimatedTotalCost}}</dd>
+                    </dl>
+                </div>
+            </ng-container>
+            <div *ngSwitchCase="false">
+                <p>Will be supplied by researcher</p>
+            </div>
+        </ng-container>
+      
     </form>
     `
 })
 export class CostEstimateFormComponent {
-    form = costEstimateForm();
+    @Input()
+    form: CostEstimateForm;
+
+    @Input()
+    funding: FundingModel;
+
+    @Input()
+    unitOfMeasurement: string | null;
+
+    @Input()
+    get quantityRequired(): number {
+        return this._quantityRequired;
+    }
+    set quantityRequired(amount: NumberInput) {
+        this._quantityRequired = coerceNumberProperty(amount);
+    }
+    _quantityRequired: number = 1;
 
     get isSuppliedByUni() {
         return this.form.controls.isUniversitySupplied.value;
+    }
+
+    get includeInProjectFunding(): boolean {
+        return !!this.form.value.isUniversitySupplied;
+    }
+
+    get estimatedTotalCost() {
+        const estimatedCost = this.form.value.estimatedCost || 0;
+        return this._quantityRequired * estimatedCost;
     }
 }

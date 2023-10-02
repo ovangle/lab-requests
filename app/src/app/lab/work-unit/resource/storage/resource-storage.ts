@@ -1,5 +1,8 @@
 import { AbstractControl, FormControl, FormGroup, Validators } from "@angular/forms";
 import { isThisSecond } from "date-fns";
+import { map, switchMap } from "rxjs";
+import { CostEstimateForm, costEstimateForm, costEstimatesFromFormValue } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form";
+import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
 
 export const RESOURCE_STORAGE_TYPES = [
     'general',
@@ -19,56 +22,91 @@ export function isResourceStorageType(obj: any): obj is ResourceStorageType {
         && RESOURCE_STORAGE_TYPES.includes(obj as any);
 }
 
-export class ResourceStorage {
-    type: ResourceStorageType;
-    otherDescription: string | null;
+export interface ResourceStorageParams {
+    description?: string;
+    estimatedCost: CostEstimate | null;
+}
 
-    constructor(storage: Partial<ResourceStorage>) {
-        this.type = storage.type || 'general';
-        this.otherDescription = storage.otherDescription || null;
+export class ResourceStorage {
+    description: string; 
+    estimatedCost: CostEstimate | null;
+
+    constructor(params: ResourceStorageParams) {
+        this.description = params.description || 'general';
+        this.estimatedCost = params.estimatedCost || null;
+    }
+
+    get type(): ResourceStorageType {
+        if (isResourceStorageType(this.description)) {
+            return this.description;
+        }
+        return 'other';
+    }
+
+    get hasCostEstimates(): boolean {
+        return this.estimatedCost != null;
     }
 }
 
 export function resourceStorageFromJson(json: {[k: string]: any}): ResourceStorage {
+    const estimatedCost = json['estimatedCost'] ? costEstimateFromJson(json['estimatedCost']) : null;
+
     return new ResourceStorage({
-        type: json['type'],
-        otherDescription: json['otherDescription']
+        description: json['description'],
+        estimatedCost
     })
 }
 
 
 export function resourceStorageToJson(storage: ResourceStorage): {[k: string]: any} {
     return {
-        type: storage.type,
-        otherDescription: storage.otherDescription
+        description: storage.description,
+        estimatedCost: storage.estimatedCost && costEstimateToJson(storage.estimatedCost)
     };
 }
 
-function otherDescriptionRequired(control: AbstractControl<string>) {
-    if (!isResourceStorageForm(control.parent)) {
-        return {notInResourceStorageForm: 'parent control must be a resource storage form'};
-    }
-    const typeControl = control.parent.controls.type;
-    if (typeControl.value === 'other') {
-        return Validators.required(control);
-    }
-    return null;
-}
 
 export type ResourceStorageForm = FormGroup<{
-    type: FormControl<ResourceStorageType>,
-    otherDescription: FormControl<string | null>
+    type: FormControl<ResourceStorageType>;
+    description: FormControl<string>;
+    hasCostEstimates: FormControl<boolean>;
+    estimatedCost: CostEstimateForm;
 }>;
 
-export function isResourceStorageForm(obj: any): obj is ResourceStorageForm {
-    return obj instanceof FormGroup;
+export function createResourceStorageForm(): ResourceStorageForm {
+    return new FormGroup({
+        type: new FormControl<ResourceStorageType>('general', {nonNullable: true}),
+        description: new FormControl<string>(
+            '', 
+            {nonNullable: true, validators: [Validators.required]}
+        ),
+        hasCostEstimates: new FormControl(false, {nonNullable: true}),
+        estimatedCost: costEstimateForm()
+    });
 }
 
-export function createResourceStorageForm(storage: Partial<ResourceStorage>): ResourceStorageForm {
-    return new FormGroup({
-        type: new FormControl<ResourceStorageType>(storage?.type || 'general', {nonNullable: true}),
-        otherDescription: new FormControl(storage?.otherDescription || null, {
-            validators: [otherDescriptionRequired]
-        })
-    })
+export function resourceStorageFromFormValue(form: ResourceStorageForm): ResourceStorage {
+    if (!form.valid) {
+        throw new Error('Invalid form has no value');
+    }
+    const description = form.value.type === 'other'
+        ? form.value.description
+        : form.value.type!;
+
+    const estimatedCost = form.value.hasCostEstimates 
+        ? costEstimatesFromFormValue(form.controls.estimatedCost)
+        : null;
+    return new ResourceStorage({
+        description,
+        estimatedCost
+    });
+}
+
+export function patchResourceStorageFormValue(form: ResourceStorageForm, storage: ResourceStorage, options?: any) {
+    form.patchValue({
+        type: storage.type,
+        description: storage.description,
+        hasCostEstimates: storage.estimatedCost != null,
+        estimatedCost: storage.estimatedCost || {}
+    }, options);
 }

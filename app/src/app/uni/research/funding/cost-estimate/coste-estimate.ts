@@ -8,25 +8,14 @@ export interface CostEstimate {
 export function costEstimateFromJson(json: {[k: string]: any}): CostEstimate {
     return { 
         isUniversitySupplied: json['isUniversitySupplied'],
-        estimatedCost: json['estimatedCost']
+        estimatedCost: json['estimatedCost'],
     }
 }
 
 export function costEstimateToJson(cost: CostEstimate) {
-    return {
+    const result: {[k: string]: any} = {
         isUniversitySupplied: cost.isUniversitySupplied,
-        estimatedCost: cost.estimatedCost
+        estimatedCost: cost.estimatedCost,
     };
-}
-
-export type CostEstimateForm = FormGroup<{
-    isUniversitySupplied: FormControl<boolean>;
-    estimatedCost: FormControl<number>;
-}>;
-
-export function costEstimateForm(initial?: CostEstimate): CostEstimateForm {
-    return new FormGroup({
-        isUniversitySupplied: new FormControl(!!initial?.isUniversitySupplied, {nonNullable: true}),
-        estimatedCost: new FormControl(initial?.estimatedCost || 0, {nonNullable: true})
-    });
+    return result;
 }

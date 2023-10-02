@@ -1,7 +1,15 @@
-import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
+import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
 import { Resource, ResourceParams } from "../../resource/resource";
 
-export interface SoftwareParams extends ResourceParams<Software> {}
+export interface SoftwareParams extends ResourceParams<Software> {
+    name: string;
+    description: string;
+
+    minVersion: string;
+
+    isLicenseRequired: boolean;
+    estimatedCost: CostEstimate | null;
+}
 
 export class Software implements Resource {
     readonly type = 'software';
@@ -16,7 +24,7 @@ export class Software implements Resource {
     minVersion: string;
 
     isLicenseRequired: boolean;
-    estimatedCost: number;
+    estimatedCost: CostEstimate | null;
 
     constructor(software: SoftwareParams) {
         this.planId = software.planId;
@@ -29,7 +37,7 @@ export class Software implements Resource {
         this.minVersion = software.minVersion || '';
 
         this.isLicenseRequired = !!software.isLicenseRequired;
-        this.estimatedCost = software.estimatedCost || 0;
+        this.estimatedCost = software.estimatedCost;
     }
 }
 
@@ -42,7 +50,7 @@ export function softwareFromJson(json: {[k: string]: any}): Software {
         description: json['description'],
         minVersion: json['minVersion'],
         isLicenseRequired: json['isLicenceRequired'],
-        estimatedCost: json['estimatedCost']
+        estimatedCost: json['estimatedCost'] ? costEstimateFromJson(json['estimatedCost']) : null
     })
 }
 
@@ -55,31 +63,6 @@ export function softwareToJson(software: Software): {[k: string]: any} {
         description: software.description,
         minVersion: software.minVersion,
         isLicenseRequired: software.isLicenseRequired,
-        estimatedCost: software.estimatedCost
+        estimatedCost: software.estimatedCost && costEstimateToJson(software.estimatedCost)
     };
 }
-
-export type SoftwareForm = FormGroup<{
-    name: FormControl<string>;
-    description: FormControl<string>;
-    minVersion: FormControl<string>;
-
-    isLicenseRequired: FormControl<boolean>;
-    estimatedCost: FormControl<number>;
-}>;
-
-export function createSoftwareForm(s: Partial<Software>): SoftwareForm {
-    return new FormGroup({
-        name: new FormControl(s.name || '', { nonNullable: true, validators: [ Validators.required ] }),
-        description: new FormControl(s.description || '', { nonNullable: true }),
-        minVersion: new FormControl(s.minVersion || '', { nonNullable: true }),
-        isLicenseRequired: new FormControl(!!s.isLicenseRequired, {nonNullable: true}),
-        estimatedCost: new FormControl(s.estimatedCost || 0, {nonNullable: true})
-    });
-}
-
-export type SoftwareFormErrors = ValidationErrors & {
-    name?: { required: string | null };
-};
-
-

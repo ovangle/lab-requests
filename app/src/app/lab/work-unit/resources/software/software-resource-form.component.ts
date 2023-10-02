@@ -1,13 +1,42 @@
 import { CommonModule } from "@angular/common";
 import { Component, Injectable, ViewChild, inject } from "@angular/core";
-import { ReactiveFormsModule } from "@angular/forms";
+import { FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
-import { Software, SoftwareForm, createSoftwareForm } from "./software";
+import { Software } from "./software";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { ResourceFormService } from "../../resource/resource-form.service";
 import { ProvisionFormComponent } from "../../resource/provision/provision-form.component";
+import { CostEstimateForm, costEstimateForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form";
+
+export type SoftwareForm = FormGroup<{
+    name: FormControl<string>;
+    description: FormControl<string>;
+    minVersion: FormControl<string>;
+
+    isLicenseRequired: FormControl<boolean>;
+    hasCostEstimates: FormControl<boolean>;
+    estimatedCost: CostEstimateForm;
+}>;
+
+export function softwareForm(): SoftwareForm {
+    return new FormGroup({
+        name: new FormControl('', { nonNullable: true, validators: [ Validators.required ] }),
+        description: new FormControl('', { nonNullable: true }),
+        minVersion: new FormControl('', { nonNullable: true }),
+        isLicenseRequired: new FormControl(false, {nonNullable: true}),
+
+        hasCostEstimates: new FormControl<boolean>(false, {nonNullable: true}),
+        estimatedCost: costEstimateForm()
+    });
+}
+
+export type SoftwareFormErrors = ValidationErrors & {
+    name?: { required: string | null };
+};
+
+
 
 @Component({
     selector: 'lab-software-resource-form',

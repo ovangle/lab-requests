@@ -1,11 +1,19 @@
-import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
-import { Material } from "../material";
-import { ResourceParams } from "../../../resource/resource";
+import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
 import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../../resource/hazardous/hazardous";
-import { ResourceStorage, ResourceStorageForm, createResourceStorageForm, isResourceStorageType, resourceStorageFromJson, resourceStorageToJson } from "../../../resource/storage/resource-storage";
-import { CostEstimate, costEstimateForm, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
+import { ResourceParams } from "../../../resource/resource";
+import { ResourceStorage, ResourceStorageParams, resourceStorageFromJson, resourceStorageToJson } from "../../../resource/storage/resource-storage";
+import { Material } from "../material";
 
-export interface InputMaterialParams extends ResourceParams<InputMaterial> {}
+export interface InputMaterialParams extends ResourceParams<InputMaterial> {
+    name: string;
+    baseUnit: string;
+
+    numUnitsRequired: number;
+    perUnitCostEstimate: CostEstimate | null;
+
+    storage: ResourceStorage | ResourceStorageParams;
+    hazardClasses?: HazardClass[];
+}
 
 export class InputMaterial extends Material {
     override readonly type = 'input-material';
@@ -23,32 +31,26 @@ export class InputMaterial extends Material {
     storage: ResourceStorage;
     hazardClasses: HazardClass[];
 
-    constructor(input: InputMaterialParams) {
+    constructor(params: InputMaterialParams) {
         super();
-        this.planId = input.planId;
-        this.workUnitId = input.workUnitId;
-        this.index = input.index!;
+        this.planId = params.planId;
+        this.workUnitId = params.workUnitId;
+        this.index = params.index!;
 
-        if (!input.name) {
+        if (!params.name) {
             throw new Error('Invalid InputMaterial. Must provide name')
         }
 
-        this.name = input.name;
-        if (!input.baseUnit) {
+        this.name = params.name;
+        if (!params.baseUnit) {
             throw new Error('Invalid InputMaterial. Must provide base units');
         }
-        this.baseUnit = input.baseUnit;
+        this.baseUnit = params.baseUnit;
 
-        this.numUnitsRequired = input.numUnitsRequired || 0;
-
-        this.perUnitCostEstimate = input.perUnitCostEstimate || null;
-
-        this.storage = new ResourceStorage(
-            isResourceStorageType(input.storage?.type)
-            ? new ResourceStorage(input.storage!)
-            : {type: 'general'}
-        );
-        this.hazardClasses = input?.hazardClasses || [];
+        this.numUnitsRequired = params.numUnitsRequired || 0;
+        this.perUnitCostEstimate = params.perUnitCostEstimate || null;
+        this.storage = new ResourceStorage(params.storage);
+        this.hazardClasses = params?.hazardClasses || [];
     }
 }
 
@@ -80,46 +82,3 @@ export function inputMaterialToJson(inputMaterial: InputMaterial): {[k: string]:
         hazardClasses: hazardClassesToJson(inputMaterial.hazardClasses)
     }
 }
-
-export type InputMaterialForm = FormGroup<{
-    type: FormControl<'input-material'>;
-    name: FormControl<string>;
-    baseUnit: FormControl<string>;
-
-    numUnitsRequired: FormControl<number>;
-
-    storage: ResourceStorageForm;
-    hazardClasses: FormControl<HazardClass[]>;
-
-    perUnitCostEstimate: AbstractControl<CostEstimate | null>
-}>;
-
-export function createInputMaterialForm(input: Partial<InputMaterial>): InputMaterialForm {
-    return new FormGroup({
-        type: new FormControl('input-material', {nonNullable: true}),
-        name: new FormControl<string>(
-            input.name || '',
-            {nonNullable: true, validators: [Validators.required]}
-        ),
-        baseUnit: new FormControl<string>(
-            input.baseUnit || '',
-            {nonNullable: true, validators: [Validators.required]}
-        ),
-        numUnitsRequired: new FormControl<number>(
-            input.numUnitsRequired || 0,
-            {nonNullable: true}
-        ),
-        perUnitCostEstimate: costEstimateForm(
-            input?.perUnitCostEstimate || undefined
-        ) as AbstractControl<CostEstimate | null>,
-        storage: createResourceStorageForm(
-            input.storage || {}
-        ),
-        hazardClasses: new FormControl<HazardClass[]>(input.hazardClasses || [], {nonNullable: true})
-    });
-}
-
-export type InputMaterialFormErrors = ValidationErrors & {
-    name?: { required: string | null };
-    baseUnit?: {required: string | null };
-};

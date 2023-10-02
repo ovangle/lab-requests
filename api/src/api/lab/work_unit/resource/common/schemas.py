@@ -47,13 +47,13 @@ class ResourceStorage(BaseModel):
     model_config = SCHEMA_CONFIG
 
     description: str
-    estimated_cost: ResourceCostEstimate | None
+    estimated_cost: ResourceCostEstimate | None = None
 
 class ResourceDisposal(BaseModel):
     model_config = SCHEMA_CONFIG
 
     description: str
-    estimated_cost: ResourceCostEstimate | None
+    estimated_cost: ResourceCostEstimate | None = None
 
 class ResourceBase(BaseModel):
     model_config = SCHEMA_CONFIG

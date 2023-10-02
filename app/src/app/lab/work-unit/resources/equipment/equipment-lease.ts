@@ -5,9 +5,17 @@ import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators }
 import { Resource, ResourceParams } from "../../resource/resource";
 import { firstValueFrom } from 'rxjs';
 import { CostEstimate, costEstimateFromJson, costEstimateToJson } from 'src/app/uni/research/funding/cost-estimate/coste-estimate';
-import { costEstimateForm } from 'src/app/uni/research/funding/cost-estimate/cost-estimate-form';
+import { CostEstimateForm, costEstimateForm } from 'src/app/uni/research/funding/cost-estimate/cost-estimate-form';
 
-export interface EquipmentLeaseParams extends ResourceParams<EquipmentLease> {}
+export interface EquipmentLeaseParams extends ResourceParams<EquipmentLease> {
+    equipment: Equipment | EquipmentRequest | string;
+    equipmentTrainingCompleted?: string[];
+    requiresAssistance?: boolean;
+
+    setupInstructions?: string;
+
+    usageCostEstimate: CostEstimate | null;
+}
 
 
 export class EquipmentLease implements Resource {
@@ -101,7 +109,7 @@ export type EquipmentLeaseForm = FormGroup<{
     requiresAssistance: FormControl<boolean>;
 
     setupInstructions: FormControl<string>;
-    usageCostEstimate: AbstractControl<CostEstimate | null>;
+    usageCostEstimate: CostEstimateForm;
 }>;
 
 export function equipmentLeaseForm(lease?: Partial<EquipmentLease>): EquipmentLeaseForm {
@@ -122,7 +130,7 @@ export function equipmentLeaseForm(lease?: Partial<EquipmentLease>): EquipmentLe
             lease?.setupInstructions || '', 
             {nonNullable: true}
         ),
-        usageCostEstimate: costEstimateForm(lease?.usageCostEstimate || undefined) as AbstractControl<CostEstimate | null>
+        usageCostEstimate: costEstimateForm()
     });
 }
 

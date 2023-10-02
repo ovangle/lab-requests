@@ -1,13 +1,53 @@
 import { CommonModule } from "@angular/common";
 import { Component, ViewChild, inject } from "@angular/core";
-import { ReactiveFormsModule } from "@angular/forms";
+import { FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { Task, TaskForm, TaskFormErrors, serviceForm } from "./task";
+import { Task } from "./task";
 import { MatInputModule } from "@angular/material/input";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { ResourceFormService } from "../../resource/resource-form.service";
 import { ProvisionFormComponent } from "../../resource/provision/provision-form.component";
 import { MatRadioModule } from "@angular/material/radio";
+import { Observable, startWith, filter, map } from "rxjs";
+import { collectFieldErrors } from "src/app/utils/forms/validators";
+import { CostEstimateForm, costEstimateForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form";
+
+export type TaskForm = FormGroup<{
+    name: FormControl<string>;
+    description: FormControl<string>;
+    supplier: FormControl<'technician' | 'researcher' | 'other'>;
+    externalSupplierDescription: FormControl<string>;
+
+    isUniversitySupplied: FormControl<boolean>;
+    estimatedCost: CostEstimateForm;
+}>;
+
+export function taskForm(): TaskForm {
+    return new FormGroup({
+        name: new FormControl('', {nonNullable: true, validators: [Validators.required]}),
+        description: new FormControl('', {nonNullable: true}),
+        supplier: new FormControl<'researcher' | 'technician' | 'other'>('researcher', {nonNullable: true}),
+        externalSupplierDescription: new FormControl<string>('', {nonNullable: true}),
+        isUniversitySupplied: new FormControl(false, {nonNullable: true}),
+        estimatedCost: costEstimateForm()
+    }, {
+        asyncValidators: [
+            (c) => collectFieldErrors(c as TaskForm)
+        ]
+    });
+}
+
+export type TaskFormErrors = ValidationErrors & {
+    name: { required: string | null };
+};
+
+export function taskFormErrors(form: TaskForm): Observable<TaskFormErrors | null> {
+    return form.statusChanges.pipe(
+        startWith(form.status),
+        filter(status => status != 'PENDING'),
+        map(() => form.errors as TaskFormErrors)
+    );
+}
 
 @Component({
     selector: 'lab-task-resource-form',

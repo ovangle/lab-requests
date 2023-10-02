@@ -15,7 +15,7 @@ import { CommonModule } from "@angular/common";
 
         <ng-container *ngIf="storage; else notStored">
             <div class="storage-type">
-                Type: {{storage.type}}
+                Type: {{storage.description}}
             </div>
         </ng-container>
 

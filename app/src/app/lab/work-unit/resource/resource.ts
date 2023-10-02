@@ -5,7 +5,7 @@ import { ResourceContainer, ResourceContainerContext } from "./resource-containe
 import { ResourceType, isResourceType } from "./resource-type";
 import { ExperimentalPlan } from "../../experimental-plan/experimental-plan";
 
-export type ResourceParams<T extends Resource> = Partial<T> & {
+export interface ResourceParams<T extends Resource> {
     planId: string;
     workUnitId: string;
     index: number | 'create';

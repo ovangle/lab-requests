@@ -1,11 +1,59 @@
 import { Component, inject } from "@angular/core";
-import { RESOURCE_DISPOSAL_TYPES, ResourceDisposalForm } from "./resource-disposal";
-import { ControlContainer, ReactiveFormsModule } from "@angular/forms";
+import { RESOURCE_DISPOSAL_TYPES, ResourceDisposal, ResourceDisposalType } from "./resource-disposal";
+import { ControlContainer, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { CommonModule } from "@angular/common";
 import { MatSelectModule } from "@angular/material/select";
 import { SelectOtherDescriptionComponent } from "src/app/utils/forms/select-other-description.component";
 import { ProvisionFormComponent } from "../provision/provision-form.component";
+import { CostEstimateForm, costEstimateForm, costEstimatesFromFormValue } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form";
 
+export type ResourceDisposalForm = FormGroup<{
+    type: FormControl<ResourceDisposalType>;
+    description: FormControl<string>;
+    hasCostEstimates: FormControl<boolean>;
+    estimatedCost: CostEstimateForm;
+}>;
+
+export function resourceDisposalForm(): ResourceDisposalForm {
+    return new FormGroup({
+        type: new FormControl<ResourceDisposalType>(
+            'general',
+            {nonNullable: true, validators: Validators.required}
+        ),
+        description: new FormControl<string>(
+            '',
+            {nonNullable: true}
+        ),
+        hasCostEstimates: new FormControl<boolean>(true, {nonNullable: true}),
+        estimatedCost: costEstimateForm()
+    });
+}
+
+export function resourceDisposalFromFormValue(form: ResourceDisposalForm): ResourceDisposal {
+    if (!form.valid) {
+        throw new Error('Invalid form has no value');
+    }
+    const description = form.value.type === 'other'
+        ? form.value.description!
+        : form.value.type!;
+
+    const estimatedCost = form.value.hasCostEstimates 
+        ? costEstimatesFromFormValue(form.controls.estimatedCost)
+        : null;
+    return new ResourceDisposal({
+        description,
+        estimatedCost
+    });
+}
+
+export function patchResourceStorageFormValue(form: ResourceDisposalForm, storage: ResourceDisposal, options?: any) {
+    form.patchValue({
+        type: storage.type,
+        description: storage.description,
+        hasCostEstimates: storage.estimatedCost != null,
+        estimatedCost: storage.estimatedCost || {}
+    }, options);
+}
 
 @Component({
     selector: 'lab-resource-disposal-form',

@@ -1,15 +1,17 @@
-import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
-import { Material } from "../material";
-import { groupDisabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { Subscription, map, tap } from "rxjs";
-import { ResourceParams } from "../../../resource/resource";
+import { ResourceDisposal, ResourceDisposalParams, resourceDisposalFromJson, resourceDisposalToJson } from "../../../resource/disposal/resource-disposal";
 import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../../resource/hazardous/hazardous";
-import { ResourceDisposal, isResourceDisposalType, resourceDisposalFromJson, resourceDisposalToJson, ResourceDisposalForm, createResourceDisposalForm } from "../../../resource/disposal/resource-disposal";
-import { ResourceStorage, isResourceStorageType, resourceStorageFromJson, resourceStorageToJson, ResourceStorageForm, createResourceStorageForm } from "../../../resource/storage/resource-storage";
-import { isThisSecond } from "date-fns";
+import { ResourceParams } from "../../../resource/resource";
+import { ResourceStorage, ResourceStorageParams, resourceStorageFromJson, resourceStorageToJson } from "../../../resource/storage/resource-storage";
+import { Material } from "../material";
 
-export interface OutputMaterialParams extends ResourceParams<OutputMaterial> {}
+export interface OutputMaterialParams extends ResourceParams<OutputMaterial> {
+    name: string;
+    baseUnit: string;
+    numUnitsProduced: number;
+    disposal: ResourceDisposal | ResourceDisposalParams;
+    storage: ResourceStorage | ResourceStorageParams;
+    hazardClasses: HazardClass[];
+}
 
 export class OutputMaterial extends Material {
     override readonly type = 'output-material';
@@ -27,43 +29,34 @@ export class OutputMaterial extends Material {
 
     hazardClasses: HazardClass[];
 
-    constructor(input: OutputMaterialParams) {
+    constructor(params: OutputMaterialParams) {
         super();
 
-        this.planId = input.planId;
-        this.workUnitId = input.workUnitId;
-        
-        this.index = input.index!;
+        this.planId = params.planId;
+        this.workUnitId = params.workUnitId;
 
-        if (!input.name) {
+        this.index = params.index!;
+
+        if (!params.name) {
             throw new Error('Invalid OutputMaterial. Name must be provided');
         }
-        this.name = input.name;
+        this.name = params.name;
 
-        if (!input.baseUnit) {
+        if (!params.baseUnit) {
             throw new Error('Invalid OutputMaterial. Base units must be provided');
         }
-        this.baseUnit = input.baseUnit;
+        this.baseUnit = params.baseUnit;
 
-        this.numUnitsProduced = input.numUnitsProduced || 0;
+        this.numUnitsProduced = params.numUnitsProduced || 0;
 
-        this.storage = new ResourceStorage(
-            isResourceStorageType(input.storage?.type)
-            ? input.storage!
-            : {}
-        );
+        this.storage = new ResourceStorage(params.storage);
+        this.disposal = new ResourceDisposal(params.disposal);
 
-        this.disposal = new ResourceDisposal(
-            isResourceDisposalType(input.disposal?.type)
-            ? new ResourceDisposal(input.disposal!)
-            : {}
-        );
-
-        this.hazardClasses = input?.hazardClasses || [];
+        this.hazardClasses = params?.hazardClasses || [];
     }
 }
 
-export function outputMaterialFromJson(json: {[k: string]: any}): OutputMaterial {
+export function outputMaterialFromJson(json: { [k: string]: any }): OutputMaterial {
     return new OutputMaterial({
         planId: json['planId'],
         workUnitId: json['workUnitId'],
@@ -78,7 +71,7 @@ export function outputMaterialFromJson(json: {[k: string]: any}): OutputMaterial
 }
 
 
-export function outputMaterialToJson(outputMaterial: OutputMaterial): {[k: string]: any} {
+export function outputMaterialToJson(outputMaterial: OutputMaterial): { [k: string]: any } {
     return {
         type: outputMaterial.type,
         name: outputMaterial.name,
@@ -88,62 +81,4 @@ export function outputMaterialToJson(outputMaterial: OutputMaterial): {[k: strin
         disposal: resourceDisposalToJson(outputMaterial.disposal),
         hazardClasses: hazardClassesToJson(outputMaterial.hazardClasses)
     }
-}
-
-
-export type OutputMaterialForm = FormGroup<{
-    type: FormControl<'output-material'>;
-    name: FormControl<string>;
-    baseUnit: FormControl<string>;
-    numUnitsProduced: FormControl<number>;
-
-    storage: ResourceStorageForm;
-    disposal: ResourceDisposalForm;
-    hazardClasses: FormControl<HazardClass[]>;
-}>;
-
-export function createOutputMaterialForm(output: Partial<OutputMaterial>): OutputMaterialForm {
-    return new FormGroup({
-        type: new FormControl('output-material', {nonNullable: true}),
-        name: new FormControl(
-            output.name || '',
-            {nonNullable: true, validators: [Validators.required]}
-        ),
-        baseUnit: new FormControl(
-            output.baseUnit || '',
-            { nonNullable: true, validators: [Validators.required]}
-        ),
-        numUnitsProduced: new FormControl(
-            output.numUnitsProduced || 0,
-            { nonNullable: true }
-        ),
-
-        storage: createResourceStorageForm(output.storage || {}),
-        disposal: createResourceDisposalForm(output.disposal || {}),
-
-        hazardClasses: new FormControl<HazardClass[]>(
-            output.hazardClasses || [],
-            {nonNullable: true}
-        )
-    });
-}
-
-export function disableDependentControlsWithBaseUnitValidity(outputMaterialForm: OutputMaterialForm): Subscription {
-    const toggler = groupDisabledStateToggler(
-        outputMaterialForm,
-        ['numUnitsProduced', 'storage', 'disposal', 'hazardClasses']
-    );
-
-    return outputMaterialForm.valueChanges.pipe(
-        takeUntilDestroyed(),
-        map(value => {
-            const baseUnit = value.baseUnit;
-            return baseUnit != '';
-        }),
-    ).subscribe(toggler);
-}
-
-export type OutputMaterialFormErrors = ValidationErrors & {
-    name?: { required: string | null; };
-    baseUnit?: {required: string | null; };
 }

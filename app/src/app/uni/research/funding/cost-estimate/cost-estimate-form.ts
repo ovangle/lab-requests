@@ -6,9 +6,19 @@ export type CostEstimateForm = FormGroup<{
     estimatedCost: FormControl<number>;
 }>;
 
-export function costEstimateForm(initial?: CostEstimate): CostEstimateForm {
+export function costEstimateForm(): CostEstimateForm {
     return new FormGroup({
-        isUniversitySupplied: new FormControl(!!initial?.isUniversitySupplied, {nonNullable: true}),
-        estimatedCost: new FormControl(initial?.estimatedCost || 0, {nonNullable: true})
+        isUniversitySupplied: new FormControl(true, {nonNullable: true}),
+        estimatedCost: new FormControl(0, {nonNullable: true}),
     });
+}
+
+export function costEstimatesFromFormValue(form: CostEstimateForm): CostEstimate {
+    if (!form.valid) {
+        throw new Error('Invalid form has no value');
+    }
+    return {
+        isUniversitySupplied: !!form.value.isUniversitySupplied,
+        estimatedCost: form.value.estimatedCost!
+    };
 }

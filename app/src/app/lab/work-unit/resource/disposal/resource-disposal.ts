@@ -1,5 +1,6 @@
 import { ThisReceiver } from "@angular/compiler";
 import { FormControl, FormGroup, Validators } from "@angular/forms";
+import { CostEstimateForm, costEstimateForm, costEstimatesFromFormValue } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form";
 import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
 
 export const RESOURCE_DISPOSAL_TYPES = [
@@ -17,63 +18,87 @@ export function isResourceDisposalType(obj: any): obj is ResourceDisposalType {
     return typeof obj === 'string' && RESOURCE_DISPOSAL_TYPES.includes(obj as never);
 }
 
+export interface ResourceDisposalParams {
+    readonly description: string;
+    readonly estimatedCost: CostEstimate | null;
+}
+
 export class ResourceDisposal {
-    readonly type: ResourceDisposalType;
-    readonly otherDescription: string;
+    readonly description: string;
+    readonly estimatedCost: CostEstimate | null;
 
-    readonly costEstimate: CostEstimate | null;
-
-    constructor(params: Partial<ResourceDisposal>) {
-        this.type = params.type || 'general';
-
-        this.otherDescription = params.otherDescription || '';
-        this.costEstimate = params.costEstimate || null;
+    constructor(params: ResourceDisposalParams) {
+        this.description = params.description;
+        this.estimatedCost = params.estimatedCost || null;
     }
 
-    get typeName(): string {
-        if (this.type === 'other') {
-            return this.otherDescription;
+    get type(): ResourceDisposalType {
+        if (isResourceDisposalType(this.description)) {
+            return this.description;
         }
-        return this.type;
+        return 'other';
     }
 }
 
 export function resourceDisposalFromJson(json: {[k: string]: any}): ResourceDisposal {
     return new ResourceDisposal({
-        type: json['type'],
-        otherDescription: json['otherDescription'],
-        costEstimate: json['costEstimate'] ? costEstimateFromJson(json['costEstimate']) : null
+        description: json['description'],
+        estimatedCost: json['estimatedCost'] && costEstimateFromJson(json['estimatedCost'])
     });
 }
 
 
 export function resourceDisposalToJson(disposal: ResourceDisposal): {[k: string]: any} {
     return {
-        type: disposal.type,
-        otherDescription: disposal.otherDescription,
-        costEstimate: disposal.costEstimate && costEstimateToJson(disposal.costEstimate)
+        description: disposal.description,
+        costEstimate: disposal.estimatedCost && costEstimateToJson(disposal.estimatedCost)
     }
 }
 
 export type ResourceDisposalForm = FormGroup<{
     type: FormControl<ResourceDisposalType>;
-    otherDescription: FormControl<string>;
-    estimatedCost: FormControl<number>;
+    description: FormControl<string>;
+    hasCostEstimates: FormControl<boolean>;
+    estimatedCost: CostEstimateForm;
 }>;
 
-export function createResourceDisposalForm(r: Partial<ResourceDisposal>): ResourceDisposalForm {
+export function createResourceDisposalForm(): ResourceDisposalForm {
     return new FormGroup({
         type: new FormControl<ResourceDisposalType>(
-            r.type || 'general',
+            'general',
             {nonNullable: true, validators: Validators.required}
         ),
-        otherDescription: new FormControl<string>(
-            r.otherDescription || '',
+        description: new FormControl<string>(
+            '',
             {nonNullable: true}
         ),
-        estimatedCost: new FormControl<number>(
-            r.costEstimate?.estimatedCost || 0,
-            {nonNullable: true}
-        )
+        hasCostEstimates: new FormControl<boolean>(true, {nonNullable: true}),
+        estimatedCost: costEstimateForm()
     });
+}
+
+export function resourceDisposalFromFormValue(form: ResourceDisposalForm): ResourceDisposal {
+    if (!form.valid) {
+        throw new Error('Invalid form has no value');
+    }
+    const description = form.value.type === 'other'
+        ? form.value.description!
+        : form.value.type!;
+
+    const estimatedCost = form.value.hasCostEstimates 
+        ? costEstimatesFromFormValue(form.controls.estimatedCost)
+        : null;
+    return new ResourceDisposal({
+        description,
+        estimatedCost
+    });
+}
+
+export function patchResourceStorageFormValue(form: ResourceDisposalForm, storage: ResourceDisposal, options?: any) {
+    form.patchValue({
+        type: storage.type,
+        description: storage.description,
+        hasCostEstimates: storage.estimatedCost != null,
+        estimatedCost: storage.estimatedCost || {}
+    }, options);
 }

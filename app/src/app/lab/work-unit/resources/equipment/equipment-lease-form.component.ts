@@ -1,16 +1,51 @@
 import { CommonModule } from "@angular/common";
 import { Component, ViewChild, inject } from "@angular/core";
-import { FormControl, ReactiveFormsModule } from "@angular/forms";
+import { FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { EquipmentLease, EquipmentLeaseForm, equipmentLeaseForm } from "./equipment-lease";
+import { EquipmentLease } from "./equipment-lease";
 import { Observable, defer, filter, map, startWith } from "rxjs";
 import { EquipmentSearchComponent } from "src/app/lab/equipment/equipment-search.component";
 import { ResourceFormService } from "../../resource/resource-form.service";
 import { Equipment, EquipmentPatch, EquipmentRequest } from "src/app/lab/equipment/equipment";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { EquipmentTrainingAcknowlegementComponent } from "src/app/lab/equipment/training/training-acknowlegment-input.component";
+import { CostEstimateForm, costEstimateForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form";
 
+export type EquipmentLeaseForm = FormGroup<{
+    equipment: FormControl<Equipment | EquipmentRequest | null>;
+    equipmentTrainingCompleted: FormControl<string[]>;
+    requiresAssistance: FormControl<boolean>;
+
+    setupInstructions: FormControl<string>;
+    usageCostEstimate: CostEstimateForm;
+}>;
+
+export function equipmentLeaseForm(lease?: Partial<EquipmentLease>): EquipmentLeaseForm {
+    return new FormGroup({
+        equipment: new FormControl<Equipment | EquipmentRequest | null>(
+            lease?.equipment || null as any, 
+            { validators: [Validators.required] }
+        ),
+        equipmentTrainingCompleted: new FormControl<string[]>(
+            lease?.equipmentTrainingCompleted|| [], 
+            {nonNullable: true}
+        ),
+        requiresAssistance: new FormControl<boolean>(
+            !!(lease?.requiresAssistance), 
+            {nonNullable: true}
+        ),
+        setupInstructions: new FormControl<string>(
+            lease?.setupInstructions || '', 
+            {nonNullable: true}
+        ),
+        usageCostEstimate: costEstimateForm()
+    });
+}
+
+export type EquipmentLeaseFormErrors = ValidationErrors & {
+    equipment?: { required: string | null; };
+}
 
 @Component({
     selector: 'lab-equipment-lease-form',

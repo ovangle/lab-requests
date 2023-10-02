@@ -1,13 +1,59 @@
-import { AbstractControl, ControlContainer, FormControl, FormGroup, ReactiveFormsModule } from "@angular/forms";
+import { AbstractControl, ControlContainer, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 
-import { RESOURCE_STORAGE_TYPES, ResourceStorage, ResourceStorageForm, ResourceStorageType, isResourceStorageForm } from './resource-storage';
-import { Component, inject } from "@angular/core";
+import { RESOURCE_STORAGE_TYPES, ResourceStorage, ResourceStorageType } from './resource-storage';
+import { Component, Input, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { MatInputModule } from "@angular/material/input";
 import { MatCardModule } from "@angular/material/card";
 import { SelectOtherDescriptionComponent } from "src/app/utils/forms/select-other-description.component";
+import { CostEstimateForm, costEstimateForm, costEstimatesFromFormValue } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form";
+
+export type ResourceStorageForm = FormGroup<{
+    type: FormControl<ResourceStorageType>;
+    description: FormControl<string>;
+    hasCostEstimates: FormControl<boolean>;
+    estimatedCost: CostEstimateForm;
+}>;
+
+export function createResourceStorageForm(): ResourceStorageForm {
+    return new FormGroup({
+        type: new FormControl<ResourceStorageType>('general', { nonNullable: true }),
+        description: new FormControl<string>(
+            '',
+            { nonNullable: true, validators: [Validators.required] }
+        ),
+        hasCostEstimates: new FormControl(false, { nonNullable: true }),
+        estimatedCost: costEstimateForm()
+    });
+}
+
+export function resourceStorageFromFormValue(form: ResourceStorageForm): ResourceStorage {
+    if (!form.valid) {
+        throw new Error('Invalid form has no value');
+    }
+    const description = form.value.type === 'other'
+        ? form.value.description
+        : form.value.type!;
+
+    const estimatedCost = form.value.hasCostEstimates
+        ? costEstimatesFromFormValue(form.controls.estimatedCost)
+        : null;
+    return new ResourceStorage({
+        description,
+        estimatedCost
+    });
+}
+
+export function patchResourceStorageFormValue(form: ResourceStorageForm, storage: ResourceStorage, options?: any) {
+    form.patchValue({
+        type: storage.type,
+        description: storage.description,
+        hasCostEstimates: storage.estimatedCost != null,
+        estimatedCost: storage.estimatedCost || {}
+    }, options);
+}
 
 @Component({
     selector: 'lab-resource-storage-form',
@@ -25,7 +71,7 @@ import { SelectOtherDescriptionComponent } from "src/app/utils/forms/select-othe
     template: `
     <mat-card>
         <mat-card-header><h3>Storage</h3></mat-card-header>
-        <mat-card-content [formGroup]="formGroup">
+        <mat-card-content [formGroup]="form">
             <div class="d-flex">
                 <mat-form-field>
                     <mat-label>Storage type</mat-label>
@@ -40,11 +86,11 @@ import { SelectOtherDescriptionComponent } from "src/app/utils/forms/select-othe
 
                 <lab-req-select-other-description
                     [isOtherSelected]="isOtherTypeSelected"
-                    formControlName="otherDescription">
+                    formControlName="description">
                 </lab-req-select-other-description>
             </div>
 
-            <ng-container *ngIf="formGroup.value.type">
+            <ng-container *ngIf="form.value.description">
                 <mat-form-field>
                     <mat-label>Estimated space</mat-label>
                     <input matInput type="number" formControlName="estimatedSpace" />
@@ -69,17 +115,11 @@ import { SelectOtherDescriptionComponent } from "src/app/utils/forms/select-othe
 export class ResourceStorageFormComponent {
     readonly storageTypes = RESOURCE_STORAGE_TYPES;
 
-    controlContainer = inject(ControlContainer);
+    @Input({ required: true })
+    form: ResourceStorageForm;
 
-    get formGroup(): ResourceStorageForm {
-        if (!isResourceStorageForm(this.controlContainer.control)) {
-            throw new Error('Expected a resource storage form');
-        }
-        return this.controlContainer.control;
-    }
-
-    get isOtherTypeSelected(): boolean {
-        return this.formGroup.value.type === 'other';
+    get isOtherTypeSelected() {
+        return this.form.value.description === 'other';
     }
 
 }
