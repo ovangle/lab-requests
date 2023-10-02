@@ -5,6 +5,7 @@ import { MatTableModule } from "@angular/material/table";
 import { ResourceTableDataSource, ResourceTableComponent } from "../../../resource/common/resource-table.component";
 import { ResourceStorageDetailsComponent } from "../../../resource/storage/resource-storage-details.component";
 import { HazardClassLabelsComponent } from "../../../resource/hazardous/hazard-classes-labels.component";
+import { CommonMeasurementUnitPipe } from "src/app/common/measurement/common-measurement-unit.pipe";
 
 
 @Injectable()
@@ -22,6 +23,7 @@ export class InputMaterialResourceTableDataSource extends ResourceTableDataSourc
 
         ResourceTableComponent,
 
+        CommonMeasurementUnitPipe,
         ResourceStorageDetailsComponent,
         HazardClassLabelsComponent
     ],
@@ -39,7 +41,8 @@ export class InputMaterialResourceTableDataSource extends ResourceTableDataSourc
             <tr matColumnDef="numUnitsRequired">
                 <th mat-header-cell *matHeaderCellDef>Amount required</th>
                 <td mat-cell *matCellDef="let element">
-                    {{element.numUnitsRequired}} {{element.baseUnit}}
+                    {{element.numUnitsRequired}} 
+                    <span [innerHTML]="element.baseUnit | commonMeasurementUnit"></span>
                 </td>
             </tr>
 

@@ -1,9 +1,9 @@
-import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
+import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { Material } from "../material";
 import { ResourceParams } from "../../../resource/resource";
 import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../../resource/hazardous/hazardous";
 import { ResourceStorage, ResourceStorageForm, createResourceStorageForm, isResourceStorageType, resourceStorageFromJson, resourceStorageToJson } from "../../../resource/storage/resource-storage";
-import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
+import { CostEstimate, costEstimateForm, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
 
 export interface InputMaterialParams extends ResourceParams<InputMaterial> {}
 
@@ -91,8 +91,7 @@ export type InputMaterialForm = FormGroup<{
     storage: ResourceStorageForm;
     hazardClasses: FormControl<HazardClass[]>;
 
-    isUniversitySupplied: FormControl<boolean>;
-    estimatedCost: FormControl<number>;
+    perUnitCostEstimate: AbstractControl<CostEstimate | null>
 }>;
 
 export function createInputMaterialForm(input: Partial<InputMaterial>): InputMaterialForm {
@@ -110,13 +109,9 @@ export function createInputMaterialForm(input: Partial<InputMaterial>): InputMat
             input.numUnitsRequired || 0,
             {nonNullable: true}
         ),
-        isUniversitySupplied: new FormControl<boolean>(
-            input.perUnitCostEstimate?.isUniversitySupplied || false, {nonNullable: true}
-        ),
-        estimatedCost: new FormControl<number>(
-            input.perUnitCostEstimate?.estimatedCost || 0,
-            {nonNullable: true}
-        ),
+        perUnitCostEstimate: costEstimateForm(
+            input?.perUnitCostEstimate || undefined
+        ) as AbstractControl<CostEstimate | null>,
         storage: createResourceStorageForm(
             input.storage || {}
         ),

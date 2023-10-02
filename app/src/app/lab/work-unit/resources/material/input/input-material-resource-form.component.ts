@@ -8,6 +8,9 @@ import { ResourceFormService } from "../../../resource/resource-form.service";
 import { HazardClassesSelectComponent } from "../../../resource/hazardous/hazard-classes-select.component";
 import { ProvisionFormComponent } from "../../../resource/provision/provision-form.component";
 import { ResourceStorageFormComponent } from "../../../resource/storage/resource-storage-form.component";
+import { CommonMeasurementUnitInputComponent } from "src/app/common/measurement/common-measurement-unit-input.component";
+import { CommonMeasurementUnitPipe } from "src/app/common/measurement/common-measurement-unit.pipe";
+import { CostEstimateForm } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
 
 
 @Component({
@@ -20,6 +23,9 @@ import { ResourceStorageFormComponent } from "../../../resource/storage/resource
         MatFormFieldModule,
         MatInputModule,
 
+        CommonMeasurementUnitPipe,
+        CommonMeasurementUnitInputComponent,
+
         HazardClassesSelectComponent,
         ResourceStorageFormComponent,
         ProvisionFormComponent,
@@ -31,21 +37,26 @@ import { ResourceStorageFormComponent } from "../../../resource/storage/resource
             <input matInput formControlName="name">
         </mat-form-field>
 
-        <mat-form-field>
-            <mat-label>Base unit</mat-label>
-            <input matInput formControlName="baseUnit" />
-        </mat-form-field>
+        <common-measurement-unit-input
+            formControlName="baseUnit" 
+            required>
+            <mat-label>Units</mat-label>
+        </common-measurement-unit-input>
 
         <ng-container *ngIf="baseUnit">
             <mat-form-field>
                 <mat-label>Estimated amount required</mat-label>
                 <input matInput formControlName="numUnitsRequired" />
-                <div matTextSuffix>{{baseUnit}}</div>
+                <div matTextSuffix>
+                    <span [innerHTML]="baseUnit | commonMeasurementUnit"></span>
+                </div>
             </mat-form-field>
 
-            <lab-resource-provision-form [form]="form"
-                [provisioningUnit]="'per\u00A0' + form.value.baseUnit"
-                [resourceType]="resourceType">
+            <lab-resource-provision-form 
+                [form]="costEstimateForm"
+                [provisioningUnit]="form.value.baseUnit!"
+                [resourceType]="resourceType"
+                [requestedUnits]="form.value.numUnitsRequired || 0">
             </lab-resource-provision-form>
 
             <lab-req-resource-storage-form formGroupName="storage">
@@ -75,6 +86,10 @@ export class InputMaterialResourceFormComponent {
 
     get form(): InputMaterialForm {
         return this.formService.form;
+    }
+
+    get costEstimateForm(): CostEstimateForm {
+        return this.form.controls.perUnitCostEstimate as CostEstimateForm;
     }
 
     get baseUnit(): string {

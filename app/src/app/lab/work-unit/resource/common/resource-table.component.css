@@ -2,7 +2,12 @@
 .table-header {
     display: flex;
     justify-content: space-between;
-    align-items: middle;
+    align-items: center;
+    height: 48px;
+}
+
+.table-header .table-title {
+    margin: 0;
 }
 
 

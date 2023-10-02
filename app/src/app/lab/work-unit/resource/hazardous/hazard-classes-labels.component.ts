@@ -22,7 +22,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
     :host {
         display: flex;
         justify-content: flex-start;
-        align-items: middle;
+        align-items: center;
     }
     img {
         margin: 0em 0.2em;

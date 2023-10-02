@@ -5,6 +5,7 @@ import { FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatRadioModule } from "@angular/material/radio";
+import { CommonMeasurementUnitPipe } from "src/app/common/measurement/common-measurement-unit.pipe";
 
 import { CampusInfoComponent } from 'src/app/uni/campus/campus-info.component';
 
@@ -18,6 +19,8 @@ import { CampusInfoComponent } from 'src/app/uni/campus/campus-info.component';
         MatFormFieldModule,
         MatInputModule,
         MatRadioModule,
+
+        CommonMeasurementUnitPipe
     ],
     template: `
     <ng-container [formGroup]="form">
@@ -34,10 +37,14 @@ import { CampusInfoComponent } from 'src/app/uni/campus/campus-info.component';
                 <mat-label>Estimated cost</mat-label>
                 <input matInput type="number" formControlName="estimatedCost">
                 <div matTextPrefix>$</div>
-                <div matTextSuffix>{{provisioningUnit}}</div>
+                <div matTextSuffix>per <span [innerHTML]="provisioningUnit | commonMeasurementUnit"></span></div>
             </mat-form-field>
         </ng-container>
     </ng-container>
+
+    <div *ngIf="totalCost">
+        Total \${{totalCost}}
+    </div>
     `
 })
 export class ProvisionFormComponent {
@@ -52,6 +59,9 @@ export class ProvisionFormComponent {
 
     @Input()
     provisioningUnit: string;
+
+    @Input()
+    requestedUnits: number | null;
 
     @Input()
     get canResearcherSupply(): boolean {
@@ -72,5 +82,13 @@ export class ProvisionFormComponent {
             throw new Error('Missing isUniversitySuppliedControl');
         }
         return isUniversitySuppliedControl.value;
+    }
+
+    get totalCost() {
+        if (this.provisioningUnit && this.requestedUnits) {
+            const estimatedCost = this.form.value['estimatedCost'] || 0;
+            return estimatedCost * this.requestedUnits;
+        }
+        return 0;
     }
 }
