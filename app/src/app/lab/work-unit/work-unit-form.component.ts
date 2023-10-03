@@ -17,6 +17,7 @@ import { SoftwareResourceTableComponent } from "./resources/software/software-re
 import { ServiceResourceTableComponent } from "./resources/task/task-resource-table.component";
 import { InputMaterialResourceTableComponent } from "./resources/material/input/input-material-resource-table.component";
 import { OutputMaterialResourceTableComponent } from "./resources/material/output/output-material-resource-table.component";
+import { WorkUnitDurationFormComponent } from "./duration/work-unit-duration-form.component";
 
        
 @Component({
@@ -32,6 +33,8 @@ import { OutputMaterialResourceTableComponent } from "./resources/material/outpu
 
         WorkUnitBaseInfoFormComponent,
         WorkUnitBaseInfoComponent,
+
+        WorkUnitDurationFormComponent,
 
         EquipmentLeaseTableComponent,
         ServiceResourceTableComponent,
@@ -58,6 +61,8 @@ import { OutputMaterialResourceTableComponent } from "./resources/material/outpu
             <lab-work-unit-base-info [workUnit]="committed!">
             </lab-work-unit-base-info>
         </ng-template>
+
+        <lab-work-unit-duration-form [form]="form" />
 
         <ng-container *ngIf="committed">
             <mat-card>

@@ -8,6 +8,8 @@ import { HttpParams } from "@angular/common/http";
 import { ModelCollection } from "src/app/utils/models/model-collection";
 import { EquipmentTag } from "./tag/equipment-tag";
 import { Router } from "@angular/router";
+import { CostEstimate } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
+import { costEstimateForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
 
 
 export class Equipment {
@@ -48,6 +50,7 @@ export function equipmentFromJson(json: {[k: string]: any}): Equipment {
 export interface EquipmentRequest {
     name: string;
     description: string;
+    purchaseCost?: CostEstimate | null;
 }
 
 export function isEquipmentRequest(obj: any): obj is EquipmentRequest {
@@ -57,7 +60,8 @@ export function isEquipmentRequest(obj: any): obj is EquipmentRequest {
 export function equipmentRequestForm() {
     return new FormGroup({
         name: new FormControl('', {nonNullable: true}),
-        description: new FormControl('', {nonNullable: true})
+        description: new FormControl('', {nonNullable: true}),
+        purchaseCost: costEstimateForm()
     })
 }
 

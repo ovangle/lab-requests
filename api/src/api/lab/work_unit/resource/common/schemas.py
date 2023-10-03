@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime
 from enum import Enum
 import re
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Type, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel, GetCoreSchemaHandler
@@ -14,12 +14,37 @@ if TYPE_CHECKING:
     from api.lab.plan.schemas import ExperimentalPlan
     from api.lab.work_unit.schemas import WorkUnit
 
+TResource = TypeVar('TResource', bound='ResourceBase')
+
 class ResourceType(Enum):
     EQUIPMENT = 'equipment'
     SOFTWARE = 'software'
     TASK = 'task'
     INPUT_MATERIAL = 'input-material'
     OUTPUT_MATERIAL = 'output-material'
+
+    @classmethod
+    def for_resource(cls, resource: TResource | Type[TResource]) -> ResourceType:
+        if isinstance(resource, type):
+            return getattr(resource, '__resource_type__')
+        return cls.for_resource(type(resource))
+
+    @property
+    def container_attr_name(self):
+        match self.value:
+            case 'equipment':
+                return 'equipments'
+            case 'software':
+                return 'softwares'
+            case 'task':
+                return 'tasks'
+            case 'input-material':
+                return 'input_materials'
+            case 'output-material':
+                return 'output_materials'
+            case _:
+                raise ValueError('Unexpected attribute')
+
 
 class HazardClass(str):
     RE = re.compile(r'(?P<group>\d+)(?P<class>\.\d+)?')
@@ -57,6 +82,13 @@ class ResourceDisposal(BaseModel):
 
 class ResourceBase(BaseModel):
     model_config = SCHEMA_CONFIG
+    __resource_type__: ClassVar[ResourceType]
+
+    @classmethod
+    def __init_subclass__(cls, **kwargs):
+        if not hasattr(cls, '__resource_type__'):
+            raise ValueError(f'No __resource_type__ on {cls.__name__}')
+        return super().__init_subclass__(**kwargs) 
 
     container_id:  UUID | None = None
     index: int | Literal['create'] = 'create'

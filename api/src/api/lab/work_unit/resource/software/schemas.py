@@ -3,14 +3,12 @@ from ..common.schemas import ResourceType, ResourceBase
 
 
 class Software(ResourceBase):
-    type: ResourceType = ResourceType.SOFTWARE
-    id: UUID
+    __resource_type__ = ResourceType.SOFTWARE
 
+    id: UUID
     name: str
     description: str
-
     min_version: str
-
     is_license_required: bool
     estimated_cost: float
 

@@ -18,6 +18,7 @@ services:
       API_DEBUG: yes
     volumes:
       - './api:/srv/api'
+      - "lab_work_attachments:/srv/files/lab/work-units/:rw"
 
   postgres:
     build: './postgres'
@@ -37,7 +38,6 @@ services:
     ports:
       - "5433:80"
 
-      
-
 volumes:
   pgdata: {}
+  lab_work_attachments: {}

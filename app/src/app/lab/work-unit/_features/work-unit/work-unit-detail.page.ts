@@ -47,6 +47,8 @@ function workUnitFromDetailRoute(): Observable<WorkUnit | null> {
         <lab-work-unit-base-info [workUnit]="workUnit">
         </lab-work-unit-base-info>
 
+        <lab-work-unit-duration-info [workUnit]="workUnit" />
+        
         <div class="resources">
             <lab-work-unit-resource-card *ngFor="let resourceType of RESOURCE_TYPES"
                 [resourceType]="resourceType"

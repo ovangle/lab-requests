@@ -11,6 +11,7 @@ import { ResourceContainerContext } from "../../resource/resource-container";
 import { WorkUnitResourceInfo } from "../../resource/resource-card.component";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
+import { WorkUnitDurationInfoComponent } from "../../duration/work-unit-duration-info.component";
 
 
 const WORK_UNIT_FROM_PLAN_ROUTES: Routes = [
@@ -39,6 +40,7 @@ const WORK_UNIT_FROM_PLAN_ROUTES: Routes = [
         MatIconModule,
 
         WorkUnitBaseInfoComponent,
+        WorkUnitDurationInfoComponent,
         WorkUnitFormComponent,
 
         WorkUnitResourceInfo

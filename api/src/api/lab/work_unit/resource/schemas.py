@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from api.base.models import Base
 from api.base.schemas import ApiModel, ModelPatch
+from api.lab.work_unit.resource.common.schemas import ResourceType
 from db import LocalSession
 
 from .equipment_lease.schemas import EquipmentLease
@@ -30,20 +31,8 @@ def is_resource(obj):
 
 TResource = TypeVar('TResource', bound=Resource)
 
-def resource_name(resource: TResource | Type[TResource]) -> str:
-    if isinstance(resource, type):
-        if issubclass(resource, EquipmentLease):
-            return 'equipments'
-        if issubclass(resource, Software):
-            return 'softwares'
-        if issubclass(resource, Task):
-            return 'tasks'
-        if issubclass(resource, InputMaterial):
-            return 'input_materials'
-        if issubclass(resource, OutputMaterial):
-            return 'output_materials'
-        raise ValidationError('Unrecognised resource type')
-    return resource_name(type(resource))
+def resource_name(t: TResource | Type[TResource]):
+    return ResourceType.for_resource(t).container_attr_name
 
 
 class ResourceContainer(BaseModel):

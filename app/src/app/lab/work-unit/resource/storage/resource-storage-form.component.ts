@@ -1,14 +1,15 @@
 import { AbstractControl, ControlContainer, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 
 import { RESOURCE_STORAGE_TYPES, ResourceStorage, ResourceStorageType } from './resource-storage';
-import { Component, Input, inject } from "@angular/core";
+import { ChangeDetectorRef, Component, Input, SimpleChanges, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { MatInputModule } from "@angular/material/input";
 import { MatCardModule } from "@angular/material/card";
 import { SelectOtherDescriptionComponent } from "src/app/utils/forms/select-other-description.component";
-import { CostEstimateForm, costEstimateForm, costEstimatesFromFormValue } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
+import { CostEstimateForm, CostEstimateFormComponent, costEstimateForm, costEstimatesFromFormValue } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
+import { differenceInCalendarWeeks } from "date-fns";
 
 export type ResourceStorageForm = FormGroup<{
     type: FormControl<ResourceStorageType>;
@@ -65,7 +66,8 @@ export function patchResourceStorageFormValue(form: ResourceStorageForm, storage
         MatInputModule,
         MatSelectModule,
 
-        SelectOtherDescriptionComponent
+        SelectOtherDescriptionComponent,
+        CostEstimateFormComponent
     ],
     template: `
         <h3>Storage</h3>
@@ -88,13 +90,12 @@ export function patchResourceStorageFormValue(form: ResourceStorageForm, storage
                 </lab-req-select-other-description>
             </div>
 
-            <ng-container *ngIf="form.value.description">
-                <mat-form-field>
-                    <mat-label>Estimated space</mat-label>
-                    <input matInput type="number" formControlName="estimatedSpace" />
-                    <div matTextSuffix>&nbsp;m<sup>2</sup></div>
-                </mat-form-field>
-            </ng-container>
+            <uni-research-funding-cost-estimate-form
+                *ngIf="hasCostEstimates"
+                [form]="form.controls.estimatedCost" 
+                unitOfMeasurement="weeks"
+                [quantityRequired]="numWeeksInProject"/>
+        </ng-container>
     `,
     styles: [`
     :host {
@@ -109,13 +110,41 @@ export function patchResourceStorageFormValue(form: ResourceStorageForm, storage
     `]
 })
 export class ResourceStorageFormComponent {
+    readonly _cdRef = inject(ChangeDetectorRef);
+
     readonly storageTypes = RESOURCE_STORAGE_TYPES;
 
     @Input({ required: true })
     form: ResourceStorageForm;
 
-    get isOtherTypeSelected() {
-        return this.form.value.description === 'other';
+    @Input()
+    storageStartDate: Date | null = null;
+
+    @Input()
+    storageEndDate: Date | null = null;
+
+    ngOnChanges(changes: SimpleChanges) {
+        const storageStartDate = changes['storageStartDate'];
+        const storageEndDate = changes['storageEndDate'];
+        if (storageStartDate || storageEndDate) {
+            const hasCostEstimates = storageStartDate.currentValue && storageEndDate.currentValue;
+            this.form.patchValue({hasCostEstimates});
+            this._cdRef.detectChanges();
+        }
     }
 
+    get numWeeksInProject(): number {
+        if (this.storageStartDate == null || this.storageEndDate == null) {
+            return 0;
+        } 
+        return differenceInCalendarWeeks(this.storageStartDate, this.storageEndDate);
+    }
+
+    get isOtherTypeSelected() {
+        return this.form.value.type === 'other';
+    }
+
+    get hasCostEstimates() {
+        return this.storageStartDate && this.storageEndDate;
+    }
 }

@@ -3,9 +3,11 @@ from uuid import UUID
 from pydantic import Field
 
 from api.lab.equipment.schemas import EquipmentRequest
-from ..common.schemas import ResourceBase, ResourceCostEstimate
+from ..common.schemas import ResourceBase, ResourceCostEstimate, ResourceType
 
 class EquipmentLease(ResourceBase):
+    __resource_type__ = ResourceType.EQUIPMENT
+
     equipment: UUID | EquipmentRequest | None
 
     # Have any required inductions been 
