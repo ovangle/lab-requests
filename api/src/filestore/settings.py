@@ -6,4 +6,4 @@ from pydantic_settings import BaseSettings
 
 class FilestoreSettings(BaseSettings):
     dynamic_file_root: Path = Path('/srv/files') 
-    root_url: HttpUrl = HttpUrl('http://localhost:6767/files')
+    filesrv_url: HttpUrl = HttpUrl('http://localhost:6767/files')

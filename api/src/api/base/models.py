@@ -6,7 +6,6 @@ from sqlalchemy.orm import (
     Mapped,
     mapped_column
 )
-from uuid import UUID
 
 from db.func import utcnow
 from db import db_metadata

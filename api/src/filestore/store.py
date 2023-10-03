@@ -10,19 +10,12 @@ from pydantic import HttpUrl, BaseModel, ValidationError
 
 class StoredFile(BaseModel):
     path: Path 
-    url: HttpUrl
 
     orig_filename: str
     filename: str
     content_type: str
 
     size: int = 0
-
-class FileStoreConfig(TypedDict):
-    # The path from the file store root (see settings) to the current file.
-    # must be a relative path and exist in the file system.
-    path: Path | str
-    chunk_size: NotRequired[int]
 
 async def _read_chunked(file: UploadFile, chunk_size: int) -> AsyncIterator[bytes]:
     while True:
@@ -33,30 +26,20 @@ class FileStore:
     """
     An abstract file store.
     """
-    config: FileStoreConfig
 
-    def __init__(self, config: FileStoreConfig):
-        self.config = config
-
-    @cached_property
-    def path(self):
+    def __init__(self, 
+                 path: Path | str, 
+                 chunk_size: int = -1):
         from filestore import filestore_settings
-        root_path = filestore_settings.dynamic_file_root
-
-        path = Path(self.config['path'])
+        
+        path = Path(path)
         if path.is_absolute():
             raise ValueError('Configured path must be expressed relative to {root_path!s}')
         
-        path = root_path / path
-        if not path.exists():
-            raise IOError('Configured file store path must exist in filesystem')
-        return path
+        self.path = filestore_settings.dynamic_file_root / path
+        self.chunk_size = chunk_size
 
-    @property
-    def chunk_size(self):
-        return self.config.get('chunk_size', -1)
-
-    async def save(self, upload_file: UploadFile, use_filename: str | None = None) -> StoredFile:
+    async def store(self, upload_file: UploadFile, use_filename: str | None = None) -> StoredFile:
         if not upload_file.filename:
             raise ValidationError('file must be named')
 
@@ -73,15 +56,11 @@ class FileStore:
 
         return StoredFile(
             path=path, 
-            url=self.file_url(upload_file),
             orig_filename=upload_file.filename,
             filename=filename,
             content_type=upload_file.content_type or 'text/plain',
         )
 
-    async def save_many(self, files: list[UploadFile]) -> list[StoredFile]:
-        raise NotImplementedError
-
-    def file_url(self, upload_file: UploadFile):
+    async def store_multiple(self, files: list[UploadFile]) -> list[StoredFile]:
         raise NotImplementedError
     

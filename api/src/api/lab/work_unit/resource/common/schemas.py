@@ -1,20 +1,24 @@
 from __future__ import annotations
+from abc import abstractmethod
 from datetime import datetime
 from enum import Enum
 import re
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Type, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Literal, Type, TypeVar
 from uuid import UUID
 
-from pydantic import BaseModel, GetCoreSchemaHandler
+from pydantic import BaseModel, Field, GetCoreSchemaHandler
 from pydantic_core import core_schema
+from api.base.files.schemas import ApiModelAttachment
 
 from api.base.schemas import SCHEMA_CONFIG
+from filestore.store import StoredFile
 
 if TYPE_CHECKING:
     from api.lab.plan.schemas import ExperimentalPlan
     from api.lab.work_unit.schemas import WorkUnit
 
 TResource = TypeVar('TResource', bound='ResourceBase')
+TResource_co = TypeVar('TResource_co', bound='ResourceBase', covariant=True)
 
 class ResourceType(Enum):
     EQUIPMENT = 'equipment'
@@ -80,18 +84,35 @@ class ResourceDisposal(BaseModel):
     description: str
     estimated_cost: ResourceCostEstimate | None = None
 
+class ResourceFileAttachment(StoredFile, BaseModel):
+    model_config = SCHEMA_CONFIG
+
+    container_id: UUID
+    resource_type: ResourceType
+    index: int 
+
 class ResourceBase(BaseModel):
     model_config = SCHEMA_CONFIG
     __resource_type__: ClassVar[ResourceType]
 
-    @classmethod
-    def __init_subclass__(cls, **kwargs):
-        if not hasattr(cls, '__resource_type__'):
-            raise ValueError(f'No __resource_type__ on {cls.__name__}')
-        return super().__init_subclass__(**kwargs) 
+    container_id:  UUID 
+    index: int 
 
-    container_id:  UUID | None = None
-    index: int | Literal['create'] = 'create'
+    attachments: list[ResourceFileAttachment] = Field(default_factory=list)
 
-    created_at: datetime | None = None
-    updated_at: datetime | None = None
+    created_at: datetime 
+    updated_at: datetime 
+
+    def __init__(self: TResource, container_id: UUID, index: int, params: ResourceParams[TResource]):
+        super().__init__()
+        self.container_id = container_id
+        self.index = index
+        self.created_at = self.updated_at = datetime.now()
+
+    def apply(self: TResource, params: ResourceParams[TResource]):
+        self.updated_at = datetime.now()
+
+class ResourceParams(BaseModel, Generic[TResource]):
+    model_config = SCHEMA_CONFIG
+    __resource_type__: ClassVar[ResourceType]
+

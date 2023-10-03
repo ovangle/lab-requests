@@ -38,16 +38,20 @@ class ApiModel(BaseModel, Generic[TModel], ABC):
     @classmethod
     @abstractmethod
     async def from_model(cls: Type[TApiModel], model: TModel | TApiModel) -> TApiModel:
-        raise NotImplementedError
+        ...
 
     @classmethod
     async def gather_models(cls: Type[TApiModel], models: Iterable[TModel | TApiModel]) -> list[TApiModel]:
         return await asyncio.gather(*(cls.from_model(m) for m in models))
 
+    @classmethod
+    @abstractmethod
+    async def get_for_id(cls: Type[TApiModel], db: LocalSession, id: UUID) -> TApiModel:
+        ...
+
     @abstractmethod
     async def to_model(self, db: LocalSession) -> TModel:
-        raise NotImplementedError
-
+        ...
 
 class ModelPatch(BaseModel, Generic[TApiModel, TModel], ABC):
     __api_model__: ClassVar[Type[ApiModel]]
