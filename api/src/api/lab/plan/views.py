@@ -48,7 +48,7 @@ async def create_plan(create_request: ExperimentalPlanCreate, db=Depends(get_db)
     "/{plan_id}",
 )
 async def read_plan(plan_id: UUID, db = Depends(get_db)) -> ExperimentalPlan:
-    return await ExperimentalPlan.get_by_id(db, plan_id)
+    return await ExperimentalPlan.get_for_id(db, plan_id)
 
 @lab_plans.post(
     "/{plan_id}"
@@ -85,7 +85,7 @@ async def create_plan_work_unit(plan_id: UUID, work_unit: WorkUnitPatch, db = De
     "/{plan_id}/work-units/{work_unit_index}"
 )
 async def read_plan_work_unit(plan_id: UUID, work_unit_index: int, db = Depends(get_db)) -> WorkUnit:
-    return await WorkUnit.get_by_plan_and_index(db, plan_id, work_unit_index)
+    return await WorkUnit.get_for_plan_and_index(db, plan_id, work_unit_index)
 
 @lab_plans.put(
     "/{plan_id}/work-units/{work_unit_index}",

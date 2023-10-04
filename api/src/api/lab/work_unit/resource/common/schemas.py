@@ -4,13 +4,13 @@ from datetime import datetime
 from enum import Enum
 import re
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, Literal, Type, TypeVar
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, GetCoreSchemaHandler
 from pydantic_core import core_schema
-from api.base.files.schemas import ApiModelAttachment
 
 from api.base.schemas import SCHEMA_CONFIG
+from api.lab.work_unit.resource.models import ResourceContainer
 from filestore.store import StoredFile
 
 if TYPE_CHECKING:
@@ -27,11 +27,14 @@ class ResourceType(Enum):
     INPUT_MATERIAL = 'input-material'
     OUTPUT_MATERIAL = 'output-material'
 
-    @classmethod
-    def for_resource(cls, resource: TResource | Type[TResource]) -> ResourceType:
-        if isinstance(resource, type):
-            return getattr(resource, '__resource_type__')
-        return cls.for_resource(type(resource))
+    def __new__(cls, value: Type[TResource] | TResource | ResourceType | str):
+        match value:
+            case type():
+                return getattr(value, '__resource_type__')
+            case ResourceBase():
+                return getattr(type(value), '__resource_type__')
+            case _:
+                return super().__new__(cls, value)
 
     @property
     def container_attr_name(self):
@@ -89,13 +92,15 @@ class ResourceFileAttachment(StoredFile, BaseModel):
 
     container_id: UUID
     resource_type: ResourceType
-    index: int 
+    resource_id: UUID
+
 
 class ResourceBase(BaseModel):
     model_config = SCHEMA_CONFIG
     __resource_type__: ClassVar[ResourceType]
 
     container_id:  UUID 
+    id: UUID
     index: int 
 
     attachments: list[ResourceFileAttachment] = Field(default_factory=list)
@@ -103,11 +108,13 @@ class ResourceBase(BaseModel):
     created_at: datetime 
     updated_at: datetime 
 
-    def __init__(self: TResource, container_id: UUID, index: int, params: ResourceParams[TResource]):
+    def __init__(self: TResource, container: ResourceContainer, id: UUID, index: int, params: ResourceParams[TResource]):
         super().__init__()
-        self.container_id = container_id
+        self.container_id = container.id
+        self.id = id
         self.index = index
         self.created_at = self.updated_at = datetime.now()
+        self.attachments = container.get_attachments(ResourceType(self), id)
 
     def apply(self: TResource, params: ResourceParams[TResource]):
         self.updated_at = datetime.now()

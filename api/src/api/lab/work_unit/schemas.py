@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
@@ -8,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 
 from db import LocalSession
-from api.base.schemas import ApiModel, ModelPatch, ModelCreate
+from api.base.schemas import ApiModel, ApiModelFileAttachment, ModelPatch, ModelCreate
 from api.uni.schemas import Campus, CampusCode
 from api.lab.types import LabType
 
@@ -65,11 +66,11 @@ class WorkUnit(WorkUnitBase, ResourceContainer, ApiModel[models.WorkUnit_]):
         return models.WorkUnit_.get_by_id(db, self.id)
 
     @classmethod
-    async def get_by_id(cls, db: LocalSession, id: UUID) -> WorkUnit:
+    async def get_for_id(cls, db: LocalSession, id: UUID) -> WorkUnit:
         return await cls.from_model(await models.WorkUnit_.get_by_id(db, id))
 
     @classmethod
-    async def get_by_plan_and_index(cls, db: LocalSession, plan: UUID, index: int) -> WorkUnit:
+    async def get_for_plan_and_index(cls, db: LocalSession, plan: UUID, index: int) -> WorkUnit:
         return await cls.from_model(await models.WorkUnit_.get_by_plan_and_index(db, plan, index))
 
 
@@ -133,3 +134,7 @@ class WorkUnitCreate(WorkUnitBase, ModelCreate[WorkUnit, models.WorkUnit_]):
         db.add(work_unit)
         return work_unit
 
+
+class WorkUnitFileAttachment(ApiModelFileAttachment[WorkUnit]):
+    __api_model_type__ = WorkUnit
+    __api_model_files__ = 'lab/work-units'

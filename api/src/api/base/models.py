@@ -1,4 +1,7 @@
 from datetime import datetime
+from pathlib import Path
+from typing import ClassVar
+from uuid import UUID
 from sqlalchemy import TIMESTAMP, ForeignKey
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import (
@@ -21,3 +24,13 @@ class Base(AsyncAttrs, DeclarativeBase):
         TIMESTAMP(timezone=True), 
         server_default=utcnow(), 
         onupdate=utcnow())
+
+class ModelAttachmentBase(Base):
+    __model_type__: ClassVar[type[Base]]
+    __model_files__: ClassVar[Path]
+
+    model_id: Mapped[UUID]
+
+    def __init_subclass__(cls):
+        model_table = cls.__model_type__.__tablename__ 
+        setattr(cls, 'model_id', mapped_column(ForeignKey(model_table + '.id')))

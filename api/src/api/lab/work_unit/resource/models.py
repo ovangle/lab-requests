@@ -6,7 +6,8 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from db.orm import uuid_pk
 from api.base.models import Base
-from api.lab.work_unit.resource.schemas import resource_name
+from .common.schemas import ResourceType, ResourceFileAttachment
+
 
 
 class ResourceContainer(Base):
@@ -20,5 +21,9 @@ class ResourceContainer(Base):
     tasks: Mapped[List[dict[str, Any]]] = mapped_column(JSONB, server_default="[]")
     softwares: Mapped[List[dict[str, Any]]] = mapped_column(JSONB, server_default="[]")
 
-    def get_resources(self, resource_type) -> list[dict[str, Any]]:
-        return getattr(self, resource_name(resource_type))
+    def get_resources(self, resource_type: ResourceType) -> list[dict[str, Any]]:
+        return getattr(self, resource_type.container_attr_name)
+
+    @abstractmethod
+    def get_attachments(self, resource_type: ResourceType, resource_id: UUID) -> list[ResourceFileAttachment]:
+        ...

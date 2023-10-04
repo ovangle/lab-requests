@@ -9,7 +9,7 @@ from api.base.schemas import PagedResultList
 from api.lab.plan.schemas import ExperimentalPlan
 
 from .schemas import WorkUnit, WorkUnitCreate, WorkUnitPatch
-from .files import get_work_unit_attachments_store
+from .files import WorkUnitResourceFileStore, get_work_unit_attachments_store
 
 lab_work_units = APIRouter(
     prefix="/lab/work-units",
@@ -43,13 +43,13 @@ async def create_work_unit(create: WorkUnitCreate, db: LocalSession = Depends(ge
     "/{work_unit_id}",
 )
 async def get_work_unit(work_unit_id: UUID, db: LocalSession = Depends(get_db)) -> WorkUnit:
-    return await WorkUnit.get_by_id(db, work_unit_id)
+    return await WorkUnit.get_for_id(db, work_unit_id)
 
 @lab_work_units.put(
     "/{work_unit_id}"
 )
 async def put_work_unit(work_unit_id: UUID, patch: WorkUnitPatch, db: LocalSession = Depends(get_db)) -> WorkUnit:
-    work_unit = await WorkUnit.get_by_id(db, work_unit_id)
+    work_unit = await WorkUnit.get_for_id(db, work_unit_id)
     return await patch(db, work_unit)
 
 @lab_work_units.post(
@@ -59,12 +59,14 @@ async def upload_work_unit_attachment(
     work_unit_id: UUID,
     file: UploadFile, 
     resource_type: Annotated[ResourceType, Form()],
-    resource_index: Annotated[ResourceType, Form()],
+    resource_index: Annotated[int, Form()],
     db: LocalSession = Depends(get_db),
-    file_store = Depends(get_work_unit_attachments_store)
+    file_store: WorkUnitResourceFileStore = Depends(get_work_unit_attachments_store)
 ):
-    work_unit = await WorkUnit.get_by_id(db, work_unit_id)
-    return {
-        "filename": file.filename,
-        "content_type": file.content_type
-    }
+    work_unit = await WorkUnit.get_for_id(db, work_unit_id)
+    resource = work_unit.get_resource(resource_type, resource_index)
+    attachment = await file_store.store_resource_attachment(
+        resource, 
+        file
+    )
+    return attachment

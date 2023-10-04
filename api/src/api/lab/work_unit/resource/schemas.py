@@ -14,6 +14,14 @@ from api.base.schemas import ApiModel, ModelPatch
 from api.lab.work_unit.resource.common.schemas import ResourceType
 from db import LocalSession
 
+from .common.schemas import (
+    ResourceType,
+    ResourceBase,
+    ResourceStorage,
+    ResourceDisposal,
+    ResourceFileAttachment
+)
+
 from .equipment_lease.schemas import EquipmentLease
 from .software.schemas import Software
 from .task.schemas import Task
@@ -23,16 +31,25 @@ from .output_material.schemas import OutputMaterial
 if TYPE_CHECKING:
     from . import models
 
+__all__ = (
+    'Resource',
+    'ResourceBase',
+    'ResourceContainer',
+    'ResourceContainerPatch',
+    'ResourceType',
+    'RESOURCE_TYPES',
+    'ResourceDisposal',
+    'ResourceFileAttachment',
+    'ResourceStorage',
+)
+
 Resource = Union[EquipmentLease, Software, Task, InputMaterial, OutputMaterial]
 RESOURCE_TYPES: list[type] = [EquipmentLease, Software, Task, InputMaterial, OutputMaterial]
 
-def is_resource(obj):
-    return any(isinstance(obj, t) for t in RESOURCE_TYPES)
-
 TResource = TypeVar('TResource', bound=Resource)
 
-def resource_name(t: TResource | Type[TResource]):
-    return ResourceType.for_resource(t).container_attr_name
+def resource_name(t: ResourceType | TResource | Type[TResource]):
+    return ResourceType(t).container_attr_name
 
 
 class ResourceContainer(BaseModel):
@@ -44,8 +61,11 @@ class ResourceContainer(BaseModel):
     tasks: list[Task] = field(default_factory=list)
     softwares: list[Software] = field(default_factory=list)
 
-    def get_resources(self, resource_type: Type[TResource]) -> list[TResource]:
+    def get_resources(self, resource_type: Type[TResource] | ResourceType) -> list[TResource]:
         return getattr(self, resource_name(resource_type))
+
+    def get_resource(self, resource_type: Type[TResource] | ResourceType, index: int):
+        return self.get_resources(resource_type)[index]
 
     def _set_resource_container_fields_from_model(self, model: ResourceContainer | models.ResourceContainer):
         def resource_json(resource: Resource | dict[str, Any]) -> dict[str, Any]: 

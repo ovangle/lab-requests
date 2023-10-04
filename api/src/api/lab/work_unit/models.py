@@ -8,6 +8,7 @@ from sqlalchemy import ForeignKey, select, Select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import TEXT, DATE
 from sqlalchemy.dialects import postgresql as pg_dialect
+from api.lab.work_unit.resource.common.schemas import ResourceFileAttachment, ResourceType
 
 from db import LocalSession
 from db.orm import uuid_pk, email
@@ -40,6 +41,8 @@ class WorkUnit_(ResourceContainer, Base):
     start_date: Mapped[Optional[date]] = mapped_column(DATE)
     end_date: Mapped[Optional[date]] = mapped_column(DATE)
 
+    file_attachments: Mapped[set[WorkUnitFileAttachment]] = relationship(back_populates="work_unit")
+
     def __init__(self, 
                  plan_id: UUID, 
                  index: int, *, 
@@ -67,7 +70,6 @@ class WorkUnit_(ResourceContainer, Base):
             raise WorkUnitDoesNotExist.for_id(id)
         return instance
 
-
     @staticmethod
     async def get_by_plan_and_index(db: LocalSession, plan_id: UUID, index: int) -> WorkUnit_:
         instance = await db.scalar(
@@ -89,4 +91,35 @@ class WorkUnit_(ResourceContainer, Base):
     def list_for_technician(db: LocalSession, technician_email: str) -> Select[tuple[WorkUnit_]]:
         return select(WorkUnit_).where(WorkUnit_.technician_email == technician_email)
 
+    def get_attachments(self, resource_type: ResourceType, resource_id: UUID) -> list[ResourceFileAttachment]:
+        try:
+            file_attachments = self.file_attachments
+        except IOError:
+            raise IOError('Cannot access unresolved awaitable attribute \'file_attachments\'')
+        return [
+            attachment.as_resource_attachment()
+            for attachment in file_attachments
+            if attachment.is_resource_attachment(resource_type, resource_id)
+        ]
 
+
+class WorkUnitFileAttachment(Base):
+    id: Mapped[uuid_pk]
+
+    work_unit_id: Mapped[UUID] = mapped_column(ForeignKey('work_units.id'))
+    work_unit = relationship(back_populates="file_attachments")
+
+    resource_type: Mapped[ResourceType | None] = mapped_column(default=None)
+    resource_id: Mapped[UUID | None] = mapped_column(default=None)
+
+    def is_resource_attachment(self, resource_type: ResourceType, id: UUID):
+        return self.resource_type == resource_type and self.resource_id == id
+
+    def as_resource_attachment(self) -> ResourceFileAttachment:
+        if self.resource_type is None or self.resource_id is None:
+            raise ValueError('Not a resource attachment')
+        return ResourceFileAttachment(
+            container_id=self.work_unit_id,
+            resource_type=self.resource_type,
+
+        )

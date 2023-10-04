@@ -9,6 +9,7 @@ from fastapi import HTTPException, UploadFile
 from pydantic import HttpUrl, BaseModel, ValidationError
 
 class StoredFile(BaseModel):
+    # Path from the root of the 
     path: Path 
 
     orig_filename: str
@@ -16,6 +17,20 @@ class StoredFile(BaseModel):
     content_type: str
 
     size: int = 0
+
+    def __init__(self, file: UploadFile, path: Path):
+        if not file.filename:
+            raise ValueError('UploadFile has no filename')
+        if not file.content_type:
+            raise ValueError('UploadFile has no content_type')
+        if file.size is None:
+            raise ValueError('UploadFile has no size')
+        super().__init__(
+            path=path,
+            orig_filename=file.filename,
+            filename=path.name,
+            size=file.size
+        )
 
 async def _read_chunked(file: UploadFile, chunk_size: int) -> AsyncIterator[bytes]:
     while True:
@@ -39,28 +54,25 @@ class FileStore:
         self.path = filestore_settings.dynamic_file_root / path
         self.chunk_size = chunk_size
 
-    async def store(self, upload_file: UploadFile, use_filename: str | None = None) -> StoredFile:
+    async def store(self, upload_file: UploadFile, *, use_filepath: Path | str | None = None) -> StoredFile:
         if not upload_file.filename:
             raise ValidationError('file must be named')
 
-        if use_filename:
-            path = self.path / use_filename
-            filename=use_filename
+        if use_filepath:
+            path = self.path / use_filepath
+            filepath=use_filepath
         else:
             path = self.path / upload_file.filename
-            filename=upload_file.filename
+            filepath=upload_file.filename
 
         async with aiofiles.open(path, 'wb') as f:
             async for chunk in _read_chunked(upload_file, self.chunk_size):
                 await f.write(chunk)
 
-        return StoredFile(
-            path=path, 
-            orig_filename=upload_file.filename,
-            filename=filename,
-            content_type=upload_file.content_type or 'text/plain',
-        )
-
+        return StoredFile(upload_file, path)
+            
     async def store_multiple(self, files: list[UploadFile]) -> list[StoredFile]:
         raise NotImplementedError
     
+    def close(self):
+        pass

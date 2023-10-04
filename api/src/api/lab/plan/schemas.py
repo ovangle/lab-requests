@@ -154,7 +154,7 @@ class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan_])
         return await models.ExperimentalPlan_.get_by_id(db, self.id)
 
     @classmethod
-    async def get_by_id(cls, db: LocalSession, id: UUID):
+    async def get_for_id(cls, db: LocalSession, id: UUID):
         return await cls.from_model(await models.ExperimentalPlan_.get_by_id(db, id))
 
 
