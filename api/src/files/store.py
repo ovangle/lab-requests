@@ -8,29 +8,6 @@ import aiofiles
 from fastapi import HTTPException, UploadFile
 from pydantic import HttpUrl, BaseModel, ValidationError
 
-class StoredFile(BaseModel):
-    # Path from the root of the 
-    path: Path 
-
-    orig_filename: str
-    filename: str
-    content_type: str
-
-    size: int = 0
-
-    def __init__(self, file: UploadFile, path: Path):
-        if not file.filename:
-            raise ValueError('UploadFile has no filename')
-        if not file.content_type:
-            raise ValueError('UploadFile has no content_type')
-        if file.size is None:
-            raise ValueError('UploadFile has no size')
-        super().__init__(
-            path=path,
-            orig_filename=file.filename,
-            filename=path.name,
-            size=file.size
-        )
 
 async def _read_chunked(file: UploadFile, chunk_size: int) -> AsyncIterator[bytes]:
     while True:
@@ -45,7 +22,7 @@ class FileStore:
     def __init__(self, 
                  path: Path | str, 
                  chunk_size: int = -1):
-        from filestore import filestore_settings
+        from files import filestore_settings
         
         path = Path(path)
         if path.is_absolute():
@@ -69,7 +46,7 @@ class FileStore:
             async for chunk in _read_chunked(upload_file, self.chunk_size):
                 await f.write(chunk)
 
-        return StoredFile(upload_file, path)
+        return StoredFile(path, upload_file)
             
     async def store_multiple(self, files: list[UploadFile]) -> list[StoredFile]:
         raise NotImplementedError

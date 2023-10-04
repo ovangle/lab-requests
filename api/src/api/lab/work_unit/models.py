@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from datetime import date
+from pathlib import Path
 from typing import Any, Optional
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, select, Select
+from sqlalchemy import VARCHAR, ForeignKey, select, Select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import TEXT, DATE
 from sqlalchemy.dialects import postgresql as pg_dialect
+from api.base.files.models import StoredFile_
 from api.lab.work_unit.resource.common.schemas import ResourceFileAttachment, ResourceType
 
 from db import LocalSession
@@ -18,7 +20,7 @@ from api.lab.types import LabType
 from api.lab.plan.models import ExperimentalPlan_
 
 from .errors import WorkUnitDoesNotExist
-from .resource.models import ResourceContainer
+from .resource.models import ResourceContainer, ResourceContainerFileAttachment_
     
 class WorkUnit_(ResourceContainer, Base):
     __tablename__ = 'work_units'
@@ -41,7 +43,7 @@ class WorkUnit_(ResourceContainer, Base):
     start_date: Mapped[Optional[date]] = mapped_column(DATE)
     end_date: Mapped[Optional[date]] = mapped_column(DATE)
 
-    file_attachments: Mapped[set[WorkUnitFileAttachment]] = relationship(back_populates="work_unit")
+    file_attachments: Mapped[set[WorkUnitFileAttachment_]] = relationship(back_populates="work_unit")
 
     def __init__(self, 
                  plan_id: UUID, 
@@ -103,23 +105,30 @@ class WorkUnit_(ResourceContainer, Base):
         ]
 
 
-class WorkUnitFileAttachment(Base):
+class WorkUnitFileAttachment_(ResourceContainerFileAttachment_, StoredFile_):
+    __tablename__ = 'work_unit_file_attachments'
     id: Mapped[uuid_pk]
 
     work_unit_id: Mapped[UUID] = mapped_column(ForeignKey('work_units.id'))
     work_unit = relationship(back_populates="file_attachments")
 
-    resource_type: Mapped[ResourceType | None] = mapped_column(default=None)
-    resource_id: Mapped[UUID | None] = mapped_column(default=None)
+    orig_filename: Mapped[str] = mapped_column(VARCHAR(256))
+    filename: Mapped[str] = mapped_column(VARCHAR(256))
+    content_type: Mapped[str] = mapped_column(VARCHAR(64))
+
+    @property
+    def path(self):
+        return Path(f'{self.work_unit_id!s}/{self.resource_type}/{self.filename}')
 
     def is_resource_attachment(self, resource_type: ResourceType, id: UUID):
         return self.resource_type == resource_type and self.resource_id == id
 
-    def as_resource_attachment(self) -> ResourceFileAttachment:
+    def as_resource_attachment(self):
         if self.resource_type is None or self.resource_id is None:
-            raise ValueError('Not a resource attachment')
+            raise ValueError('Not a resource attachment file')
         return ResourceFileAttachment(
-            container_id=self.work_unit_id,
-            resource_type=self.resource_type,
-
+            self.work_unit_id,
+            self.resource_type,
+            self.resource_id,
+            filename=self.filename,
         )

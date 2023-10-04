@@ -17,7 +17,7 @@ from db import LocalSession
 
 from humps import camelize
 
-from filestore.store import StoredFile
+from files.store import StoredFile
 
 from . import models 
 
@@ -171,10 +171,7 @@ class ApiModelFileAttachment(StoredFile, BaseModel, Generic[TApiModel]):
         file: UploadFile
     ):
         self.model_id = model_id
-        super().__init__(
-            file,
-            path=self.model_files / attachment_path
-        )
+        super().__init__(self.model_files / attachment_path, self)
 
 
     async def get_api_model(self, db: LocalSession) -> TApiModel:

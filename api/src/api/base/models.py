@@ -25,12 +25,3 @@ class Base(AsyncAttrs, DeclarativeBase):
         server_default=utcnow(), 
         onupdate=utcnow())
 
-class ModelAttachmentBase(Base):
-    __model_type__: ClassVar[type[Base]]
-    __model_files__: ClassVar[Path]
-
-    model_id: Mapped[UUID]
-
-    def __init_subclass__(cls):
-        model_table = cls.__model_type__.__tablename__ 
-        setattr(cls, 'model_id', mapped_column(ForeignKey(model_table + '.id')))

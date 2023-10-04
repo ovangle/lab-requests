@@ -2,16 +2,18 @@ from __future__ import annotations
 from abc import abstractmethod
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 import re
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, Literal, Type, TypeVar
 from uuid import UUID, uuid4
+from fastapi import UploadFile
 
 from pydantic import BaseModel, Field, GetCoreSchemaHandler
 from pydantic_core import core_schema
 
 from api.base.schemas import SCHEMA_CONFIG
-from api.lab.work_unit.resource.models import ResourceContainer
-from filestore.store import StoredFile
+from api.lab.work_unit.resource.models import ResourceContainer, ResourceContainerFileAttachment_
+from files.store import StoredFile
 
 if TYPE_CHECKING:
     from api.lab.plan.schemas import ExperimentalPlan
@@ -93,6 +95,20 @@ class ResourceFileAttachment(StoredFile, BaseModel):
     container_id: UUID
     resource_type: ResourceType
     resource_id: UUID
+
+    @classmethod
+    def from_model(cls, model: ResourceContainerFileAttachment_):
+
+    def __init__(
+        self, 
+        container_id: UUID, 
+        resource_type: ResourceType, 
+        resource_id: UUID,
+    ):
+        super().__init__(
+            Path(f'{container_id!s}/{resource_type.container_attr_name}/{resource_id!s}/{filename!s}'),
+            file=file
+        )
 
 
 class ResourceBase(BaseModel):

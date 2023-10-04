@@ -8,8 +8,6 @@ from db.orm import uuid_pk
 from api.base.models import Base
 from .common.schemas import ResourceType, ResourceFileAttachment
 
-
-
 class ResourceContainer(Base):
     __abstract__ = True
 
@@ -27,3 +25,11 @@ class ResourceContainer(Base):
     @abstractmethod
     def get_attachments(self, resource_type: ResourceType, resource_id: UUID) -> list[ResourceFileAttachment]:
         ...
+
+class ResourceContainerFileAttachment_(Base):
+    __abstract__ = True
+
+    id: Mapped[uuid_pk]
+
+    resource_type: Mapped[ResourceType | None] = mapped_column(default=None)
+    resource_id: Mapped[UUID | None] = mapped_column(default=None)
