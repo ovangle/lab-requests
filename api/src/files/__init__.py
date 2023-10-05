@@ -1,9 +1,10 @@
 from pydantic import HttpUrl
-from .store import FileStore, StoredFile
+from .store import StoredFileMeta
 from .settings import FilestoreSettings
 
 filestore_settings = FilestoreSettings()
 
-def filesrv_url(stored_file: StoredFile) -> HttpUrl:
+
+def filesrv_url(stored_file: StoredFileMeta) -> HttpUrl:
     filesrv_url = filestore_settings.filesrv_url
-    return HttpUrl(str(filesrv_url) + str(stored_file.path))
+    return HttpUrl(str(filesrv_url) + str(stored_file['path']))

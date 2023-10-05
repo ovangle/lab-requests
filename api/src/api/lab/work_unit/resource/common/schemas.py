@@ -4,16 +4,19 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 import re
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, Literal, Type, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Literal, Type, TypeVar, cast
 from uuid import UUID, uuid4
 from fastapi import UploadFile
 
 from pydantic import BaseModel, Field, GetCoreSchemaHandler
 from pydantic_core import core_schema
+from api.base.files.models import StoredFile_
 
 from api.base.schemas import SCHEMA_CONFIG
-from api.lab.work_unit.resource.models import ResourceContainer, ResourceContainerFileAttachment_
-from files.store import StoredFile
+from api.base.files.schemas import StoredFile
+from api.lab.work_unit.resource.models import ResourceContainer_, ResourceContainerFileAttachment_
+from db import LocalSession
+from files.store import AsyncBinaryIO, StoredFileMeta
 
 if TYPE_CHECKING:
     from api.lab.plan.schemas import ExperimentalPlan
@@ -97,18 +100,32 @@ class ResourceFileAttachment(StoredFile, BaseModel):
     resource_id: UUID
 
     @classmethod
-    def from_model(cls, model: ResourceContainerFileAttachment_):
+    def from_model(cls, model: StoredFile_):
+        if (
+            not isinstance(model, ResourceContainerFileAttachment_)
+            or model.resource_type is None 
+            or model.resource_id is None
+        ):
+            raise ValueError('Invalid resource container file attachment')
+
+        return cls(
+            container_id=model.get_container_id(),
+            resource_type=model.resource_type,
+            resource_id=model.resource_id,
+            stored_file=model.stored_file_meta
+        )
 
     def __init__(
         self, 
         container_id: UUID, 
         resource_type: ResourceType, 
         resource_id: UUID,
+        stored_file: StoredFileMeta | StoredFile
     ):
-        super().__init__(
-            Path(f'{container_id!s}/{resource_type.container_attr_name}/{resource_id!s}/{filename!s}'),
-            file=file
-        )
+        super().__init__(stored_file)
+        self.container_id = container_id
+        self.resource_type = resource_type
+        self.resource_id = resource_id
 
 
 class ResourceBase(BaseModel):
@@ -124,16 +141,28 @@ class ResourceBase(BaseModel):
     created_at: datetime 
     updated_at: datetime 
 
-    def __init__(self: TResource, container: ResourceContainer, id: UUID, index: int, params: ResourceParams[TResource]):
+    def __init__(self: TResource, container: ResourceContainer_, id: UUID, index: int, params: ResourceParams[TResource]):
         super().__init__()
         self.container_id = container.id
         self.id = id
         self.index = index
         self.created_at = self.updated_at = datetime.now()
-        self.attachments = container.get_attachments(ResourceType(self), id)
+        self.attachments = [
+            ResourceFileAttachment(
+                container_id=container_attachment.get_container_id(),
+                resource_type=cast(ResourceType, container_attachment.resource_type), 
+                resource_id=cast(UUID, container_attachment.resource_id),
+                stored_file=container_attachment.stored_file_meta
+            )
+            for container_attachment in container.get_file_attachments(ResourceType(self), id)
+        ]
 
     def apply(self: TResource, params: ResourceParams[TResource]):
         self.updated_at = datetime.now()
+
+    @property
+    def type(self) -> ResourceType:
+        return ResourceType(self)
 
 class ResourceParams(BaseModel, Generic[TResource]):
     model_config = SCHEMA_CONFIG

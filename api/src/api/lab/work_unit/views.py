@@ -2,14 +2,15 @@
 from typing import Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends, Form, UploadFile
-from api.lab.work_unit.resource.common.schemas import ResourceType
+from api.lab.work_unit.resource.common.schemas import ResourceFileAttachment, ResourceType
 
 from db import LocalSession, get_db
 from api.base.schemas import PagedResultList
 from api.lab.plan.schemas import ExperimentalPlan
 
+from .resource.schemas import Resource
 from .schemas import WorkUnit, WorkUnitCreate, WorkUnitPatch
-from .files import WorkUnitResourceFileStore, get_work_unit_attachments_store
+from .files import upload_resource_attachment
 
 lab_work_units = APIRouter(
     prefix="/lab/work-units",
@@ -53,20 +54,15 @@ async def put_work_unit(work_unit_id: UUID, patch: WorkUnitPatch, db: LocalSessi
     return await patch(db, work_unit)
 
 @lab_work_units.post(
-    "/{work_unit_id}/files"
+    "/{work_unit_id}/files/{resource_type}/{resource_id}"
 )
-async def upload_work_unit_attachment(
+async def add_resource_attachment(
     work_unit_id: UUID,
     file: UploadFile, 
-    resource_type: Annotated[ResourceType, Form()],
-    resource_index: Annotated[int, Form()],
+    resource_type: ResourceType,
+    resource_id: UUID,
     db: LocalSession = Depends(get_db),
-    file_store: WorkUnitResourceFileStore = Depends(get_work_unit_attachments_store)
-):
+) -> ResourceFileAttachment:
     work_unit = await WorkUnit.get_for_id(db, work_unit_id)
-    resource = work_unit.get_resource(resource_type, resource_index)
-    attachment = await file_store.store_resource_attachment(
-        resource, 
-        file
-    )
-    return attachment
+    resource: Resource = work_unit.get_resource(resource_type, resource_id)
+    return await upload_resource_attachment(db, resource, file)

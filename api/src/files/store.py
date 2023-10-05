@@ -1,22 +1,71 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from functools import cached_property
+from io import BytesIO
 from pathlib import Path
-from typing import AsyncIterator, ClassVar, NotRequired, Optional, TypedDict
+from typing import IO, AsyncIterator, Protocol, TypedDict
+from aiofiles import os
 import aiofiles
-
-from fastapi import HTTPException, UploadFile
-from pydantic import HttpUrl, BaseModel, ValidationError
+from anyio import AsyncFile
 
 
-async def _read_chunked(file: UploadFile, chunk_size: int) -> AsyncIterator[bytes]:
+class StoredFileMeta(TypedDict):
+    path: Path
+
+    filename: str
+    orig_filename: str
+
+    content_type: str
+    size: int
+
+async def _stored_file_meta(
+    file: AsyncBinaryIO,
+    saved_to: Path
+) -> StoredFileMeta:
+    if file.filename is None or file.content_type is None:
+        raise ValueError('Invalid file. Expected a filename and content_type')
+
+    try:
+        stat_result = await os.stat(saved_to)
+    except FileExistsError as e:
+        # Is not a stored file until the file exists
+        print('error saving file: file does not exist')
+        raise e
+
+    return {
+        'path': saved_to,
+        'filename': saved_to.name,
+        'orig_filename': file.filename,
+        'content_type' : file.content_type,
+        'size': stat_result.st_size
+    }
+
+class AsyncBinaryIO(Protocol):
+    """
+    aiofiles.AsyncFile is not a protocol and UploadFile does not adhere to the 
+    AsyncFile interface anyway.
+    """
+    filename: str | None
+
+    @property
+    def content_type(self) -> str | None:
+        ...
+
+    async def seek(self, offset: int):
+        ...
+
+    async def read(self, size: int = -1) -> bytes:
+        ...
+
+
+async def _read_chunked(file: AsyncBinaryIO, size: int = -1) -> AsyncIterator[bytes]:
     while True:
-        chunk = await file.read(chunk_size)
+        chunk = await file.read(size)
         yield chunk
 
 class FileStore:
     """
-    An abstract file store.
+    Filestore, maps to 
     """
 
     def __init__(self, 
@@ -31,25 +80,22 @@ class FileStore:
         self.path = filestore_settings.dynamic_file_root / path
         self.chunk_size = chunk_size
 
-    async def store(self, upload_file: UploadFile, *, use_filepath: Path | str | None = None) -> StoredFile:
-        if not upload_file.filename:
-            raise ValidationError('file must be named')
+    async def store(
+        self, 
+        file: AsyncBinaryIO, 
+        save_to: Path, 
+    ) -> StoredFileMeta:
+        if file.filename is None or file.content_type is None:
+            raise ValueError('Invalid file. Both filename and content_type must be present')
 
-        if use_filepath:
-            path = self.path / use_filepath
-            filepath=use_filepath
-        else:
-            path = self.path / upload_file.filename
-            filepath=upload_file.filename
+        if save_to.is_absolute():
+            raise ValueError(f'Path must be relative to {self.path!s}')
 
-        async with aiofiles.open(path, 'wb') as f:
-            async for chunk in _read_chunked(upload_file, self.chunk_size):
+        async with aiofiles.open(save_to, 'wb') as f:
+            async for chunk in _read_chunked(file, self.chunk_size):
                 await f.write(chunk)
 
-        return StoredFile(path, upload_file)
-            
-    async def store_multiple(self, files: list[UploadFile]) -> list[StoredFile]:
-        raise NotImplementedError
+        return await _stored_file_meta(file, save_to)
     
     def close(self):
         pass

@@ -13,11 +13,10 @@ from fastapi import UploadFile
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.dataclasses import dataclass
 from sqlalchemy import Select, func, select
+from api.base.files.schemas import StoredFile
 from db import LocalSession
 
 from humps import camelize
-
-from files.store import StoredFile
 
 from . import models 
 
@@ -149,48 +148,3 @@ class CursorResultList(BaseModel, Generic[TItem]):
     cursor: str
     total_item_count: int
 
-
-class ApiModelFileAttachment(StoredFile, BaseModel, Generic[TApiModel]):
-    model_config = SCHEMA_CONFIG
-
-    __api_model_type__: ClassVar[type[ApiModel] | str]
-    # The path, relative to the root dynamic files volume 
-    # to find files related to the model type.
-    __api_model_files__: ClassVar[Path | str]
-
-    # Unique identifier of the resource.
-    model_id: UUID
-
-    # Path (from the model folder root) to the attachment 
-    attachment_path: Path
-
-    def __init__(
-        self, 
-        model_id: UUID,
-        attachment_path: Path | str,
-        file: UploadFile
-    ):
-        self.model_id = model_id
-        super().__init__(self.model_files / attachment_path, self)
-
-
-    async def get_api_model(self, db: LocalSession) -> TApiModel:
-        model_cls = model_attachment_api_type(self)
-        return await model_cls.get_for_id(db, self.model_id)
-
-    @property
-    def model_files(self) -> Path:
-        return model_attachment_files_dir(self) / str(self.model_id)
-
-
-def model_attachment_api_type(attachment: ApiModelFileAttachment[TApiModel] | Type[ApiModelFileAttachment[TApiModel]]) -> Type[TApiModel]:
-    if hasattr(attachment, '__api_model_type__'):
-        return getattr(attachment, '__api_model_type__')
-    else: 
-        raise ValueError(f"'{type(attachment).__name__}' has no __api_model_type__")
-
-def model_attachment_files_dir(attachment: ApiModelFileAttachment | type[ApiModelFileAttachment]) -> Path:
-    if hasattr(attachment, '__api_model_files__'):
-        return Path(getattr(attachment, '__api_model_files__'))
-    else: 
-        raise ValueError(f"'{type(attachment).__name__}' has no __api_model_files__")

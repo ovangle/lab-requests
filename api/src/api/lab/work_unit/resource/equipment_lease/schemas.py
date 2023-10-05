@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from pydantic import Field
 
 from api.lab.equipment.schemas import EquipmentRequest
-from api.lab.work_unit.resource.models import ResourceContainer
+from api.lab.work_unit.resource.models import ResourceContainer_
 from ..common.schemas import ResourceBase, ResourceCostEstimate, ResourceParams, ResourceType
 
 class EquipmentLease(ResourceBase):
@@ -30,7 +30,7 @@ class EquipmentLease(ResourceBase):
     # including consumables
     usage_cost_estimate: ResourceCostEstimate | None = None
 
-    def __init__(self, container: ResourceContainer, id: UUID, index: int, params: EquipmentLeaseParams):
+    def __init__(self, container: ResourceContainer_, id: UUID, index: int, params: EquipmentLeaseParams):
         super().__init__(container, id, index, params)
         self.equipment = params.equipment
         self.equipment_training_completed = set(params.equipment_training_completed)

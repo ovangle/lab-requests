@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, cast
 from uuid import UUID
+from fastapi import UploadFile
 
 from sqlalchemy import VARCHAR, ForeignKey, select, Select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -18,11 +19,12 @@ from api.base.models import Base
 from api.uni.models import Campus
 from api.lab.types import LabType
 from api.lab.plan.models import ExperimentalPlan_
+from files.store import FileStore
 
 from .errors import WorkUnitDoesNotExist
-from .resource.models import ResourceContainer, ResourceContainerFileAttachment_
+from .resource.models import ResourceContainer_, ResourceContainerFileAttachment_
     
-class WorkUnit_(ResourceContainer, Base):
+class WorkUnit_(ResourceContainer_, Base):
     __tablename__ = 'work_units'
 
     id: Mapped[uuid_pk]
@@ -66,14 +68,14 @@ class WorkUnit_(ResourceContainer, Base):
         self.end_date = end_date
 
     @staticmethod
-    async def get_by_id(db: LocalSession, id: UUID) -> WorkUnit_:
+    async def get_for_id(db: LocalSession, id: UUID) -> WorkUnit_:
         instance = await db.get(WorkUnit_, id)
         if not instance:
             raise WorkUnitDoesNotExist.for_id(id)
         return instance
 
     @staticmethod
-    async def get_by_plan_and_index(db: LocalSession, plan_id: UUID, index: int) -> WorkUnit_:
+    async def get_for_plan_and_index(db: LocalSession, plan_id: UUID, index: int) -> WorkUnit_:
         instance = await db.scalar(
             select(WorkUnit_).where(WorkUnit_.plan_id == plan_id, WorkUnit_.index == index)
         )
@@ -93,13 +95,13 @@ class WorkUnit_(ResourceContainer, Base):
     def list_for_technician(db: LocalSession, technician_email: str) -> Select[tuple[WorkUnit_]]:
         return select(WorkUnit_).where(WorkUnit_.technician_email == technician_email)
 
-    def get_attachments(self, resource_type: ResourceType, resource_id: UUID) -> list[ResourceFileAttachment]:
+    def get_file_attachments(self, resource_type: ResourceType, resource_id: UUID) -> list[ResourceContainerFileAttachment_]:
         try:
             file_attachments = self.file_attachments
         except IOError:
             raise IOError('Cannot access unresolved awaitable attribute \'file_attachments\'')
         return [
-            attachment.as_resource_attachment()
+            attachment
             for attachment in file_attachments
             if attachment.is_resource_attachment(resource_type, resource_id)
         ]
@@ -107,14 +109,13 @@ class WorkUnit_(ResourceContainer, Base):
 
 class WorkUnitFileAttachment_(ResourceContainerFileAttachment_, StoredFile_):
     __tablename__ = 'work_unit_file_attachments'
+    filestore = FileStore(Path('lab/work-units'))
+
     id: Mapped[uuid_pk]
 
     work_unit_id: Mapped[UUID] = mapped_column(ForeignKey('work_units.id'))
     work_unit = relationship(back_populates="file_attachments")
 
-    orig_filename: Mapped[str] = mapped_column(VARCHAR(256))
-    filename: Mapped[str] = mapped_column(VARCHAR(256))
-    content_type: Mapped[str] = mapped_column(VARCHAR(64))
 
     @property
     def path(self):
@@ -123,12 +124,8 @@ class WorkUnitFileAttachment_(ResourceContainerFileAttachment_, StoredFile_):
     def is_resource_attachment(self, resource_type: ResourceType, id: UUID):
         return self.resource_type == resource_type and self.resource_id == id
 
-    def as_resource_attachment(self):
-        if self.resource_type is None or self.resource_id is None:
-            raise ValueError('Not a resource attachment file')
-        return ResourceFileAttachment(
-            self.work_unit_id,
-            self.resource_type,
-            self.resource_id,
-            filename=self.filename,
-        )
+    def get_container_id(self):
+        return self.work_unit_id
+
+    async def get_container(self, db: LocalSession):
+        return await WorkUnit_.get_for_id(db, self.work_unit_id)

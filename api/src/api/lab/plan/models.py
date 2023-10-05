@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from api.uni.research.models import FundingModel_
     from api.lab.work_unit.models import WorkUnit_
 
-from api.lab.work_unit.resource.models import ResourceContainer
+from api.lab.work_unit.resource.models import ResourceContainer_
 
 class ExperimentalPlan_(Base):
     __tablename__ = 'experimental_plans'

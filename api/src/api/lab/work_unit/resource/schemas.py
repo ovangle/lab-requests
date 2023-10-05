@@ -3,7 +3,18 @@ from abc import abstractmethod
 
 from dataclasses import field
 import dataclasses
-from typing import TYPE_CHECKING, Dict, Generic, Literal, Optional, Type, TypeVar, Any, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    Generic,
+    Literal,
+    Optional,
+    Type,
+    TypeVar,
+    Any,
+    Union,
+    cast,
+)
 from uuid import UUID
 
 from humps import decamelize
@@ -19,7 +30,7 @@ from .common.schemas import (
     ResourceBase,
     ResourceStorage,
     ResourceDisposal,
-    ResourceFileAttachment
+    ResourceFileAttachment,
 )
 
 from .equipment_lease.schemas import EquipmentLease
@@ -32,21 +43,28 @@ if TYPE_CHECKING:
     from . import models
 
 __all__ = (
-    'Resource',
-    'ResourceBase',
-    'ResourceContainer',
-    'ResourceContainerPatch',
-    'ResourceType',
-    'RESOURCE_TYPES',
-    'ResourceDisposal',
-    'ResourceFileAttachment',
-    'ResourceStorage',
+    "Resource",
+    "ResourceBase",
+    "ResourceContainer",
+    "ResourceContainerPatch",
+    "ResourceType",
+    "RESOURCE_TYPES",
+    "ResourceDisposal",
+    "ResourceFileAttachment",
+    "ResourceStorage",
 )
 
 Resource = Union[EquipmentLease, Software, Task, InputMaterial, OutputMaterial]
-RESOURCE_TYPES: list[type] = [EquipmentLease, Software, Task, InputMaterial, OutputMaterial]
+RESOURCE_TYPES: list[type] = [
+    EquipmentLease,
+    Software,
+    Task,
+    InputMaterial,
+    OutputMaterial,
+]
 
-TResource = TypeVar('TResource', bound=Resource)
+TResource = TypeVar("TResource", bound=Resource)
+
 
 def resource_name(t: ResourceType | TResource | Type[TResource]):
     return ResourceType(t).container_attr_name
@@ -61,14 +79,26 @@ class ResourceContainer(BaseModel):
     tasks: list[Task] = field(default_factory=list)
     softwares: list[Software] = field(default_factory=list)
 
-    def get_resources(self, resource_type: Type[TResource] | ResourceType) -> list[TResource]:
+    def get_resources(
+        self, resource_type: Type[TResource] | ResourceType
+    ) -> list[TResource]:
         return getattr(self, resource_name(resource_type))
 
-    def get_resource(self, resource_type: Type[TResource] | ResourceType, index: int):
+    def get_resource(
+        self, resource_type: Type[TResource] | ResourceType, index_or_id: UUID | int
+    ) -> TResource:
+        resources = self.get_resources(resource_type)
+        match index_or_id:
+            case UUID():
+                index = [r.id for r in resources].index(index_or_id)
+            case int():
+                index = index_or_id
         return self.get_resources(resource_type)[index]
 
-    def _set_resource_container_fields_from_model(self, model: ResourceContainer | models.ResourceContainer):
-        def resource_json(resource: Resource | dict[str, Any]) -> dict[str, Any]: 
+    def _set_resource_container_fields_from_model(
+        self, model: ResourceContainer | models.ResourceContainer_
+    ):
+        def resource_json(resource: Resource | dict[str, Any]) -> dict[str, Any]:
             if isinstance(resource, dict):
                 return resource
             return resource.model_dump()
@@ -82,9 +112,8 @@ class ResourceContainer(BaseModel):
         self.output_materials = [
             OutputMaterial(**resource_json(item)) for item in model.output_materials
         ]
-        self.tasks = [
-            Task(**resource_json(item)) for item in model.tasks
-        ]
+        self.tasks = [Task(**resource_json(item)) for item in model.tasks]
+
 
 class Slice(BaseModel, Generic[TResource]):
     start: int
@@ -94,16 +123,17 @@ class Slice(BaseModel, Generic[TResource]):
     def update_items(self, container_id: UUID):
         for i, item in enumerate(self.items):
             if item.container_id and item.container_id != container_id:
-                raise ValidationError('Resource belongs to a different plan')
+                raise ValidationError("Resource belongs to a different plan")
             item.container_id = container_id
             item.index = self.start + i
 
     def update_model_resources(self, model_resources: list[TResource]):
-        model_resources[self.start:self.end] = self.items
+        model_resources[self.start : self.end] = self.items
 
         if self.end is not None and self.start - self.end != len(self.items):
-            for i, item in enumerate(model_resources[self.end:]):
+            for i, item in enumerate(model_resources[self.end :]):
                 item.index = self.end + i
+
 
 class ResourceContainerPatch(BaseModel):
     equipments: list[Slice[EquipmentLease]] = Field(default_factory=list)
@@ -112,13 +142,20 @@ class ResourceContainerPatch(BaseModel):
     tasks: list[Slice[Task]] = Field(default_factory=list)
     softwares: list[Slice[Software]] = Field(default_factory=list)
 
-    def _get_resources(self, resource_type: Type[TResource], model: models.ResourceContainer) -> list[TResource]:
+    def _get_resources(
+        self, resource_type: Type[TResource], model: models.ResourceContainer_
+    ) -> list[TResource]:
         jsonb_resources: list[dict] = getattr(model, resource_name(resource_type))
-        return cast(list[TResource], [
-            resource_type(**json) for json in jsonb_resources
-        ])
+        return cast(
+            list[TResource], [resource_type(**json) for json in jsonb_resources]
+        )
 
-    def _apply_slices(self, db: LocalSession, resource_type: Type[TResource], container: models.ResourceContainer):
+    def _apply_slices(
+        self,
+        db: LocalSession,
+        resource_type: Type[TResource],
+        container: models.ResourceContainer_,
+    ):
         slices: list[Slice[TResource]] = getattr(self, resource_name(resource_type))
         container_resources = self._get_resources(resource_type, container)[:]
 
@@ -128,12 +165,14 @@ class ResourceContainerPatch(BaseModel):
 
         if slices:
             setattr(
-                container, 
-                resource_name(resource_type), 
-                [r.model_dump() for r in container_resources]
+                container,
+                resource_name(resource_type),
+                [r.model_dump() for r in container_resources],
             )
             db.add(container)
 
-    async def update_model_resources(self, db: LocalSession, model: models.ResourceContainer):
+    async def update_model_resources(
+        self, db: LocalSession, model: models.ResourceContainer_
+    ):
         for resource_type in RESOURCE_TYPES:
             self._apply_slices(db, resource_type, model)
