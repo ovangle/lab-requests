@@ -8,5 +8,9 @@
     "python.analysis.autoSearchPaths": false,
     "python.analysis.extraPaths": [
         "api/src/"
-    ]
+    ],
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter"
+    },
+    "python.formatting.provider": "none"
 }
