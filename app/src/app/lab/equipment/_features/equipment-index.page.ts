@@ -7,7 +7,7 @@ import { map } from "rxjs";
     selector: 'lab-equipment-index-page',
     template: `
     <h1>
-        Equipment
+        Lab Equipment
         <a mat-raised-button class="create-button" 
             color="primary"
             routerLink="./create">

@@ -24,12 +24,20 @@ import { RouterModule } from "@angular/router";
         <a mat-list-item *ngFor="let equipment of equipments"
            [routerLink]="['./', equipment.id]">
             <span matListItemTitle>{{equipment.name}}</span>
-            <span matListItemLine>
+            <span matListItemLine>{{equipment.description}}</span>
+            <span matListItemMeta>
                 <lab-equipment-tag-chips [tags]="equipment.tags"></lab-equipment-tag-chips>
             </span>
         </a>
     </mat-list>
-    `
+    `,
+    styles: [`
+    span.mat-mdc-list-item-meta {
+        display: flex !important;
+        flex-basis: 60%;
+        justify-content: end;
+    }
+    `]
 })
 export class LabEquipmentListComponent {
     @Input({required: true})

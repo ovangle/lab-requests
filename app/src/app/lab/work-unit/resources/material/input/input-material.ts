@@ -3,6 +3,7 @@ import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../.
 import { ResourceParams } from "../../../resource/resource";
 import { ResourceStorage, ResourceStorageParams, resourceStorageFromJson, resourceStorageToJson } from "../../../resource/storage/resource-storage";
 import { Material } from "../material";
+import { ResourceFileAttachment, resourceFileAttachmentFromJson, resourceFileAttachmentToJson } from "../../../resource/file-attachment/file-attachment";
 
 export interface InputMaterialParams extends ResourceParams<InputMaterial> {
     name: string;
@@ -31,6 +32,8 @@ export class InputMaterial extends Material {
     storage: ResourceStorage;
     hazardClasses: HazardClass[];
 
+    override readonly attachments: ResourceFileAttachment<InputMaterial>[];
+
     constructor(params: InputMaterialParams) {
         super();
         this.planId = params.planId;
@@ -51,10 +54,14 @@ export class InputMaterial extends Material {
         this.perUnitCostEstimate = params.perUnitCostEstimate || null;
         this.storage = new ResourceStorage(params.storage);
         this.hazardClasses = params?.hazardClasses || [];
+        this.attachments = Array.from(params?.attachments || [])
     }
 }
 
 export function inputMaterialFromJson(json: {[k: string]: any}): InputMaterial {
+    const attachments = Array.from(json['attachments'] || [])
+        .map(resourceFileAttachmentFromJson);
+
     return new InputMaterial({
         planId: json['planId'],
         workUnitId: json['workUnitId'],
@@ -64,7 +71,8 @@ export function inputMaterialFromJson(json: {[k: string]: any}): InputMaterial {
         numUnitsRequired: json['numUnitsRequired'],
         perUnitCostEstimate: json['perUnitCostEstimate'] ? costEstimateFromJson(json['perUnitCostEstimate']) : null,
         storage: resourceStorageFromJson(json['storage']),
-        hazardClasses: hazardClassesFromJson(json['hazardClasses'])
+        hazardClasses: hazardClassesFromJson(json['hazardClasses']),
+        attachments
     })
 }
 
@@ -79,6 +87,7 @@ export function inputMaterialToJson(inputMaterial: InputMaterial): {[k: string]:
         numUnitsRequired: inputMaterial.numUnitsRequired,
         perUnitCostEstimate: inputMaterial.perUnitCostEstimate && costEstimateToJson(inputMaterial.perUnitCostEstimate),
         storage: resourceStorageToJson(inputMaterial.storage),
-        hazardClasses: hazardClassesToJson(inputMaterial.hazardClasses)
+        hazardClasses: hazardClassesToJson(inputMaterial.hazardClasses),
+        attachments: inputMaterial.attachments.map(resourceFileAttachmentToJson)
     }
 }

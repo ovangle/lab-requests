@@ -5,7 +5,7 @@ from fastapi import UploadFile
 from api.lab.work_unit.resource.common.schemas import ResourceType
 from db import LocalSession
 
-from files.store import FileStore
+from filestore.store import FileStore
 from .schemas import WorkUnit
 from .resource.schemas import Resource, ResourceFileAttachment
 from . import models

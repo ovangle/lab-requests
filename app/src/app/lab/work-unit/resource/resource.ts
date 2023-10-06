@@ -4,11 +4,14 @@ import { Observable, ReplaySubject, Subscription, combineLatest, defer, filter, 
 import { ResourceContainer, ResourceContainerContext } from "./resource-container";
 import { ResourceType, isResourceType } from "./resource-type";
 import { ExperimentalPlan } from "../../experimental-plan/experimental-plan";
+import { ResourceFileAttachment } from "./file-attachment/file-attachment";
 
 export interface ResourceParams<T extends Resource> {
     planId: string;
     workUnitId: string;
     index: number | 'create';
+
+    attachments?: ResourceFileAttachment<T>[];
 }
 
 export interface Resource {
@@ -17,6 +20,8 @@ export interface Resource {
     readonly planId: string;
     readonly workUnitId: string;
     readonly index: number | 'create';
+
+    readonly attachments: ResourceFileAttachment<Resource>[];
 }
 export type ResourceTypeIndex = [ResourceType, number | 'create'];
 

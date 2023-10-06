@@ -8,7 +8,7 @@ import { MatCardModule } from "@angular/material/card";
 import { MatListModule } from "@angular/material/list";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
-import { EquipmentTrainingDescriptionList__Empty } from "./training-description-list--empty.component";
+import { MatIconModule } from "@angular/material/icon";
 
 
 @Component({
@@ -19,9 +19,8 @@ import { EquipmentTrainingDescriptionList__Empty } from "./training-description-
         ReactiveFormsModule,
         MatCardModule,
         MatCheckboxModule,
+        MatIconModule,
         MatListModule,
-
-        EquipmentTrainingDescriptionList__Empty
     ],
     template: `
     <mat-card [class.readonly]="readonly">
@@ -40,9 +39,9 @@ import { EquipmentTrainingDescriptionList__Empty } from "./training-description-
                 </ng-container>
 
                 <ng-template #listEmpty>
-                    <mat-list-item disabled>
-                        <lab-equipment-training-description-list--empty>
-                        </lab-equipment-training-description-list--empty>
+                    <mat-list-item disabled class="empty-list">
+                        <mat-icon>warning</mat-icon>
+                        <i>No training required</i>
                     </mat-list-item>
                 </ng-template>
             </mat-selection-list>
@@ -56,6 +55,14 @@ import { EquipmentTrainingDescriptionList__Empty } from "./training-description-
     styles: [`
     .readonly {
         background-color: cream;
+    }
+
+    .empty-list mat-icon {
+        width: inherit;
+        height: inherit;
+        font-size: inherit;
+        line-height: inherit;
+        vertical-align: bottom;
     }
     `],
     providers: [

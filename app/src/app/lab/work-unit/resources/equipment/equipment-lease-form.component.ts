@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, ViewChild, inject } from "@angular/core";
+import { Component, Input, ViewChild, inject } from "@angular/core";
 import { FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -11,6 +11,7 @@ import { Equipment, EquipmentPatch, EquipmentRequest } from "src/app/lab/equipme
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { EquipmentTrainingAcknowlegementComponent } from "src/app/lab/equipment/training/training-acknowlegment-input.component";
 import { CostEstimateForm, costEstimateForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
+import { EquipmentRiskAssessmentFileInputComponent } from "./risk-assessment-file-input.component";
 
 export type EquipmentLeaseForm = FormGroup<{
     equipment: FormControl<Equipment | EquipmentRequest | null>;
@@ -59,7 +60,8 @@ export type EquipmentLeaseFormErrors = ValidationErrors & {
         MatInputModule,
 
         EquipmentSearchComponent,
-        EquipmentTrainingAcknowlegementComponent
+        EquipmentTrainingAcknowlegementComponent,
+        EquipmentRiskAssessmentFileInputComponent
     ],
     template: `
     <form [formGroup]="form">
@@ -78,11 +80,20 @@ export type EquipmentLeaseFormErrors = ValidationErrors & {
                 I require additional assistance using this equipment
             </mat-checkbox>
         </ng-container>
+
+        <ng-container>
+            <lab-equipment-risk-assessment-file-input
+                [container_id]="workUnitId">
+            </lab-equipment-risk-assessment-file-input>
+        </ng-container>
     </form>
     `,
 })
 export class EquipmentLeaseFormComponent {
     readonly formService = inject(ResourceFormService<EquipmentLease, EquipmentLeaseForm>);
+
+    @Input()
+    workUnitId: string;
 
     get form(): EquipmentLeaseForm {
         return this.formService.form;

@@ -1,4 +1,5 @@
 import { ResourceDisposal, ResourceDisposalParams, resourceDisposalFromJson, resourceDisposalToJson } from "../../../resource/disposal/resource-disposal";
+import { ResourceFileAttachment, resourceFileAttachmentFromJson, resourceFileAttachmentToJson } from "../../../resource/file-attachment/file-attachment";
 import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../../resource/hazardous/hazardous";
 import { ResourceParams } from "../../../resource/resource";
 import { ResourceStorage, ResourceStorageParams, resourceStorageFromJson, resourceStorageToJson } from "../../../resource/storage/resource-storage";
@@ -29,6 +30,8 @@ export class OutputMaterial extends Material {
 
     hazardClasses: HazardClass[];
 
+    override readonly attachments: ResourceFileAttachment<OutputMaterial>[];
+
     constructor(params: OutputMaterialParams) {
         super();
 
@@ -53,10 +56,14 @@ export class OutputMaterial extends Material {
         this.disposal = new ResourceDisposal(params.disposal);
 
         this.hazardClasses = params?.hazardClasses || [];
+        this.attachments = params.attachments || [];
     }
 }
 
 export function outputMaterialFromJson(json: { [k: string]: any }): OutputMaterial {
+    const attachments = Array.from(json['attachments'] || [])
+        .map(resourceFileAttachmentFromJson);
+
     return new OutputMaterial({
         planId: json['planId'],
         workUnitId: json['workUnitId'],
@@ -66,7 +73,8 @@ export function outputMaterialFromJson(json: { [k: string]: any }): OutputMateri
         numUnitsProduced: json['numUnitsProduced'],
         storage: resourceStorageFromJson(json['storage']),
         disposal: resourceDisposalFromJson(json['disposal']),
-        hazardClasses: hazardClassesFromJson(json['hazardClasses'])
+        hazardClasses: hazardClassesFromJson(json['hazardClasses']),
+        attachments
     })
 }
 
@@ -79,6 +87,7 @@ export function outputMaterialToJson(outputMaterial: OutputMaterial): { [k: stri
         numUnitsProduced: outputMaterial.numUnitsProduced,
         storage: resourceStorageToJson(outputMaterial.storage),
         disposal: resourceDisposalToJson(outputMaterial.disposal),
-        hazardClasses: hazardClassesToJson(outputMaterial.hazardClasses)
+        hazardClasses: hazardClassesToJson(outputMaterial.hazardClasses),
+        attachments: outputMaterial.attachments.map(resourceFileAttachmentToJson)
     }
 }

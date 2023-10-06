@@ -5,6 +5,7 @@ import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators }
 import { Resource, ResourceParams } from "../../resource/resource";
 import { firstValueFrom } from 'rxjs';
 import { CostEstimate, costEstimateFromJson, costEstimateToJson } from 'src/app/uni/research/funding/cost-estimate/coste-estimate';
+import { ResourceFileAttachment, resourceFileAttachmentFromJson, resourceFileAttachmentToJson } from '../../resource/file-attachment/file-attachment';
 
 export interface EquipmentLeaseParams extends ResourceParams<EquipmentLease> {
     equipment: Equipment | EquipmentRequest | string;
@@ -32,6 +33,8 @@ export class EquipmentLease implements Resource {
     setupInstructions: string;
     usageCostEstimate: CostEstimate | null;
 
+    attachments: ResourceFileAttachment<EquipmentLease>[];
+
     constructor(params: EquipmentLeaseParams) {
         this.planId = params.planId;
         this.workUnitId = params.workUnitId;
@@ -48,6 +51,8 @@ export class EquipmentLease implements Resource {
         this.requiresAssistance = params.requiresAssistance!;
         this.setupInstructions = params.setupInstructions!;
         this.usageCostEstimate = params.usageCostEstimate || null;
+
+        this.attachments = Array.from(params.attachments || []);
     }
 
     async resolveEquipment(equipments: EquipmentModelService): Promise<EquipmentLease> {
@@ -68,6 +73,9 @@ export function equipmentLeaseFromJson(json: {[k: string]: any}): EquipmentLease
             ? jsonEquipment
             : equipmentFromJson(jsonEquipment);
 
+    const attachments = Array.from(json['attachments'] || [])
+        .map((value) => resourceFileAttachmentFromJson(value));
+
     return new EquipmentLease({
         planId: json['planId']!,
         workUnitId: json['workUnitId'],
@@ -76,7 +84,8 @@ export function equipmentLeaseFromJson(json: {[k: string]: any}): EquipmentLease
         equipmentTrainingCompleted: json['equipmentTrainingCompleted'],
         requiresAssistance: json['requiresAssistance'],
         setupInstructions: json['setupInstructions'],
-        usageCostEstimate: json['usageCostEstimate'] ? costEstimateFromJson(json['usageCostEstimate']) : null
+        usageCostEstimate: json['usageCostEstimate'] ? costEstimateFromJson(json['usageCostEstimate']) : null,
+        attachments
     });
 }
 
@@ -98,6 +107,7 @@ export function equipmentLeaseToJson(lease: EquipmentLease): {[k: string]: any} 
         equipmentTrainingCompleted: lease.equipmentTrainingCompleted,
         requiresAssistance: lease.requiresAssistance,
         setupInstructions: lease.setupInstructions,
-        usageCostEstimate: lease.usageCostEstimate && costEstimateToJson(lease.usageCostEstimate)
+        usageCostEstimate: lease.usageCostEstimate && costEstimateToJson(lease.usageCostEstimate),
+        attachments: lease.attachments.map(resourceFileAttachmentToJson)
     }
 }

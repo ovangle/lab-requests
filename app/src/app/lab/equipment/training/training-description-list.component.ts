@@ -2,7 +2,6 @@ import { CommonModule } from "@angular/common";
 import { Component, Input, TemplateRef } from "@angular/core";
 import { MatIconModule } from "@angular/material/icon";
 import { MatListModule } from "@angular/material/list";
-import { EquipmentTrainingDescriptionList__Empty } from "./training-description-list--empty.component";
 
 
 
@@ -13,8 +12,6 @@ import { EquipmentTrainingDescriptionList__Empty } from "./training-description-
         CommonModule,
         MatIconModule,
         MatListModule,
-
-        EquipmentTrainingDescriptionList__Empty
     ],
     template: `
     <mat-list> 
@@ -25,15 +22,21 @@ import { EquipmentTrainingDescriptionList__Empty } from "./training-description-
         </ng-container>
 
         <ng-template #noTrainingRequired>
-            <mat-list-item>
-                <lab-equipment-training-description-list--empty>
-                </lab-equipment-training-description-list--empty>
+            <mat-list-item class="empty-list">
+                <mat-icon>warning</mat-icon>
+                <i>No training required</i>
             </mat-list-item>
         </ng-template>
     </mat-list>
     `,
     styles: [`
-    
+    .empty-list mat-icon {
+        width: inherit;
+        height: inherit;
+        font-size: inherit;
+        line-height: inherit;
+        vertical-align: bottom;
+    }
     `]
 })
 export class EquipmentTrainingDescriptionListComponent {

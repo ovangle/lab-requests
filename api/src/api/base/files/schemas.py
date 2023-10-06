@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from db import LocalSession
 
 from api.base.schemas import SCHEMA_CONFIG
-from files.store import StoredFileMeta
+from filestore.store import StoredFileMeta
 from .models import StoredFile_
 
 

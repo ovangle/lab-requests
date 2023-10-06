@@ -3,6 +3,7 @@ import { Resource, ResourceParams, } from "../../resource/resource";
 import { collectFieldErrors } from "src/app/utils/forms/validators";
 import { Observable, filter, map, startWith } from "rxjs";
 import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
+import { ResourceFileAttachment, resourceFileAttachmentFromJson, resourceFileAttachmentToJson } from "../../resource/file-attachment/file-attachment";
 
 export interface TaskParams extends ResourceParams<Task> {
     readonly name: string;
@@ -34,6 +35,8 @@ export class Task implements Resource {
 
     readonly costEstimate: CostEstimate | null;
 
+    readonly attachments: ResourceFileAttachment<Task>[];
+
     constructor(params: TaskParams) {
         this.planId = params.planId;
         this.workUnitId = params.workUnitId;
@@ -53,10 +56,14 @@ export class Task implements Resource {
         this.supplier = params.supplier!;
         this.externalSupplierDescription = params.externalSupplierDescription || '';
         this.costEstimate = params.costEstimate || null;
+        this.attachments = params.attachments || [];
     }
 }
 
 export function taskFromJson(json: {[k: string]: any}): Task {
+    const attachments = (json['attachments'] || [])
+        .map(resourceFileAttachmentFromJson);
+
     return new Task({
         planId: json['planId'],
         workUnitId: json['workUnitId'],
@@ -65,7 +72,8 @@ export function taskFromJson(json: {[k: string]: any}): Task {
         description: json['description'],
         supplier: json['supplier'],
         externalSupplierDescription: json['externalSupplierDescription'],
-        costEstimate: json['costEstimate'] ? costEstimateFromJson(json['costEstimate']) : null
+        costEstimate: json['costEstimate'] ? costEstimateFromJson(json['costEstimate']) : null,
+        attachments
     })
 }
 
@@ -79,7 +87,8 @@ export function taskToJson(task: Task) {
         description: task.description,
         supplier: task.supplier,
         externalSupplierDescription: task.externalSupplierDescription,
-        costEstimate: task.costEstimate && costEstimateToJson(task.costEstimate)
+        costEstimate: task.costEstimate && costEstimateToJson(task.costEstimate),
+        attachments: task.attachments.map(resourceFileAttachmentToJson),
     }
 }
 

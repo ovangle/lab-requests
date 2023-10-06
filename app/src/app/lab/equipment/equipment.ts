@@ -10,9 +10,12 @@ import { EquipmentTag } from "./tag/equipment-tag";
 import { Router } from "@angular/router";
 import { CostEstimate } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
 import { costEstimateForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
+import { Resource, ResourceParams } from "../work-unit/resource/resource";
+import { ResourceFileAttachment } from "../work-unit/resource/file-attachment/file-attachment";
 
 
 export class Equipment {
+    readonly type = 'equipment';
     readonly id: string;
 
     name: string;
@@ -22,7 +25,7 @@ export class Equipment {
     availableInLabTypes: LabType[] | 'all';
 
     trainingDescriptions: string[]
-
+    
     constructor(params: Partial<Equipment>) {
         this.id = params.id!;
         this.name = params.name!;

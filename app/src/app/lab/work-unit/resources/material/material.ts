@@ -1,5 +1,6 @@
 import { AbstractControl, FormControl, FormGroup } from "@angular/forms";
 import { Resource } from "../../resource/resource";
+import { ResourceFileAttachment } from "../../resource/file-attachment/file-attachment";
 
 
 export class Material implements Resource {
@@ -7,6 +8,7 @@ export class Material implements Resource {
     readonly planId: string;
     readonly workUnitId: string;
     readonly index: number | 'create';
+    readonly attachments: ResourceFileAttachment<any>[];
 }
 
 export type MaterialForm = FormGroup<{

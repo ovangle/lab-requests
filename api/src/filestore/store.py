@@ -71,7 +71,7 @@ class FileStore:
     def __init__(self, 
                  path: Path | str, 
                  chunk_size: int = -1):
-        from files import filestore_settings
+        from filestore import filestore_settings
         
         path = Path(path)
         if path.is_absolute():

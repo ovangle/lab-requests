@@ -28,7 +28,7 @@ export const equipmentFixtures: Equipment[] = [];
         MatInputModule,
 
         EquipmentTagInputComponent,
-        EquipmentTrainingDescriptionsInputComponent
+        EquipmentTrainingDescriptionsInputComponent,
     ],
     template: `
     <form [formGroup]="form" (ngSubmit)="commitForm($event)">
@@ -57,6 +57,7 @@ export const equipmentFixtures: Equipment[] = [];
 
         <lab-equipment-training-descriptions-input formControlName="trainingDescriptions">
         </lab-equipment-training-descriptions-input>
+
 
         <div class="form-actions"> 
             <button mat-raised-button type="submit" 
