@@ -2,11 +2,11 @@ import { Injectable } from "@angular/core";
 import { Observable, firstValueFrom, map } from "rxjs";
 import { ALL_RESOURCE_TYPES, ResourceType } from "./resource-type";
 
-import { EquipmentLease, equipmentLeaseFromJson, equipmentLeaseToJson } from "../resources/equipment/equipment-lease";
-import { InputMaterial, inputMaterialFromJson, inputMaterialToJson } from "../resources/material/input/input-material";
-import { OutputMaterial, outputMaterialFromJson, outputMaterialToJson } from "../resources/material/output/output-material";
-import { Software, softwareFromJson, softwareToJson } from "../resources/software/software";
-import { Task, taskFromJson, taskToJson } from "../resources/task/task";
+import { EquipmentLease, equipmentLeaseFromJson, equipmentLeaseParamsToJson } from "../resources/equipment/equipment-lease";
+import { InputMaterial, InputMaterialParams, inputMaterialFromJson, inputMaterialToJson } from "../resources/material/input/input-material";
+import { OutputMaterial, OutputMaterialParams, outputMaterialFromJson, outputMaterialParamsToJson } from "../resources/material/output/output-material";
+import { Software, SoftwareParams, softwareFromJson, softwareParamsToJson } from "../resources/software/software";
+import { Task, TaskParams, taskFromJson, taskToJson } from "../resources/task/task";
 
 import type { Resource } from './resource';
 
@@ -77,10 +77,10 @@ interface ResourceSplice<T> {
 
 export class ResourceContainerPatch {
     equipments: ResourceSplice<EquipmentLease>[];
-    tasks: ResourceSplice<Task>[];
-    softwares: ResourceSplice<Software>[];
-    inputMaterials: ResourceSplice<InputMaterial>[];
-    outputMaterials: ResourceSplice<OutputMaterial>[];
+    tasks: ResourceSplice<TaskParams>[];
+    softwares: ResourceSplice<SoftwareParams>[];
+    inputMaterials: ResourceSplice<InputMaterialParams>[];
+    outputMaterials: ResourceSplice<OutputMaterialParams>[];
 }
 
 export function resourceContainerPatchToJson(patch: ResourceContainerPatch): { [k: string]: any } {
@@ -100,15 +100,15 @@ export function resourceContainerPatchToJson(patch: ResourceContainerPatch): { [
     function resourceSerializer(resourceType: ResourceType) {
         switch (resourceType) {
             case 'equipment':
-                return equipmentLeaseToJson;
+                return equipmentLeaseParamsToJson;
             case 'software':
-                return softwareToJson;
+                return softwareParamsToJson;
             case 'task':
                 return taskToJson;
             case 'input-material':
                 return inputMaterialToJson;
             case 'output-material':
-                return outputMaterialToJson;
+                return outputMaterialParamsToJson;
         }
     }
 }

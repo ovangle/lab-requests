@@ -21,11 +21,8 @@ export interface TaskParams extends ResourceParams<Task> {
  * the research plan.
  * 
  */
-export class Task implements Resource {
-    readonly type = 'task';
-    readonly planId: string;
-    readonly workUnitId: string;
-    readonly index: number | 'create';
+export class Task extends Resource {
+    override readonly type = 'task';
 
     readonly name: string;
     readonly description: string;
@@ -35,19 +32,14 @@ export class Task implements Resource {
 
     readonly costEstimate: CostEstimate | null;
 
-    readonly attachments: ResourceFileAttachment<Task>[];
-
     constructor(params: TaskParams) {
-        this.planId = params.planId;
-        this.workUnitId = params.workUnitId;
-        this.index = params.index;
+        super(params);
 
         if (!params.name) {
             throw new Error('A service name is required');
         }
         this.name = params.name;
         this.description = params.description || '';
-        this.index = params.index || 'create';
 
         if (!['researcher', 'technician', 'external'].includes(params.supplier || '')) {
             throw new Error('Invalid service. Expected a supplier')
@@ -56,7 +48,6 @@ export class Task implements Resource {
         this.supplier = params.supplier!;
         this.externalSupplierDescription = params.externalSupplierDescription || '';
         this.costEstimate = params.costEstimate || null;
-        this.attachments = params.attachments || [];
     }
 }
 
@@ -65,8 +56,8 @@ export function taskFromJson(json: {[k: string]: any}): Task {
         .map(resourceFileAttachmentFromJson);
 
     return new Task({
-        planId: json['planId'],
-        workUnitId: json['workUnitId'],
+        containerId: json['containerId'],
+        id: json['id'],
         index: json['index'],
         name: json['name'],
         description: json['description'],
@@ -77,10 +68,10 @@ export function taskFromJson(json: {[k: string]: any}): Task {
     })
 }
 
-export function taskToJson(task: Task) {
+export function taskToJson(task: TaskParams) {
     return {
-        planId: task.planId,
-        workUnitId: task.workUnitId,
+        containerId: task.containerId,
+        id: task.id,
         index: task.index,
 
         name: task.name,
@@ -88,7 +79,6 @@ export function taskToJson(task: Task) {
         supplier: task.supplier,
         externalSupplierDescription: task.externalSupplierDescription,
         costEstimate: task.costEstimate && costEstimateToJson(task.costEstimate),
-        attachments: task.attachments.map(resourceFileAttachmentToJson),
     }
 }
 

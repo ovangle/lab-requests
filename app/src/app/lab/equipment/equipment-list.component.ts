@@ -35,7 +35,7 @@ import { RouterModule } from "@angular/router";
     span.mat-mdc-list-item-meta {
         display: flex !important;
         flex-basis: 60%;
-        justify-content: end;
+        justify-content: flex-end;
     }
     `]
 })

@@ -2,7 +2,7 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { ChangeDetectorRef, Component, ViewChild, inject } from "@angular/core";
 import { Campus } from "src/app/uni/campus/campus";
 import { InputMaterial } from "../../resources/material/input/input-material";
-import { Software } from "../../resources/software/software";
+import { SoftwareParams } from "../../resources/software/software";
 import { WorkUnit, WorkUnitContext, WorkUnitCreate } from "../../work-unit";
 import { Subscription, defer, firstValueFrom, of } from "rxjs";
 import { WorkUnitFormComponent } from "../../work-unit-form.component";

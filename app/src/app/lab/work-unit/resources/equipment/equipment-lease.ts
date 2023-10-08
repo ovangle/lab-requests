@@ -18,13 +18,9 @@ export interface EquipmentLeaseParams extends ResourceParams<EquipmentLease> {
 }
 
 
-export class EquipmentLease implements Resource {
-    readonly type = 'equipment';
+export class EquipmentLease extends Resource {
+    override readonly type = 'equipment';
 
-    readonly planId: string;
-    readonly workUnitId: string;
-
-    readonly index: number | 'create'; 
     equipment: Equipment | EquipmentRequest | string;
 
     equipmentTrainingCompleted: string[];
@@ -33,12 +29,8 @@ export class EquipmentLease implements Resource {
     setupInstructions: string;
     usageCostEstimate: CostEstimate | null;
 
-    attachments: ResourceFileAttachment<EquipmentLease>[];
-
     constructor(params: EquipmentLeaseParams) {
-        this.planId = params.planId;
-        this.workUnitId = params.workUnitId;
-        this.index = params.index;
+        super(params);
 
         if (typeof params.equipment === 'string') {
             validateIsUUID(params.equipment);
@@ -51,8 +43,6 @@ export class EquipmentLease implements Resource {
         this.requiresAssistance = params.requiresAssistance!;
         this.setupInstructions = params.setupInstructions!;
         this.usageCostEstimate = params.usageCostEstimate || null;
-
-        this.attachments = Array.from(params.attachments || []);
     }
 
     async resolveEquipment(equipments: EquipmentModelService): Promise<EquipmentLease> {
@@ -77,8 +67,8 @@ export function equipmentLeaseFromJson(json: {[k: string]: any}): EquipmentLease
         .map((value) => resourceFileAttachmentFromJson(value));
 
     return new EquipmentLease({
-        planId: json['planId']!,
-        workUnitId: json['workUnitId'],
+        containerId: json['containerId'],
+        id: json['id'],
         index: json['index'],
         equipment,
         equipmentTrainingCompleted: json['equipmentTrainingCompleted'],
@@ -89,7 +79,7 @@ export function equipmentLeaseFromJson(json: {[k: string]: any}): EquipmentLease
     });
 }
 
-export function equipmentLeaseToJson(lease: EquipmentLease): {[k: string]: any} {
+export function equipmentLeaseParamsToJson(lease: EquipmentLeaseParams): {[k: string]: any} {
     let equipment;
     if (lease.equipment instanceof Equipment) {
         equipment = lease.equipment.id;
@@ -100,14 +90,13 @@ export function equipmentLeaseToJson(lease: EquipmentLease): {[k: string]: any} 
     }
 
     return {
-        planId: lease.planId,
-        workUnitId: lease.workUnitId,
+        containerId: lease.containerId,
+        id: lease.id,
         index: lease.index,
         equipment,
         equipmentTrainingCompleted: lease.equipmentTrainingCompleted,
         requiresAssistance: lease.requiresAssistance,
         setupInstructions: lease.setupInstructions,
-        usageCostEstimate: lease.usageCostEstimate && costEstimateToJson(lease.usageCostEstimate),
-        attachments: lease.attachments.map(resourceFileAttachmentToJson)
+        usageCostEstimate: lease.usageCostEstimate && costEstimateToJson(lease.usageCostEstimate)
     }
 }

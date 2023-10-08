@@ -1,8 +1,9 @@
 
 from typing import Annotated
 from uuid import UUID
-from fastapi import APIRouter, Depends, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from api.lab.work_unit.resource.common.schemas import ResourceFileAttachment, ResourceType
+from api.lab.work_unit.resource.errors import ResourceDoesNotExist
 
 from db import LocalSession, get_db
 from api.base.schemas import PagedResultList
@@ -59,10 +60,10 @@ async def put_work_unit(work_unit_id: UUID, patch: WorkUnitPatch, db: LocalSessi
 async def add_resource_attachment(
     work_unit_id: UUID,
     file: UploadFile, 
-    resource_type: ResourceType,
-    resource_id: UUID,
+    params: Annotated[bytes, File()],
     db: LocalSession = Depends(get_db),
 ) -> ResourceFileAttachment:
     work_unit = await WorkUnit.get_for_id(db, work_unit_id)
-    resource: Resource = work_unit.get_resource(resource_type, resource_id)
-    return await upload_resource_attachment(db, resource, file)
+    raise NotImplementedError
+    # resource: Resource = work_unit.get_resource(resource_type, resource_id)
+    # return await upload_resource_attachment(db, resource, file)

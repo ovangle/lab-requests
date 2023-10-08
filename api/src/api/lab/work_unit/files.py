@@ -10,7 +10,7 @@ from .schemas import WorkUnit
 from .resource.schemas import Resource, ResourceFileAttachment
 from . import models
 
-workunit_filestore = FileStore(Path('/lab/work-units'))
+workunit_filestore = FileStore('lab/work-units')
 
 async def upload_resource_attachment(
     db: LocalSession,

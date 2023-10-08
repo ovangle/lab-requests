@@ -14,49 +14,14 @@ from api.base.files.models import StoredFile_
 
 from api.base.schemas import SCHEMA_CONFIG
 from api.base.files.schemas import StoredFile
-from api.lab.work_unit.resource.models import ResourceContainer_, ResourceContainerFileAttachment_
 from db import LocalSession
-from files.store import AsyncBinaryIO, StoredFileMeta
+from filestore.store import AsyncBinaryIO, StoredFileMeta
 
-if TYPE_CHECKING:
-    from api.lab.plan.schemas import ExperimentalPlan
-    from api.lab.work_unit.schemas import WorkUnit
+from ..models import ResourceContainer_, ResourceContainerFileAttachment_
+from .resource_type import ResourceType
 
 TResource = TypeVar('TResource', bound='ResourceBase')
 TResource_co = TypeVar('TResource_co', bound='ResourceBase', covariant=True)
-
-class ResourceType(Enum):
-    EQUIPMENT = 'equipment'
-    SOFTWARE = 'software'
-    TASK = 'task'
-    INPUT_MATERIAL = 'input-material'
-    OUTPUT_MATERIAL = 'output-material'
-
-    def __new__(cls, value: Type[TResource] | TResource | ResourceType | str):
-        match value:
-            case type():
-                return getattr(value, '__resource_type__')
-            case ResourceBase():
-                return getattr(type(value), '__resource_type__')
-            case _:
-                return super().__new__(cls, value)
-
-    @property
-    def container_attr_name(self):
-        match self.value:
-            case 'equipment':
-                return 'equipments'
-            case 'software':
-                return 'softwares'
-            case 'task':
-                return 'tasks'
-            case 'input-material':
-                return 'input_materials'
-            case 'output-material':
-                return 'output_materials'
-            case _:
-                raise ValueError('Unexpected attribute')
-
 
 class HazardClass(str):
     RE = re.compile(r'(?P<group>\d+)(?P<class>\.\d+)?')
@@ -101,6 +66,7 @@ class ResourceFileAttachment(StoredFile, BaseModel):
 
     @classmethod
     def from_model(cls, model: StoredFile_):
+        from ..models import ResourceContainerFileAttachment_
         if (
             not isinstance(model, ResourceContainerFileAttachment_)
             or model.resource_type is None 
@@ -141,12 +107,12 @@ class ResourceBase(BaseModel):
     created_at: datetime 
     updated_at: datetime 
 
-    def __init__(self: TResource, container: ResourceContainer_, id: UUID, index: int, params: ResourceParams[TResource]):
-        super().__init__()
-        self.container_id = container.id
-        self.id = id
-        self.index = index
-        self.created_at = self.updated_at = datetime.now()
+    @classmethod
+    def create(cls: Type[TResource], container: ResourceContainer_ | UUID, index: int, params: ResourceParams[TResource]) -> TResource:
+        raise NotImplementedError 
+
+    async def sync_file_attachments(self, container: ResourceContainer_):
+        file_attachments = await container.get_file_attachments(ResourceType.for_resource(self), self.id)
         self.attachments = [
             ResourceFileAttachment(
                 container_id=container_attachment.get_container_id(),
@@ -154,8 +120,9 @@ class ResourceBase(BaseModel):
                 resource_id=cast(UUID, container_attachment.resource_id),
                 stored_file=container_attachment.stored_file_meta
             )
-            for container_attachment in container.get_file_attachments(ResourceType(self), id)
+            for container_attachment in file_attachments
         ]
+        return self
 
     def apply(self: TResource, params: ResourceParams[TResource]):
         self.updated_at = datetime.now()
@@ -168,3 +135,4 @@ class ResourceParams(BaseModel, Generic[TResource]):
     model_config = SCHEMA_CONFIG
     __resource_type__: ClassVar[ResourceType]
 
+    id: UUID | None = None

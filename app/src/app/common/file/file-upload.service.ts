@@ -1,15 +1,17 @@
-import { Injectable } from "@angular/core";
-import { Observable } from "rxjs";
-import { StoredFile } from "./stored-file";
+import { Injectable, inject } from "@angular/core";
+import { Observable, map } from "rxjs";
+import { HttpClient } from "@angular/common/http";
+import { API_BASE_URL } from "src/app/utils/models/model-service";
 
+import {StoredFile, storedFileFromJson} from './stored-file'
+import urlJoin from "url-join";
 
 @Injectable()
-export class FileUploadService<TFile extends StoredFile, TParams extends {[k: string]: any}> {
-    upload(
-        to: string,
-        uploadFile: File,
-        params?: TParams
-    ): Observable<TFile> {
+export class FileUploadService {
+    readonly httpClient = inject(HttpClient);
+    readonly apiBaseUrl = inject(API_BASE_URL);
+
+    sendFile(path: string, file: File, params?: {[k: string]: any}): Observable<StoredFile> {
         const data = new FormData();
         if (data) {
             JSON.stringify(data);
@@ -18,10 +20,12 @@ export class FileUploadService<TFile extends StoredFile, TParams extends {[k: st
             ], {
                 type: 'application/json'
             });
-            data.append("document", jsonBlob)
+            data.append("params", jsonBlob)
         }
 
-        data.append("file", uploadFile, uploadFile.name);
+        data.append("file", file, file.name);
 
+        const url = urlJoin(this.apiBaseUrl, path);
+        return this.httpClient.post(url, data).pipe(map(storedFileFromJson));
     }
 }

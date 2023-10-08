@@ -21,7 +21,6 @@ import { NgxMatFileInputModule } from "@angular-material-components/file-input";
     template: `
     <mat-form-field>
         <mat-label>Risk assessment form</mat-label>
-    
         <ngx-mat-file-input [formControl]="_control" />
     </mat-form-field>
     `,

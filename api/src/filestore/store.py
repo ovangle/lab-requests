@@ -10,6 +10,7 @@ from anyio import AsyncFile
 
 
 class StoredFileMeta(TypedDict):
+    # filesystem path (relative to FILE_STORE_ROOT)
     path: Path
 
     filename: str
@@ -51,6 +52,10 @@ class AsyncBinaryIO(Protocol):
     def content_type(self) -> str | None:
         ...
 
+    @property
+    def size(self) -> int | None:
+        ...
+
     async def seek(self, offset: int):
         ...
 
@@ -77,7 +82,7 @@ class FileStore:
         if path.is_absolute():
             raise ValueError('Configured path must be expressed relative to {root_path!s}')
         
-        self.path = filestore_settings.dynamic_file_root / path
+        self.path = filestore_settings.root / path
         self.chunk_size = chunk_size
 
     async def store(

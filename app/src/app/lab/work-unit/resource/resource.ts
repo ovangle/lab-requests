@@ -7,21 +7,32 @@ import { ExperimentalPlan } from "../../experimental-plan/experimental-plan";
 import { ResourceFileAttachment } from "./file-attachment/file-attachment";
 
 export interface ResourceParams<T extends Resource> {
-    planId: string;
-    workUnitId: string;
+    id: string | null;
+    containerId: string;
     index: number | 'create';
 
     attachments?: ResourceFileAttachment<T>[];
 }
 
-export interface Resource {
+export class Resource {
     readonly type: ResourceType;
 
-    readonly planId: string;
-    readonly workUnitId: string;
+    readonly containerId: string;
     readonly index: number | 'create';
+    readonly id: string;
 
-    readonly attachments: ResourceFileAttachment<Resource>[];
+    readonly attachments: ResourceFileAttachment<this>[];
+
+    constructor(params: ResourceParams<any>) {
+        if (!params.id) {
+            throw new Error('No id in params');
+        }
+        this.id = params.id;
+
+        this.containerId = params.containerId;
+        this.index = params.index;
+        this.attachments = params.attachments || [];
+    }
 }
 export type ResourceTypeIndex = [ResourceType, number | 'create'];
 

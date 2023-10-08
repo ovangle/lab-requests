@@ -1,6 +1,7 @@
 from __future__ import annotations
-from typing import Literal
-from uuid import UUID
+from datetime import datetime
+from typing import Any, Literal
+from uuid import UUID, uuid4
 from fastapi import HTTPException
 from pydantic import Field
 
@@ -18,14 +19,24 @@ class InputMaterial(ResourceBase):
 
     storage: ResourceStorage | None = None
 
-    def __init__(self, container_id: UUID, index: int, params: InputMaterialParams):
-        super().__init__(container_id, index, params)
-        self.base_unit = params.base_unit
+    @classmethod
+    def from_model(cls, model: dict[str, Any]):
+        return cls(**model)
 
-        self.per_unit_cost_estimate = params.per_unit_cost_estimate
-        self.num_units_required = params.num_units_required
-        self.hazard_classes = params.hazard_classes
-        self.storage = params.storage
+    @classmethod
+    def create(cls, container_id: UUID, index: int, params: InputMaterialParams):
+        return cls(
+            container_id=container_id,
+            id=params.id or uuid4(),
+            index=index,
+            base_unit=params.base_unit,
+            per_unit_cost_estimate=params.per_unit_cost_estimate,
+            num_units_required = params.num_units_required,
+            hazard_classes = params.hazard_classes,
+            storage = params.storage,
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
 
     def apply(self, params: ResourceParams[InputMaterial]):
         params = InputMaterialParams(**params.model_dump())

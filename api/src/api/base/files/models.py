@@ -9,7 +9,7 @@ from sqlalchemy.orm import mapped_column, Mapped
 from db import LocalSession
 
 from db.orm import uuid_pk
-from files.store import FileStore, StoredFileMeta
+from filestore.store import FileStore, StoredFileMeta
 from ..models import Base
 
 class StoredFile_(Base):

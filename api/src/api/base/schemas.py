@@ -16,16 +16,9 @@ from sqlalchemy import Select, func, select
 from api.base.files.schemas import StoredFile
 from db import LocalSession
 
-from humps import camelize
-
 from . import models 
+from .schema_config import SCHEMA_CONFIG
 
-SCHEMA_CONFIG = ConfigDict(
-    alias_generator=camelize,
-    populate_by_name=True,
-    from_attributes=True,
-    arbitrary_types_allowed=True
-)
 
 TModel = TypeVar('TModel', bound=models.Base)
 TApiModel = TypeVar('TApiModel', bound='ApiModel')

@@ -3,6 +3,7 @@ from abc import abstractmethod
 
 from dataclasses import field
 import dataclasses
+import functools
 from typing import (
     TYPE_CHECKING,
     Dict,
@@ -23,9 +24,11 @@ from pydantic import BaseModel, Field, ValidationError
 from api.base.models import Base
 from api.base.schemas import ApiModel, ModelPatch
 from api.lab.work_unit.resource.common.schemas import ResourceType
+from api.lab.work_unit.resource.models import ResourceContainerFileAttachment_
 from db import LocalSession
 
 from .common.schemas import (
+    ResourceParams,
     ResourceType,
     ResourceBase,
     ResourceStorage,
@@ -33,11 +36,11 @@ from .common.schemas import (
     ResourceFileAttachment,
 )
 
-from .equipment_lease.schemas import EquipmentLease
-from .software.schemas import Software
-from .task.schemas import Task
-from .input_material.schemas import InputMaterial
-from .output_material.schemas import OutputMaterial
+from .equipment_lease.schemas import EquipmentLease, EquipmentLeaseParams
+from .software.schemas import Software, SoftwareParams
+from .task.schemas import Task, TaskParams
+from .input_material.schemas import InputMaterial, InputMaterialParams
+from .output_material.schemas import OutputMaterial, OutputMaterialParams
 
 if TYPE_CHECKING:
     from . import models
@@ -63,11 +66,11 @@ RESOURCE_TYPES: list[type] = [
     OutputMaterial,
 ]
 
-TResource = TypeVar("TResource", bound=Resource)
+TResource = TypeVar("TResource", bound=ResourceBase)
 
 
 def resource_name(t: ResourceType | TResource | Type[TResource]):
-    return ResourceType(t).container_attr_name
+    return ResourceType.for_resource(t).container_attr_name
 
 
 class ResourceContainer(BaseModel):
@@ -114,33 +117,60 @@ class ResourceContainer(BaseModel):
         ]
         self.tasks = [Task(**resource_json(item)) for item in model.tasks]
 
+TResourceParams = TypeVar('TResourceParams', bound=ResourceParams)
 
-class Slice(BaseModel, Generic[TResource]):
+class Slice(BaseModel, Generic[TResource, TResourceParams]):
     start: int
     end: int | None = None
-    items: list[TResource]
+    items: list[TResourceParams]
 
-    def update_items(self, container_id: UUID):
-        for i, item in enumerate(self.items):
-            if item.container_id and item.container_id != container_id:
-                raise ValidationError("Resource belongs to a different plan")
-            item.container_id = container_id
-            item.index = self.start + i
+    def _create_or_update_resource(
+        self, 
+        container_id: UUID,
+        resource_type: type[TResource],
+        model_resources: list[TResource],
+        offset: int,
+        params: TResourceParams,
+    ):
+        at_index = self.start + offset
+        if at_index >= len(model_resources):
+            return resource_type.create(container_id, at_index, params)
+        else:
+            resource = model_resources[at_index]
+            return resource.apply(params)
 
-    def update_model_resources(self, model_resources: list[TResource]):
-        model_resources[self.start : self.end] = self.items
+
+    def update_model_resources(self, container_id: UUID, resource_type: type[TResource], model_resources: list[TResource]):
+        create_or_update_resource = functools.partial(
+            self._create_or_update_resource,
+            container_id,
+            resource_type,
+            model_resources
+        )
+
+        model_resources[self.start : self.end] = [
+            create_or_update_resource(i, params)
+            for (i, params) in enumerate(self.items)
+        ]
 
         if self.end is not None and self.start - self.end != len(self.items):
             for i, item in enumerate(model_resources[self.end :]):
                 item.index = self.end + i
 
+EquipmentLeaseSlice = Slice[EquipmentLease, EquipmentLeaseParams]
+InputMaterialSlice = Slice[InputMaterial, InputMaterialParams]
+OutputMaterialSlice = Slice[OutputMaterial, OutputMaterialParams]
+TaskSlice = Slice[Task, TaskParams]
+SoftwareSlice = Slice[Software, SoftwareParams]
+
+
 
 class ResourceContainerPatch(BaseModel):
-    equipments: list[Slice[EquipmentLease]] = Field(default_factory=list)
-    input_materials: list[Slice[InputMaterial]] = Field(default_factory=list)
-    output_materials: list[Slice[OutputMaterial]] = Field(default_factory=list)
-    tasks: list[Slice[Task]] = Field(default_factory=list)
-    softwares: list[Slice[Software]] = Field(default_factory=list)
+    equipments: list[EquipmentLeaseSlice] = Field(default_factory=list)
+    input_materials: list[InputMaterialSlice] = Field(default_factory=list)
+    output_materials: list[OutputMaterialSlice] = Field(default_factory=list)
+    tasks: list[TaskSlice] = Field(default_factory=list)
+    softwares: list[SoftwareSlice] = Field(default_factory=list)
 
     def _get_resources(
         self, resource_type: Type[TResource], model: models.ResourceContainer_
@@ -156,12 +186,11 @@ class ResourceContainerPatch(BaseModel):
         resource_type: Type[TResource],
         container: models.ResourceContainer_,
     ):
-        slices: list[Slice[TResource]] = getattr(self, resource_name(resource_type))
+        slices: list[Slice[TResource, Any]] = getattr(self, resource_name(resource_type))
         container_resources = self._get_resources(resource_type, container)[:]
 
         for slice in slices:
-            slice.update_items(container.id)
-            slice.update_model_resources(container_resources)
+            slice.update_model_resources(container.id, resource_type, container_resources)
 
         if slices:
             setattr(

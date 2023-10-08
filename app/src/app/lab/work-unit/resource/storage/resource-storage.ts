@@ -54,7 +54,7 @@ export function resourceStorageFromJson(json: {[k: string]: any}): ResourceStora
 }
 
 
-export function resourceStorageToJson(storage: ResourceStorage): {[k: string]: any} {
+export function resourceStorageParamsToJson(storage: ResourceStorageParams): {[k: string]: any} {
     return {
         description: storage.description,
         estimatedCost: storage.estimatedCost && costEstimateToJson(storage.estimatedCost)

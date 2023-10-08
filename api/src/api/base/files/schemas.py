@@ -8,8 +8,8 @@ from fastapi import UploadFile
 from pydantic import BaseModel
 from db import LocalSession
 
-from api.base.schemas import SCHEMA_CONFIG
 from filestore.store import StoredFileMeta
+from ..schema_config import SCHEMA_CONFIG
 from .models import StoredFile_
 
 

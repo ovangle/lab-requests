@@ -1,8 +1,11 @@
 from __future__ import annotations
+from datetime import datetime
 
-from uuid import UUID
+from uuid import UUID, uuid4
 from fastapi import HTTPException
 from pydantic.dataclasses import dataclass
+
+from api.lab.work_unit.resource.models import ResourceContainer_
 
 from ..common.schemas import ResourceBase, ResourceParams, ResourceStorage, ResourceDisposal, ResourceType
 
@@ -14,11 +17,22 @@ class OutputMaterial(ResourceBase):
     storage: ResourceStorage | None
     disposal: ResourceDisposal | None
 
-    def __init__(self, container_id: UUID, index: int, params: OutputMaterialParams):
-        super().__init__(container_id, index, params)
-        self.base_unit = params.base_unit
-        self.storage = params.storage
-        self.disposal = params.disposal
+    @classmethod
+    def create(cls, container: ResourceContainer_ | UUID, index: int, params: ResourceParams[OutputMaterial]):
+        if not isinstance(params, OutputMaterialParams):
+            raise TypeError('Expected OutputMaterialParams instance')
+
+        return cls(
+            container_id=container if isinstance(container, UUID) else container.id,
+            index=index,
+            id=params.id or uuid4(),
+            base_unit=params.base_unit,
+            storage=params.storage,
+            disposal=params.disposal,
+
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
 
     def apply(self, params: ResourceParams[OutputMaterial]):
         params = OutputMaterialParams(**params.model_dump())

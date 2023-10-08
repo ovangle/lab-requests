@@ -47,7 +47,7 @@ export function resourceDisposalFromJson(json: {[k: string]: any}): ResourceDisp
 }
 
 
-export function resourceDisposalToJson(disposal: ResourceDisposal): {[k: string]: any} {
+export function resourceDisposalParamsToJson(disposal: ResourceDisposalParams): {[k: string]: any} {
     return {
         description: disposal.description,
         costEstimate: disposal.estimatedCost && costEstimateToJson(disposal.estimatedCost)

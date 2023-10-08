@@ -30,12 +30,22 @@ class EquipmentLease(ResourceBase):
     # including consumables
     usage_cost_estimate: ResourceCostEstimate | None = None
 
-    def __init__(self, container: ResourceContainer_, id: UUID, index: int, params: EquipmentLeaseParams):
-        super().__init__(container, id, index, params)
-        self.equipment = params.equipment
-        self.equipment_training_completed = set(params.equipment_training_completed)
-        self.requires_assistance = params.requires_assistance
-        self.usage_cost_estimate = params.usage_cost_estimate
+    @classmethod
+    def create(cls, container: ResourceContainer_, id: UUID, index: int, params: ResourceParams[EquipmentLease]):
+        if not isinstance(params, EquipmentLeaseParams):
+            raise TypeError('Expected EquipmentLeaseParams')
+        return cls(
+            container_id=container.id,
+            id=id,
+            index=index,
+            equipment=params.equipment,
+            equipment_training_completed=set(params.equipment_training_completed),
+            requires_assistance=params.requires_assistance,
+            usage_cost_estimate=params.usage_cost_estimate,
+            setup_instructions=params.setup_instructions,
+            created_at=container.created_at,
+            updated_at=container.updated_at
+        )
 
     def apply(self, params: ResourceParams[EquipmentLease]):
         params = EquipmentLeaseParams(**params.model_dump())

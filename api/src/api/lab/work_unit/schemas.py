@@ -7,6 +7,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 from sqlalchemy import func, select
+from api.base.files.schemas import StoredFile
+from api.lab.work_unit.resource.models import ResourceContainerFileAttachment_
 
 from db import LocalSession
 from api.base.schemas import ApiModel, ModelPatch, ModelCreate
@@ -134,4 +136,9 @@ class WorkUnitCreate(WorkUnitBase, ModelCreate[WorkUnit, models.WorkUnit_]):
         db.add(work_unit)
         return work_unit
 
+
+class WorkUnitFileAttachment(StoredFile):
+    id: UUID
+
+    work_unit_id: UUID
 
