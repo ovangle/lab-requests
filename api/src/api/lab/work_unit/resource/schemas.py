@@ -106,21 +106,16 @@ class ResourceContainer(BaseModel):
                 return resource
             return resource.model_dump()
 
-        self.equipments = [
-            EquipmentLease(**resource_json(item)) for item in model.equipments
-        ]
-        self.input_materials = [
-            InputMaterial(**resource_json(item)) for item in model.input_materials
-        ]
-        self.output_materials = [
-            OutputMaterial(**resource_json(item)) for item in model.output_materials
-        ]
+        self.equipments = [EquipmentLease(**resource_json(item)) for item in model.equipments]
+        self.input_materials = [InputMaterial(**resource_json(item)) for item in model.input_materials]
+        self.output_materials = [OutputMaterial(**resource_json(item)) for item in model.output_materials]
+        self.softwares = [Software(**resource_json(item)) for item in model.softwares]
         self.tasks = [Task(**resource_json(item)) for item in model.tasks]
 
 TResourceParams = TypeVar('TResourceParams', bound=ResourceParams)
 
 class Slice(BaseModel, Generic[TResource, TResourceParams]):
-    start: int
+    start: int | Literal['append']
     end: int | None = None
     items: list[TResourceParams]
 
@@ -132,7 +127,15 @@ class Slice(BaseModel, Generic[TResource, TResourceParams]):
         offset: int,
         params: TResourceParams,
     ):
-        at_index = self.start + offset
+        if self.start == 'append':
+            if self.end is not None:
+                raise IndexError('Invalid index. An append slice cannot have a terminal index')
+            at_index = len(model_resources)
+        elif self.start < 0:
+            raise IndexError('Invalid slice. Negative indices not supported')
+        else:
+            at_index = self.start + offset
+        
         if at_index >= len(model_resources):
             return resource_type.create(container_id, at_index, params)
         else:
@@ -147,23 +150,26 @@ class Slice(BaseModel, Generic[TResource, TResourceParams]):
             resource_type,
             model_resources
         )
+        if self.start == 'append':
+            model_resources += [
+                create_or_update_resource(i, params)
+                for (i, params) in enumerate(self.items)
+            ]
+        else:
+            model_resources[self.start : self.end] = [
+                create_or_update_resource(i, params)
+                for (i, params) in enumerate(self.items)
+            ]
 
-        model_resources[self.start : self.end] = [
-            create_or_update_resource(i, params)
-            for (i, params) in enumerate(self.items)
-        ]
-
-        if self.end is not None and self.start - self.end != len(self.items):
-            for i, item in enumerate(model_resources[self.end :]):
-                item.index = self.end + i
+            if self.end is not None and self.start - self.end != len(self.items):
+                for i, item in enumerate(model_resources[self.end :]):
+                    item.index = self.end + i
 
 EquipmentLeaseSlice = Slice[EquipmentLease, EquipmentLeaseParams]
 InputMaterialSlice = Slice[InputMaterial, InputMaterialParams]
 OutputMaterialSlice = Slice[OutputMaterial, OutputMaterialParams]
 TaskSlice = Slice[Task, TaskParams]
 SoftwareSlice = Slice[Software, SoftwareParams]
-
-
 
 class ResourceContainerPatch(BaseModel):
     equipments: list[EquipmentLeaseSlice] = Field(default_factory=list)

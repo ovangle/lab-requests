@@ -1,7 +1,8 @@
 from __future__ import annotations
+from datetime import datetime
 
 from typing import Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 from fastapi import HTTPException
 from pydantic import Field
 
@@ -31,20 +32,21 @@ class EquipmentLease(ResourceBase):
     usage_cost_estimate: ResourceCostEstimate | None = None
 
     @classmethod
-    def create(cls, container: ResourceContainer_, id: UUID, index: int, params: ResourceParams[EquipmentLease]):
+    def create(cls, container: UUID | ResourceContainer_, index: int, params: ResourceParams[EquipmentLease]):
         if not isinstance(params, EquipmentLeaseParams):
             raise TypeError('Expected EquipmentLeaseParams')
+
         return cls(
-            container_id=container.id,
-            id=id,
+            container_id=container if isinstance(container, UUID) else container.id,
+            id=params.id or uuid4(),
             index=index,
             equipment=params.equipment,
             equipment_training_completed=set(params.equipment_training_completed),
             requires_assistance=params.requires_assistance,
             usage_cost_estimate=params.usage_cost_estimate,
             setup_instructions=params.setup_instructions,
-            created_at=container.created_at,
-            updated_at=container.updated_at
+            created_at=datetime.now(),
+            updated_at=datetime.now()
         )
 
     def apply(self, params: ResourceParams[EquipmentLease]):

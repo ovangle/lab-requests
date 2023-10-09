@@ -70,7 +70,7 @@ export function resourceContainerPatchFromForm(form: ResourceContainerForm): Res
         const addArray = getResourceAddArray(form, resourceType);
         if (addArray.length > 0) {
             slices.push({
-                start: -1,
+                start: 'append',
                 items: addArray.value.map(value => value as Resource)
             });
         }

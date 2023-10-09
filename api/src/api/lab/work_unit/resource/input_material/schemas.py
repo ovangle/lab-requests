@@ -5,6 +5,8 @@ from uuid import UUID, uuid4
 from fastapi import HTTPException
 from pydantic import Field
 
+from api.lab.work_unit.resource.models import ResourceContainer_
+
 from ..common.schemas import ResourceCostEstimate, HazardClass, ResourceBase, ResourceParams, ResourceStorage, ResourceType
 
 class InputMaterial(ResourceBase):
@@ -24,9 +26,12 @@ class InputMaterial(ResourceBase):
         return cls(**model)
 
     @classmethod
-    def create(cls, container_id: UUID, index: int, params: InputMaterialParams):
+    def create(cls, container: ResourceContainer_ | UUID, index: int, params: ResourceParams[InputMaterial]):
+        if not isinstance(params, InputMaterialParams):
+            raise TypeError('Expected InputMaterialParams')
+
         return cls(
-            container_id=container_id,
+            container_id=container if isinstance(container, UUID) else container.id,
             id=params.id or uuid4(),
             index=index,
             base_unit=params.base_unit,
