@@ -11,6 +11,8 @@ import { isDiscipline } from "../../uni/discipline/discipline";
 import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanModelService } from "../experimental-plan/experimental-plan";
 import { LabType } from "../type/lab-type";
 import { ResourceContainer, ResourceContainerContext, ResourceContainerParams, ResourceContainerPatch, resourceContainerFieldsFromJson, resourceContainerPatchToJson} from "./resource/resource-container";
+import { FileUploadService } from "src/app/common/file/file-upload.service";
+import { ResourceType } from "./resource/resource-type";
 
 
 export interface WorkUnitParams extends ResourceContainerParams {
@@ -153,12 +155,38 @@ export function workUnitLookupToHttpParams(lookup: Partial<WorkUnitLookup>) {
     return new HttpParams();
 }
 
+export interface CreateWorkUnitAttachment {
+    resourceType: ResourceType | null;
+    resourceIndex?: number;
+    resourceId?: string;
+}
+
+export function createWorkUnitAttachmentToJson(createAttachment: CreateWorkUnitAttachment) {
+    const json: {[k: string]: any} = {
+        resourceType: createAttachment.resourceType
+    }
+    if (createAttachment.resourceId) {
+        json['resourceId'] = createAttachment.resourceId;
+    }
+    if (createAttachment.resourceIndex) {
+        json['resourceIndex'] = createAttachment.resourceIndex;
+    }
+    return json;
+}
+
 
 export class WorkUnitModelService extends ModelService<WorkUnit, WorkUnitPatch, WorkUnitCreate> {
     readonly _planModels = inject(ExperimentalPlanModelService);
+    readonly _files = inject(FileUploadService);
+
     override resourcePath = '/lab/work-units';
     resourcePathFromPlan(plan: ExperimentalPlan) {
         return urlJoin(this._planModels.resourcePath, plan.id, 'work-units');
+    }
+
+    resourceAttachmentPath(workUnit: WorkUnit | string) {
+        const workUnitId = typeof workUnit === 'string' ? workUnit : workUnit.id;
+        return `/lab/work-units/${workUnitId}/files`;
     }
 
     override readonly modelFromJson = workUnitFromJson;
@@ -183,7 +211,16 @@ export class WorkUnitModelService extends ModelService<WorkUnit, WorkUnitPatch, 
     createForPlan(plan: ExperimentalPlan, request: WorkUnitCreate): Observable<WorkUnit> {
         return this.create(request, {resourcePath: this.resourcePathFromPlan(plan)})
     }
+
+    addAttachment(workUnit: WorkUnit | string, request: CreateWorkUnitAttachment, file: File) {
+        return this._files.sendFile(
+            this.resourceAttachmentPath(workUnit),
+            file,
+            createWorkUnitAttachmentToJson(request)
+        );
+    }
 }
+
 
 @Injectable()
 export class WorkUnitContext extends Context<WorkUnit, WorkUnitPatch> {
