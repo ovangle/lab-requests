@@ -74,7 +74,7 @@ const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
                 <lab-equipment-request-form 
                     [name]="_equipmentRequest.value.name"
                     [disabled]="_disabled"
-                    (equipmentRequestChange)="_equipmentRequestChange($event)">
+                    (equipmentRequestChange)="_equipmentRequest.next($event)">
                 </lab-equipment-request-form>
             </mat-card-content>
             <mat-card-footer #createFormControls>
@@ -99,7 +99,6 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
     readonly equipments = inject(EquipmentModelCollection);
     readonly searchControl = new FormControl<Equipment | string>('', { nonNullable: true });
 
-    readonly equipmentContext = inject(EquipmentContext);
     readonly searchOptions$ = defer(() => this.equipments.items$);
     readonly isNewEquipment$ = this.searchControl.valueChanges.pipe(
         map(value => value === this._NEW_EQUIPMENT_)
@@ -122,7 +121,6 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
     });
     constructor() {
         this.equipments.connectQuery(this.searchControl.valueChanges.pipe(takeUntilDestroyed(), map(searchText => ({ searchText } as EquipmentLookup))));
-        this.equipmentContext.initCreateContext();
 
         // Prefil the value of the equipment request with the value of the search input
         this.searchControl.valueChanges.pipe(
@@ -156,10 +154,6 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
         this.searchControl.enable();
     }
 
-    _equipmentRequestChange(request: EquipmentRequest) {
-        console.log('request', request);
-        this._equipmentRequest.next(request);
-    }
 
 
     writeValue(obj: Equipment | EquipmentRequest | string | null): void {

@@ -1,44 +1,42 @@
 import { Component } from "@angular/core";
+import { BehaviorSubject } from "rxjs";
 
 
 @Component({
     selector: 'lab-dashboard-page',
     template: `
-        <mat-nav-list>
+        <mat-nav-list [ngClass]="{'expanded': isNavExpanded, 'collapsed': !isNavExpanded}">
             <a mat-list-item routerLink="./">
                 <mat-icon matListItemIcon>home</mat-icon>
-                <span matListItemTitle>Home</span>
+                <span matListItemTitle *ngIf="isNavExpanded">Home</span>
             </a>
             <a mat-list-item 
                 routerLink="./equipments" >
                 <mat-icon matListItemIcon></mat-icon>
-                <span matListItemTitlle>Equipment</span>
+                <span matListItemTitle *ngIf="isNavExpanded">Equipment</span>
             </a>
             <a mat-list-item 
                 routerLink="./experimental-plans">
                 <mat-icon matListItemIcon></mat-icon>
-                <span matListItemTitle>Experimental plans</span>
+                <span matListItemTitle *ngIf="isNavExpanded">Experimental plans</span>
             </a>
         </mat-nav-list>
         <main>
             <router-outlet></router-outlet>
         </main>
     `,
-    styles: [`
-    :host {
-        position: relative;
-    }
-    main {
-        max-width: 60vw;
-        margin-left: 1em;
-        padding-left: 1em;
-        box-sizing: border-box;
-    }
-    `],
+    animations: [
+        
+    ],
     styleUrls: [
         './lab-dashboard.page.css'
     ]
 })
 export class LabDashboardPage{
+    readonly navExpansionState = new BehaviorSubject<'expanded' | 'collapsed'>('collapsed');
+
+    get isNavExpanded() {
+        return this.navExpansionState.value === 'expanded';
+    }
 
 }

@@ -1,34 +1,28 @@
 import { FormControl, FormGroup } from "@angular/forms";
 import { ResourceFileAttachment, resourceFileAttachmentFromJson } from "../work-unit/resource/file-attachment/file-attachment";
 import { ResourceParams, Resource } from "../work-unit/resource/resource";
+import { Injectable, inject } from "@angular/core";
+import { Lookup, ModelService } from "src/app/utils/models/model-service";
+import { HttpParams } from "@angular/common/http";
+import { Context } from "src/app/utils/models/model-context";
+import { Observable } from "rxjs";
 
-export interface SoftwareParams extends ResourceParams<Software> {
+export interface SoftwareParams {
     readonly id: string;
 
     name: string;
-    description?: string;
 }
 
-export class Software implements Resource {
+export class Software {
     readonly type = 'software';
 
-    readonly planId: string;
-    readonly workUnitId: string;
     readonly id: string;
-    readonly index: number | 'create';
 
     name: string;
-    description: string;
-
-    readonly attachments: ResourceFileAttachment<this>[];
 
     constructor(params: SoftwareParams) {
-        this.planId = params.planId;
-        this.workUnitId = params.workUnitId;
-        this.index = params.index;
         this.id = params.id;
         this.name = params.name;
-        this.description = params.description || '';
     }
 }
 
@@ -37,14 +31,21 @@ export function softwareFromJson(json: {[k: string]: any}): Software {
         .map(resourceFileAttachmentFromJson)
 
     return new Software({
-        planId: json['planId'],
-        workUnitId: json['workUnitId'],
         id: json['id'],
-        index: json['index'],
         name: json['name'],
-        description: json['description'],
-        attachments
     });
+}
+
+export interface SoftwarePatch {
+    name: string;
+    description: string;
+}
+
+export function softwarePatchToJson(patch: SoftwarePatch) {
+    return {
+        name: patch.name,
+        description: patch.description
+    };
 }
 
 export interface NewSoftwareRequest {
@@ -61,4 +62,40 @@ export function newSoftwareRequestForm() {
         name: new FormControl('', {nonNullable: true}),
         description: new FormControl('', {nonNullable: true})
     });
+}
+
+export interface SoftwareLookup extends Lookup<Software> {
+    readonly searchText: string;
+}
+
+export function softwareLookupToHttpParams(lookup: Partial<SoftwareLookup>) {
+    const params = new HttpParams();
+    if (lookup.searchText) {
+        params.set('search', lookup.searchText);
+    }
+    return params;
+}
+
+@Injectable()
+export class SoftwareModelService extends ModelService<Software, SoftwarePatch> {
+    override readonly resourcePath: string = '/lab/softwares';
+    override readonly modelFromJson = softwareFromJson;
+    override readonly patchToJson = softwarePatchToJson;
+    override readonly createToJson = softwarePatchToJson;
+    override readonly lookupToHttpParams = softwareLookupToHttpParams;
+}
+
+@Injectable()
+export class SoftwareContext extends Context<Software, SoftwarePatch> {
+    override readonly models: SoftwareModelService = inject(SoftwareModelService);
+
+    readonly software$ = this.committed$;
+
+    override _doCreate(request: SoftwarePatch): Observable<Software> {
+        return this.models.create(request);
+    }
+
+    override _doCommit(identifier: string, patch: SoftwarePatch): Observable<Software> {
+        return this.models.update(identifier, patch); 
+    }
 }

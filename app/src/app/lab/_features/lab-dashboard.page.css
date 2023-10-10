@@ -1,12 +1,17 @@
 
 :host {
     display: flex;
-}
-
-mat-nav-list {
-    flex-basis: 20%;
+        position: relative;
 }
 
 main {
     flex-basis: 80%;
+    max-width: 60vw;
+    margin-left: 1em;
+    padding-left: 1em;
+    box-sizing: border-box;
+}
+
+mat-nav-list.collapsed {
+    width: 36px;
 }

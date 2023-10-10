@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, ViewEncapsulation, inject } from "@angular/core";
+import { ChangeDetectorRef, Component, ElementRef, ViewChild, ViewEncapsulation, inject } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
 import { Observable, Subscription, defer, map, shareReplay, switchMap } from "rxjs";
 import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanModelService } from "../experimental-plan";
@@ -30,19 +30,21 @@ export function experimentalPlanContextFromDetailRoute(): Observable<Experimenta
                     mat-align-tabs="start"
                     mat-stretch-tabs="false">
                     <a mat-tab-link *ngFor="let workUnit of plan.workUnits; let index=index"
-                            [routerLink]="['./', 'work-units', index]" routerLinkActive #linkActive="routerLinkActive"
-                            [active]="linkActive.isActive">
+                    [routerLink]="['./', 'work-units', index]"
+                    routerLinkActive #linkActive="routerLinkActive"
+                    [active]="linkActive.isActive">
                         {{workUnit.campus.name}} - {{workUnit.labType}}
                     </a>
                     <div class="spacer" [style.flex-grow]="1"></div>
                     <a mat-tab-link
-                                routerLink="./work-units/create"
-                                routerLinkActive #linkActive="routerLinkActive"
-                                [active]="linkActive.isActive"
-                                [disabled]="isAddingWorkUnit(plan)">
+                        #createLink
+                        routerLink="./work-units/create"
+                        routerLinkActive #linkActive="routerLinkActive"
+                        [active]="linkActive.isActive"
+                        [disabled]="linkActive.isActive">
                         <mat-icon>+</mat-icon>
                     </a>
-                </nav>
+                </nav>    
             </mat-card-header>
 
             <mat-card-content>
@@ -86,8 +88,10 @@ export function experimentalPlanContextFromDetailRoute(): Observable<Experimenta
 })
 export class ExperimentalPlanDetailPage {
     readonly isEditingForm = true;
+
     readonly _context = inject(ExperimentalPlanContext);
     _contextConnection: Subscription;
+
 
     readonly _formPaneService = inject(ExperimentalPlanFormPaneControlService);
     @ViewChild(ElementRef, {static: true})
@@ -103,10 +107,6 @@ export class ExperimentalPlanDetailPage {
 
     ngOnDestroy() {
         this._contextConnection.unsubscribe();
-    }
-
-    isAddingWorkUnit(plan: ExperimentalPlan) {
-        return false;
     }
 
 }
