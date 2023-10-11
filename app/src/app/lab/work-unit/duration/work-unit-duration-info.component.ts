@@ -1,12 +1,14 @@
 import { Component, Input } from "@angular/core";
 import { WorkUnit } from "../work-unit";
 import { CommonModule } from "@angular/common";
+import { MatDatepickerModule } from "@angular/material/datepicker";
 
 @Component({
     selector: 'lab-work-unit-duration-info',
     standalone: true,
     imports: [
-        CommonModule
+        CommonModule,
+        MatDatepickerModule
     ],
     template: `
     {{startDate | date}} - 
@@ -15,6 +17,12 @@ import { CommonModule } from "@angular/common";
     </ng-container>
 
     <ng-template #noEndDate>?</ng-template>
+
+    <mat-date-range-picker />
+
+    <mat-datepicker>
+    </mat-datepicker>
+
     `
 })
 export class WorkUnitDurationInfoComponent {
