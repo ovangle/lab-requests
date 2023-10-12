@@ -42,21 +42,37 @@ function workUnitFromDetailRoute(): Observable<WorkUnit | null> {
 
 
 @Component({
+    selector: 'lab-work-unit-detail-page',
     template: `
-    <ng-container *ngIf="workUnit$ | async as workUnit">
+    <div *ngIf="workUnit$ | async as workUnit" class="container">
+
         <lab-work-unit-base-info [workUnit]="workUnit">
         </lab-work-unit-base-info>
 
         <lab-work-unit-duration-info [workUnit]="workUnit" />
-        
-        <div class="resources">
-            <lab-work-unit-resource-card *ngFor="let resourceType of RESOURCE_TYPES"
-                [resourceType]="resourceType"
-                [resources]="(getResources(resourceType) | async) || []">
-            </lab-work-unit-resource-card>
-        </div>
-    </ng-container>
-    `
+       
+    </div>
+
+ 
+    <div class="resources">
+        <lab-work-unit-resource-card *ngFor="let resourceType of RESOURCE_TYPES"
+            [resourceType]="resourceType"
+            [resources]="(getResources(resourceType) | async) || []">
+        </lab-work-unit-resource-card>
+    </div>
+    `,
+    styles: [`
+    .container {
+        display: flex;
+    }
+    lab-work-unit-base-info {
+        flex-grow: 1;
+    }
+    lab-work-unit-duration-info {
+        flex-grow: 0;
+        flex-shrink: 0;
+    }
+    `]
 })
 export class WorkUnitDetailPage {
     readonly RESOURCE_TYPES = ALL_RESOURCE_TYPES;

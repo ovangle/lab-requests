@@ -28,14 +28,6 @@ import { EquipmentTrainingDescriptionsInfoComponent } from "./training/training-
         <lab-equipment-tag-chips [tags]="equipment.tags">
         </lab-equipment-tag-chips> 
     </h1>
-
-    <h3>Description</h3>
-    <p>{{equipment.description}}</p>
-
-
-    <lab-equipment-training-descriptions-info
-        [trainingDescriptions]="equipment.trainingDescriptions">
-    </lab-equipment-training-descriptions-info>
     `,
     styles: [`
     `]

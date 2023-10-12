@@ -13,7 +13,16 @@ import { CampusInfoComponent } from "src/app/uni/campus/campus-info.component";
     template: `
     <dl>
         <dt>Technician</dt><dd>{{workUnit.technician}}</dd>
-        <dt>Process Summary</dt><dd>{{workUnit.processSummary}}</dd>
+        <dt>Process Summary</dt>
+        <dd>
+            <ng-container *ngIf="workUnit.processSummary; else unknownProcess">
+                {{workUnit.processSummary}}
+            </ng-container>
+
+            <ng-template #unknownProcess>
+                <p><i>No process description provided</i>
+            </ng-template>
+        </dd>
     </dl>
     `
 })

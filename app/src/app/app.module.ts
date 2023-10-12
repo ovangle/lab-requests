@@ -18,6 +18,7 @@ import { BodyScrollbarHidingService } from './utils/body-scrollbar-hiding.servic
 import { API_BASE_URL } from './utils/models/model-service';
 import { uniModelServiceProviders } from './uni/uni';
 import { labModelServiceProviders } from './lab/lab-model-providers';
+import { FileUploadService } from './common/file/file-upload.service';
 
 /**
  * This function is used internal to get a string instance of the `<base href="" />` value from `index.html`.
@@ -65,6 +66,7 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
     ...authorizationInterceptorProviders(BASE_API_MATCHERS),
     BodyScrollbarHidingService,
 
+    FileUploadService,
     ...uniModelServiceProviders(),
     ...labModelServiceProviders()
   ],

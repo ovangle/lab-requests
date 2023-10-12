@@ -7,6 +7,7 @@ import { ResourceTableInfoHeaderComponent } from "../../resource/common/resource
 import { CollectionViewer } from "@angular/cdk/collections";
 import { Observable, forkJoin, switchMap } from "rxjs";
 import { EquipmentModelService } from "src/app/lab/equipment/equipment";
+import { EquipmentLeaseDetailComponent } from "./equipment-lease-detail.component";
 
 
 @Injectable()
@@ -38,6 +39,7 @@ export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<Equip
         MatTableModule,
         ResourceTableComponent,
         ResourceTableInfoHeaderComponent,
+        EquipmentLeaseDetailComponent
     ],
     template: `
     <lab-resource-table
@@ -55,7 +57,7 @@ export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<Equip
         </ng-container>
 
         <ng-container matColumnDef="is-trained">
-            <th mat-header-cell *matHeaderCellDef>Has completed required training</th>
+            <th mat-header-cell *matHeaderCellDef>Requires training</th>
             <td mat-cell *matCellDef="let element">{{element.isTrainingCompleted ? 'Yes': 'No'}}</td>
         </ng-container>
 
@@ -65,7 +67,7 @@ export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<Equip
         </ng-container>
 
         <ng-container matColumnDef="requires-setup">
-            <th mat-header-cell *matHeaderCellDef>Requires setup</th> 
+            <th mat-header-cell *matHeaderCellDef>Setup</th> 
             <td mat-cell *matCellDef="let element">
                 {{element.setupInstructions ? 'Yes' : "No"}}
             </td>
@@ -80,6 +82,7 @@ export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<Equip
     </lab-resource-table>
 
     <ng-template #detailTemplate let-element>
+        <lab-equipment-lease-detail [lease]="element" />
     </ng-template>
     `,
     providers: [

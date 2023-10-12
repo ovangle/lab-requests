@@ -9,6 +9,7 @@ import { LabEquipmentListComponent } from "../equipment-list.component";
 import { LabEquipmentFormComponent } from "../equipment-form.component";
 import { MatButtonModule } from "@angular/material/button";
 import { EquipmentInfoComponent } from "../equipment-info.component";
+import { EquipmentTrainingDescriptionsInfoComponent } from "../training/training-descriptions-info.component";
 
 const EQUIPMENT_ROUTES: Routes = [
     {
@@ -36,7 +37,8 @@ const EQUIPMENT_ROUTES: Routes = [
 
         LabEquipmentFormComponent,
         LabEquipmentListComponent,
-        EquipmentInfoComponent
+        EquipmentInfoComponent,
+        EquipmentTrainingDescriptionsInfoComponent
     ],
     declarations: [
         EquipmentCreatePage,
