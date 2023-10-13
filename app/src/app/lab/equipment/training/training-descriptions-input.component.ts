@@ -99,10 +99,7 @@ export class EquipmentTrainingDescriptionsInputComponent implements ControlValue
 
     constructor() {
         this.descriptions$.subscribe(
-            descriptions => {
-                console.log('descriptions', descriptions);
-                this._onChange(descriptions);
-            }
+            descriptions => this._onChange(descriptions)
         );
     }
 
@@ -119,7 +116,6 @@ export class EquipmentTrainingDescriptionsInputComponent implements ControlValue
     @ViewChild(MatInput, {static: false})
     _descriptionInput: MatInput | null;
     _onInputFocus() {
-        console.log('_onInputFocus')
         this._inputFocused = true;
         // Wait a tick so that _descriptionInput is available in dom
         timer(0).subscribe(() => {

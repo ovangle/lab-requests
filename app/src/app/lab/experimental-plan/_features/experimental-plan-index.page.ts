@@ -55,7 +55,6 @@ export class ExperimentalPlanIndexPage {
             // Not authorized?
             return [];
         }),
-        tap(console.log),
         shareReplay(1)
     );
 }

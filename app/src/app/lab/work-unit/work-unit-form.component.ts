@@ -114,10 +114,7 @@ export class WorkUnitFormComponent {
     readonly campusLabInfoEditingEnabledSubject = new BehaviorSubject<boolean>(false);
     readonly isEditingCampusInfo$: Observable<boolean> = this.campusLabInfoEditingEnabledSubject.pipe(
         takeUntilDestroyed(),
-        map((forceEnabled) => {
-            console.log(`workUnit: ${this.committed} forceEnabled: ${forceEnabled}`)
-            return this.committed == null || forceEnabled
-        })
+        map((forceEnabled) => this.committed == null || forceEnabled)
     );
 
 

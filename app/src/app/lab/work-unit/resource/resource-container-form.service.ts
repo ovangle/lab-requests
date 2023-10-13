@@ -242,7 +242,6 @@ export abstract class ResourceContainerFormService {
     }
 
     async clearResourceForm(resourceType: ResourceType, index: number | 'create'): Promise<void> {
-        console.log('clearing', resourceType, 'form', index);
         if (index == 'create') {
             return this.popResourceCreateForm(resourceType);
         }

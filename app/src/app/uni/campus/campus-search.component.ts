@@ -112,10 +112,7 @@ export class CampusSearchComponent implements ControlValueAccessor {
     }
     _onChange = (value: any) => {}
     registerOnChange(fn: any): void {
-        this._onChange = (value: any) => {
-            console.log('ON CHANGE', value)
-            fn(value);
-        };
+        this._onChange = fn;
     }
     _onTouched = () => {};
     registerOnTouched(fn: any): void {

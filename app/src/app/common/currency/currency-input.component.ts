@@ -63,15 +63,8 @@ export class CurrencyInputComponent implements ControlValueAccessor {
             this.value$,
             this._focusSubject
         ]).pipe(
-            switchMap(([value, isFocused]) => {
-                console.log('value', value, 'is focused', isFocused);
-                if (isFocused) {
-                    return NEVER;
-                }
-                return of(value);
-            }),
+            switchMap(([value, isFocused]) => isFocused ? NEVER : of(value)),
             map(value => formatCurrency(value, 'en', '')),
-            tap((value) => console.log('emitting', value))
         )
     });
 
@@ -92,6 +85,7 @@ export class CurrencyInputComponent implements ControlValueAccessor {
     }
 
     _onInputFocus(event: Event) {
+        (event.target as HTMLInputElement).select()
         this._focusSubject.next(true);
     }
     

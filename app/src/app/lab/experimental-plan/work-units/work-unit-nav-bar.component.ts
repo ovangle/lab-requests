@@ -52,6 +52,5 @@ export class ExperimentalPlanWorkUnitsNavBar {
 
     readonly isAddingWorkUnit$ = this._activatedRoute.url.pipe(
             map(url => url.some(segment => segment.path.includes('create'))),
-            tap((isAdding) => console.log('isAdding', isAdding))
     );
 }

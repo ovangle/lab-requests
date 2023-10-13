@@ -92,7 +92,6 @@ export class ExperimentalPlanCreatePage {
         this._context.committed$.pipe(
             filter((committed): committed is ExperimentalPlan => committed != null)
         ).subscribe(committed => {
-            console.log('committed');
             this._router.navigate(['../', committed.id], {relativeTo: this._activatedRoute})
         });
     }
@@ -110,12 +109,10 @@ export class ExperimentalPlanCreatePage {
             throw new Error('Cannot save invalid form');
         }
         const patch = await firstValueFrom(this.patch$);
-        console.log('patch', patch);
         return this._context.save(patch);
     }
 
     _showAllFormErrors() {
-        console.log('show all form errors', this.form.errors);
         this.form.markAllAsTouched();
     }
 }

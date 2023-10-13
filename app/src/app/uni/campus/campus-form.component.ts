@@ -158,8 +158,7 @@ export class CampusFormComponent {
     }
 
     async commit() {
-        const campus = await this.formService.commit();
-        console.log(`committed ${campus.id}`);
+        await this.formService.commit();
     }
     
     async cancel() {

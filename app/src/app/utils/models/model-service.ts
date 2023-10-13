@@ -42,7 +42,6 @@ export abstract class ModelService<T extends Model, TPatch, TCreate extends TPat
     protected _indexUrl(options?: {resourcePath?: string}) {
         const resourcePath: string = options && options.resourcePath || this.resourcePath;
         const indexUrl = urlJoin(this.apiBaseUrl, resourcePath, '/')
-        console.log(`indexUrl: ${indexUrl}`)
         return indexUrl;
     }
 

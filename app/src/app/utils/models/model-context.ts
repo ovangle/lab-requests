@@ -20,12 +20,8 @@ export abstract class Context<T extends { readonly id: string}, TPatch = unknown
     }
 
     sendCommitted(setCommitted$: Observable<T | null>): Subscription {
-        console.log('setCommitted$', setCommitted$);
         return setCommitted$.subscribe(
-            (committed) => {
-                console.log('committed', committed);
-                this.committedSubject.next(committed)
-            }
+            (committed) => this.committedSubject.next(committed)
         );
     }
 
@@ -41,7 +37,6 @@ export abstract class Context<T extends { readonly id: string}, TPatch = unknown
             throw new Error('Cannot create in context. Context already has a current committed value')
         }
         const committed = await firstValueFrom(this._doCreate(request));
-        console.log('emitting committed');
         this.committedSubject.next(committed);
         return committed;
     }

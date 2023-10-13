@@ -2,13 +2,10 @@ import { Component, Input } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormControl, FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatSelectModule } from "@angular/material/select";
 import { CurrencyInputComponent } from "src/app/common/currency/currency-input.component";
 import { CommonMeasurementUnitPipe } from "src/app/common/measurement/common-measurement-unit.pipe";
 import { NumberInput, coerceNumberProperty } from "@angular/cdk/coercion";
 import { FundingModel } from "../funding-model";
-import { MatOptionModule } from "@angular/material/core";
-import { MatRadioModule } from "@angular/material/radio";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { CostEstimate } from "./coste-estimate";
 

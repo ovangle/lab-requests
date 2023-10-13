@@ -137,10 +137,7 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
         ).subscribe(this._equipmentRequest);
 
         // Dispatch _onChange events
-        this.value$.pipe(takeUntilDestroyed()).subscribe((v) => {
-            console.log('value changed', v);
-            this._onChange(v)
-        });
+        this.value$.pipe(takeUntilDestroyed()).subscribe((v) => this._onChange(v));
     }
 
     _optionSelected(option: MatAutocompleteSelectedEvent) {

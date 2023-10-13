@@ -20,15 +20,11 @@ export class ResourceFormService<T extends Resource, TForm extends FormGroup<any
             tap((typeIndex) => this._typeIndexSubject.next(typeIndex)),
             filter(isResourceTypeIndex),
             switchMap(async ([resourceType, index]) => {
-                console.log('typeIndex 2', resourceType, index);
                 await this.containerFormService.initResourceForm(resourceType, index)
                 return [resourceType, index] as ResourceTypeIndex;
             })
         )
-    ).then((typeIndex) => {
-        console.log('typeIndex', typeIndex);
-        return typeIndex;
-    });
+    ).then((typeIndex) => typeIndex);
 
     get _typeIndex(): ResourceTypeIndex {
         if (this._typeIndexSubject.value === undefined) {

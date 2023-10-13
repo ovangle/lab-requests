@@ -112,14 +112,15 @@ export class FundingModelSearchComponent implements ControlValueAccessor {
     );
 
     constructor() {
-        this.selected$.subscribe(value => this._onChange(value))
+        this.selected$.pipe(
+            takeUntilDestroyed()
+        ).subscribe(value => this._onChange(value))
     }
 
     ngAfterViewInit() {
-        this._viewErrors.changes.subscribe(change => {
-            console.log('view errors changed', change);
-            this.searchControl.markAsTouched();
-        });
+        this._viewErrors.changes.subscribe(
+            change => this.searchControl.markAsTouched()
+        );
     }
 
     _displayFundingModelInfo(fundingModel: FundingModel | string) {

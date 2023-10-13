@@ -76,9 +76,6 @@ export class WorkUnitResourceFormPage {
     readonly bodyScrollbarHiding = inject(BodyScrollbarHidingService);
 
     constructor() {
-        this._context.committedTypeIndex$.subscribe((typeIndex) => {
-            console.log('received type index', typeIndex)
-        })
         this._contextConnection = this._context.sendTypeIndex(
             typeIndexFromDetailRoute$()
         );

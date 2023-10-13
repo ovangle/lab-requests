@@ -8,6 +8,7 @@ import { ExperimentalPlanContext } from "../../../experimental-plan/experimental
 import { WorkUnit, WorkUnitContext, WorkUnitModelService } from "../../work-unit";
 import { ALL_RESOURCE_TYPES, ResourceType } from "../../resource/resource-type";
 import { Resource } from "../../resource/resource";
+import { ExperimentalPlanFormPaneControlService } from "src/app/lab/experimental-plan/experimental-plan-form-pane-control.service";
 
 class WorkUnitContextError extends Error {}
 
@@ -44,9 +45,12 @@ function workUnitFromDetailRoute(): Observable<WorkUnit | null> {
 @Component({
     selector: 'lab-work-unit-detail-page',
     template: `
-    <div *ngIf="workUnit$ | async as workUnit" class="container">
+    <button mat-button (click)="openUpdateForm()">
+        <mat-icon>update</mat-icon>
+    </button>
 
-        <lab-work-unit-base-info [workUnit]="workUnit">
+    <div *ngIf="workUnit$ | async as workUnit" class="container">
+                <lab-work-unit-base-info [workUnit]="workUnit">
         </lab-work-unit-base-info>
 
         <lab-work-unit-duration-info [workUnit]="workUnit" />
@@ -81,6 +85,8 @@ export class WorkUnitDetailPage {
     readonly _workUnitContextConnection: Subscription;
     readonly workUnit$ = this._workUnitContext.workUnit$;
 
+    readonly _formPane = inject(ExperimentalPlanFormPaneControlService);
+
     constructor() {
         this._workUnitContextConnection = this._workUnitContext.sendCommitted(workUnitFromDetailRoute());
     }
@@ -93,5 +99,16 @@ export class WorkUnitDetailPage {
         return this.workUnit$.pipe(
             map(workUnit => workUnit!.getResources<T>(resourceType))
         )
+    }
+
+    openUpdateForm() {
+        this.workUnit$.pipe(
+            switchMap(workUnit => {
+                if (!workUnit) {
+                    throw new Error('Work unit detail has no work unit');
+                }
+                return this._formPane.open(['work-units', `${workUnit.index}`, 'update']);
+            })
+        ).subscribe();
     }
 }

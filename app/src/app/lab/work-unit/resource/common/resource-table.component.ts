@@ -121,16 +121,12 @@ export class ResourceTableComponent<T extends Resource> implements AfterContentI
     }
 
     openResourceCreateForm(event: Event) {
-        this.dataSource.openResourceCreateForm().then(
-            success => console.log('opened')
-        );
+        this.dataSource.openResourceCreateForm();
         event.stopPropagation()
     }
 
     openResourceUpdateFormAt(index: number, event: Event) {
-        this.dataSource.openResourceUpdateFormAt(index).then(
-            success => console.log('opened update form')
-        );
+        this.dataSource.openResourceUpdateFormAt(index);
         event.stopPropagation()
     }
 

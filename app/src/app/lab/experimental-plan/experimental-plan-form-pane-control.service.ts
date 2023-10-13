@@ -27,7 +27,7 @@ export class ExperimentalPlanFormPaneControlService {
         map(urlSegments => urlSegments != null)
     ));
 
-    open(formPath: string[]): Promise<boolean> {
+    open(formPath: any[]): Promise<boolean> {
         return this._router.navigate([{outlets: {form: formPath}}], {relativeTo: this._activatedRoute});
     }
 

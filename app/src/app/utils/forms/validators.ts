@@ -20,10 +20,8 @@ function _collectFormArrayErrors(arr: FormArray<any>): Observable<{items: (Valid
             }
             const items: Observable<ValidationErrors | null>[] 
                 = arr.controls.map((c) => _collectAbstractControlErrors(c))
-            console.log('items 0', items)
             return forkJoin(items).pipe(
                 map((items) => { return {items}; }),
-                tap((items) => console.log('items', items))
             );
         }),
         first()
@@ -63,10 +61,7 @@ export function collectFieldErrors(group: FormGroup<any>): Observable<Validation
     const formKeys = Object.keys(group.controls);
     const fieldValidities = formKeys.map(k => {
         const control = group.controls[k];
-        // console.log(k, 'control status: ', control.status)
-        return _collectAbstractControlErrors(group.controls[k]).pipe(
-          //  tap(errors => console.log(`${k} errors: ${errors}`))
-        )
+        return _collectAbstractControlErrors(control);
     });
 
     return forkJoin(fieldValidities).pipe(
@@ -74,7 +69,6 @@ export function collectFieldErrors(group: FormGroup<any>): Observable<Validation
             const entries = formKeys
                 .map((k, i) => [k, values[i]])
                 .filter(([_, v]) => v != null);
-            console.log('entries', entries);
             return Object.fromEntries(entries) as ValidationErrors;
         })
     );

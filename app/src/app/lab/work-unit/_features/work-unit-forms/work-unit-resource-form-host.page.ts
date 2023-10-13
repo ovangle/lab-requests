@@ -48,7 +48,7 @@ class WorkUnitResourceContainerFormService extends ResourceContainerFormService 
 @Component({
     selector: 'lab-work-unit-resource-form-host-page',
     template: `
-        <router-outlet></router-outlet>
+    <router-outlet></router-outlet>
     `,
     providers: [
         {
@@ -60,6 +60,8 @@ class WorkUnitResourceContainerFormService extends ResourceContainerFormService 
 export class WorkUnitResourceFormHostPage {
     _workUnitContext = inject(WorkUnitContext);
     _workUnitContextConnection: Subscription;
+
+    _activatedRoute: ActivatedRoute;
 
     readonly form = workUnitForm();
 
