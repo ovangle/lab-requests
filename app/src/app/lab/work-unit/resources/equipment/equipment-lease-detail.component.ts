@@ -3,9 +3,10 @@ import { Component, Input, inject } from "@angular/core";
 
 import { EquipmentInfoComponent } from "src/app/lab/equipment/equipment-info.component";
 import { EquipmentLease } from "./equipment-lease";
-import { Equipment, EquipmentModelService, EquipmentRequest } from "src/app/lab/equipment/equipment";
-import { EquipmentRequestInfoComponent } from "src/app/lab/equipment/equipment-request-info.component";
 import { Observable, of } from "rxjs";
+import { Equipment, EquipmentService } from "src/app/lab/equipment/common/equipment";
+import { EquipmentRequest } from "src/app/lab/equipment/request/equipment-request";
+import { EquipmentRequestInfoComponent } from "src/app/lab/equipment/request/equipment-request-info.component";
 
 
 @Component({
@@ -29,7 +30,7 @@ import { Observable, of } from "rxjs";
     `
 })
 export class EquipmentLeaseDetailComponent {
-    equipments = inject(EquipmentModelService);
+    equipments = inject(EquipmentService);
 
     @Input({required: true}) 
     lease: EquipmentLease;
@@ -53,6 +54,4 @@ export class EquipmentLeaseDetailComponent {
         }
         return this.lease.equipment;
     }
-    
-
 }

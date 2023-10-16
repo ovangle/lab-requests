@@ -3,7 +3,6 @@ import { FormControl, FormGroup } from "@angular/forms";
 import { Observable, ReplaySubject, Subscription, combineLatest, defer, filter, map, shareReplay } from "rxjs";
 import { ResourceContainer, ResourceContainerContext } from "./resource-container";
 import { ResourceType, isResourceType } from "./resource-type";
-import { ExperimentalPlan } from "../../experimental-plan/experimental-plan";
 import { ResourceFileAttachment } from "./file-attachment/file-attachment";
 
 export interface ResourceParams<T extends Resource> {

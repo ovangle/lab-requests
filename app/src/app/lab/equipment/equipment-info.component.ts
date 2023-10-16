@@ -1,5 +1,4 @@
 import { Component, Input } from "@angular/core";
-import { Equipment } from "./equipment";
 import { CommonModule } from "@angular/common";
 import { RouterModule } from "@angular/router";
 
@@ -8,6 +7,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { EquipmentTrainingDescriptionListComponent } from "./training/training-description-list.component";
 import { EquipmentTrainingAcknowlegementComponent } from "./training/training-acknowlegment-input.component";
 import { EquipmentTrainingDescriptionsInfoComponent } from "./training/training-descriptions-info.component";
+import { Equipment } from "./common/equipment";
 
 
 @Component({

@@ -1,11 +1,12 @@
-import { Component, Injectable, inject } from "@angular/core";
-import { WorkUnit, WorkUnitContext, WorkUnitPatch, workUnitPatchFromWorkUnit } from "../../work-unit";
+import { AfterViewInit, Component, Injectable, OnDestroy, inject } from "@angular/core";
 import { Subscription, combineLatest, defer, filter, firstValueFrom, map, switchMap } from "rxjs";
 import { ActivatedRoute, RouterModule } from "@angular/router";
-import { ExperimentalPlan, ExperimentalPlanContext } from "src/app/lab/experimental-plan/experimental-plan";
 import { ResourceContainerForm, ResourceContainerFormService } from "../../resource/resource-container-form.service";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { WorkUnitForm, workUnitForm } from "../../work-unit-form";
+import { WorkUnitForm, workUnitForm } from "../../common/work-unit-form";
+import { BodyScrollbarHidingService } from "src/app/utils/body-scrollbar-hiding.service";
+import { ExperimentalPlanContext, ExperimentalPlan } from "src/app/lab/experimental-plan/common/experimental-plan";
+import { WorkUnitContext, WorkUnit, workUnitPatchFromWorkUnit } from "../../common/work-unit";
 
 function workUnitContextFromFormHostRoute() {
     const planContext = inject(ExperimentalPlanContext);
@@ -50,6 +51,12 @@ class WorkUnitResourceContainerFormService extends ResourceContainerFormService 
     template: `
     <router-outlet></router-outlet>
     `,
+    host: {
+        'class': 'mat-elevation-z8'
+    },
+    styleUrls: [
+        './work-unit-form.css'
+    ],
     providers: [
         {
             provide: ResourceContainerFormService,
@@ -57,13 +64,14 @@ class WorkUnitResourceContainerFormService extends ResourceContainerFormService 
         }
     ]
 })
-export class WorkUnitResourceFormHostPage {
+export class WorkUnitResourceFormHostPage implements AfterViewInit, OnDestroy {
     _workUnitContext = inject(WorkUnitContext);
     _workUnitContextConnection: Subscription;
 
     _activatedRoute: ActivatedRoute;
 
     readonly form = workUnitForm();
+    readonly appScaffold = inject(BodyScrollbarHidingService);
 
     constructor() {
         this._workUnitContextConnection = this._workUnitContext.sendCommitted(
@@ -76,8 +84,12 @@ export class WorkUnitResourceFormHostPage {
             this.form.patchValue(patch);
         });
     }
+    ngAfterViewInit() {
+        this.appScaffold.hideScrollbar();
+    }
 
     ngOnDestroy() {
         this._workUnitContextConnection.unsubscribe();
+        this.appScaffold.unhideScrollbar();
     }
 }

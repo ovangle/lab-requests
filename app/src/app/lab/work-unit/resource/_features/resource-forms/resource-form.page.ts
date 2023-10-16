@@ -50,12 +50,7 @@ export function typeIndexFromDetailRoute$(): Observable<[ResourceType, number | 
         </ng-container>
     </ng-container>
     `,
-    host: {
-        'class': 'mat-elevation-z8'
-    },
-    styleUrls: [
-        './resource-form.page.css'
-    ],
+    
     providers: [
         ResourceContext,
         ResourceFormService
@@ -73,8 +68,6 @@ export class WorkUnitResourceFormPage {
     readonly typeIndex$ = defer(() => this._context.committedTypeIndex$);
     readonly resourceType$ = defer(() => this._context.resourceType$);
 
-    readonly bodyScrollbarHiding = inject(BodyScrollbarHidingService);
-
     constructor() {
         this._contextConnection = this._context.sendTypeIndex(
             typeIndexFromDetailRoute$()
@@ -82,14 +75,9 @@ export class WorkUnitResourceFormPage {
         this._formConnection = this._formService.connect();
     }
 
-    ngAfterViewInit() {
-        this.bodyScrollbarHiding.hideScrollbar();
-    }
-
     ngOnDestroy() {
         this._contextConnection.unsubscribe();
         this._formConnection.unsubscribe();
-        this.bodyScrollbarHiding.unhideScrollbar();
     }
 
     async close() {

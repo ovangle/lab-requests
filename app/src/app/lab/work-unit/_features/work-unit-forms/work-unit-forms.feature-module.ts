@@ -2,10 +2,11 @@ import { CommonModule } from "@angular/common";
 import { NgModule } from "@angular/core";
 import { RouterModule, Routes } from "@angular/router";
 import { WorkUnitResourceFormHostPage } from "./work-unit-resource-form-host.page";
-import { WorkUnitContext, WorkUnitModelService, WorkUnitResourceContainerContext } from "../../work-unit";
 import { ResourceContainerContext } from "../../resource/resource-container";
 import { WorkUnitUpdateFormPage } from "./work-unit-update-form.page";
 import { WorkUnitBaseInfoFormComponent } from "../../base-info/work-unit-base-info-form.component";
+import { WorkUnitFormTitleComponent } from "../../work-unit-form-title.component";
+import { WorkUnitContext, WorkUnitResourceContainerContext } from "../../common/work-unit";
 
 
 @NgModule({
@@ -14,7 +15,6 @@ import { WorkUnitBaseInfoFormComponent } from "../../base-info/work-unit-base-in
         RouterModule.forChild([
             {
                 path: ':work_unit_index',
-                component: WorkUnitResourceFormHostPage,
                 children: [
                     {
                         path: 'update',
@@ -22,6 +22,7 @@ import { WorkUnitBaseInfoFormComponent } from "../../base-info/work-unit-base-in
                     },
                     {
                         path: '',
+                        component: WorkUnitResourceFormHostPage,
                         loadChildren: () => import('../../resource/_features/resource-forms/resource-form.feature-module').then(
                             module => module.WorkUnitResourceFormsFeatureModule
                         )
@@ -29,7 +30,8 @@ import { WorkUnitBaseInfoFormComponent } from "../../base-info/work-unit-base-in
                 ]
             }
         ]),
-        WorkUnitBaseInfoFormComponent
+        WorkUnitBaseInfoFormComponent,
+        WorkUnitFormTitleComponent
     ],
     declarations: [
         WorkUnitResourceFormHostPage,

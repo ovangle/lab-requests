@@ -1,13 +1,12 @@
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { Injectable, inject } from "@angular/core";
-import { FormGroup, FormControl, Validators } from "@angular/forms";
-import { Observable, map, firstValueFrom, defer, filter, tap, shareReplay, of, first, startWith, forkJoin } from "rxjs";
-import { Campus } from "src/app/uni/campus/campus";
+import { FormControl, FormGroup, Validators } from "@angular/forms";
+import { Observable, filter, map, startWith } from "rxjs";
+import { Campus } from "src/app/uni/campus/common/campus";
 import { Discipline } from "src/app/uni/discipline/discipline";
-import { LabType } from "../type/lab-type";
-import { WorkUnitModelService, WorkUnitContext, WorkUnitPatch, workUnitPatchFromWorkUnit } from "./work-unit";
-import { ResourceContainerFormControls, ResourceContainerFormErrors, resourceContainerFormControls } from "./resource/resource-container-form.service";
 import { collectFieldErrors } from "src/app/utils/forms/validators";
+import { LabType } from "../../type/lab-type";
+import { ResourceContainerFormControls, ResourceContainerFormErrors, resourceContainerFormControls } from "../resource/resource-container-form.service";
+import { WorkUnitPatch } from "./work-unit";
 
 export type WorkUnitForm = FormGroup<{
     campus: FormControl<Campus | string | null>;

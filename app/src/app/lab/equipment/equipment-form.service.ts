@@ -2,8 +2,8 @@ import { inject } from "@angular/core";
 import { FormGroup, FormControl, FormArray, Validators, AbstractControl } from "@angular/forms";
 import { Observable, map, share, firstValueFrom } from "rxjs";
 import { LabType } from "../type/lab-type";
-import { EquipmentPatch, EquipmentPatchErrors, EquipmentModelService, EquipmentContext, Equipment, equipmentPatchFromEquipment } from "./equipment";
 import { EquipmentTag } from "./tag/equipment-tag";
+import { EquipmentPatch, EquipmentContext, Equipment, EquipmentService } from "./common/equipment";
 
 export type EquipmentForm = FormGroup<{
     name: FormControl<string>;
@@ -20,25 +20,18 @@ export function equipmentPatchFromForm(form: EquipmentForm): EquipmentPatch {
     return form.value as EquipmentPatch;
 }
 
-function equipmentPatchErrorsFromForm(form: EquipmentForm): EquipmentPatchErrors | null {
-    if (form.valid) {
-        return null;
-    }
-    return form.errors as EquipmentPatchErrors;
-}
+export function equipmentForm(): EquipmentForm {
+    const equipments = inject(EquipmentService);
+    const context = inject(EquipmentContext, {optional: true});
 
-export class EquipmentFormService {
-    modelService = inject(EquipmentModelService);
-    context = inject(EquipmentContext);
-
-    readonly form: EquipmentForm = new FormGroup({
+    return new FormGroup({
         name: new FormControl<string>(
             '', 
             { 
                 nonNullable: true, 
                 validators: [Validators.required], 
                 asyncValidators: [
-                    (c) => this._isEquipmentNameUnique(c)
+                    (c) => equipmentNameUniqueValidator(c as FormControl<string>)
                 ]
             }
         ),
@@ -48,39 +41,10 @@ export class EquipmentFormService {
         trainingDescriptions: new FormControl<string[]>([], {nonNullable: true})
     });
 
-    readonly patchValue$: Observable<EquipmentPatch | null> = this.form.statusChanges.pipe(
-        map(() => equipmentPatchFromForm(this.form)),
-        share()
-    );
-    readonly patchErrors$: Observable<EquipmentPatchErrors | null> = this.form.statusChanges.pipe(
-        map(() => equipmentPatchErrorsFromForm(this.form)),
-        share()
-    );
-
-    get tags() {
-        return this.form.controls.tags;
-    }
-
-    _isEquipmentNameUnique(nameControl: AbstractControl<string>): Observable<{'notUnique': string} | null> {
-        const name = nameControl.value;
-        return this.modelService.query({name: name}).pipe(
+    function equipmentNameUniqueValidator(control: FormControl<string>): Observable<{'notUnique': string} | null> {
+        const name = control.value;
+        return equipments.query({name: name}).pipe(
             map(names => names.length > 0 ? {'notUnique': 'Name is not unique'} : null)
         );
-    }
-
-    async commit(): Promise<Equipment> {
-        if (!this.form.valid) {
-            throw new Error('Cannot commit. Form invalid');
-        }
-        const patch = equipmentPatchFromForm(this.form);
-        return this.context.commit(patch!);
-    }
-
-    async reset() {
-        const committed = await firstValueFrom(this.context.committed$);
-        this.form.reset();
-        if (committed) {
-            this.form.patchValue(equipmentPatchFromEquipment(committed));
-        }
     }
 }

@@ -1,11 +1,11 @@
 import { Provider } from "@angular/core";
-import { CampusModelService } from "./campus/campus";
-import { FundingModelService } from "./research/funding/funding-model";
+import { FundingModelService, uniFundingModelProviders } from "./research/funding/funding-model";
+import { uniCampusModelProviders } from "./campus/common/campus";
 
 
 export function uniModelServiceProviders(): Provider[] {
     return [
-        CampusModelService,
-        FundingModelService
+        ...uniCampusModelProviders(),
+        ...uniFundingModelProviders()
     ];
 }

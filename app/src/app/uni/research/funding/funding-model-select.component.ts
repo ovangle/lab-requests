@@ -3,7 +3,7 @@ import { Component, Injectable, Input, inject } from "@angular/core";
 import { ControlContainer, ControlValueAccessor, FormControl, FormGroup, NG_VALUE_ACCESSOR, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatRadioModule } from "@angular/material/radio";
 import { MatSelectModule } from "@angular/material/select";
-import { FundingModel, FundingModelContext, FundingModelCreate, FundingModelPatch, FundingModelService } from "./funding-model";
+import { FundingModel, FundingModelPatch, FundingModelService } from "./funding-model";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
@@ -14,14 +14,25 @@ import { SelectOtherDescriptionComponent } from "src/app/utils/forms/select-othe
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
 import { FundingModelFormComponent } from "./funding-model-form.component";
 import { LayoutSplitViewComponent } from "src/app/utils/layout/split-view.component";
+import { ModelContext } from "src/app/common/model/context";
+import { ModelCollection, injectModelUpdate } from "src/app/common/model/model-collection";
+import { ModelLookup } from "src/app/common/model/model";
+import { ModelService } from "src/app/common/model/model-service";
 
 @Injectable()
-export class FundingModelSelectContext extends FundingModelContext {
+export class FundingModelCollection extends ModelCollection<FundingModel, FundingModelPatch> {
+    override readonly service = inject(FundingModelService);
+}
+
+@Injectable()
+export class FundingModelSelectContext extends ModelContext<FundingModel, FundingModelPatch> {
     // Value actually selected in the subject
     readonly inputSubject = new Subject<FundingModel | 'other' | null>();
-    readonly toCreateSubject = new Subject<FundingModelCreate>();
+    readonly toCreateSubject = new Subject<FundingModelPatch>();
 
-    readonly fundingModel$: Observable<FundingModel | FundingModelCreate | null> = defer(
+    _doUpdate = injectModelUpdate(FundingModelService, FundingModelCollection);
+
+    readonly fundingModel$: Observable<FundingModel | FundingModelPatch | null> = defer(
         () => this.inputSubject.pipe(
             switchMap(value => {
                 if (value === 'other') {
@@ -32,36 +43,8 @@ export class FundingModelSelectContext extends FundingModelContext {
         )
     );
 
-    override _doCreate(patch: FundingModelCreate): Observable<FundingModel> {
-        // Inside the select context, we override the creation process to merely
-        // overwrite the toCreatek value, bystepping the API. 
-        // This allows the containing form to submit requests on our behalf.
-        this.toCreateSubject.next(patch);
-        return NEVER;
-    }
-
-    override _doCommit(id: string, patch: FundingModelPatch): Observable<FundingModel> {
-        // You cannot patch via a FundingModelSelect context.
-        throw new Error('not implemented');
-        return NEVER;
-    }
-
     override sendCommitted(input: Observable<FundingModel | 'other' | null>): Subscription {
-        const sSubscription = super.sendCommitted(of(null));
-        input.subscribe(this.inputSubject);
-
-        // TODO: Remove me.
-        this.committed$.subscribe(committed => {
-            if (committed != null) {
-                throw new Error('Shoud not commit')
-            }
-        })
-
-        return new Subscription(()=> {
-            sSubscription.unsubscribe();
-            this.inputSubject.complete();
-            this.toCreateSubject.complete();
-        })
+        return input.subscribe((value) => this.inputSubject.next(value));
     }
 }
 
@@ -124,10 +107,7 @@ export class FundingModelSelectContext extends FundingModelContext {
     }
     `],
     providers: [
-        {
-            provide: FundingModelContext,
-            useClass: FundingModelSelectContext
-        },
+        FundingModelSelectContext,
         {
             provide: NG_VALUE_ACCESSOR,
             multi: true,
@@ -138,7 +118,7 @@ export class FundingModelSelectContext extends FundingModelContext {
 export class FundingModelSelectComponent implements ControlValueAccessor {
     controlContainer = inject(ControlContainer);
     _models = inject(FundingModelService);
-    _fundingModelContext = inject(FundingModelContext) 
+    _fundingModelContext = inject(FundingModelSelectContext);
     _fundingModelContextConnection: Subscription;
 
     readonly selectedControl = new FormControl<FundingModel | 'other' | null>(null);
@@ -173,7 +153,7 @@ export class FundingModelSelectComponent implements ControlValueAccessor {
     }
     private _required = false;
 
-    writeValue(value: FundingModel | FundingModelCreate | null): void {
+    writeValue(value: FundingModel | FundingModelPatch | null): void {
         if (value instanceof FundingModel || value == null) {
             this.selectedControl.setValue(value);
         } else {
@@ -183,7 +163,7 @@ export class FundingModelSelectComponent implements ControlValueAccessor {
     }
 
     _onChangeSubscriptions: Subscription[] = [];
-    registerOnChange(fn: (value: FundingModel | FundingModelCreate | null) => void): void {
+    registerOnChange(fn: (value: FundingModel | FundingModelPatch | null) => void): void {
         this._onChangeSubscriptions.push(this.valueSubject.subscribe(fn));
     }
     _onTouched = () => {}

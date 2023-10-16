@@ -1,10 +1,10 @@
 import { Injectable, inject } from "@angular/core";
 import { Observable, map } from "rxjs";
 import { HttpClient } from "@angular/common/http";
-import { API_BASE_URL } from "src/app/utils/models/model-service";
 
 import {StoredFile, storedFileFromJson} from './stored-file'
 import urlJoin from "url-join";
+import { API_BASE_URL } from "../model/model-service";
 
 @Injectable()
 export class FileUploadService {

@@ -5,7 +5,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { CampusSearchComponent } from "src/app/uni/campus/campus-search.component";
 import { DisciplineSelectComponent } from "src/app/uni/discipline/discipline-select.component";
-import { ExperimentalPlanForm, ExperimentalPlanFormErrors } from "../experimental-plan-form";
+import { ExperimentalPlanForm, ExperimentalPlanFormErrors } from "../common/experimental-plan-form";
 
 @Component({
     selector: 'lab-experimental-plan-researcher-form',

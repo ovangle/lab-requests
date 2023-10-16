@@ -3,7 +3,6 @@ import { Component, Input } from "@angular/core";
 import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { CommonFileInputComponent } from "src/app/common/file/file-input.component";
-import { Equipment } from "../../../equipment/equipment";
 import { NgxMatFileInputModule } from "@angular-material-components/file-input";
 
 

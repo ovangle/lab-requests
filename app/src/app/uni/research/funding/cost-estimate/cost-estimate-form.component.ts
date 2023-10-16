@@ -7,7 +7,8 @@ import { CommonMeasurementUnitPipe } from "src/app/common/measurement/common-mea
 import { NumberInput, coerceNumberProperty } from "@angular/cdk/coercion";
 import { FundingModel } from "../funding-model";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { CostEstimate } from "./coste-estimate";
+import { CostEstimate } from "./cost-estimate";
+import { MonoTypeOperatorFunction, Observable, OperatorFunction, Subscription, tap } from "rxjs";
 
 export type CostEstimateForm = FormGroup<{
     isUniversitySupplied: FormControl<boolean>;
@@ -21,7 +22,20 @@ export function costEstimateForm(): CostEstimateForm {
     });
 }
 
-export function costEstimatesFromFormValue(form: CostEstimateForm): CostEstimate {
+export function setCostEstimateFormValue(form: CostEstimateForm, cost: CostEstimate | null) {
+    if (cost == null) {
+        form.reset();
+    } else {
+        form.setValue({
+            isUniversitySupplied: cost.isUniversitySupplied,
+            estimatedCost: cost.estimatedCost
+        })
+    }
+ 
+}
+
+
+export function costEstimatesFromForm(form: CostEstimateForm): CostEstimate {
     if (!form.valid) {
         throw new Error('Invalid form has no value');
     }

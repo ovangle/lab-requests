@@ -1,5 +1,5 @@
 import { Component, Input } from "@angular/core";
-import { CostEstimate } from "./coste-estimate";
+import { CostEstimate } from "./cost-estimate";
 import { CommonModule } from "@angular/common";
 
 

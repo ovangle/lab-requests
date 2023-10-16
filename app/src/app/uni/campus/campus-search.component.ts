@@ -1,5 +1,4 @@
 import { Component, HostBinding, inject } from "@angular/core";
-import { Campus, CampusModelService, isCampus, isCampusCode } from "./campus";
 import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from "@angular/forms";
 import { CommonModule } from "@angular/common";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
@@ -10,6 +9,7 @@ import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler"
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 import { MatInputModule } from "@angular/material/input";
 import { CampusInfoComponent } from "./campus-info.component";
+import { Campus, CampusService } from "./common/campus";
 
 @Component({
     selector: 'uni-campus-search',
@@ -55,28 +55,35 @@ import { CampusInfoComponent } from "./campus-info.component";
 })
 export class CampusSearchComponent implements ControlValueAccessor {
     
-    readonly campusService = inject(CampusModelService);
+    readonly campusService = inject(CampusService);
 
     readonly searchControl = new FormControl<Campus | string>('', {nonNullable: true});
     readonly searchResults$: Observable<Campus[]> = this.searchControl.valueChanges.pipe(
         takeUntilDestroyed(),
         startWith(null),
         switchMap(nameOrCampus => {
-            if (isCampus(nameOrCampus)) {
+            if (nameOrCampus == null) {
+                return of([]);
+            } else if (nameOrCampus instanceof Campus) {
                 return of([nameOrCampus]);
             } else {
-                return this.campusService.searchCampuses(nameOrCampus); 
+                return this.campusService.query({code: nameOrCampus}); 
             }
         })
     );
 
     readonly selectedCampus$: Observable<Campus | null> = this.searchControl.valueChanges.pipe(
         takeUntilDestroyed(),
-        map(value => isCampus(value) ? value : null)
-    )
+        map(value => {
+            if (value instanceof Campus) {
+                return value;
+            }
+            return null;
+        })
+    );
 
     get hasSelectedValue() {
-        return !isCampus(this.searchControl.value);
+        return this.searchControl.value instanceof Campus;
     }
 
     @HostBinding('[attr.required]')
@@ -101,7 +108,7 @@ export class CampusSearchComponent implements ControlValueAccessor {
     }
 
     _displayCampusInfo(campus: Campus) {
-        if (isCampus(campus)) {
+        if (campus instanceof Campus) {
             return `${campus.code} - ${campus.name}`
         }
         return campus;

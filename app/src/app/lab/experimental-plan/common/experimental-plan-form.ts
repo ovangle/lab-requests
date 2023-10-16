@@ -1,13 +1,13 @@
 import { Injectable, inject } from "@angular/core";
 import { FormGroup, FormControl, Validators, FormArray, AbstractControl, ValidationErrors, AsyncValidatorFn, NgControlStatus } from "@angular/forms";
 import { tap, shareReplay, defer, map, Observable, filter, firstValueFrom, of, catchError, throwError, first, concatMap, merge, forkJoin, switchMap, startWith } from "rxjs";
-import { Campus, CampusModelService } from "src/app/uni/campus/campus";
 import { Discipline } from "src/app/uni/discipline/discipline";
-import { FundingModel, FundingModelCreate, FundingModelService } from "src/app/uni/research/funding/funding-model";
-import { WorkUnitForm, WorkUnitFormErrors, workUnitFormErrors } from "../work-unit/work-unit-form";
-import { ExperimentalPlanContext, patchFromExperimentalPlan, ExperimentalPlanPatch, ExperimentalPlan } from "./experimental-plan";
+import { FundingModel, FundingModelService } from "src/app/uni/research/funding/funding-model";
+import { WorkUnitForm, WorkUnitFormErrors, workUnitFormErrors } from "../../work-unit/common/work-unit-form";
 import { HttpErrorResponse } from "@angular/common/http";
 import { collectFieldErrors } from "src/app/utils/forms/validators";
+import { ExperimentalPlanPatch } from "./experimental-plan";
+import { Campus, CampusService } from "src/app/uni/campus/common/campus";
 
 export type ExperimentalPlanControls = {
     title: FormControl<string>;
@@ -54,7 +54,7 @@ export interface ExperimentalPlanFormErrors {
 }
 
 function isCampusOrCampusCodeValidator(): AsyncValidatorFn {
-    const campuses = inject(CampusModelService);
+    const campuses = inject(CampusService);
     return function (control: AbstractControl<Campus | string | null>): Observable<ValidationErrors | null> {
         if (control.value instanceof Campus || control.value == null) {
             return of(null);

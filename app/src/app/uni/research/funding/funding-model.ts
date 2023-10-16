@@ -1,40 +1,48 @@
 import { HttpParams } from "@angular/common/http";
-import { Inject, Injectable, Optional, SkipSelf, inject } from "@angular/core";
-import { Observable, ReplaySubject, connectable, firstValueFrom, map } from "rxjs";
-import { Context } from "src/app/utils/models/model-context";
+import { Injectable, Type, inject, } from "@angular/core";
+import { Observable, map } from "rxjs";
+import { Model, ModelLookup, ModelMeta, ModelParams, ModelPatch, modelParamsFromJson } from "src/app/common/model/model";
+import { RestfulService, modelProviders } from "src/app/common/model/model-service";
 
-import { Lookup, ModelService } from "src/app/utils/models/model-service";
+export interface FundingModelParams extends ModelParams {
+    name: string;
+    description: string;
+    requiresSupervisor: boolean;
+}
 
-export class FundingModel {
-    readonly id: string;
+export class FundingModel extends Model {
     readonly name: string;
     readonly description: string;
     readonly requiresSupervisor: boolean;
-    readonly createdAt: Date;
-    readonly updatedAt: Date;
 
-    constructor(instance: Partial<FundingModel>) {
-        this.id = instance.id!;
-        this.name = instance.name!;
-        this.description = instance.description!;
-        this.requiresSupervisor = instance.requiresSupervisor!;
-        this.createdAt = instance.createdAt!;
-        this.updatedAt = instance.updatedAt!;
+    constructor(params: FundingModelParams) {
+        super(params);
+        this.name = params.name!;
+        this.description = params.description!;
+        this.requiresSupervisor = params.requiresSupervisor!;
     }
 }
 
-export function fundingModelFromJson(json: {[k: string]: any}): FundingModel {
-    return new FundingModel({
-        id: json['id'],
+export function fundingModelParamsFromJson(value: unknown): FundingModelParams {
+    if (typeof value !== 'object' || value == null) {
+        throw new Error('Expected an object');
+    }
+    const json: {[k: string]: any} = value;
+    const baseParams = modelParamsFromJson(json);
+    return {
+        ...baseParams,
         name: json['name'],
         description: json['description'],
         requiresSupervisor: json['requiresSupervisor'],
-        createdAt: json['createdAt'],
-        updatedAt: json['updatedAt']
-    });
+    };
 }
 
-export interface FundingModelPatch {
+export function fundingModelFromJson(json: unknown) {
+    return new FundingModel(fundingModelParamsFromJson(json));
+
+}
+
+export interface FundingModelPatch extends ModelPatch<FundingModel> {
     readonly description: string;
     readonly requiresSupervisor: boolean;
 }
@@ -46,29 +54,29 @@ export function fundingModelPatchToJson(patch: FundingModelPatch) {
     };
 }
 
-export interface FundingModelCreate extends FundingModelPatch {}
-export function fundingModelCreateToJson(create: FundingModelCreate) {
-    return fundingModelPatchToJson(create);
-}
-
-export interface FundingModelLookup extends Lookup<FundingModel> {
+export interface FundingModelLookup extends ModelLookup<FundingModel> {
     // Searches for funding models with this exact name
     name_eq: string;
     // Searches for the instance of this text anywhere in the funding model
     text: string;
 }
+
 function fundingModelLookupToHttpParams(lookup: Partial<FundingModelLookup>) {
     return new HttpParams();
 }
 
 @Injectable()
-export class FundingModelService extends ModelService<FundingModel, FundingModelPatch, FundingModelCreate> {
-   
-    override readonly resourcePath: string = '/uni/research/funding';
-    override readonly modelFromJson = fundingModelFromJson;
-    override readonly patchToJson = fundingModelPatchToJson;
-    override readonly createToJson = fundingModelCreateToJson;
+export class FundingModelMeta extends ModelMeta<FundingModel, FundingModelPatch, FundingModelLookup> {
+    override readonly model = FundingModel;
+    override readonly modelParamsFromJson = fundingModelParamsFromJson;
+    override readonly modelPatchToJson = fundingModelPatchToJson;
     override readonly lookupToHttpParams = fundingModelLookupToHttpParams;
+}
+
+@Injectable()
+export class FundingModelService extends RestfulService<FundingModel, FundingModelPatch, FundingModelLookup> {
+    override readonly metadata = inject(FundingModelMeta);
+    override readonly path: string = '/uni/research/funding';
 
     getById(id: string): Observable<FundingModel> {
         return this.fetch(id);
@@ -93,21 +101,6 @@ export class FundingModelService extends ModelService<FundingModel, FundingModel
     }
 }
 
-@Injectable()
-export class FundingModelContext extends Context<FundingModel, FundingModelPatch, FundingModelCreate> {
-    override readonly models = inject(FundingModelService);
-
-    constructor(
-        @Optional() @SkipSelf() @Inject(FundingModelContext)
-        parentContext: FundingModelContext | undefined
-    ) {
-        super(parentContext);
-    }
-
-    override _doCreate(request: FundingModelCreate): Observable<FundingModel> {
-        return this.models.create(request);
-    }
-    override _doCommit(identifier: string, patch: FundingModelPatch): Observable<FundingModel> {
-        return this.models.update(identifier, patch);
-    }
+export function uniFundingModelProviders() {
+    return modelProviders(FundingModelMeta, FundingModelService);
 }

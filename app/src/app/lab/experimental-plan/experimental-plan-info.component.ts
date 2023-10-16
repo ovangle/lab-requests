@@ -1,7 +1,7 @@
 import { CommonModule } from "@angular/common";
 import { Component, Input } from "@angular/core";
 import { ExperimentalPlanResearcherInfoComponent } from "./researcher/researcher-info.component";
-import { ExperimentalPlan } from "./experimental-plan";
+import { ExperimentalPlan } from "./common/experimental-plan";
 
 @Component({
     selector: 'lab-experimental-plan-info',

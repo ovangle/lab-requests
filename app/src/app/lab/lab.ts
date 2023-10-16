@@ -1,4 +1,4 @@
-import { Campus } from "../uni/campus/campus";
+import { Campus } from "../uni/campus/common/campus";
 import { LabType } from "./type/lab-type";
 
 

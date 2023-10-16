@@ -1,18 +1,18 @@
-import { HttpParams } from "@angular/common/http";
-import { Inject, Injectable, Optional, Provider, SkipSelf, inject } from "@angular/core";
-import { ValidationErrors } from "@angular/forms";
+import { Campus, campusFromJson, campusParamsFromJson } from "src/app/uni/campus/common/campus";
+import { ResourceContainer, ResourceContainerContext, ResourceContainerParams, ResourceContainerPatch, resourceContainerFieldsFromJson, resourceContainerPatchToJson } from "../resource/resource-container";
+import { LabType, isLabType } from "../../type/lab-type";
 import { formatISO, parseISO } from "date-fns";
-import { Observable, filter, firstValueFrom, skipWhile, switchMap, take } from "rxjs";
-import { Context } from "src/app/utils/models/model-context";
-import { Lookup, ModelService } from "src/app/utils/models/model-service";
-import urlJoin from "url-join";
-import { Campus, campusFromJson, isCampus } from "../../uni/campus/campus";
-import { isDiscipline } from "../../uni/discipline/discipline";
-import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanModelService } from "../experimental-plan/experimental-plan";
-import { LabType } from "../type/lab-type";
-import { ResourceContainer, ResourceContainerContext, ResourceContainerParams, ResourceContainerPatch, resourceContainerFieldsFromJson, resourceContainerPatchToJson} from "./resource/resource-container";
+import { Observable, filter, firstValueFrom, skipWhile } from "rxjs";
+import { Inject, Injectable, Optional, Provider, SkipSelf, inject } from "@angular/core";
+import { ModelService, RestfulService, modelProviders } from "src/app/common/model/model-service";
+import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanService } from "../../experimental-plan/common/experimental-plan";
 import { FileUploadService } from "src/app/common/file/file-upload.service";
-import { ResourceType } from "./resource/resource-type";
+import { ModelLookup, ModelMeta, ModelParams, ModelPatch } from "src/app/common/model/model";
+import { HttpParams } from "@angular/common/http";
+import urlJoin from "url-join";
+import { ResourceType } from "../resource/resource-type";
+import { ModelContext } from "src/app/common/model/context";
+import { ModelCollection, injectModelUpdate } from "src/app/common/model/model-collection";
 
 
 export interface WorkUnitParams extends ResourceContainerParams {
@@ -30,6 +30,7 @@ export interface WorkUnitParams extends ResourceContainerParams {
     endDate: Date | null;
 }
 
+
 /**
  * A WorkUnit is a portion of an experimental plan which is conducted
  * at a specific campus at a lab under the control of a specific lab
@@ -39,7 +40,6 @@ export interface WorkUnitParams extends ResourceContainerParams {
 export class WorkUnit extends ResourceContainer {
     readonly planId: string;
     readonly index: number;
-    readonly id: string;
 
     readonly campus: Campus;
     readonly labType: LabType;
@@ -54,20 +54,15 @@ export class WorkUnit extends ResourceContainer {
         params: WorkUnitParams
     ) {
         super(params);
-        this.id = params.id!;
+        
+        if (typeof params.index !== 'number') {
+            throw new Error('WorkUnit index must be a number')
+        }
+        this.index = params.index;
 
-        if (!isCampus(params['campus']))
-            throw new Error('WorkUnit lab requires a campus');
         this.campus = params.campus;
-
-        if (!isDiscipline(params.labType))
-            throw new Error('WorkUnit lab requires a discipline');
         this.labType = params.labType;
-
-        if (!params.technician)
-            throw new Error('WorkUnit requires a technician')
         this.technician = params.technician;
-
         this.processSummary = params.processSummary || '';
 
         this.startDate = params.startDate || null;
@@ -76,25 +71,31 @@ export class WorkUnit extends ResourceContainer {
 }
 
 
-export function workUnitFromJson(json: {[k: string]: any}): WorkUnit {
-    return new WorkUnit({
-        id: json['id'],
-        planId: json['planId'],
-        index: json['index'],
-        campus: campusFromJson(json['campus']),
-        labType: json['labType'],
-        technician: json['technician'],
-        processSummary: json['processSummary'],
+export function workUnitParamsFromJson(json: unknown): WorkUnitParams {
+    if (typeof json !== 'object' || json == null) {
+        throw new Error('Expected an object')
+    }
+    const obj: {[k: string]: any} = json as any;
+    const baseParams = resourceContainerFieldsFromJson(json);
+    return {
+        ...baseParams,
+        planId: obj['planId'],
+        index: obj['index'],
+        campus: new Campus(campusFromJson(obj['campus'])),
+        labType: obj['labType'],
+        technician: obj['technician'],
+        processSummary: obj['processSummary'],
 
-        startDate: json['startDate'] && parseISO(json['startDate']),
-        endDate: json['endDate'] && parseISO(json['endDate']),
-
-        ...resourceContainerFieldsFromJson(json)
-    })
-
+        startDate: obj['startDate'] && parseISO(obj['startDate']),
+        endDate: obj['endDate'] && parseISO(obj['endDate']),
+    };
 }
 
-export interface WorkUnitPatch extends ResourceContainerPatch {
+export function workUnitFromJson(json: unknown): WorkUnit {
+    return new WorkUnit(workUnitParamsFromJson(json))
+}
+
+export interface WorkUnitPatch extends ResourceContainerPatch<WorkUnit> {
     readonly campus: Campus | string;
     readonly labType: LabType;
     readonly technician: string;
@@ -123,7 +124,7 @@ export function workUnitPatchFromWorkUnit(workUnit: WorkUnit): WorkUnitPatch {
 
 export function workUnitPatchToJson(patch: WorkUnitPatch): {[k: string]: any} {
     return {
-        campus: isCampus(patch.campus) ? patch.campus.id : patch.campus,
+        campus: (patch.campus instanceof Campus) ? patch.campus.id : patch.campus,
         labType: patch.labType,
         technician: patch.technician,
         processSummary: patch.processSummary,
@@ -150,7 +151,7 @@ export function workUnitCreateToJson(create: WorkUnitCreate) {
     };
 }
 
-export interface WorkUnitLookup extends Lookup<WorkUnit> {}
+export interface WorkUnitLookup extends ModelLookup<WorkUnit> {}
 export function workUnitLookupToHttpParams(lookup: Partial<WorkUnitLookup>) {
     return new HttpParams();
 }
@@ -174,14 +175,23 @@ export function createWorkUnitAttachmentToJson(createAttachment: CreateWorkUnitA
     return json;
 }
 
+export class WorkUnitMeta extends ModelMeta<WorkUnit> {
+    
+    readonly model = WorkUnit;
+    override readonly modelParamsFromJson = workUnitParamsFromJson;
+    override readonly modelPatchToJson = workUnitPatchToJson;
+    override readonly lookupToHttpParams = workUnitLookupToHttpParams;
+}
 
-export class WorkUnitModelService extends ModelService<WorkUnit, WorkUnitPatch, WorkUnitCreate> {
-    readonly _planModels = inject(ExperimentalPlanModelService);
+@Injectable()
+export class WorkUnitService extends RestfulService<WorkUnit, WorkUnitPatch, WorkUnitLookup> {
+    readonly _planModels = inject(ExperimentalPlanService);
     readonly _files = inject(FileUploadService);
 
-    override resourcePath = '/lab/work-units';
+    readonly metadata = new WorkUnitMeta();
+    override readonly path = '/lab/work-units';
     resourcePathFromPlan(plan: ExperimentalPlan) {
-        return urlJoin(this._planModels.resourcePath, plan.id, 'work-units');
+        return urlJoin(this._planModels.path, plan.id, 'work-units');
     }
 
     resourceAttachmentPath(workUnit: WorkUnit | string) {
@@ -189,27 +199,8 @@ export class WorkUnitModelService extends ModelService<WorkUnit, WorkUnitPatch, 
         return `/lab/work-units/${workUnitId}/files`;
     }
 
-    override readonly modelFromJson = workUnitFromJson;
-    override readonly patchToJson = workUnitPatchToJson;
-    override readonly createToJson = workUnitCreateToJson;
-    override readonly lookupToHttpParams = workUnitLookupToHttpParams;
-
-    readByPlanAndIndex(plan: ExperimentalPlan, index: number): Observable<WorkUnit> {
-        return this.fetch(`${index}`, { resourcePath: this.resourcePathFromPlan(plan) });
-    }
-
     readById(id: string) {
         return this.fetch(id);
-    }
-
-    queryPlanWorkUnits(plan: ExperimentalPlan, params: {[k: string]: any}): Observable<WorkUnit[]> {
-        return this.query(params, {
-            resourcePath: this.resourcePathFromPlan(plan)
-        });
-    }
-
-    createForPlan(plan: ExperimentalPlan, request: WorkUnitCreate): Observable<WorkUnit> {
-        return this.create(request, {resourcePath: this.resourcePathFromPlan(plan)})
     }
 
     addAttachment(workUnit: WorkUnit | string, request: CreateWorkUnitAttachment, file: File) {
@@ -221,9 +212,18 @@ export class WorkUnitModelService extends ModelService<WorkUnit, WorkUnitPatch, 
     }
 }
 
+@Injectable()
+export class WorkUnitCollection extends ModelCollection<WorkUnit, WorkUnitPatch, WorkUnitLookup> {
+    override readonly service = inject(WorkUnitService);
+}
+
 
 @Injectable()
-export class WorkUnitContext extends Context<WorkUnit, WorkUnitPatch> {
+export class WorkUnitContext extends ModelContext<WorkUnit, WorkUnitPatch> {
+    override readonly _doUpdate = injectModelUpdate(
+        WorkUnitService,
+        WorkUnitCollection
+    );
     _planContext = inject(ExperimentalPlanContext);
     readonly plan$ = this._planContext.committed$.pipe(
         skipWhile((p) => p == null), // Ignore initial nulls
@@ -235,53 +235,21 @@ export class WorkUnitContext extends Context<WorkUnit, WorkUnitPatch> {
         })
     );
 
-    models: WorkUnitModelService = inject(WorkUnitModelService);
+    models = inject(WorkUnitService);
     readonly workUnit$ = this.committed$;
-
-    constructor(
-        @Optional() 
-        @SkipSelf() 
-        @Inject(WorkUnitContext)
-        parentContext: WorkUnitContext | undefined
-    ) {
-        super(parentContext)
-    }
-
-    override _doCreate(request: WorkUnitCreate): Observable<WorkUnit> {
-        return this.plan$.pipe(
-            take(1),
-            switchMap(plan => this.models.createForPlan(plan, request))
-        );
-        /*
-        return this.plan$.pipe(
-            take(1),
-            switchMap(contextPlan => {
-                if (request.planId && request.planId != contextPlan.id) {
-                    throw new Error('Cannot create work unit for different plan');
-                }
-                request.planId = contextPlan.id;
-                return this.models.create(request);
-            })
-        )
-        */
-    }
-
-    override _doCommit(id: string, patch: WorkUnitPatch): Observable<WorkUnit> {
-        return this.models.update(id, patch);
-    }
 }
 
 @Injectable()
 export class WorkUnitResourceContainerContext extends ResourceContainerContext<WorkUnit, WorkUnitPatch> {
+    readonly _workUnitContext = inject(WorkUnitContext);
     
-    _workUnitContext = inject(WorkUnitContext);
     readonly committed$ = this._workUnitContext.committed$;
 
     override commitContext(patch: WorkUnitPatch): Promise<WorkUnit> {
         return this._workUnitContext.commit(patch);
     }
     
-    override async patchFromContainerPatch(containerPatch: ResourceContainerPatch): Promise<WorkUnitPatch> {
+    override async patchFromContainerPatch(containerPatch: ResourceContainerPatch<WorkUnit>): Promise<WorkUnitPatch> {
         const workUnit = await firstValueFrom(this._workUnitContext.workUnit$);
         if (workUnit == null) {
             throw new Error('Cannot access resources in empty context');
@@ -301,8 +269,6 @@ export class WorkUnitResourceContainerContext extends ResourceContainerContext<W
     }
 }
 
-export function labWorkUnitModelServiceProviders(): Provider[] {
-    return [
-        WorkUnitModelService
-    ]
+export function labWorkUnitModelProviders(): Provider[] {
+    return modelProviders(WorkUnitMeta, WorkUnitService);
 }

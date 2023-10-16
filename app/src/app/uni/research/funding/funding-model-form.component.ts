@@ -3,7 +3,7 @@ import { Component, Injectable, Input, inject } from "@angular/core";
 import { FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { filter, map } from "rxjs";
-import { FundingModelContext, FundingModelPatch } from "./funding-model";
+import { FundingModelPatch } from "./funding-model";
 import { MatInputModule } from "@angular/material/input";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
@@ -33,8 +33,6 @@ function fundingModelPatchErrorsFromForm(form: FundingModelForm): FundingModelFo
 
 @Injectable()
 export class FundingModelFormService {
-    readonly _context = inject(FundingModelContext);
-
     readonly form: FundingModelForm = new FormGroup({
         description: new FormControl('', {nonNullable: true, validators: [Validators.required]}),
         supervisorRequired: new FormControl(false, {nonNullable: true})

@@ -1,10 +1,12 @@
 import { ChangeDetectorRef, Component, Inject, Injectable, Optional, SkipSelf, ViewChild, inject } from "@angular/core";
 import { Subject, Subscription, filter, first, firstValueFrom, map, of } from "rxjs";
-import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanPatch } from "../experimental-plan";
 import { ExperimentalPlanFormComponent } from "../experimental-plan-form.component";
 import { ActivatedRoute, Router } from "@angular/router";
-import { WorkUnitContext, WorkUnitCreate, WorkUnitModelService } from "../../work-unit/work-unit";
-import { experimentalPlanForm, experimentalPlanPatchFromForm } from "../experimental-plan-form";
+import { experimentalPlanForm, experimentalPlanPatchFromForm } from "../common/experimental-plan-form";
+import { WorkUnit, WorkUnitContext, WorkUnitCreate, WorkUnitPatch } from "../../work-unit/common/work-unit";
+import { ExperimentalPlanPatch, ExperimentalPlanContext, ExperimentalPlan, ExperimentalPlanService, ExperimentalPlanCollection } from "../common/experimental-plan";
+import { injectModelAdd } from "src/app/common/model/model-collection";
+import { ModelContext } from "src/app/common/model/context";
 
 
 const experimentalPlanCreateFixture: Partial<ExperimentalPlanPatch> = {
@@ -18,32 +20,6 @@ const experimentalPlanCreateFixture: Partial<ExperimentalPlanPatch> = {
     addWorkUnits: []
 };
 
-@Injectable()
-export class CreateExperimentalPlanWorkUnitContext extends WorkUnitContext {
-    readonly createRequestsSubject = new Subject<WorkUnitCreate>();
-
-    constructor(
-        @Optional() @SkipSelf() @Inject(WorkUnitContext)
-        parentContext: WorkUnitContext | undefined
-    ) {
-        super(parentContext);
-        if (parentContext) {
-            throw new Error('This context cannot be attached to a parent context');
-        }
-    }
-
-    override _doCreate(request: WorkUnitCreate) {
-        // This doesn't actually create the work unit, it just
-        // adds it to the experimental plan form's added work units.
-        this.createRequestsSubject.next(request);
-
-        return this.plan$.pipe(
-            filter((p): p is ExperimentalPlan => p != null),
-            map(plan => plan.workUnits[0]),
-            first()
-        );
-    }
-}
 @Component({
     selector: 'lab-experimental-plan-create-page',
     template: `
@@ -70,10 +46,6 @@ export class CreateExperimentalPlanWorkUnitContext extends WorkUnitContext {
     `],
     providers: [
         ExperimentalPlanContext,
-        {
-            provide: WorkUnitContext,
-            useClass: CreateExperimentalPlanWorkUnitContext
-        }
     ]
 })
 export class ExperimentalPlanCreatePage {
@@ -87,15 +59,6 @@ export class ExperimentalPlanCreatePage {
     readonly form = experimentalPlanForm();
     readonly patch$ = experimentalPlanPatchFromForm(this.form);
 
-    constructor() {
-        this._context.initCreateContext();
-        this._context.committed$.pipe(
-            filter((committed): committed is ExperimentalPlan => committed != null)
-        ).subscribe(committed => {
-            this._router.navigate(['../', committed.id], {relativeTo: this._activatedRoute})
-        });
-    }
-
     ngAfterViewInit() {
         this.form.patchValue({
             ...experimentalPlanCreateFixture,
@@ -103,13 +66,15 @@ export class ExperimentalPlanCreatePage {
         })
         this._cdRef.detectChanges();
     }
+    
+    readonly _add = injectModelAdd(ExperimentalPlanService, ExperimentalPlanCollection)
 
     async save() {
         if (!this.form.valid) {
             throw new Error('Cannot save invalid form');
         }
         const patch = await firstValueFrom(this.patch$);
-        return this._context.save(patch);
+        return await this._add(patch);
     }
 
     _showAllFormErrors() {

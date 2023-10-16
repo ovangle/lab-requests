@@ -1,4 +1,4 @@
-import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
+import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/cost-estimate";
 
 export const RESOURCE_STORAGE_TYPES = [
     'general',

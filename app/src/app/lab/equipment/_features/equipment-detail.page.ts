@@ -1,13 +1,14 @@
 import { CommonModule } from "@angular/common";
-import { Component, Injectable, inject } from "@angular/core";
+import { Component, Injectable, Provider, inject } from "@angular/core";
 import { ActivatedRoute, RouterModule } from "@angular/router";
-import { Equipment, EquipmentContext, EquipmentModelService } from "../equipment";
-import { Observable, Subscription, shareReplay, switchMap } from "rxjs";
+import { Connectable, Observable, Subscription, connectable, shareReplay, switchMap } from "rxjs";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { EquipmentCollection, EquipmentContext, EquipmentService, Equipment } from "../common/equipment";
 
-function equipmentContextFromDetailRoute() {
+function equipmentContextFromDetailRoute(): Observable<Equipment> {
     const route = inject(ActivatedRoute);
-    const models = inject(EquipmentModelService);
+    const equipmentService = inject(EquipmentService);
+    const equipments = inject(EquipmentCollection, {optional: true});
 
     return route.paramMap.pipe(
         takeUntilDestroyed(),
@@ -16,9 +17,12 @@ function equipmentContextFromDetailRoute() {
             if (!equipmentId) {
                 throw new Error('No equipment in route');
             }
-            return models.fetch(equipmentId);
+            if (equipments) {
+                return equipments.get(equipmentId);
+            } else {
+                return equipmentService.fetch(equipmentId);
+            }
         }),
-        shareReplay(1)
     );
 }
 
@@ -28,20 +32,24 @@ function equipmentContextFromDetailRoute() {
     template: `
     <ng-container *ngIf="context.equipment$ | async as equipment">
         <lab-equipment-info [equipment]="equipment"></lab-equipment-info>
+
+    <h3>Description</h3>
+        <p>{{equipment.description}}</p>
+
+        <lab-equipment-training-descriptions-info
+            [trainingDescriptions]="equipment.trainingDescriptions">
+        </lab-equipment-training-descriptions-info>
     </ng-container>
-    `
+    `,
+    providers: [
+        EquipmentContext
+    ]
 })
 export class EquipmentDetailPage {
     readonly context = inject(EquipmentContext);
-    _contextConnection: Subscription;
 
     constructor() {
-        this._contextConnection = this.context.sendCommitted(
-            equipmentContextFromDetailRoute()
-        );
+        this.context.sendCommitted(equipmentContextFromDetailRoute());
     }
 
-    ngOnDestroy() {
-        this._contextConnection.unsubscribe();
-    }
 }

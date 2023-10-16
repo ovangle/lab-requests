@@ -7,14 +7,15 @@ import { EquipmentLease } from "./equipment-lease";
 import { Observable, defer, filter, map, startWith } from "rxjs";
 import { EquipmentSearchComponent } from "src/app/lab/equipment/equipment-search.component";
 import { ResourceFormService } from "../../resource/resource-form.service";
-import { Equipment, EquipmentPatch, EquipmentRequest } from "src/app/lab/equipment/equipment";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { EquipmentTrainingAcknowlegementComponent } from "src/app/lab/equipment/training/training-acknowlegment-input.component";
 import { CostEstimateForm, costEstimateForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
 import { EquipmentRiskAssessmentFileInputComponent } from "./risk-assessment-file-input.component";
+import { EquipmentLike } from "src/app/lab/equipment/equipment-like";
+import { Equipment } from "src/app/lab/equipment/common/equipment";
 
 export type EquipmentLeaseForm = FormGroup<{
-    equipment: FormControl<Equipment | EquipmentRequest | null>;
+    equipment: FormControl<EquipmentLike | null>;
     equipmentTrainingCompleted: FormControl<string[]>;
     requiresAssistance: FormControl<boolean>;
 
@@ -24,7 +25,7 @@ export type EquipmentLeaseForm = FormGroup<{
 
 export function equipmentLeaseForm(lease?: Partial<EquipmentLease>): EquipmentLeaseForm {
     return new FormGroup({
-        equipment: new FormControl<Equipment | EquipmentRequest | null>(
+        equipment: new FormControl<EquipmentLike | null>(
             lease?.equipment || null as any, 
             { validators: [Validators.required] }
         ),
@@ -99,11 +100,11 @@ export class EquipmentLeaseFormComponent {
         return this.formService.form;
     }
 
-    get equipmentControl(): FormControl<Equipment | EquipmentRequest | null> {
+    get equipmentControl(): FormControl<EquipmentLike | null> {
         return this.form.controls.equipment;
     }
 
-    readonly selectedEquipment$: Observable<Equipment | EquipmentRequest | null> = defer(
+    readonly selectedEquipment$: Observable<EquipmentLike | null> = defer(
         () => this.equipmentControl.valueChanges.pipe(
             startWith(this.equipmentControl.value),
             map((value) => {

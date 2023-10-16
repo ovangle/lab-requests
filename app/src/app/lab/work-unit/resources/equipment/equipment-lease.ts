@@ -1,14 +1,16 @@
 import { validate as validateIsUUID } from 'uuid';
 
-import { Equipment, EquipmentModelService, EquipmentPatch, EquipmentRequest, equipmentFromJson, equipmentPatchToJson, isEquipmentPatch } from "src/app/lab/equipment/equipment";
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { Resource, ResourceParams } from "../../resource/resource";
 import { firstValueFrom } from 'rxjs';
-import { CostEstimate, costEstimateFromJson, costEstimateToJson } from 'src/app/uni/research/funding/cost-estimate/coste-estimate';
 import { ResourceFileAttachment, resourceFileAttachmentFromJson, resourceFileAttachmentToJson } from '../../resource/file-attachment/file-attachment';
+import { CostEstimate, costEstimateFromJson, costEstimateToJson } from 'src/app/uni/research/funding/cost-estimate/cost-estimate';
+import { Equipment, EquipmentService, equipmentPatchToJson } from 'src/app/lab/equipment/common/equipment';
+import { EquipmentRequest, equipmentRequestToJson, isEquipmentRequest } from 'src/app/lab/equipment/request/equipment-request';
+import { EquipmentLike, equipmentLikeFromJson, equipmentLikeToJson } from 'src/app/lab/equipment/equipment-like';
 
 export interface EquipmentLeaseParams extends ResourceParams<EquipmentLease> {
-    equipment: Equipment | EquipmentRequest | string;
+    equipment: EquipmentLike;
     equipmentTrainingCompleted?: string[];
     requiresAssistance?: boolean;
 
@@ -21,7 +23,7 @@ export interface EquipmentLeaseParams extends ResourceParams<EquipmentLease> {
 export class EquipmentLease extends Resource {
     override readonly type = 'equipment';
 
-    equipment: Equipment | EquipmentRequest | string;
+    equipment: EquipmentLike;
 
     equipmentTrainingCompleted: string[];
     requiresAssistance: boolean;
@@ -45,7 +47,7 @@ export class EquipmentLease extends Resource {
         this.usageCostEstimate = params.usageCostEstimate || null;
     }
 
-    async resolveEquipment(equipments: EquipmentModelService): Promise<EquipmentLease> {
+    async resolveEquipment(equipments: EquipmentService): Promise<EquipmentLease> {
         if (typeof this.equipment === 'string') {
             const equipment = await firstValueFrom(equipments.fetch(this.equipment));
             return new EquipmentLease({...this, equipment});
@@ -61,7 +63,7 @@ export function equipmentLeaseFromJson(json: {[k: string]: any}): EquipmentLease
     const jsonEquipment = json['equipment'];
     const equipment = typeof jsonEquipment === 'string'
             ? jsonEquipment
-            : equipmentFromJson(jsonEquipment);
+            : equipmentLikeFromJson(jsonEquipment);
 
     const attachments = Array.from(json['attachments'] || [])
         .map((value) => resourceFileAttachmentFromJson(value));
@@ -83,8 +85,8 @@ export function equipmentLeaseParamsToJson(lease: EquipmentLeaseParams): {[k: st
     let equipment;
     if (lease.equipment instanceof Equipment) {
         equipment = lease.equipment.id;
-    } else if (isEquipmentPatch(lease.equipment)) {
-        equipment = equipmentPatchToJson(lease.equipment);
+    } else if (isEquipmentRequest(lease.equipment)) {
+        equipment = equipmentRequestToJson(lease.equipment);
     } else {
         equipment = lease.equipment;
     }
@@ -93,7 +95,7 @@ export function equipmentLeaseParamsToJson(lease: EquipmentLeaseParams): {[k: st
         containerId: lease.containerId,
         id: lease.id,
         index: lease.index,
-        equipment,
+        equipment: equipmentLikeToJson(lease.equipment),
         equipmentTrainingCompleted: lease.equipmentTrainingCompleted,
         requiresAssistance: lease.requiresAssistance,
         setupInstructions: lease.setupInstructions,

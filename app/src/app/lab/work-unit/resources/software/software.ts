@@ -1,6 +1,6 @@
-import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
 import { Resource, ResourceParams } from "../../resource/resource";
 import { ResourceFileAttachment, resourceFileAttachmentFromJson, resourceFileAttachmentToJson } from "../../resource/file-attachment/file-attachment";
+import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/cost-estimate";
 
 export interface SoftwareParams extends ResourceParams<Software> {
     name: string;

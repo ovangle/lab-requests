@@ -60,11 +60,11 @@ export function resourceContainerFormControls(): ResourceContainerFormControls {
 
 export type ResourceContainerForm = FormGroup<ResourceContainerFormControls>;
 
-export function resourceContainerPatchFromForm(form: ResourceContainerForm): ResourceContainerPatch {
+export function resourceContainerPatchFromForm(form: ResourceContainerForm): ResourceContainerPatch<any> {
     if (!form.valid) {
         throw new Error('Cannot get patch from invalid form');
     }
-    const patch: Partial<ResourceContainerPatch> = {};
+    const patch: Partial<ResourceContainerPatch<any>> = {};
     for (const resourceType of ALL_RESOURCE_TYPES) {
         const slices: any[] = [];
         const addArray = getResourceAddArray(form, resourceType);
@@ -84,7 +84,7 @@ export function resourceContainerPatchFromForm(form: ResourceContainerForm): Res
         )
         patch[resourceContainerAttr(resourceType)] = slices;
     }
-    return patch as ResourceContainerPatch;
+    return patch as ResourceContainerPatch<any>;
 }
 
 export function resourceContainerPatchErrorsFromForm(form: ResourceContainerForm): ResourceContainerFormErrors | null {
@@ -208,19 +208,19 @@ export interface ResourceContainerFormErrors {
  * equipments, softwares, inputMaterials and outputMaterials.
  */
 @Injectable()
-export abstract class ResourceContainerFormService {
+export abstract class ResourceContainerFormService<T extends ResourceContainer = ResourceContainer> {
     readonly _context = inject(ResourceContainerContext<any, any>);
 
     readonly container$ = this._context.committed$;
 
-    readonly patchValue$: Observable<ResourceContainerPatch> = defer(() => this.form.statusChanges.pipe(
+    readonly patchValue$: Observable<ResourceContainerPatch<T>> = defer(() => this.form.statusChanges.pipe(
         filter((status) => status === 'VALID'),
         map(() => resourceContainerPatchFromForm(this.form))
     ));
 
     abstract readonly form: ResourceContainerForm;
 
-    async patchFromContainerPatch(patch: ResourceContainerPatch) {
+    async patchFromContainerPatch(patch: ResourceContainerPatch<T>) {
         return this._context.patchFromContainerPatch(patch);
     }
 

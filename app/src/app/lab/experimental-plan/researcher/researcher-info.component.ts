@@ -1,9 +1,9 @@
 import { Component, Input } from "@angular/core";
-import { ExperimentalPlan } from "../experimental-plan";
 import { CommonModule } from "@angular/common";
 import { CampusInfoComponent } from "src/app/uni/campus/campus-info.component";
-import { Campus } from "src/app/uni/campus/campus";
 import { Discipline } from "src/app/uni/discipline/discipline";
+import { ExperimentalPlan } from "../common/experimental-plan";
+import { Campus } from "src/app/uni/campus/common/campus";
 
 
 @Component({

@@ -6,8 +6,8 @@ import { ResourceTableComponent, ResourceTableDataSource } from "../../resource/
 import { ResourceTableInfoHeaderComponent } from "../../resource/common/resource-table-info-header.component";
 import { CollectionViewer } from "@angular/cdk/collections";
 import { Observable, forkJoin, switchMap } from "rxjs";
-import { EquipmentModelService } from "src/app/lab/equipment/equipment";
 import { EquipmentLeaseDetailComponent } from "./equipment-lease-detail.component";
+import { EquipmentService } from "src/app/lab/equipment/common/equipment";
 
 
 @Injectable()
@@ -15,8 +15,7 @@ export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<Equip
     override readonly resourceType = 'equipment';
     override readonly resourceTitle = 'Equipment';
 
-    readonly equipments = inject(EquipmentModelService);
-
+    readonly equipments = inject(EquipmentService);
 
     override connect(collectionViewer: CollectionViewer): Observable<readonly EquipmentLease[]> {
         return super.connect(collectionViewer).pipe(

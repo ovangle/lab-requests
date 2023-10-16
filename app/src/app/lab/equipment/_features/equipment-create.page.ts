@@ -1,9 +1,9 @@
 import { CommonModule } from "@angular/common";
 import { ChangeDetectorRef, Component, inject } from "@angular/core";
-import { Equipment, EquipmentContext, EquipmentPatch } from "../equipment";
-import { Subscription, of } from "rxjs";
-import { EquipmentForm, EquipmentFormService } from "../equipment-form.service";
+import { Subscription, firstValueFrom, of } from "rxjs";
+import { EquipmentForm, equipmentForm } from "../equipment-form.service";
 import { Router } from "@angular/router";
+import { Equipment, EquipmentCollection, EquipmentPatch, EquipmentService } from "../common/equipment";
 
 const equipmentCreateFixture: EquipmentPatch = {
     name: 'HP Elitebook',
@@ -27,24 +27,13 @@ const equipmentCreateFixture: EquipmentPatch = {
         (requestCommit)="createEquipment($event)">
     </lab-equipment-form>
     `,
-    providers: [
-        EquipmentFormService
-    ]
 })
 export class EquipmentCreatePage {
     readonly _cdRef = inject(ChangeDetectorRef);
     readonly _router = inject(Router);
 
-    readonly context = inject(EquipmentContext);
-
-    readonly _formService = inject(EquipmentFormService);
-    get form(): EquipmentForm {
-        return this._formService.form;
-    }
-
-    constructor() {
-        this.context.initCreateContext();
-    }
+    readonly equipmentService = inject(EquipmentService);
+    readonly form = equipmentForm();
 
     ngOnInit() {
         this.form.setValue(equipmentCreateFixture);
@@ -52,8 +41,7 @@ export class EquipmentCreatePage {
     }
 
     async createEquipment(patch: EquipmentPatch) {
-        const equipment = await this.context.create(patch)
+        const equipment = await firstValueFrom(this.equipmentService.create(patch));
         await this._router.navigate(['lab', 'equipments', equipment.id])
     }
-
 }

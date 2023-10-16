@@ -1,12 +1,13 @@
 import { ChangeDetectorRef, Component, ElementRef, ViewChild, ViewEncapsulation, inject } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
 import { Observable, Subscription, defer, map, shareReplay, switchMap } from "rxjs";
-import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanModelService } from "../experimental-plan";
 import { ExperimentalPlanFormPaneControlService } from "../experimental-plan-form-pane-control.service";
+import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanService } from "../common/experimental-plan";
+import { ExperimentalPlanWorkUnitService } from "../work-units/work-units";
 
 export function experimentalPlanContextFromDetailRoute(): Observable<ExperimentalPlan> {
     const activatedRoute = inject(ActivatedRoute);
-    const models = inject(ExperimentalPlanModelService);
+    const models = inject(ExperimentalPlanService);
 
     return defer(() => activatedRoute.paramMap.pipe(
         map(paramMap => paramMap.get('experimental_plan_id')),
@@ -83,7 +84,8 @@ export function experimentalPlanContextFromDetailRoute(): Observable<Experimenta
     }
     `],
     providers: [
-        ExperimentalPlanFormPaneControlService
+        ExperimentalPlanFormPaneControlService,
+        ExperimentalPlanWorkUnitService
     ]
 })
 export class ExperimentalPlanDetailPage {

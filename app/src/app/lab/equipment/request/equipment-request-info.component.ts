@@ -1,6 +1,7 @@
 import { Component, Input } from "@angular/core";
-import { EquipmentRequest } from "./equipment";
+
 import { CommonModule } from "@angular/common";
+import { EquipmentRequest } from "./equipment-request";
 
 @Component({
     selector: 'lab-equipment-request-info',
@@ -9,10 +10,10 @@ import { CommonModule } from "@angular/common";
         CommonModule
     ],
     template: `
-    (new) {{equipment.name}}
+    <h1>(new) {{equipment.name}}</h1>
 
     <p>Reason</p>
-    <p>{{equipment.description}}
+    <p>{{equipment.reason}}
     `,
 })
 export class EquipmentRequestInfoComponent {

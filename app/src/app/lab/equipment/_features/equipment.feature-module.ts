@@ -4,7 +4,6 @@ import { Router, RouterModule, Routes } from "@angular/router";
 import { EquipmentIndexPage } from "./equipment-index.page";
 import { EquipmentCreatePage } from "./equipment-create.page";
 import { EquipmentDetailPage } from "./equipment-detail.page";
-import { EquipmentContext, EquipmentModelService } from "../equipment";
 import { LabEquipmentListComponent } from "../equipment-list.component";
 import { LabEquipmentFormComponent } from "../equipment-form.component";
 import { MatButtonModule } from "@angular/material/button";
@@ -44,9 +43,6 @@ const EQUIPMENT_ROUTES: Routes = [
         EquipmentCreatePage,
         EquipmentDetailPage,
         EquipmentIndexPage,
-    ],
-    providers: [
-        EquipmentContext
     ]
 })
 export class EquipmentFeatureModule {}

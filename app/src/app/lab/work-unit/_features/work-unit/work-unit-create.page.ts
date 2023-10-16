@@ -1,16 +1,15 @@
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { ChangeDetectorRef, Component, ViewChild, inject } from "@angular/core";
-import { Campus } from "src/app/uni/campus/campus";
 import { InputMaterial } from "../../resources/material/input/input-material";
 import { SoftwareParams } from "../../resources/software/software";
-import { WorkUnit, WorkUnitContext, WorkUnitCreate } from "../../work-unit";
 import { Subscription, defer, firstValueFrom, of } from "rxjs";
 import { WorkUnitFormComponent } from "../../work-unit-form.component";
-import { WorkUnitForm, workUnitForm, workUnitPatchFromForm } from "../../work-unit-form";
+import { WorkUnitForm, workUnitForm, workUnitPatchFromForm } from "../../common/work-unit-form";
 import { CommonModule } from "@angular/common";
 import { hazardClassFromDivision } from "../../resource/hazardous/hazardous";
+import { WorkUnitContext, WorkUnitPatch, WorkUnitService } from "../../common/work-unit";
 
-const workUnitCreateFixture: Partial<WorkUnitCreate> = {
+const workUnitCreateFixture: Partial<WorkUnitPatch & {planId: string}> = {
     planId: 'e7a33211-1227-4d1d-994d-85a480c15ac0',
     campus: 'ROK',
     labType: 'ICT',
@@ -52,15 +51,11 @@ const workUnitCreateFixture: Partial<WorkUnitCreate> = {
     `],
 })
 export class WorkUnitCreatePage {
-    _context = inject(WorkUnitContext);
     _cdRef = inject(ChangeDetectorRef);
+    readonly service = inject(WorkUnitService);
 
     readonly form = workUnitForm();
     readonly patch$ = defer(() => workUnitPatchFromForm(this.form));
-
-    constructor() {
-        this._context.initCreateContext();
-    }
 
     ngAfterViewInit() {
         this.form.patchValue({
@@ -84,6 +79,6 @@ export class WorkUnitCreatePage {
             throw new Error('Cannot save invallid form');
         }
         const patch = await firstValueFrom(this.patch$);
-        this._context.create(patch);
+        return firstValueFrom(this.service.create(patch));
     }
 }

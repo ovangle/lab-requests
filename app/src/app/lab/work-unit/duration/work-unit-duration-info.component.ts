@@ -1,5 +1,4 @@
 import { Component, Input } from "@angular/core";
-import { WorkUnit } from "../work-unit";
 import { CommonModule } from "@angular/common";
 import { DateRange, MatDatepickerModule } from "@angular/material/datepicker";
 import { MatCardModule } from "@angular/material/card";
@@ -8,6 +7,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { format } from "date-fns";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 import { trigger, state, style, transition, animate } from "@angular/animations";
+import { WorkUnit } from "../common/work-unit";
 
 @Component({
     selector: 'lab-work-unit-duration-info',

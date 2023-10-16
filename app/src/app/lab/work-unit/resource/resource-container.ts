@@ -9,8 +9,10 @@ import { Software, SoftwareParams, softwareFromJson, softwareParamsToJson } from
 import { Task, TaskParams, taskFromJson, taskToJson } from "../resources/task/task";
 
 import type { Resource } from './resource';
+import { Model, ModelParams, ModelPatch, modelParamsFromJson } from "src/app/common/model/model";
+import { ModelContext } from "src/app/common/model/context";
 
-export interface ResourceContainerParams {
+export interface ResourceContainerParams extends ModelParams {
     equipments: EquipmentLease[];
     tasks: Task[];
     softwares: Software[];
@@ -19,7 +21,7 @@ export interface ResourceContainerParams {
     outputMaterials: OutputMaterial[];
 }
 
-export abstract class ResourceContainer {
+export abstract class ResourceContainer extends Model {
     equipments: EquipmentLease[];
     tasks: Task[];
     softwares: Software[];
@@ -28,6 +30,7 @@ export abstract class ResourceContainer {
     outputMaterials: OutputMaterial[];
 
     constructor(params: ResourceContainerParams) {
+        super(params);
         this.equipments = params.equipments.map(e => new EquipmentLease(e));
         this.tasks = params.tasks.map(s => new Task(s));
         this.softwares = params.softwares.map(s => new Software(s));
@@ -54,12 +57,14 @@ export abstract class ResourceContainer {
     }
 }
 
-export function resourceContainerAttr(type: ResourceType): keyof ResourceContainerPatch {
-    return (type.replace(/-([a-z])/, (match) => match[1].toUpperCase()) + 's') as keyof ResourceContainerPatch;
+export function resourceContainerAttr(type: ResourceType): keyof ResourceContainerPatch<any> {
+    return (type.replace(/-([a-z])/, (match) => match[1].toUpperCase()) + 's') as keyof ResourceContainerPatch<any>;
 }
 
 export function resourceContainerFieldsFromJson(json: { [k: string]: any }) {
+    const baseParams = modelParamsFromJson(json);
     return {
+        ...baseParams,
         equipments: Array.from<object>(json['equipments']).map(equip => equipmentLeaseFromJson(equip)),
         softwares: Array.from<object>(json['softwares']).map(software => softwareFromJson(software)),
         tasks: Array.from<object>(json['tasks']).map(task => taskFromJson(task)),
@@ -75,7 +80,7 @@ interface ResourceSplice<T> {
     readonly items: T[];
 }
 
-export class ResourceContainerPatch {
+export interface ResourceContainerPatch<T extends ResourceContainer> extends ModelPatch<T> {
     equipments: ResourceSplice<EquipmentLease>[];
     tasks: ResourceSplice<TaskParams>[];
     softwares: ResourceSplice<SoftwareParams>[];
@@ -83,7 +88,7 @@ export class ResourceContainerPatch {
     outputMaterials: ResourceSplice<OutputMaterialParams>[];
 }
 
-export function resourceContainerPatchToJson(patch: ResourceContainerPatch): { [k: string]: any } {
+export function resourceContainerPatchToJson(patch: ResourceContainerPatch<any>): { [k: string]: any } {
     let json: { [k: string]: any } = {};
     for (const resourceType of ALL_RESOURCE_TYPES) {
         const resourceToJson = resourceSerializer(resourceType);
@@ -116,7 +121,7 @@ export function resourceContainerPatchToJson(patch: ResourceContainerPatch): { [
 function delResourcePatch<T extends Resource>(
     resourceType: T['type'] & ResourceType,
     toDel: number[]
-): Partial<ResourceContainerPatch> {
+): Partial<ResourceContainerPatch<any>> {
     return {
         [resourceContainerAttr(resourceType)]: toDel.map(toDel => ({ start: toDel, end: toDel + 1, items: [] }))
     };
@@ -124,12 +129,16 @@ function delResourcePatch<T extends Resource>(
 
 
 @Injectable()
-export abstract class ResourceContainerContext<T extends ResourceContainer & { readonly id: string; }, TPatch> {
-    abstract readonly committed$: Observable<T | null>;
+export abstract class ResourceContainerContext<
+    T extends ResourceContainer, 
+    TPatch extends ResourceContainerPatch<T>
+> {
 
     abstract commitContext(patch: TPatch): Promise<T>;
-    abstract patchFromContainerPatch(patch: Partial<ResourceContainerPatch>): Promise<TPatch>;
+    abstract patchFromContainerPatch(patch: ResourceContainerPatch<T>): Promise<TPatch>;
     abstract getContainerPath(): Promise<string[]>;
+
+    abstract committed$: Observable<T>;
 
     committedResources$<TResource extends Resource>(resourceType: ResourceType): Observable<readonly TResource[]> {
         return this.committed$.pipe(
@@ -137,7 +146,7 @@ export abstract class ResourceContainerContext<T extends ResourceContainer & { r
         );
     }
 
-    async commit(patch: ResourceContainerPatch): Promise<T> {
+    async commit(patch: TPatch): Promise<T> {
         const committed = await firstValueFrom(this.committed$);
         if (!committed) {
             throw new Error('Cannot commit resources until container exists');
@@ -151,7 +160,7 @@ export abstract class ResourceContainerContext<T extends ResourceContainer & { r
             throw new Error('Cannot delete resources until container')
         }
         const patch = await this.patchFromContainerPatch(
-            delResourcePatch(resourceType, [index])
+            delResourcePatch(resourceType, [index]) as TPatch
         );
         return this.commitContext(patch);
     }

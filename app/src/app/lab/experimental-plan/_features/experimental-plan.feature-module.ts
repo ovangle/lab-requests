@@ -1,6 +1,5 @@
 import { CommonModule } from "@angular/common";
 import { NgModule } from "@angular/core";
-import { ExperimentalPlanContext, ExperimentalPlanModelService } from "../experimental-plan";
 import { RouterModule, Routes } from "@angular/router";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -14,7 +13,7 @@ import { MatListModule } from "@angular/material/list";
 import { ExperimentalPlanIndexPage } from "./experimental-plan-index.page";
 import { ExperimentalPlanDetailPage } from "./experimental-plan-detail.page";
 import { ExperimentalPlanCreatePage } from "./experimental-plan-create.page";
-import { ExperimentalPlanWorkUnitsNavBar } from "../work-units/work-unit-nav-bar.component";
+import { ExperimentalPlanContext } from "../common/experimental-plan";
 
 const EXPERIMENTAL_PLAN_ROUTES: Routes = [
     {
@@ -61,7 +60,6 @@ const EXPERIMENTAL_PLAN_ROUTES: Routes = [
 
         ExperimentalPlanFormComponent,
         ExperimentalPlanInfoComponent,
-        ExperimentalPlanWorkUnitsNavBar
     ],
     declarations: [
         ExperimentalPlanCreatePage,

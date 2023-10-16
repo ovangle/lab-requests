@@ -1,10 +1,6 @@
-import { CommonModule } from "@angular/common";
 import { Component, inject } from "@angular/core";
-import { MatListModule } from "@angular/material/list";
-import { ExperimentalPlanModelService } from "../experimental-plan";
 import { BehaviorSubject, Subject, shareReplay, switchMap, tap } from "rxjs";
-import { RouterModule } from "@angular/router";
-import { MatButtonModule } from "@angular/material/button";
+import { ExperimentalPlanService } from "../common/experimental-plan";
 
 
 interface Actor {
@@ -35,7 +31,7 @@ const researcherFixture = {
     `
 })
 export class ExperimentalPlanIndexPage {
-    readonly _models = inject(ExperimentalPlanModelService);
+    readonly _models = inject(ExperimentalPlanService);
 
     readonly actorSubject = new BehaviorSubject<Actor>(researcherFixture);
 

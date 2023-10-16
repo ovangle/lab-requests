@@ -1,7 +1,7 @@
 import { CommonModule } from "@angular/common";
-import { WorkUnit } from "../work-unit";
 import { Component, Input } from "@angular/core";
 import { CampusInfoComponent } from "src/app/uni/campus/campus-info.component";
+import { WorkUnit } from "../common/work-unit";
 
 @Component({
     selector: 'lab-work-unit-base-info',

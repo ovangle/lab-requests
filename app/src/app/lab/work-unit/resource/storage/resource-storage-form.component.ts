@@ -8,7 +8,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatInputModule } from "@angular/material/input";
 import { MatCardModule } from "@angular/material/card";
 import { SelectOtherDescriptionComponent } from "src/app/utils/forms/select-other-description.component";
-import { CostEstimateForm, CostEstimateFormComponent, costEstimateForm, costEstimatesFromFormValue } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
+import { CostEstimateForm, CostEstimateFormComponent, costEstimateForm, costEstimatesFromForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
 import { differenceInCalendarWeeks } from "date-fns";
 
 export type ResourceStorageForm = FormGroup<{
@@ -39,7 +39,7 @@ export function resourceStorageFromFormValue(form: ResourceStorageForm): Resourc
         : form.value.type!;
 
     const estimatedCost = form.value.hasCostEstimates
-        ? costEstimatesFromFormValue(form.controls.estimatedCost)
+        ? costEstimatesFromForm(form.controls.estimatedCost)
         : null;
     return new ResourceStorage({
         description,

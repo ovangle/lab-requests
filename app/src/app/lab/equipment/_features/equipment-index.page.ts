@@ -1,7 +1,7 @@
 import { CommonModule } from "@angular/common";
 import { Component, inject } from "@angular/core";
-import { EquipmentCollection } from "../equipment";
 import { map } from "rxjs";
+import { EquipmentCollection } from "../common/equipment";
 
 @Component({
     selector: 'lab-equipment-index-page',
@@ -32,8 +32,5 @@ import { map } from "rxjs";
 export class EquipmentIndexPage {
     readonly equipmentCollection = inject(EquipmentCollection);
 
-    readonly equipments$ = this.equipmentCollection.resultPage$.pipe(
-        map(resultPage => resultPage.items)
-    );
-
+    readonly equipments$ = this.equipmentCollection.items$;
 }

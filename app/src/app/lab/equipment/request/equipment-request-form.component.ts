@@ -2,11 +2,12 @@ import { CommonModule } from "@angular/common";
 import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { EquipmentRequest, equipmentRequestForm } from "./equipment";
 import { MatInputModule } from "@angular/material/input";
 import { filter, map } from "rxjs";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { BooleanInput } from "@angular/cdk/coercion";
+import { equipmentRequestForm } from "./equipment-request-form";
+import { EquipmentRequest } from "./equipment-request";
 
 @Component({
     selector: 'lab-equipment-request-form',

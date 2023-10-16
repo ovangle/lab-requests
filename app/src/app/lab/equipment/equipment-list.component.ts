@@ -1,10 +1,10 @@
 import { CommonModule } from "@angular/common";
 import { Component, Input } from "@angular/core";
 import { MatTableModule } from "@angular/material/table";
-import { Equipment } from "./equipment";
 import { MatListModule } from "@angular/material/list";
 import { EquipmentTagChipsComponent } from "./tag/equipment-tag-chips.component";
 import { RouterModule } from "@angular/router";
+import { Equipment } from "./common/equipment";
 
 
 @Component({

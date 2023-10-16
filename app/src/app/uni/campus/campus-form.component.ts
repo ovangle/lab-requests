@@ -1,9 +1,9 @@
 import { Component, Injectable, Input, inject } from "@angular/core";
 import { CommonModule } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { Campus, CampusPatchErrors, CampusModelService, CampusContext, CampusCode, CampusPatch} from "./campus";
 import { filter, firstValueFrom, map, switchMap } from "rxjs";
-import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from "@angular/forms";
+import { Campus, CampusCode, CampusPatch, CampusService } from "./common/campus";
 
 export type CampusForm = FormGroup<{
     code: FormControl<CampusCode>;
@@ -16,21 +16,9 @@ function campusPatchFromForm(form: CampusForm): CampusPatch {
     }
     return form.value as CampusPatch;
 }
-
-function campusPatchErrorsFromForm(form: CampusForm): CampusPatchErrors | null {
-    if (!form.invalid) {
-        return null;
-    }
-    return form.errors as CampusPatchErrors;
-}
-
-@Injectable()
-export class CampusFormService {
-    readonly model = inject(CampusModelService);
-    readonly context = inject(CampusContext);
-    readonly committed$ = this.context.committed$;
-
-    readonly form = new FormGroup({
+export function campusForm(): CampusForm {
+    const service = inject(CampusService);
+    return new FormGroup({
         code: new FormControl<CampusCode>(
             '',
             {
@@ -40,7 +28,7 @@ export class CampusFormService {
                     Validators.pattern(/^[_A-Z]{0,8}$/),
                 ],
                 asyncValidators: [
-                    (control) => this._validateCodeUnique(control)
+                    (control) => validateCodeUnique(control as FormControl<CampusCode>)
                 ]
             }
         ),
@@ -50,42 +38,17 @@ export class CampusFormService {
         )
     });
 
-    readonly patch$ = this.form.statusChanges.pipe(
-        filter(status => status === 'VALID'),
-        map(() => campusPatchFromForm(this.form))
-    );
-
-    readonly formErrors$ = this.form.statusChanges.pipe(
-        map(() => campusPatchErrorsFromForm(this.form))
-    );
-
-    _validateCodeUnique(control: AbstractControl<CampusCode>) {
-        return control.valueChanges.pipe(
-            switchMap(value => this.model.getCampusesByCode(value)), 
-            map(campuses => {
-                if (campuses.length > 0) {
-                    return { notUnique: 'Code is not unique amongst campuses'}
+    function validateCodeUnique(control: FormControl<CampusCode>) {
+        return service.queryCount({code: control.value}).pipe(
+            map(count => {
+                if (count > 0) {
+                    return {notUnique: 'Code is not unique amongst campuses'}
                 }
                 return null;
             })
-        )
-    }
-
-    commit(): Promise<Campus> {
-        if (!this.form.valid) {
-            throw new Error('Cannot submit invalid form');
-        }
-        const patch = campusPatchFromForm(this.form)!;
-        return this.context.commit(patch);
-    }
-
-    async reset(): Promise<void> {
-        this.form.reset();
-        const committed = await firstValueFrom(this.committed$);
-        this.form.patchValue(committed!);
-    }
+        );
+   }
 }
-
 
 @Component({
     selector: 'uni-campus-form',
@@ -101,28 +64,24 @@ export class CampusFormService {
             <mat-label>Code</mat-label>
             <input matInput formControlName="code"> 
 
-            <ng-container *ngIf="codeErrors$ | async as codeErrors">
-                <mat-error *ngIf="codeErrors.required"> 
-                    A value is required
-                </mat-error>
-                <mat-error *ngIf="codeErrors.pattern as pattern">
-                    {{pattern}} must match pattern
-                </mat-error>
-                <mat-error *ngIf="codeErrors.notUnique">
-                    Value is not unique
-                </mat-error>
-            </ng-container>
+            <mat-error *ngIf="codeErrors && codeErrors['required']"> 
+                A value is required
+            </mat-error>
+            <mat-error *ngIf="codeErrors && codeErrors['pattern'] as pattern">
+                Value must match pattern {{pattern}}
+            </mat-error>
+            <mat-error *ngIf="codeErrors && codeErrors['notUnique']">
+                Value is not unique
+            </mat-error>
         </mat-form-field>
     
         <mat-form-field>
             <mat-label>Name</mat-label>
             <input matInput type="text" formControlName="name"/>
 
-            <ng-container *ngIf="nameErrors$ | async as nameErrors">
-                <mat-error *ngIf="nameErrors.required">
-                    A name is required
-                </mat-error>
-            </ng-container>
+            <mat-error *ngIf="nameErrors && nameErrors['required']">
+                A name is required
+            </mat-error>
         </mat-form-field>
 
         <div class="form-actions">
@@ -130,39 +89,34 @@ export class CampusFormService {
             <button mat-butgton (click)="cancel()">Cancel</button>
         </div>
     </form>
-    `,
-    providers: [
-        CampusFormService
-    ]
+    `
 })
 export class CampusFormComponent {
-    readonly formService = inject(CampusFormService);
-    readonly formErrors$ = this.formService.formErrors$
 
-    readonly form = this.formService.form;
-    
-    readonly codeErrors$ = this.formErrors$.pipe(
-        map(errors => errors?.code)
-    );
-
-    readonly nameErrors$ = this.formErrors$.pipe(
-        map(errors => errors?.name)
-    );
+    readonly form = campusForm();
 
     @Input()
     get name(): string {
-        return this.formService.form.value['name']!;
+        return this.form.value['name']!;
     }
     set name(value: string) {
-        this.formService.form.patchValue({name: value});
+        this.form.patchValue({name: value});
+    }
+
+    get nameErrors(): ValidationErrors | null {
+        return this.form.controls.name.errors;
+    }
+
+    get codeErrors(): ValidationErrors | null {
+        return this.form.controls.code.errors;
     }
 
     async commit() {
-        await this.formService.commit();
+        throw new Error('not implemented');
     }
     
     async cancel() {
-        this.formService.form.reset();
+        this.form.reset();
     }
     
 }

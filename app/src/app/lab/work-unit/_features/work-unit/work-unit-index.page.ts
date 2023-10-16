@@ -1,7 +1,7 @@
 import { CommonModule } from "@angular/common";
 import { Component, OnDestroy, inject } from "@angular/core";
 import { Subscription, of } from "rxjs";
-import { WorkUnit, WorkUnitContext } from "../../work-unit";
+import { WorkUnitContext, WorkUnit } from "../../common/work-unit";
 
 @Component({
     selector: 'lab-work-unit-index',
@@ -10,17 +10,8 @@ import { WorkUnit, WorkUnitContext } from "../../work-unit";
     providers: [
     ]
 })
-export class WorkUnitIndexPage implements OnDestroy {
+export class WorkUnitIndexPage {
     readonly _context = inject(WorkUnitContext);
-    _contextConnection: Subscription;
-
-    constructor() {
-        this._contextConnection = this._context.sendCommitted(of(null));
-    }
-
-    ngOnDestroy() {
-        this._contextConnection.unsubscribe();
-    }
 
     setFocus(workUnit: WorkUnit | null) {
         throw new Error('Not implemented');

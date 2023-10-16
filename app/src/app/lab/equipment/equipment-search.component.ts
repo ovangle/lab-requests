@@ -1,3 +1,4 @@
+import {validate as validateIsUUID} from 'uuid';
 import { CommonModule } from "@angular/common";
 import { Component, Injectable, inject } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
@@ -10,15 +11,11 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { BehaviorSubject, Observable, defer, filter, map, of, startWith, switchMap, withLatestFrom } from "rxjs";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
-import { ModelCollection } from "src/app/utils/models/model-collection";
-import { Equipment, EquipmentContext, EquipmentLookup, EquipmentModelService, EquipmentRequest, isEquipmentRequest } from "./equipment";
-import { EquipmentFormService } from "./equipment-form.service";
-import { EquipmentRequestFormComponent } from "./equipment-request-form.component";
+import { EquipmentRequestFormComponent } from "./request/equipment-request-form.component";
+import { Equipment, EquipmentCollection, EquipmentContext, EquipmentLookup } from './common/equipment';
+import { EquipmentRequest, isEquipmentRequest } from './request/equipment-request';
+import { EquipmentLike } from './equipment-like';
 
-@Injectable()
-export class EquipmentModelCollection extends ModelCollection<Equipment> {
-    readonly models = inject(EquipmentModelService);
-}
 
 const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
 
@@ -83,9 +80,8 @@ const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
     </ng-container>
     `,
     providers: [
-        EquipmentModelCollection,
+        EquipmentCollection,
         EquipmentContext,
-        EquipmentFormService,
         {
             provide: NG_VALUE_ACCESSOR,
             multi: true,
@@ -96,14 +92,14 @@ const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
 export class EquipmentSearchComponent implements ControlValueAccessor {
     readonly _NEW_EQUIPMENT_ = _NEW_EQUIPMENT_;
 
-    readonly equipments = inject(EquipmentModelCollection);
+    readonly equipments = inject(EquipmentCollection);
     readonly searchControl = new FormControl<Equipment | string>('', { nonNullable: true });
 
     readonly searchOptions$ = defer(() => this.equipments.items$);
     readonly isNewEquipment$ = this.searchControl.valueChanges.pipe(
         map(value => value === this._NEW_EQUIPMENT_)
     );
-    readonly _equipmentRequest = new BehaviorSubject<EquipmentRequest>({ name: '', description: '' });
+    readonly _equipmentRequest = new BehaviorSubject<EquipmentRequest>({ name: '', reason: '', cost: null });
 
     readonly value$: Observable<Equipment | EquipmentRequest | null> = defer(() => {
         return this.searchControl.valueChanges.pipe(
@@ -120,7 +116,10 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
         );
     });
     constructor() {
-        this.equipments.connectQuery(this.searchControl.valueChanges.pipe(takeUntilDestroyed(), map(searchText => ({ searchText } as EquipmentLookup))));
+        this.searchControl.valueChanges.pipe(
+            takeUntilDestroyed(), 
+            map(searchText => ({ searchText } as EquipmentLookup))
+        );
 
         // Prefil the value of the equipment request with the value of the search input
         this.searchControl.valueChanges.pipe(
@@ -132,9 +131,15 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
                 }
                 return value;
             }),
+            switchMap(value => {
+                if (validateIsUUID(value)) {
+                    return this.equipments.get(value);
+                }
+                return value;
+            }),
             withLatestFrom(this._equipmentRequest),
-            map(([searchInput, request]) => ({ name: searchInput, description: request.description }))
-        ).subscribe(this._equipmentRequest);
+            map(([searchInput, request]) => ({ name: searchInput as string, reason: request.reason, cost: request.cost }))
+        ).subscribe((value) => this._equipmentRequest.next(value));
 
         // Dispatch _onChange events
         this.value$.pipe(takeUntilDestroyed()).subscribe((v) => this._onChange(v));
@@ -153,7 +158,7 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
 
 
 
-    writeValue(obj: Equipment | EquipmentRequest | string | null): void {
+    writeValue(obj: EquipmentLike | null): void {
         if (typeof obj === 'string' || obj == null) {
             this.searchControl.setValue(obj || '');
         }

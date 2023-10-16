@@ -4,6 +4,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 
 import { ResourceType, ResourceTypePipe } from "../resource-type";
+import { WorkUnitFormTitleComponent } from "../../work-unit-form-title.component";
 
 @Component({
     selector: 'lab-resource-form-title',
@@ -11,35 +12,21 @@ import { ResourceType, ResourceTypePipe } from "../resource-type";
     imports: [
         CommonModule,
         ResourceTypePipe,
-        MatButtonModule,
-        MatIconModule
+        WorkUnitFormTitleComponent
     ],
     template: `
-    <h2> 
+    <lab-work-unit-form-title
+        [saveDisabled]="saveDisabled"
+        (requestSave)="requestSave.emit($event)"
+        (requestClose)="requestClose.emit($event)">
         {{ resourceIndex === 'create' ? 'Add' : 'Update'}}
         {{ resourceType | resourceType }}
-    </h2>
-
-    <div class="form-controls">
-        <button mat-icon-button
-                [disabled]="saveDisabled"
-                (click)="requestSave.emit()">
-            <mat-icon>save</mat-icon>
-        </button>
-
-        <button mat-icon-button 
-                (click)="requestClose.emit()">
-            <mat-icon>cancel</mat-icon>
-        </button>
-    </div>
+    </lab-work-unit-form-title>
    `,
    styles: [`
-    :host {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    h2 { margin-bottom: 0; }
+   lab-work-unit-form-title {
+        width: 100%;
+   }
    `]
 })
 export class ResourceFormTitleComponent {

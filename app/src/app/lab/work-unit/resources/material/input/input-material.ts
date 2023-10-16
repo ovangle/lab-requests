@@ -1,9 +1,9 @@
-import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
 import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../../resource/hazardous/hazardous";
 import { ResourceParams } from "../../../resource/resource";
 import { ResourceStorage, ResourceStorageParams, resourceStorageFromJson, resourceStorageParamsToJson } from "../../../resource/storage/resource-storage";
 import { Material } from "../material";
 import { ResourceFileAttachment, resourceFileAttachmentFromJson, resourceFileAttachmentToJson } from "../../../resource/file-attachment/file-attachment";
+import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/cost-estimate";
 
 export interface InputMaterialParams extends ResourceParams<InputMaterial> {
     name: string;

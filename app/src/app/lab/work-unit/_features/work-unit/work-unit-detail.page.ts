@@ -4,41 +4,42 @@ import { MatCardModule } from "@angular/material/card";
 import { ActivatedRoute } from "@angular/router";
 import { Observable, Subscription, defer, map, of, switchMap, withLatestFrom } from "rxjs";
 import { WorkUnitBaseInfoComponent } from "../../base-info/work-unit-base-info.component";
-import { ExperimentalPlanContext } from "../../../experimental-plan/experimental-plan";
-import { WorkUnit, WorkUnitContext, WorkUnitModelService } from "../../work-unit";
 import { ALL_RESOURCE_TYPES, ResourceType } from "../../resource/resource-type";
 import { Resource } from "../../resource/resource";
 import { ExperimentalPlanFormPaneControlService } from "src/app/lab/experimental-plan/experimental-plan-form-pane-control.service";
+import { WorkUnit, WorkUnitContext, WorkUnitService } from "../../common/work-unit";
+import { ExperimentalPlan, ExperimentalPlanContext } from "src/app/lab/experimental-plan/common/experimental-plan";
+import { ExperimentalPlanWorkUnitService } from "src/app/lab/experimental-plan/work-units/work-units";
+import { HttpParams } from "@angular/common/http";
 
 class WorkUnitContextError extends Error {}
 
-function workUnitFromDetailRoute(): Observable<WorkUnit | null> {
-    const planContext = inject(ExperimentalPlanContext, {skipSelf: true, optional: true});
+function workUnitFromDetailRoute(): Observable<WorkUnit> {
+    const workUnitService = inject(WorkUnitService);
+    const workUnitPlanService = inject(ExperimentalPlanWorkUnitService, {optional: true})
 
-    const plan$ = planContext ? planContext.plan$ : of(null);
+    function readByPlanAndIndex(index: string | number) {
+        if (workUnitPlanService == null) {
+            throw new Error('Requires an experimental plan context');
+        }
+        return workUnitPlanService.fetch(index);
+    }
 
-    const models = inject(WorkUnitModelService);
+    const models = inject(WorkUnitService);
     const activatedRoute = inject(ActivatedRoute);
 
-    return defer(() => plan$.pipe(
-        withLatestFrom(activatedRoute.paramMap),
-        switchMap(([plan, params]) => {
-            if (plan != null) {
-                const workUnitIndex = Number.parseInt(params.get('work_unit_index')!);
-                if (Number.isNaN(workUnitIndex)) {
-                    throw new WorkUnitContextError('Invalid route. Expected :work_unit_index in params');
-                }
-
-                return models.readByPlanAndIndex(plan, workUnitIndex);
+    return activatedRoute.paramMap.pipe(
+        switchMap(params => {
+            if (params.has('work_unit_index')) {
+                return readByPlanAndIndex(params.get('work_unit_index')!);
+            } else if (params.has('work_unit_id')) {
+                return workUnitService.fetch(params.get('work_unit_id')!);
             } else {
-                const workUnitId = params.get('work_unit_id');
-                if (typeof workUnitId != 'string') {
-                    throw new WorkUnitContextError('Invalid route. Expected :work_unit_index in params');
-                }
-                return models.readById(workUnitId);
+                throw new Error('Params must contain either work_unit_index or work_unit_id');
             }
         })
-    ));
+    )
+    
 }
 
 

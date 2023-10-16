@@ -1,7 +1,7 @@
 import { Component, Injectable, OnDestroy, OnInit, inject } from "@angular/core";
-import { Campus, CampusContext } from "../campus";
 import { Observable, Subscription, of } from "rxjs";
 import { CampusFormComponent } from "../campus-form.component";
+import { CampusService } from "../common/campus";
 
 @Component({
     standalone: true,
@@ -12,20 +12,7 @@ import { CampusFormComponent } from "../campus-form.component";
         <h1>Create campus</h1>
         <uni-campus-form></uni-campus-form>
     `,
-    providers: [
-        CampusContext
-    ]
 })
-export class CampusCreatePage implements OnDestroy {
-    context = inject(CampusContext);
-    _contextConnection: Subscription;
-
-    constructor() {
-        this._contextConnection = this.context.sendCommitted(of(null));
-    }
-
-    ngOnDestroy() {
-        this._contextConnection.unsubscribe();
-    }
-
+export class CampusCreatePage {
+    readonly service = inject(CampusService);
 }

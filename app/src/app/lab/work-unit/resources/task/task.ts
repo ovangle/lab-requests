@@ -2,8 +2,8 @@ import { FormControl, FormGroup, ValidationErrors, Validators } from "@angular/f
 import { Resource, ResourceParams, } from "../../resource/resource";
 import { collectFieldErrors } from "src/app/utils/forms/validators";
 import { Observable, filter, map, startWith } from "rxjs";
-import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/coste-estimate";
 import { ResourceFileAttachment, resourceFileAttachmentFromJson, resourceFileAttachmentToJson } from "../../resource/file-attachment/file-attachment";
+import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/cost-estimate";
 
 export interface TaskParams extends ResourceParams<Task> {
     readonly name: string;

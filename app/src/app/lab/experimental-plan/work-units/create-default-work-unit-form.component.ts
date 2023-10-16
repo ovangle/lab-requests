@@ -1,15 +1,14 @@
 import { Component, EventEmitter, Input, Output, inject } from "@angular/core";
 import { FormArray, FormControl, ReactiveFormsModule } from "@angular/forms";
-import { WorkUnitContext, WorkUnitPatch } from "../../work-unit/work-unit";
 import { CommonModule } from "@angular/common";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { WorkUnitForm, workUnitForm, workUnitPatchFromForm } from "../../work-unit/work-unit-form";
-import { WorkUnitBaseInfoFormComponent } from "../../work-unit/base-info/work-unit-base-info-form.component";
-import { ExperimentalPlanForm } from "../experimental-plan-form";
-import { ExperimentalPlanCreate } from "../experimental-plan";
 import { Subscription, combineLatest, distinctUntilChanged, distinctUntilKeyChanged, filter, map, startWith, takeUntil } from "rxjs";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatCardModule } from "@angular/material/card";
+import { WorkUnitBaseInfoFormComponent } from "../../work-unit/base-info/work-unit-base-info-form.component";
+import { WorkUnitForm, workUnitForm } from "../../work-unit/common/work-unit-form";
+import { ExperimentalPlanForm } from "../common/experimental-plan-form";
+import { WorkUnitPatch } from "../../work-unit/common/work-unit";
 
 
 @Component({

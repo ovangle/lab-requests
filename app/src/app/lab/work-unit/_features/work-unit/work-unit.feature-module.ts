@@ -1,6 +1,5 @@
 import { NgModule } from "@angular/core";
 import { Routes, RouterModule } from "@angular/router";
-import { WorkUnitContext, WorkUnitModelService, WorkUnitResourceContainerContext } from "../../work-unit";
 import { WorkUnitCreatePage } from "./work-unit-create.page";
 import { WorkUnitDetailPage } from "./work-unit-detail.page";
 import { WorkUnitIndexPage } from "./work-unit-index.page";
@@ -12,6 +11,7 @@ import { WorkUnitResourceInfo } from "../../resource/resource-card.component";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { WorkUnitDurationInfoComponent } from "../../duration/work-unit-duration-info.component";
+import { WorkUnitContext, WorkUnitResourceContainerContext } from "../../common/work-unit";
 
 
 const WORK_UNIT_FROM_PLAN_ROUTES: Routes = [

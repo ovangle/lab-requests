@@ -15,10 +15,10 @@ import { APP_BASE_HREF, PlatformLocation } from '@angular/common';
 import { BASE_API_MATCHERS, authorizationInterceptorProviders } from './oauth/auth-interceptor';
 import { MatButtonModule } from '@angular/material/button';
 import { BodyScrollbarHidingService } from './utils/body-scrollbar-hiding.service';
-import { API_BASE_URL } from './utils/models/model-service';
 import { uniModelServiceProviders } from './uni/uni';
 import { labModelServiceProviders } from './lab/lab-model-providers';
 import { FileUploadService } from './common/file/file-upload.service';
+import { API_BASE_URL } from './common/model/model-service';
 
 /**
  * This function is used internal to get a string instance of the `<base href="" />` value from `index.html`.

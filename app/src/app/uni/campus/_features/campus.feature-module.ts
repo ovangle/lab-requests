@@ -12,11 +12,6 @@ const campusRoutes: Routes = [
 @NgModule({
     imports: [
         RouterModule.forChild(campusRoutes)
-    ],
-    exports: [
-        RouterModule
-    ],
-    providers: [
     ]
 })
 export class CampusFeature {}
