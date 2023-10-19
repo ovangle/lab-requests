@@ -78,10 +78,10 @@ export function costEstimatesFromForm(form: CostEstimateForm): CostEstimate {
                 </common-currency-input>
 
                 <div *ngIf="unitOfMeasurement"> 
-                    <dl class="total-amount">
-                        <dl>Total (for <span [innerHTML]="unitOfMeasurement | commonMeasurementUnit"></span></dl>
-                        <dd>{{estimatedTotalCost}}</dd>
-                    </dl>
+                    <div class="total-amount">
+                        Total (for {{quantityRequired}} <span [innerHTML]=" unitOfMeasurement | commonMeasurementUnit:quantityRequired"></span>)
+                    </div>
+                    <div>{{estimatedTotalCost | currency}}</div>
                 </div>
             </ng-container>
             <div *ngSwitchCase="false">

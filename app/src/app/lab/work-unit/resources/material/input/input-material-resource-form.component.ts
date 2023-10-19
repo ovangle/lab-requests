@@ -12,6 +12,9 @@ import { CommonMeasurementUnitInputComponent } from "src/app/common/measurement/
 import { CommonMeasurementUnitPipe } from "src/app/common/measurement/common-measurement-unit.pipe";
 import { CostEstimateForm, CostEstimateFormComponent, costEstimateForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
 import { HazardClass } from "../../../resource/hazardous/hazardous";
+import { FundingModel } from "src/app/uni/research/funding/funding-model";
+import { ExperimentalPlanContext } from "src/app/lab/experimental-plan/common/experimental-plan";
+import { Observable, map } from "rxjs";
 
 
 export type InputMaterialForm = FormGroup<{
@@ -96,7 +99,11 @@ export type InputMaterialFormErrors = ValidationErrors & {
             </mat-form-field>
 
             <uni-research-funding-cost-estimate-form
-                [form]="form.controls.perUnitCostEstimate">
+                *ngIf="fundingModel$ | async as fundingModel"
+                [form]="form.controls.perUnitCostEstimate"
+                [funding]="fundingModel" 
+                [unitOfMeasurement]="baseUnit" 
+                [quantityRequired]="form.controls.numUnitsRequired.value">
             </uni-research-funding-cost-estimate-form>
             <!--
             <lab-resource-provision-form 
@@ -126,6 +133,7 @@ export type InputMaterialFormErrors = ValidationErrors & {
     `],
 })
 export class InputMaterialResourceFormComponent {
+    readonly _planContext = inject(ExperimentalPlanContext);
     readonly formService = inject(ResourceFormService<InputMaterial, InputMaterialForm>);
 
     get resourceType() {
@@ -144,5 +152,9 @@ export class InputMaterialResourceFormComponent {
         const control = this.form.controls.name;
         return control.errors as InputMaterialFormErrors['name'] | null;
     }
+
+    get fundingModel$(): Observable<FundingModel> {
+        return this._planContext.plan$.pipe(map(plan => plan.fundingModel));
+    } 
 
 }

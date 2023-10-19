@@ -24,7 +24,7 @@ export function experimentalPlanContextFromDetailRoute(): Observable<Experimenta
     selector: 'lab-experimental-plan-detail-page',
     template: `
     <ng-container *ngIf="plan$ | async as plan">
-        <lab-experimental-plan-info [plan]="plan"></lab-experimental-plan-info>
+        <lab-experimental-plan-info [plan]="plan" />
         <mat-card>
             <mat-card-header>
                 <nav mat-tab-nav-bar [tabPanel]="tabPanel"
