@@ -10,6 +10,7 @@ import { MatCardModule } from "@angular/material/card";
 import { SelectOtherDescriptionComponent } from "src/app/utils/forms/select-other-description.component";
 import { CostEstimateForm, CostEstimateFormComponent, costEstimateForm, costEstimatesFromForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
 import { differenceInCalendarWeeks } from "date-fns";
+import { FundingModel } from "src/app/uni/research/funding/funding-model";
 
 export type ResourceStorageForm = FormGroup<{
     type: FormControl<ResourceStorageType>;
@@ -38,9 +39,11 @@ export function resourceStorageFromFormValue(form: ResourceStorageForm): Resourc
         ? form.value.description
         : form.value.type!;
 
+
     const estimatedCost = form.value.hasCostEstimates
-        ? costEstimatesFromForm(form.controls.estimatedCost)
+        ? costEstimatesFromForm(form.controls.estimatedCost, 'week')
         : null;
+
     return new ResourceStorage({
         description,
         estimatedCost
@@ -91,10 +94,9 @@ export function patchResourceStorageFormValue(form: ResourceStorageForm, storage
             </div>
 
             <uni-research-funding-cost-estimate-form
-                *ngIf="hasCostEstimates"
                 [form]="form.controls.estimatedCost" 
-                unitOfMeasurement="weeks"
-                [quantityRequired]="numWeeksInProject"/>
+                [funding]="funding"
+                unitOfMeasurement="weeks" />
         </ng-container>
     `,
     styles: [`
@@ -116,6 +118,9 @@ export class ResourceStorageFormComponent {
 
     @Input({ required: true })
     form: ResourceStorageForm;
+
+    @Input({required: true})
+    funding: FundingModel;
 
     @Input()
     storageStartDate: Date | null = null;
@@ -144,7 +149,4 @@ export class ResourceStorageFormComponent {
         return this.form.value.type === 'other';
     }
 
-    get hasCostEstimates() {
-        return this.storageStartDate && this.storageEndDate;
-    }
 }

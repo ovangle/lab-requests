@@ -1,3 +1,4 @@
+import { differenceInCalendarWeeks } from "date-fns";
 import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/cost-estimate";
 
 export const RESOURCE_STORAGE_TYPES = [
@@ -13,6 +14,21 @@ export const RESOURCE_STORAGE_TYPES = [
 ] as const;
 export type ResourceStorageType = typeof RESOURCE_STORAGE_TYPES[number];
 
+export function storageCostPerWeek(storageType: ResourceStorageType): number {
+    return {
+        'general': 0,
+        'samples': 0.1,
+        'chemical': 14,
+        'dry': 28,
+        'biological': 1234,
+
+        'cold (-4 °C)': 0,
+        'frozen (-18 °C)': 0,
+        'ult (-80 °C)': 0,
+        'other': 1000
+    }[storageType] || 0;
+}
+
 export function isResourceStorageType(obj: any): obj is ResourceStorageType {
     return typeof obj === 'string'
         && RESOURCE_STORAGE_TYPES.includes(obj as any);
@@ -21,6 +37,17 @@ export function isResourceStorageType(obj: any): obj is ResourceStorageType {
 export interface ResourceStorageParams {
     description?: string;
     estimatedCost: CostEstimate | null;
+}
+
+export function storageCostEstimate(value: ResourceStorage, startDate: Date, endDate: Date): CostEstimate {
+    const durationInWeeks = differenceInCalendarWeeks(startDate, endDate);
+
+    return {
+        'isUniversitySupplied': true,
+        'perUnitCost': storageCostPerWeek(value.type),
+        'unit': 'week',
+        'quantityRequired': durationInWeeks
+    };
 }
 
 export class ResourceStorage {

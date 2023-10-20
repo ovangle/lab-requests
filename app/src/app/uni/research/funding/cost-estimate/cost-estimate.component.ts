@@ -1,6 +1,7 @@
-import { Component, Input } from "@angular/core";
+import { Component, Input, Pipe, PipeTransform } from "@angular/core";
 import { CostEstimate } from "./cost-estimate";
-import { CommonModule } from "@angular/common";
+import { CommonModule, formatCurrency } from "@angular/common";
+import { CostEstimatePipe } from "./cost-estimate.pipe";
 
 
 @Component({
@@ -8,11 +9,14 @@ import { CommonModule } from "@angular/common";
     standalone: true,
     imports: [
         CommonModule,
+        CostEstimatePipe
     ],
     template: `
+    <span [innerHTML]="cost | uniCostEstimate:'full'"></span>
     `
 })
 export class ResearchFundingCostEstimateComponent {
     @Input()
-    estimate: CostEstimate;
+    cost: CostEstimate | null;
+
 }

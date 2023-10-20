@@ -69,7 +69,7 @@ export function experimentalPlanContextFromDetailRoute(): Observable<Experimenta
     .resource-form-pane {
         position: absolute;
         top: 0;
-        right: -16px;
+        right: 0;
         height: 100%;
         max-width: 40vw;
         background-color: white;

@@ -14,11 +14,12 @@ import { CostEstimateForm, CostEstimateFormComponent, costEstimateForm } from "s
 import { HazardClass } from "../../../resource/hazardous/hazardous";
 import { FundingModel } from "src/app/uni/research/funding/funding-model";
 import { ExperimentalPlanContext } from "src/app/lab/experimental-plan/common/experimental-plan";
-import { Observable, map } from "rxjs";
+import { BehaviorSubject, Observable, map } from "rxjs";
 
 
 export type InputMaterialForm = FormGroup<{
     name: FormControl<string>;
+    description: FormControl<string>;
     baseUnit: FormControl<string>;
 
     numUnitsRequired: FormControl<number>;
@@ -34,6 +35,10 @@ export function inputMaterialForm(): InputMaterialForm {
         name: new FormControl<string>(
             '',
             {nonNullable: true, validators: [Validators.required]}
+        ),
+        description: new FormControl<string>(
+            '',
+            {nonNullable: true}
         ),
         baseUnit: new FormControl<string>(
            '',
@@ -83,44 +88,33 @@ export type InputMaterialFormErrors = ValidationErrors & {
             </mat-error>
         </mat-form-field>
 
+        <mat-form-field>
+            <mat-label>Usage description</mat-label>
+            <textarea matInput formControlName="description"></textarea>
+        </mat-form-field>
+
         <common-measurement-unit-input
             formControlName="baseUnit" 
             required>
             <mat-label>Units</mat-label>
         </common-measurement-unit-input>
 
-        <ng-container *ngIf="baseUnit">
-            <mat-form-field>
-                <mat-label>Estimated amount required</mat-label>
-                <input matInput formControlName="numUnitsRequired" />
-                <div matTextSuffix>
-                    <span [innerHTML]="baseUnit | commonMeasurementUnit"></span>
-                </div>
-            </mat-form-field>
+        <uni-research-funding-cost-estimate-form
+            *ngIf="fundingModel$ | async as fundingModel"
+            [form]="form.controls.perUnitCostEstimate"
+            [funding]="fundingModel" 
+            [unitOfMeasurement]="baseUnit" />
 
-            <uni-research-funding-cost-estimate-form
-                *ngIf="fundingModel$ | async as fundingModel"
-                [form]="form.controls.perUnitCostEstimate"
-                [funding]="fundingModel" 
-                [unitOfMeasurement]="baseUnit" 
-                [quantityRequired]="form.controls.numUnitsRequired.value">
-            </uni-research-funding-cost-estimate-form>
-            <!--
-            <lab-resource-provision-form 
-                [form]="costEstimateForm"
-                [provisioningUnit]="form.value.baseUnit!"
-                [resourceType]="resourceType"
-                [requestedUnits]="form.value.numUnitsRequired || 0">
-            </lab-resource-provision-form>
-            -->
+        <lab-resource-storage-form 
+                [form]="form.controls.storage" 
+                [funding]="planFunding"
+                [storageStartDate]="startDate"
+                [storageEndDate]="endDate" />
+        
 
-            <lab-resource-storage-form 
-                [form]="form.controls.storage" />
-
-            <lab-req-hazard-classes-select formControlName="hazardClasses">
-                <span class="label">Hazard classes</span>
-            </lab-req-hazard-classes-select>
-        </ng-container>
+        <lab-req-hazard-classes-select formControlName="hazardClasses">
+            <span class="label">Hazard classes</span>
+        </lab-req-hazard-classes-select>
     </form>
     `,
     styles: [`
@@ -144,6 +138,25 @@ export class InputMaterialResourceFormComponent {
         return this.formService.form;
     }
 
+    ngOnInit() {
+        this.form.statusChanges.subscribe(status => {
+            for (const [key, control] of Object.entries(this.form.controls)) {
+                console.log(key, control.valid, control.errors);
+            }
+            console.log('status',status);
+        })
+
+        this._planContext.plan$.subscribe(plan => {
+            this._fundingModelSubject.next(plan.fundingModel);
+            this._durationSubject.next({startDate: plan.startDate, endDate: plan.endDate});
+        })
+    }
+
+    ngOnDestroy() {
+        this._fundingModelSubject.complete();
+        this._durationSubject.complete();
+    }
+
     get baseUnit(): string {
         return this.form.value?.baseUnit || '';
     }
@@ -152,6 +165,20 @@ export class InputMaterialResourceFormComponent {
         const control = this.form.controls.name;
         return control.errors as InputMaterialFormErrors['name'] | null;
     }
+
+    readonly _fundingModelSubject = new BehaviorSubject(null);
+    get fundingModel(): FundingModel | null {
+        return this._fundingModelSubject.value;
+    }
+
+    readonly _durationSubject = new BehaviorSubject({startDate: null, endDate: null});
+    get startDate(): Date | null {
+        return this._durationSubject.value.startDate;
+    }
+    get endDate(): Date | null {
+        return this._durationSubject.value.endDate;
+    }
+
 
     get fundingModel$(): Observable<FundingModel> {
         return this._planContext.plan$.pipe(map(plan => plan.fundingModel));

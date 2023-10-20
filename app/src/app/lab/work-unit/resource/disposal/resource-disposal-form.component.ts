@@ -38,7 +38,7 @@ export function resourceDisposalFromFormValue(form: ResourceDisposalForm): Resou
         : form.value.type!;
 
     const estimatedCost = form.value.hasCostEstimates 
-        ? costEstimatesFromForm(form.controls.estimatedCost)
+        ? costEstimatesFromForm(form.controls.estimatedCost, 'kg')
         : null;
 
     return new ResourceDisposal({

@@ -99,7 +99,7 @@ export function serviceForm(task: Partial<Task>): TaskForm {
         supplier: new FormControl<'researcher' | 'technician' | 'other'>('researcher', {nonNullable: true}),
         externalSupplierDescription: new FormControl<string>('', {nonNullable: true}),
         isUniversitySupplied: new FormControl(!!task.costEstimate?.isUniversitySupplied, {nonNullable: true}),
-        estimatedCost: new FormControl(task.costEstimate?.estimatedCost || 0, {nonNullable: true}),
+        estimatedCost: new FormControl(task.costEstimate?.perUnitCost || 0, {nonNullable: true}),
     }, {
         asyncValidators: [
             (c) => collectFieldErrors(c as TaskForm)

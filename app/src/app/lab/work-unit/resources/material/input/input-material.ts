@@ -20,6 +20,7 @@ export class InputMaterial extends Material {
     override readonly type = 'input-material';
 
     name: string;
+    description: string;
     baseUnit: string;
 
     numUnitsRequired: number;

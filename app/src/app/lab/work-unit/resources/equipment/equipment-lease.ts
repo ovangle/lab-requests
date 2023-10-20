@@ -1,12 +1,11 @@
 import { validate as validateIsUUID } from 'uuid';
 
-import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from "@angular/forms";
 import { Resource, ResourceParams } from "../../resource/resource";
 import { firstValueFrom } from 'rxjs';
-import { ResourceFileAttachment, resourceFileAttachmentFromJson, resourceFileAttachmentToJson } from '../../resource/file-attachment/file-attachment';
+import { resourceFileAttachmentFromJson } from '../../resource/file-attachment/file-attachment';
 import { CostEstimate, costEstimateFromJson, costEstimateToJson } from 'src/app/uni/research/funding/cost-estimate/cost-estimate';
-import { Equipment, EquipmentService, equipmentPatchToJson } from 'src/app/lab/equipment/common/equipment';
-import { EquipmentRequest, equipmentRequestToJson, isEquipmentRequest } from 'src/app/lab/equipment/request/equipment-request';
+import { Equipment, EquipmentService } from 'src/app/lab/equipment/common/equipment';
+import { equipmentRequestToJson, isEquipmentRequest } from 'src/app/lab/equipment/request/equipment-request';
 import { EquipmentLike, equipmentLikeFromJson, equipmentLikeToJson } from 'src/app/lab/equipment/equipment-like';
 
 export interface EquipmentLeaseParams extends ResourceParams<EquipmentLease> {

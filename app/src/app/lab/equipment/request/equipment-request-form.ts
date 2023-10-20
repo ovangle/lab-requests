@@ -52,6 +52,6 @@ export function equipmentRequestFromForm(form: EquipmentRequestForm): EquipmentR
     return {
         name: name!,
         reason: reason!,
-        cost: hasCostEstimates ? costEstimatesFromForm(form.controls['cost']) : null
+        cost: hasCostEstimates ? costEstimatesFromForm(form.controls['cost'], 'item') : null
     };
 }
