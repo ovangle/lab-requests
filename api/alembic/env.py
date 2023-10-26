@@ -4,8 +4,16 @@ from typing import Any
 from sqlalchemy import MetaData, engine_from_config
 from sqlalchemy import pool
 
-from alembic import context
-import db
+from alembic import context # type: ignore
+
+try:
+    import db
+except ImportError:
+    import sys, pathlib
+    project_root = pathlib.Path(__file__).parent.parent
+    sys.path.append(str(project_root / 'src'))
+
+    import db
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -40,6 +48,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
+    import main # ensure models are loaded into meta
     context.configure(
         url=db.db_url,
         target_metadata=target_metadata,
@@ -58,6 +67,7 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    import main # ensure models are loaded into meta
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",

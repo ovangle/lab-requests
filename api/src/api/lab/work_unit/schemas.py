@@ -20,6 +20,8 @@ from . import models
 
 class WorkUnitBase(BaseModel):
     campus: Campus | CampusCode | UUID;
+
+    name: str
     lab_type: LabType
     technician: str 
 
@@ -51,6 +53,7 @@ class WorkUnit(WorkUnitBase, ResourceContainer, ApiModel[models.WorkUnit_]):
         instance = cls(
             plan_id=model.plan_id,
             id=model.id,
+            name=model.name,
             index=model.index,
             campus=campus,
             lab_type=model.lab_type,
@@ -80,8 +83,12 @@ class WorkUnitPatch(WorkUnitBase, ResourceContainerPatch, ModelPatch[WorkUnit, m
     __api_model__ = WorkUnit
 
     async def do_update(self, db: LocalSession, model: models.WorkUnit_) -> models.WorkUnit_:
-        for attr in ('lab_type', 'process_summary', 
-                     'start_date', 'end_date'):
+        for attr in ('name', 
+                     'lab_type', 
+                     'process_summary', 
+                     'start_date', 
+                     'end_date'
+        ):
             s_attr = getattr(self, attr)
             if getattr(model, attr) != s_attr:
                 setattr(model, attr, getattr(self, attr))
@@ -125,6 +132,7 @@ class WorkUnitCreate(WorkUnitBase, ModelCreate[WorkUnit, models.WorkUnit_]):
         work_unit = models.WorkUnit_(
             plan_id=plan.id,
             index=await self.next_plan_index(db),
+            name=self.name,
             
             campus_id=await self._resolve_campus_id(db),
             lab_type=self.lab_type,

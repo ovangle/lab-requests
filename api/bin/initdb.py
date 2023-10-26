@@ -7,7 +7,7 @@ from db import db_engine, db_metadata, local_sessionmaker
 from alembic.config import Config
 from alembic import command
 
-PROJECT_ROOT = Path(__file__).parent
+PROJECT_ROOT = Path(__file__).parent.parent
 ALEMBIC_CFG = Config(PROJECT_ROOT / 'alembic.ini')
 
 async def initdb():

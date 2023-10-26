@@ -6,7 +6,7 @@ from typing import Any, Awaitable, Optional, cast
 from uuid import UUID
 from fastapi import UploadFile
 
-from sqlalchemy import VARCHAR, ForeignKey, select, Select
+from sqlalchemy import VARCHAR, ForeignKey, UniqueConstraint, select, Select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import TEXT, DATE
 from sqlalchemy.dialects import postgresql as pg_dialect
@@ -26,16 +26,22 @@ from .resource.common.resource_type import ResourceType
     
 class WorkUnit_(ResourceContainer_, Base):
     __tablename__ = 'work_units'
+    __table_args__ = (
+        UniqueConstraint('plan_id', 'name', name='unique-plan-name'),
+        UniqueConstraint('plan_id', 'index', name='unique-plan-index')
+    )
 
     id: Mapped[uuid_pk]
 
     plan_id: Mapped[UUID] = mapped_column(ForeignKey('experimental_plans.id'))
     plan: Mapped[ExperimentalPlan_] = relationship(back_populates='work_units')
 
+    name: Mapped[str] = mapped_column(VARCHAR(256))
+    index: Mapped[int] = mapped_column()
+
     campus_id: Mapped[UUID] = mapped_column(ForeignKey('campuses.id'))
     campus: Mapped[Campus] = relationship()
 
-    index: Mapped[int] = mapped_column()
 
     lab_type: Mapped[LabType] = mapped_column(pg_dialect.ENUM(LabType))
     technician_email: Mapped[email]
@@ -50,6 +56,7 @@ class WorkUnit_(ResourceContainer_, Base):
     def __init__(self, 
                  plan_id: UUID, 
                  index: int, *, 
+                 name: str,
                  campus_id: UUID,
                  lab_type: LabType, 
                  technician_email: str, 
@@ -60,6 +67,7 @@ class WorkUnit_(ResourceContainer_, Base):
         super().__init__()
         self.plan_id = plan_id
         self.index = index
+        self.name = name
         self.campus_id = campus_id
         self.lab_type = lab_type
         self.technician_email = technician_email
