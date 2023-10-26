@@ -12,7 +12,7 @@ import { MatIconModule } from "@angular/material/icon";
         MatIconModule
     ],
     template: `
-    <h2><ng-content></ng-content></h2>
+    <h2>{{action | titlecase}}</h2>
 
     <div class="form-controls">
         <button mat-icon-button
@@ -37,6 +37,9 @@ import { MatIconModule } from "@angular/material/icon";
    `]
 })
 export class WorkUnitFormTitleComponent {
+    @Input()
+    action: string;
+
     @Input()
     saveDisabled: boolean;
 

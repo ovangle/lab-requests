@@ -5,7 +5,7 @@ import { FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatRadioModule } from "@angular/material/radio";
-import { CommonMeasurementUnitPipe } from "src/app/common/measurement/common-measurement-unit.pipe";
+import { MeasurementUnitPipe } from "src/app/common/measurement/common-measurement-unit.pipe";
 
 import { CampusInfoComponent } from 'src/app/uni/campus/campus-info.component';
 
@@ -20,7 +20,7 @@ import { CampusInfoComponent } from 'src/app/uni/campus/campus-info.component';
         MatInputModule,
         MatRadioModule,
 
-        CommonMeasurementUnitPipe
+        MeasurementUnitPipe
     ],
     template: `
     <ng-container [formGroup]="form">

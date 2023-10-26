@@ -1,16 +1,11 @@
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { ChangeDetectorRef, Component, ViewChild, inject } from "@angular/core";
-import { InputMaterial } from "../../resources/material/input/input-material";
-import { SoftwareParams } from "../../resources/software/software";
-import { Subscription, defer, firstValueFrom, of } from "rxjs";
-import { WorkUnitFormComponent } from "../../work-unit-form.component";
-import { WorkUnitForm, workUnitForm, workUnitPatchFromForm } from "../../common/work-unit-form";
-import { CommonModule } from "@angular/common";
-import { hazardClassFromDivision } from "../../resource/hazardous/hazardous";
-import { WorkUnitContext, WorkUnitPatch, WorkUnitService } from "../../common/work-unit";
+import { ChangeDetectorRef, Component, inject } from "@angular/core";
+import { defer, firstValueFrom } from "rxjs";
+import { WorkUnitPatch, WorkUnitService } from "../../common/work-unit";
+import { workUnitForm, workUnitPatchFromForm } from "../../common/work-unit-form";
 
 const workUnitCreateFixture: Partial<WorkUnitPatch & {planId: string}> = {
     planId: 'e7a33211-1227-4d1d-994d-85a480c15ac0',
+    name: 'work unit 1',
     campus: 'ROK',
     labType: 'ICT',
     technician: 'hello@world.com',
@@ -35,7 +30,7 @@ const workUnitCreateFixture: Partial<WorkUnitPatch & {planId: string}> = {
 @Component({
     selector: 'lab-work-unit-create-page',
     template: `
-        <lab-work-unit-form [committed]="null" [form]="form">
+        <lab-work-unit-form [form]="form">
         </lab-work-unit-form>
 
         <div class="form-actions">
@@ -55,8 +50,6 @@ export class WorkUnitCreatePage {
     readonly service = inject(WorkUnitService);
 
     readonly form = workUnitForm();
-    readonly patch$ = defer(() => workUnitPatchFromForm(this.form));
-
     ngAfterViewInit() {
         this.form.patchValue({
             ...workUnitCreateFixture,
@@ -75,10 +68,7 @@ export class WorkUnitCreatePage {
     }
 
     async save() {
-        if (!this.form.valid) {
-            throw new Error('Cannot save invallid form');
-        }
-        const patch = await firstValueFrom(this.patch$);
+        const patch = workUnitPatchFromForm(this.form);
         return firstValueFrom(this.service.create(patch));
     }
 }

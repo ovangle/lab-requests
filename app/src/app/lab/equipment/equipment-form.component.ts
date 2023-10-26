@@ -11,6 +11,7 @@ import { EquipmentForm, equipmentPatchFromForm } from "./equipment-form.service"
 import { EquipmentTagInputComponent } from "./tag/equipment-tag-input.component";
 import { EquipmentTrainingDescriptionsInputComponent } from "./training/training-descriptions-input.component";
 import { Equipment, EquipmentPatch } from "./common/equipment";
+import { ResizeTextareaOnInputDirective } from "src/app/common/forms/resize-textarea-on-input.directive";
 
 export const equipmentFixtures: Equipment[] = [];
 
@@ -27,6 +28,7 @@ export const equipmentFixtures: Equipment[] = [];
         MatFormFieldModule,
         MatInputModule,
 
+        ResizeTextareaOnInputDirective,
         EquipmentTagInputComponent,
         EquipmentTrainingDescriptionsInputComponent,
     ],
@@ -47,7 +49,9 @@ export const equipmentFixtures: Equipment[] = [];
 
         <mat-form-field>
             <mat-label>Description</mat-label>
-            <textarea matInput formControlName="description">
+            <textarea matInput 
+                      formControlName="description"
+                      resizeOnInput>
             </textarea>
         </mat-form-field>  
 
@@ -57,7 +61,6 @@ export const equipmentFixtures: Equipment[] = [];
 
         <lab-equipment-training-descriptions-input formControlName="trainingDescriptions">
         </lab-equipment-training-descriptions-input>
-
 
         <div class="form-actions"> 
             <button mat-raised-button type="submit" 
@@ -114,5 +117,10 @@ export class LabEquipmentFormComponent {
     }
     resetForm() {
         this.requestReset.emit();
+    }
+
+    _descriptionTextareaHeightPx = 60
+    _onDescriptionInput(evt: Event) {
+        this._descriptionTextareaHeightPx = (evt.target as Element).scrollHeight;
     }
 }

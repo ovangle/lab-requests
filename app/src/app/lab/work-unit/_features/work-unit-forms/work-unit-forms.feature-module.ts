@@ -4,9 +4,10 @@ import { RouterModule, Routes } from "@angular/router";
 import { WorkUnitResourceFormHostPage } from "./work-unit-resource-form-host.page";
 import { ResourceContainerContext } from "../../resource/resource-container";
 import { WorkUnitUpdateFormPage } from "./work-unit-update-form.page";
-import { WorkUnitBaseInfoFormComponent } from "../../base-info/work-unit-base-info-form.component";
 import { WorkUnitFormTitleComponent } from "../../work-unit-form-title.component";
 import { WorkUnitContext, WorkUnitResourceContainerContext } from "../../common/work-unit";
+import { WorkUnitFormComponent } from "../../common/work-unit-form.component";
+import { WorkUnitContextHostPage } from "./work-unit-context-host.page";
 
 
 @NgModule({
@@ -15,6 +16,7 @@ import { WorkUnitContext, WorkUnitResourceContainerContext } from "../../common/
         RouterModule.forChild([
             {
                 path: ':work_unit_index',
+                component: WorkUnitContextHostPage,
                 children: [
                     {
                         path: 'update',
@@ -30,10 +32,11 @@ import { WorkUnitContext, WorkUnitResourceContainerContext } from "../../common/
                 ]
             }
         ]),
-        WorkUnitBaseInfoFormComponent,
+        WorkUnitFormComponent,
         WorkUnitFormTitleComponent
     ],
     declarations: [
+        WorkUnitContextHostPage,
         WorkUnitResourceFormHostPage,
         WorkUnitUpdateFormPage
     ],

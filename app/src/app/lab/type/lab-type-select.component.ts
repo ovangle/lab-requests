@@ -1,44 +1,29 @@
 import { Component, Input } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { NG_VALUE_ACCESSOR, ControlValueAccessor, FormControl, ReactiveFormsModule } from "@angular/forms";
+import { NG_VALUE_ACCESSOR, ControlValueAccessor, FormControl, ReactiveFormsModule, Validators } from "@angular/forms";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
 import { LabType, labTypes } from "./lab-type";
 import { CommonModule } from "@angular/common";
 import { MatSelectModule } from "@angular/material/select";
 import { MatFormFieldModule } from "@angular/material/form-field";
+import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 
 @Component({
-    selector: 'app-lab-type-select-option',
-    standalone: true,
-    template: `
-        {{labType}}
-    `
-})
-export class LabTypeSelectOptionComponent {
-    @Input()
-    labType: LabType;
-}
-
-@Component({
-    selector: 'app-lab-type-select',
+    selector: 'lab-type-select',
     standalone: true,
     imports: [
         CommonModule,
         ReactiveFormsModule,
         MatFormFieldModule,
         MatSelectModule,
-
-        LabTypeSelectOptionComponent
     ],
     template: `
     <mat-form-field>
         <mat-label>
             <ng-content select="mat-label"></ng-content>
         </mat-label>
-        <mat-select [formControl]="_control" (closed)="_onTouched()">
-            <mat-option *ngFor="let labType of labTypes" [value]="labType">
-                <app-lab-type-select-option [labType]="labType"></app-lab-type-select-option>
-            </mat-option>
+        <mat-select [formControl]="_control" (closed)="_onTouched()"> 
+            <mat-option *ngFor="let labType of labTypes" [value]="labType">{{labType}}</mat-option>
         </mat-select>
 
         <mat-error>
@@ -61,6 +46,20 @@ export class LabTypeSelectComponent implements ControlValueAccessor {
     readonly labTypes = labTypes;
 
     readonly _control = new FormControl<LabType | null>(null);
+
+    @Input()
+    get required() {
+        return this._control.hasValidator(Validators.required);
+    }
+    set required(required: BooleanInput) {
+        const isRequired = coerceBooleanProperty(required);
+        if (isRequired && !this.required) {
+            this._control.addValidators(Validators.required);
+        }
+        if (!isRequired && this.required) {
+            this._control.removeValidators(Validators.required);
+        }
+    }
 
     constructor() {
         this._control.valueChanges.pipe(

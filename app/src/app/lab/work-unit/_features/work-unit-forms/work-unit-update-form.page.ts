@@ -1,9 +1,10 @@
 import { AfterViewInit, Component, OnDestroy, inject } from "@angular/core";
-import { workUnitForm } from "../../common/work-unit-form";
+import { workUnitForm, workUnitPatchFromForm } from "../../common/work-unit-form";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { ExperimentalPlanFormPaneControlService } from "src/app/lab/experimental-plan/experimental-plan-form-pane-control.service";
 import { BodyScrollbarHidingService } from "src/app/utils/body-scrollbar-hiding.service";
-import { WorkUnitContext, WorkUnit, workUnitPatchFromWorkUnit } from "../../common/work-unit";
+import { WorkUnitContext, WorkUnit, workUnitPatchFromWorkUnit, formatWorkUnit } from "../../common/work-unit";
+import { defer, map } from "rxjs";
 
 /**
  * Updates the basic info of a work unit.
@@ -12,12 +13,14 @@ import { WorkUnitContext, WorkUnit, workUnitPatchFromWorkUnit } from "../../comm
     selector: 'lab-work-unit-update-form-page',
     template: `
     <lab-work-unit-form-title
+        *ngIf="workUnit$ | async as workUnit"
+        action="Update {{_displayWorkUnit(workUnit)}}"
         [saveDisabled]="!form.valid"
         (requestSave)="_onRequestSave()"
-        (requestClose)="_onRequestClose()">
-        Update work unit
-    </lab-work-unit-form-title>
-    <lab-work-unit-base-info-form [form]="form" />
+        (requestClose)="_onRequestClose()" />
+    <lab-work-unit-form 
+        [form]="form"
+        [fixedFields]="['campus','labType']" />
     `,
     host: {
         'class': 'mat-elevation-z8'
@@ -26,18 +29,17 @@ import { WorkUnitContext, WorkUnit, workUnitPatchFromWorkUnit } from "../../comm
         './work-unit-form.css'
     ]
 })
-export class WorkUnitUpdateFormPage implements AfterViewInit, OnDestroy {
+export class WorkUnitUpdateFormPage {
     readonly _workUnitContext = inject(WorkUnitContext);
     readonly workUnit$ = this._workUnitContext.workUnit$;
 
     readonly _formPane = inject(ExperimentalPlanFormPaneControlService);
-    readonly appScaffold = inject(BodyScrollbarHidingService);
 
     readonly form = workUnitForm();
 
     constructor() {
         this.workUnit$.pipe(
-            takeUntilDestroyed()
+            takeUntilDestroyed(),
         ).subscribe((workUnit: WorkUnit | null) => {
             if (!workUnit) {
                 throw new Error('Update form page expects a work unit');
@@ -47,15 +49,9 @@ export class WorkUnitUpdateFormPage implements AfterViewInit, OnDestroy {
         })
     }
 
-    ngAfterViewInit() {
-        this.appScaffold.hideScrollbar();
-    }
-
-    ngOnDestroy() {
-        this.appScaffold.unhideScrollbar();
-    }
-
     async _onRequestSave() {
+        const patch = workUnitPatchFromForm(this.form);
+        await this._workUnitContext.commit(patch);
         await this.close();
     }
 
@@ -65,5 +61,9 @@ export class WorkUnitUpdateFormPage implements AfterViewInit, OnDestroy {
 
     async close() {
         return await this._formPane.close();
+    }
+
+    _displayWorkUnit(workUnit: WorkUnit) {
+        return formatWorkUnit(workUnit);
     }
 }

@@ -1,6 +1,6 @@
 import { AbstractControl, ControlContainer, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 
-import { RESOURCE_STORAGE_TYPES, ResourceStorage, ResourceStorageType } from './resource-storage';
+import { RESOURCE_STORAGE_TYPES, ResourceStorage, ResourceStorageType, storageCostPerWeek } from './resource-storage';
 import { ChangeDetectorRef, Component, Input, SimpleChanges, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -11,6 +11,7 @@ import { SelectOtherDescriptionComponent } from "src/app/utils/forms/select-othe
 import { CostEstimateForm, CostEstimateFormComponent, costEstimateForm, costEstimatesFromForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
 import { differenceInCalendarWeeks } from "date-fns";
 import { FundingModel } from "src/app/uni/research/funding/funding-model";
+import { CostEstimateInputComponent } from "src/app/uni/research/funding/cost-estimate/cost-estimate-input.component";
 
 export type ResourceStorageForm = FormGroup<{
     type: FormControl<ResourceStorageType>;
@@ -70,7 +71,8 @@ export function patchResourceStorageFormValue(form: ResourceStorageForm, storage
         MatSelectModule,
 
         SelectOtherDescriptionComponent,
-        CostEstimateFormComponent
+        CostEstimateFormComponent,
+        CostEstimateInputComponent
     ],
     template: `
         <h3>Storage</h3>
@@ -93,11 +95,25 @@ export function patchResourceStorageFormValue(form: ResourceStorageForm, storage
                 </lab-req-select-other-description>
             </div>
 
+            per week storage cost: {{perWeekStorageCost}}
+            quantity required: {{numWeeksInProject}}
+
             <uni-research-funding-cost-estimate-form
+                *ngIf="funding"
                 [form]="form.controls.estimatedCost" 
                 [funding]="funding"
+                name="storage costs"
+                [perUnitCost]="perWeekStorageCost"
+                [quantityRequired]="numWeeksInProject"
                 unitOfMeasurement="weeks" />
-        </ng-container>
+
+            <uni-cost-estimate-input *ngIf="funding"
+                formControlName="cost"
+                [fundingModel]="funding"
+                unitOfMeasurement="week" 
+                [perUnitCost]="perWeekStorageCost"
+                [quantityRequired]="numWeeksInProject" />
+    </ng-container>
     `,
     styles: [`
     :host {
@@ -119,8 +135,8 @@ export class ResourceStorageFormComponent {
     @Input({ required: true })
     form: ResourceStorageForm;
 
-    @Input({required: true})
-    funding: FundingModel;
+    @Input()
+    funding: FundingModel | null = null;
 
     @Input()
     storageStartDate: Date | null = null;
@@ -133,7 +149,7 @@ export class ResourceStorageFormComponent {
         const storageEndDate = changes['storageEndDate'];
         if (storageStartDate || storageEndDate) {
             const hasCostEstimates = storageStartDate.currentValue && storageEndDate.currentValue;
-            this.form.patchValue({hasCostEstimates});
+            this.form.patchValue({ hasCostEstimates });
             this._cdRef.detectChanges();
         }
     }
@@ -141,12 +157,19 @@ export class ResourceStorageFormComponent {
     get numWeeksInProject(): number {
         if (this.storageStartDate == null || this.storageEndDate == null) {
             return 0;
-        } 
+        }
         return differenceInCalendarWeeks(this.storageStartDate, this.storageEndDate);
     }
 
     get isOtherTypeSelected() {
         return this.form.value.type === 'other';
+    }
+
+    get perWeekStorageCost() {
+        const t = this.form.value.type || 'other';
+        console.log('storage type', t, storageCostPerWeek(t));
+        return storageCostPerWeek(t);
+        
     }
 
 }

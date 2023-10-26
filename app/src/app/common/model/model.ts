@@ -110,4 +110,10 @@ export abstract class ModelMeta<
     modelFromJson(json: unknown): T {
         return new this.model(this.modelParamsFromJson(json));
     }
+
+    isEqualLookups(a: Partial<TLookup>, b: Partial<TLookup>) {
+        return Object.entries(a).every(
+            ([k, v]) => b.hasOwnProperty(k) && b[k as keyof TLookup] === v
+        )
+    }
 }

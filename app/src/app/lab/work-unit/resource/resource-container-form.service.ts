@@ -60,10 +60,11 @@ export function resourceContainerFormControls(): ResourceContainerFormControls {
 
 export type ResourceContainerForm = FormGroup<ResourceContainerFormControls>;
 
-export function resourceContainerPatchFromForm(form: ResourceContainerForm): ResourceContainerPatch<any> {
+export function resourceContainerPatchFromForm(form: ResourceContainerForm) {
     if (!form.valid) {
         throw new Error('Cannot get patch from invalid form');
     }
+
     const patch: Partial<ResourceContainerPatch<any>> = {};
     for (const resourceType of ALL_RESOURCE_TYPES) {
         const slices: any[] = [];

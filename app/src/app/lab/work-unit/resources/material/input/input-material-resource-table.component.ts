@@ -5,7 +5,7 @@ import { MatTableModule } from "@angular/material/table";
 import { ResourceTableDataSource, ResourceTableComponent } from "../../../resource/common/resource-table.component";
 import { ResourceStorageDetailsComponent } from "../../../resource/storage/resource-storage-details.component";
 import { HazardClassLabelsComponent } from "../../../resource/hazardous/hazard-classes-labels.component";
-import { CommonMeasurementUnitPipe } from "src/app/common/measurement/common-measurement-unit.pipe";
+import { MeasurementUnitPipe } from "src/app/common/measurement/common-measurement-unit.pipe";
 
 
 @Injectable()
@@ -23,7 +23,7 @@ export class InputMaterialResourceTableDataSource extends ResourceTableDataSourc
 
         ResourceTableComponent,
 
-        CommonMeasurementUnitPipe,
+        MeasurementUnitPipe,
         ResourceStorageDetailsComponent,
         HazardClassLabelsComponent
     ],

@@ -1,6 +1,6 @@
 import { DestroyRef, Injectable, Type, inject } from '@angular/core';
-import { Observable, ReplaySubject, debounceTime, defer, firstValueFrom, map, shareReplay, switchMap, tap } from 'rxjs';
-import { Model, ModelLookup, ModelPatch, ModelResponsePage } from './model';
+import { Observable, ReplaySubject, debounceTime, defer, filter, firstValueFrom, map, shareReplay, switchMap, tap } from 'rxjs';
+import { Model, ModelLookup, ModelMeta, ModelPatch, ModelResponsePage } from './model';
 import { ModelService } from './model-service';
 
 
@@ -11,6 +11,10 @@ export abstract class ModelCollection<
     TLookup extends ModelLookup<T> = ModelLookup<T>
 > {
     abstract readonly service: ModelService<T, TPatch, TLookup>;
+
+    get metadata(): ModelMeta<T, TPatch, TLookup> {
+        return this.service.metadata;
+    }
 
     get model() {
         return this.service.model;
@@ -45,6 +49,13 @@ export abstract class ModelCollection<
                 keepalivePage.unsubscribe();
             });
         }
+    }
+
+    setLookup(lookup: Partial<TLookup>): Observable<ModelResponsePage<T>> {
+        this.lookupSubject.next(lookup);
+        return this.page$.pipe(
+            filter(p => p.lookup === lookup)
+        );
     }
 
     async loadNextPage() {

@@ -9,12 +9,13 @@ import { HazardClassesSelectComponent } from "../../../resource/hazardous/hazard
 import { ProvisionFormComponent } from "../../../resource/provision/provision-form.component";
 import { ResourceStorageForm, ResourceStorageFormComponent, resourceStorageForm } from "../../../resource/storage/resource-storage-form.component";
 import { CommonMeasurementUnitInputComponent } from "src/app/common/measurement/common-measurement-unit-input.component";
-import { CommonMeasurementUnitPipe } from "src/app/common/measurement/common-measurement-unit.pipe";
+import { MeasurementUnitPipe } from "src/app/common/measurement/common-measurement-unit.pipe";
 import { CostEstimateForm, CostEstimateFormComponent, costEstimateForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
 import { HazardClass } from "../../../resource/hazardous/hazardous";
 import { FundingModel } from "src/app/uni/research/funding/funding-model";
 import { ExperimentalPlanContext } from "src/app/lab/experimental-plan/common/experimental-plan";
 import { BehaviorSubject, Observable, map } from "rxjs";
+import { WorkUnitContext } from "../../../common/work-unit";
 
 
 export type InputMaterialForm = FormGroup<{
@@ -69,7 +70,7 @@ export type InputMaterialFormErrors = ValidationErrors & {
         MatFormFieldModule,
         MatInputModule,
 
-        CommonMeasurementUnitPipe,
+        MeasurementUnitPipe,
         CommonMeasurementUnitInputComponent,
 
         CostEstimateFormComponent,
@@ -100,17 +101,16 @@ export type InputMaterialFormErrors = ValidationErrors & {
         </common-measurement-unit-input>
 
         <uni-research-funding-cost-estimate-form
-            *ngIf="fundingModel$ | async as fundingModel"
+            *ngIf="fundingModel"
             [form]="form.controls.perUnitCostEstimate"
             [funding]="fundingModel" 
             [unitOfMeasurement]="baseUnit" />
 
         <lab-resource-storage-form 
                 [form]="form.controls.storage" 
-                [funding]="planFunding"
+                [funding]="fundingModel"
                 [storageStartDate]="startDate"
                 [storageEndDate]="endDate" />
-        
 
         <lab-req-hazard-classes-select formControlName="hazardClasses">
             <span class="label">Hazard classes</span>
@@ -128,6 +128,7 @@ export type InputMaterialFormErrors = ValidationErrors & {
 })
 export class InputMaterialResourceFormComponent {
     readonly _planContext = inject(ExperimentalPlanContext);
+    readonly _workUnitContext = inject(WorkUnitContext);
     readonly formService = inject(ResourceFormService<InputMaterial, InputMaterialForm>);
 
     get resourceType() {
@@ -148,7 +149,10 @@ export class InputMaterialResourceFormComponent {
 
         this._planContext.plan$.subscribe(plan => {
             this._fundingModelSubject.next(plan.fundingModel);
-            this._durationSubject.next({startDate: plan.startDate, endDate: plan.endDate});
+        })
+
+        this._workUnitContext.workUnit$.subscribe(workUnit => {
+            this._durationSubject.next({startDate: workUnit.startDate, endDate: workUnit.endDate});
         })
     }
 
@@ -166,22 +170,17 @@ export class InputMaterialResourceFormComponent {
         return control.errors as InputMaterialFormErrors['name'] | null;
     }
 
-    readonly _fundingModelSubject = new BehaviorSubject(null);
+    readonly _fundingModelSubject = new BehaviorSubject<FundingModel | null>(null);
     get fundingModel(): FundingModel | null {
         return this._fundingModelSubject.value;
     }
 
-    readonly _durationSubject = new BehaviorSubject({startDate: null, endDate: null});
+    readonly _durationSubject = new BehaviorSubject<{startDate: Date | null; endDate: Date | null}>({startDate: null, endDate: null});
     get startDate(): Date | null {
         return this._durationSubject.value.startDate;
     }
     get endDate(): Date | null {
         return this._durationSubject.value.endDate;
     }
-
-
-    get fundingModel$(): Observable<FundingModel> {
-        return this._planContext.plan$.pipe(map(plan => plan.fundingModel));
-    } 
 
 }

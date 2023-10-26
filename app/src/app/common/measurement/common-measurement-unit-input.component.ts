@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { CommonMeasurementUnitPipe } from "./common-measurement-unit.pipe";
+import { MeasurementUnitPipe } from "./common-measurement-unit.pipe";
 import { CommonModule } from "@angular/common";
 import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule, Validators } from "@angular/forms";
 import { filter, map } from "rxjs";
@@ -18,7 +18,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
         MatFormFieldModule,
         MatInputModule,
 
-        CommonMeasurementUnitPipe
+        MeasurementUnitPipe
     ],
     template: `
     <mat-form-field>

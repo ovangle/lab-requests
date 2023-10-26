@@ -1,6 +1,6 @@
 import { CommonModule } from "@angular/common";
 import { Component, HostBinding, Input, inject } from "@angular/core";
-import { CommonMeasurementUnitPipe } from "./common-measurement-unit.pipe";
+import { MeasurementUnitPipe } from "./common-measurement-unit.pipe";
 
 
 @Component({
@@ -8,7 +8,7 @@ import { CommonMeasurementUnitPipe } from "./common-measurement-unit.pipe";
     standalone: true,
     imports: [
         CommonModule,
-        CommonMeasurementUnitPipe
+        MeasurementUnitPipe
     ],
     template: `
     `
@@ -17,7 +17,7 @@ export class CommonMeasurementUnitComponent {
     @Input()
     unit: string;
 
-    readonly _measure = inject(CommonMeasurementUnitPipe);
+    readonly _measure = inject(MeasurementUnitPipe);
 
     @HostBinding('attr.innerHTML')
     get hostInnerHtml() {

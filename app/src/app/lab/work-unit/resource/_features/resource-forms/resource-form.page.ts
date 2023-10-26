@@ -50,7 +50,6 @@ export function typeIndexFromDetailRoute$(): Observable<[ResourceType, number | 
         </ng-container>
     </ng-container>
     `,
-    
     providers: [
         ResourceContext,
         ResourceFormService

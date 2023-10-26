@@ -5,13 +5,13 @@ import { WorkUnitDetailPage } from "./work-unit-detail.page";
 import { WorkUnitIndexPage } from "./work-unit-index.page";
 import { CommonModule } from "@angular/common";
 import { WorkUnitBaseInfoComponent } from "../../base-info/work-unit-base-info.component";
-import { WorkUnitFormComponent } from "../../work-unit-form.component";
 import { ResourceContainerContext } from "../../resource/resource-container";
 import { WorkUnitResourceInfo } from "../../resource/resource-card.component";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { WorkUnitDurationInfoComponent } from "../../duration/work-unit-duration-info.component";
 import { WorkUnitContext, WorkUnitResourceContainerContext } from "../../common/work-unit";
+import { WorkUnitFormComponent } from "../../common/work-unit-form.component";
 
 
 const WORK_UNIT_FROM_PLAN_ROUTES: Routes = [

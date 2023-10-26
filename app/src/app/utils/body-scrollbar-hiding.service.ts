@@ -19,7 +19,7 @@ export class BodyScrollbarHidingService {
     renderer = injectRenderer();
 
     get isScrollbarVisible() {
-        return this.document.body.classList.contains('hide-scrollbar');
+        return !this.document.body.classList.contains('hide-scrollbar');
     }
 
     hideScrollbar() {

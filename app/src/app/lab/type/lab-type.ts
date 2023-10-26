@@ -12,3 +12,7 @@ export function isLabType(obj: any): obj is LabType {
     return typeof obj === 'string'
         && labTypes.includes(obj as any);
 }
+
+export function formatLabType(labType: LabType): string {
+    return labType;
+}

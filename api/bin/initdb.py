@@ -1,8 +1,14 @@
 #! /usr/bin/env python
 
 import asyncio
+from pathlib import Path
 from db import db_engine, db_metadata, local_sessionmaker
 
+from alembic.config import Config
+from alembic import command
+
+PROJECT_ROOT = Path(__file__).parent
+ALEMBIC_CFG = Config(PROJECT_ROOT / 'alembic.ini')
 
 async def initdb():
     # Ensure all models in packages we use are imported into metadata
@@ -11,6 +17,8 @@ async def initdb():
     print("initializing db...", end='\t')
     async with db_engine.begin() as db:
         await db.run_sync(db_metadata.create_all)
+        command.stamp(ALEMBIC_CFG, "head")
+        
     print('done')
 
 

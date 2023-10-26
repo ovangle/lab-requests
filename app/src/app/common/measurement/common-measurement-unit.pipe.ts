@@ -8,7 +8,7 @@ import { UnitOfMeasurement, formatUnitOfMeasurement } from "./measurement";
     name: 'commonMeasurementUnit',
     standalone: true
 })
-export class CommonMeasurementUnitPipe implements PipeTransform {
+export class MeasurementUnitPipe implements PipeTransform {
     constructor(
         readonly sanitizer: DomSanitizer
     ) {}

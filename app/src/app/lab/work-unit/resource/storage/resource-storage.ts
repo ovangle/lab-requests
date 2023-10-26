@@ -66,6 +66,8 @@ export class ResourceStorage {
         return 'other';
     }
 
+    
+
     get hasCostEstimates(): boolean {
         return this.estimatedCost != null;
     }

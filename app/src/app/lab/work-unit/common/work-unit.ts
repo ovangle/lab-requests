@@ -1,6 +1,6 @@
-import { Campus, campusFromJson, campusParamsFromJson } from "src/app/uni/campus/common/campus";
+import { Campus, campusFromJson, campusParamsFromJson, formatCampus } from "src/app/uni/campus/common/campus";
 import { ResourceContainer, ResourceContainerContext, ResourceContainerParams, ResourceContainerPatch, resourceContainerFieldsFromJson, resourceContainerPatchToJson } from "../resource/resource-container";
-import { LabType, isLabType } from "../../type/lab-type";
+import { LabType, formatLabType, isLabType } from "../../type/lab-type";
 import { formatISO, parseISO } from "date-fns";
 import { Observable, filter, firstValueFrom, skipWhile } from "rxjs";
 import { Inject, Injectable, Optional, Provider, SkipSelf, inject } from "@angular/core";
@@ -41,6 +41,8 @@ export class WorkUnit extends ResourceContainer {
     readonly planId: string;
     readonly index: number;
 
+    readonly name: string;
+
     readonly campus: Campus;
     readonly labType: LabType;
     readonly technician: string;
@@ -68,6 +70,17 @@ export class WorkUnit extends ResourceContainer {
         this.startDate = params.startDate || null;
         this.endDate = params.endDate || null;
    }
+}
+
+export type WorkUnitFmt = 'campus+lab';
+
+export function formatWorkUnit(workUnit: WorkUnit, format: WorkUnitFmt = 'campus+lab') {
+    switch (format) {
+        case 'campus+lab':
+            return `${formatCampus(workUnit.campus)} - ${formatLabType(workUnit.labType)}`
+        default:
+            throw new Error('Invalid lab type')
+    }
 }
 
 
@@ -98,6 +111,7 @@ export function workUnitFromJson(json: unknown): WorkUnit {
 export interface WorkUnitPatch extends ResourceContainerPatch<WorkUnit> {
     readonly campus: Campus | string;
     readonly labType: LabType;
+    readonly name: string;
     readonly technician: string;
 
     readonly processSummary: string;
@@ -108,6 +122,7 @@ export interface WorkUnitPatch extends ResourceContainerPatch<WorkUnit> {
 
 export function workUnitPatchFromWorkUnit(workUnit: WorkUnit): WorkUnitPatch {
     return {
+        name: workUnit.name,
         campus: workUnit.campus,
         labType: workUnit.labType,
         technician: workUnit.technician,

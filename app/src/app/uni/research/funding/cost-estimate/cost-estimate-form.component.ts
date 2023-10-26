@@ -3,7 +3,7 @@ import { CommonModule } from "@angular/common";
 import { FormControl, FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { CurrencyInputComponent } from "src/app/common/currency/currency-input.component";
-import { CommonMeasurementUnitPipe } from "src/app/common/measurement/common-measurement-unit.pipe";
+import { MeasurementUnitPipe } from "src/app/common/measurement/common-measurement-unit.pipe";
 import { NumberInput, coerceNumberProperty } from "@angular/cdk/coercion";
 import { FundingModel } from "../funding-model";
 import { MatCheckboxModule } from "@angular/material/checkbox";
@@ -67,7 +67,7 @@ function costEstimatesFromFormValue(value: CostEstimateForm['value'], unit: Unit
         MatFormFieldModule,
         MatInputModule,
 
-        CommonMeasurementUnitPipe,
+        MeasurementUnitPipe,
         CurrencyInputComponent,
         CostEstimatePipe
     ],
@@ -76,7 +76,7 @@ function costEstimatesFromFormValue(value: CostEstimateForm['value'], unit: Unit
         <h4><ng-content select=".title"></ng-content></h4>
 
         <mat-checkbox formControlName="isUniversitySupplied">
-            Include in {{funding.name | lowercase}} budget
+            Include {{name}} in {{funding.name | lowercase}} budget
         </mat-checkbox>
 
         <ng-container [ngSwitch]="includeInProjectFunding">
@@ -116,6 +116,9 @@ function costEstimatesFromFormValue(value: CostEstimateForm['value'], unit: Unit
 export class CostEstimateFormComponent {
     @Input({required: true})
     form: CostEstimateForm;
+
+    @Input()
+    name: string;
 
     @Input()
     funding: FundingModel;
@@ -169,4 +172,13 @@ export class CostEstimateFormComponent {
 
     _totalCost: CostEstimate;
     get totalCost(): CostEstimate { return this._totalCost; }
+
+    ngOnInit() {
+        if (this.isFixedPerUnitCost) {
+            this.form.controls['perUnitCost'].disable();
+        }
+        if (this.isFixedQuantityRequired) {
+            this.form.controls['quantityRequired'].disable();
+        }
+    }
 }

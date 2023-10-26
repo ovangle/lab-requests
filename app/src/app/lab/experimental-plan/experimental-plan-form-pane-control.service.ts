@@ -1,37 +1,42 @@
 import { Injectable, inject } from "@angular/core";
-import { ActivatedRoute, Router } from "@angular/router";
-import { Observable, defer, map, of, shareReplay, switchMap } from "rxjs";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { ActivatedRoute, ChildActivationEnd, NavigationEnd, Router } from "@angular/router";
+import { Observable, buffer, defer, endWith, filter, map, of, shareReplay, switchMap, tap, withLatestFrom } from "rxjs";
+import { BodyScrollbarHidingService } from "src/app/utils/body-scrollbar-hiding.service";
 
 
 @Injectable()
 export class ExperimentalPlanFormPaneControlService {
-    readonly _router = inject(Router);
-    readonly _activatedRoute = inject(ActivatedRoute);
+    _router = inject(Router);
+    _activatedRoute = inject(ActivatedRoute);
+    _appScaffold = inject(BodyScrollbarHidingService);
 
-    readonly outletPath$: Observable<string | null> = this._activatedRoute.url.pipe(
-        switchMap(() => {
-            const formOutletChild = this._activatedRoute.children.find(child => child.outlet === 'form');
-            return formOutletChild == null ? of(null) : formOutletChild.url;
-        }),
-        map(segments => {
-            if (segments) {
-                const urlTree = this._router.createUrlTree(segments);
-                return this._router.serializeUrl(urlTree);
-            }
-            return null;
-        }),
-        shareReplay(1)
+    readonly _navigationEnd$ = this._router.events.pipe(
+        takeUntilDestroyed(),
+        filter(evt => evt instanceof NavigationEnd)
     );
 
-    readonly isOpen$: Observable<boolean> = defer(() => this.outletPath$.pipe(
-        map(urlSegments => urlSegments != null)
-    ));
+    readonly isOpen$ = this._router.events.pipe(
+        takeUntilDestroyed(),
+        filter((e): e is ChildActivationEnd => e instanceof ChildActivationEnd && e.snapshot.outlet === 'form'),
+        buffer(this._navigationEnd$),
+        map(activations => activations.length > 0),
+        endWith(false)
+    );
 
-    open(formPath: any[]): Promise<boolean> {
-        return this._router.navigate([{outlets: {form: formPath}}], {relativeTo: this._activatedRoute});
+    constructor() {
+        this.isOpen$.subscribe(isOpen => {
+            console.log('is open', isOpen);
+            this._appScaffold.toggleScrollbar(!isOpen);
+        });
+    }
+
+    open(formPath: any[]): Promise<boolean> { 
+        return this._router.navigate([{outlets: {form: formPath}}], {relativeTo: this._activatedRoute})
     }
 
     close(): Promise<boolean> {
-        return this._router.navigate([{outlets: {form: null}}], {relativeTo: this._activatedRoute});
+        return this._router.navigate([{outlets: {form: null}}], {relativeTo: this._activatedRoute}) 
     }
+
 }

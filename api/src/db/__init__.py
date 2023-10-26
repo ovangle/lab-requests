@@ -11,8 +11,10 @@ from .settings import Settings
 db_metadata = MetaData()
 db_settings = Settings()
 
+db_url = db_settings.db_url
+
 db_engine = create_async_engine(
-    db_settings.db_url,
+    db_url,
     json_serializer=lambda d: json.dumps(jsonable_encoder(d)),
 )
 

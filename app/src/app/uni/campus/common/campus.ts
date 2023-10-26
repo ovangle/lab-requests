@@ -52,6 +52,21 @@ export class Campus extends Model {
     }
 }
 
+export type CampusFmt = 'code' | 'name' | 'full';
+
+export function formatCampus(campus: Campus, format: CampusFmt = 'name'): string {
+    switch (format) {
+        case 'code':
+            return campus.code;
+        case 'name':
+            return campus.name;
+        case 'full':
+            return `${campus.code} (${campus.name})`
+        default:
+            throw new Error(`Invalid format ${format}`);
+    }
+}
+
 export interface CampusPatch extends ModelPatch<Campus> {
 
 }

@@ -29,6 +29,10 @@ import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler"
                [formControl]="_control"
                (focus)="_onInputFocus($event)"
                (blur)="_onInputBlur($event)"/>
+            
+        <div matTextSuffix>
+            <ng-content select=".input-text-suffix"></ng-content>
+        </div>
 
         <mat-error>
             <ng-content select="mat-error"></ng-content>

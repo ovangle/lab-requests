@@ -1,14 +1,13 @@
-import { Component, EventEmitter, Input, Output, inject } from "@angular/core";
+import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { FormArray, FormControl, ReactiveFormsModule } from "@angular/forms";
 import { CommonModule } from "@angular/common";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { Subscription, combineLatest, distinctUntilChanged, distinctUntilKeyChanged, filter, map, startWith, takeUntil } from "rxjs";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { Subscription, distinctUntilChanged, startWith } from "rxjs";
 import { MatCardModule } from "@angular/material/card";
-import { WorkUnitBaseInfoFormComponent } from "../../work-unit/base-info/work-unit-base-info-form.component";
 import { WorkUnitForm, workUnitForm } from "../../work-unit/common/work-unit-form";
 import { ExperimentalPlanForm } from "../common/experimental-plan-form";
 import { WorkUnitPatch } from "../../work-unit/common/work-unit";
+import { WorkUnitFormComponent } from "../../work-unit/common/work-unit-form.component";
 
 
 @Component({
@@ -20,7 +19,7 @@ import { WorkUnitPatch } from "../../work-unit/common/work-unit";
 
         MatCardModule,
         MatCheckboxModule,
-        WorkUnitBaseInfoFormComponent
+        WorkUnitFormComponent
     ],
     template: `
     <mat-checkbox [formControl]="addDefaultWorkUnitControl"> 
@@ -34,9 +33,7 @@ import { WorkUnitPatch } from "../../work-unit/common/work-unit";
                 <h3>Work Unit</h3>
             </mat-card-header>
             <mat-card-content>
-                <lab-work-unit-base-info-form 
-                    [form]="workUnitForm">
-                </lab-work-unit-base-info-form>
+                <lab-work-unit-form [form]="workUnitForm" />
             </mat-card-content>
         </mat-card>
         

@@ -4,6 +4,7 @@ import { Observable, Subscription, defer, map, shareReplay, switchMap } from "rx
 import { ExperimentalPlanFormPaneControlService } from "../experimental-plan-form-pane-control.service";
 import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanService } from "../common/experimental-plan";
 import { ExperimentalPlanWorkUnitService } from "../work-units/work-units";
+import { BodyScrollbarHidingService } from "src/app/utils/body-scrollbar-hiding.service";
 
 export function experimentalPlanContextFromDetailRoute(): Observable<ExperimentalPlan> {
     const activatedRoute = inject(ActivatedRoute);
@@ -98,6 +99,8 @@ export class ExperimentalPlanDetailPage {
     readonly _formPaneService = inject(ExperimentalPlanFormPaneControlService);
     @ViewChild(ElementRef, {static: true})
     readonly formPane: ElementRef<any>;
+
+    readonly appScaffold = inject(BodyScrollbarHidingService);
 
     readonly plan$ = this._context.plan$;
 
