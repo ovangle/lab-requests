@@ -1,5 +1,5 @@
 import { Injectable, inject } from "@angular/core";
-import { Model, ModelLookup, ModelMeta, ModelParams, ModelPatch, ModelResponsePage, modelLookupToHttpParams, modelParamsFromJson } from "src/app/common/model/model";
+import { Model, ModelLookup, ModelMeta, ModelParams, ModelPatch, ModelResponsePage, modelLookupToHttpParams, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { ModelService, RestfulService, modelProviders } from "src/app/common/model/model-service";
 import { HttpParams } from "@angular/common/http";
 import { Observable } from "rxjs";
@@ -23,7 +23,7 @@ export function campusParamsFromJson(json: unknown) {
     }
     const obj: {[k: string]: unknown} = json as any;
 
-    const baseParams = modelParamsFromJson(obj);
+    const baseParams = modelParamsFromJsonObject(obj);
 
     if (!isCampusCode(obj['code'])) {
         throw new Error('Expected a campus code');

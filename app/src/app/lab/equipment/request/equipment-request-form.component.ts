@@ -8,6 +8,8 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { BooleanInput } from "@angular/cdk/coercion";
 import { equipmentRequestForm } from "./equipment-request-form";
 import { EquipmentRequest } from "./equipment-request";
+import { ResizeTextareaOnInputDirective } from "src/app/common/forms/resize-textarea-on-input.directive";
+import { CostEstimateFormComponent } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
 
 @Component({
     selector: 'lab-equipment-request-form',
@@ -16,7 +18,10 @@ import { EquipmentRequest } from "./equipment-request";
         CommonModule,
         ReactiveFormsModule,
         MatFormFieldModule,
-        MatInputModule
+        MatInputModule,
+
+        ResizeTextareaOnInputDirective,
+        CostEstimateFormComponent
     ],
     template: `
     <form [formGroup]="form">
@@ -26,10 +31,14 @@ import { EquipmentRequest } from "./equipment-request";
         </mat-form-field>
 
         <mat-form-field>
-            <mat-label>Reason</mat-label>
-            <textarea matInput formControlName="description"> 
+            <mat-label>Reason to purchase</mat-label>
+            <textarea matInput formControlName="reason" resizeOnInput> 
             </textarea>
         </mat-form-field>
+
+        <uni-research-funding-cost-estimate-form
+            [form]="form.controls.cost">
+        </uni-research-funding-cost-estimate-form>
     </form>
     `,
 })

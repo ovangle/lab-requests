@@ -2,9 +2,10 @@ import { AfterViewInit, Component, Injectable, OnDestroy, inject } from "@angula
 import { ActivatedRoute } from "@angular/router";
 import { Subscription, map } from "rxjs";
 import { BodyScrollbarHidingService } from "src/app/utils/body-scrollbar-hiding.service";
-import { WorkUnitContext, workUnitPatchFromWorkUnit } from "../../common/work-unit";
+import { WorkUnitContext, WorkUnitResourceContainerContext, workUnitPatchFromWorkUnit } from "../../common/work-unit";
 import { workUnitForm } from "../../common/work-unit-form";
 import { ResourceContainerForm, ResourceContainerFormService } from "../../resource/resource-container-form.service";
+import { ResourceContainerContext } from "../../resource/resource-container";
 
 @Injectable()
 class WorkUnitResourceContainerFormService extends ResourceContainerFormService {
@@ -28,6 +29,10 @@ class WorkUnitResourceContainerFormService extends ResourceContainerFormService 
         './work-unit-form.css'
     ],
     providers: [
+        {
+            provide: ResourceContainerContext,
+            useClass: WorkUnitResourceContainerContext
+        },
         {
             provide: ResourceContainerFormService,
             useClass: WorkUnitResourceContainerFormService

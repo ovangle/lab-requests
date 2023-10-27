@@ -45,15 +45,8 @@ export function isResourceTypeIndex(obj: any): obj is ResourceTypeIndex {
 @Injectable()
 export class ResourceContext<T extends Resource> {
     readonly _containerContext = inject(ResourceContainerContext);
-    readonly container$ = defer(() => this._containerContext.committed$.pipe(
-        filter((committed): committed is ResourceContainer => {
-            if (committed == null) {
-                throw new Error('no current container context.')
-            }
-            return true;
-        })
-    ));
-
+    readonly container$ = this._containerContext.committed$;
+    readonly containerName$ = this._containerContext.containerName$;
     readonly _committedTypeIndexSubject = new ReplaySubject<[ResourceType, number | 'create']>(1);
     readonly committedTypeIndex$ = this._committedTypeIndexSubject.asObservable();
 

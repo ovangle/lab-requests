@@ -15,6 +15,13 @@ export function isResourceType(obj: any): obj is ResourceType {
         && ALL_RESOURCE_TYPES.includes(obj as any);
 }
 
+export function resourceTypeFromJson(json: unknown) {
+    if (!isResourceType(json)) {
+        throw new Error(`Expected a resource type ${json}`)
+    }
+    return json;
+}
+
 export type ResourceTypeFormatOption = 'titleCase' | 'plural';
 
 @Pipe({name: 'resourceType', standalone: true})

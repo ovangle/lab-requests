@@ -14,7 +14,8 @@ import { defer, map } from "rxjs";
     template: `
     <lab-work-unit-form-title
         *ngIf="workUnit$ | async as workUnit"
-        action="Update {{_displayWorkUnit(workUnit)}}"
+        [workUnitName]="workUnit.name"
+        formType="update"
         [saveDisabled]="!form.valid"
         (requestSave)="_onRequestSave()"
         (requestClose)="_onRequestClose()" />

@@ -13,6 +13,7 @@ class FundingModelBase(BaseModel):
     name: str 
     description: str = Field(max_length=128)
     requires_supervisor: bool = True
+    captured_resources: list[str]
 
 class FundingModel(FundingModelBase, ApiModel[models.FundingModel_]):
     id: UUID
@@ -24,6 +25,7 @@ class FundingModel(FundingModelBase, ApiModel[models.FundingModel_]):
             name=model.name,
             description=model.description,
             requires_supervisor=model.requires_supervisor,
+            captured_resources=model.captured_resources,
             created_at=model.created_at,
             updated_at=model.updated_at
         )
@@ -50,6 +52,10 @@ class FundingModelPatch(FundingModelBase, ModelPatch[FundingModel, models.Fundin
         if self.requires_supervisor != model.requires_supervisor:
             model.requires_supervisor = self.requires_supervisor
             db.add(model)
+
+        if self.captured_resources != model.captured_resources:
+            self.captured_resources = model.captured_resources
+        
         return model
 
 

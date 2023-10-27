@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import TEXT, select
 from sqlalchemy.types import VARCHAR
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.dialects import postgresql as pg_dialect
 from sqlalchemy.sql import func
 
 from api.base.models import Base
@@ -18,12 +19,14 @@ class FundingModel_(Base):
     name: Mapped[str] = mapped_column(VARCHAR(32), unique=True)
     description: Mapped[str] = mapped_column(TEXT)
     requires_supervisor: Mapped[bool] = mapped_column()
+    captured_resources: Mapped[list[str]] = mapped_column(pg_dialect.ARRAY(VARCHAR(256)), server_default='{}')
 
-    def __init__(self, name: str, description: str = '', requires_supervisor: bool = True):
+    def __init__(self, name: str, description: str = '', requires_supervisor: bool = True, captured_resources: list[str] | None = None):
         super().__init__()
         self.name = name
         self.description = description
         self.requires_supervisor = requires_supervisor
+        self.captured_resources = captured_resources or list()
 
     @staticmethod
     async def get_for_id(db: LocalSession, id: UUID) -> FundingModel_:

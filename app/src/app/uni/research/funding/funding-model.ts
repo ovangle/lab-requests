@@ -1,39 +1,60 @@
 import { HttpParams } from "@angular/common/http";
 import { Injectable, Type, inject, } from "@angular/core";
 import { Observable, map } from "rxjs";
-import { Model, ModelLookup, ModelMeta, ModelParams, ModelPatch, modelParamsFromJson } from "src/app/common/model/model";
+import { Model, ModelLookup, ModelMeta, ModelParams, ModelPatch, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { RestfulService, modelProviders } from "src/app/common/model/model-service";
+import { ResourceType, resourceTypeFromJson } from "src/app/lab/work-unit/resource/resource-type";
+import { isJsonObject } from "src/app/utils/is-json-object";
 
 export interface FundingModelParams extends ModelParams {
     name: string;
     description: string;
     requiresSupervisor: boolean;
+
+    /**
+     * The work resources captured when 
+     */
+    readonly capturedResources: ResourceType[];
 }
 
 export class FundingModel extends Model {
     readonly name: string;
     readonly description: string;
     readonly requiresSupervisor: boolean;
+    readonly capturedResources: ResourceType[];
 
     constructor(params: FundingModelParams) {
         super(params);
         this.name = params.name!;
         this.description = params.description!;
         this.requiresSupervisor = params.requiresSupervisor!;
+        this.capturedResources = params.capturedResources;
     }
 }
 
-export function fundingModelParamsFromJson(value: unknown): FundingModelParams {
-    if (typeof value !== 'object' || value == null) {
-        throw new Error('Expected an object');
+export function fundingModelParamsFromJson(json: unknown): FundingModelParams {
+    if (!isJsonObject(json)) {
+        throw new Error('Expected a json object');
     }
-    const json: {[k: string]: any} = value;
-    const baseParams = modelParamsFromJson(json);
+    const baseParams = modelParamsFromJsonObject(json);
+    if (typeof json['name'] !== 'string') {
+        throw new Error('Expected a string \'name\'');
+    }
+    if (typeof json['description'] !== 'string') {
+        throw new Error('Expected a string \'description\'');
+    }
+    if (typeof json['requiresSupervisor'] !== 'boolean') {
+        throw new Error('Expected a boolean \'requiresSupervisor\'');
+    }
+    if (!Array.isArray(json['capturedResources'])) {
+        throw new Error('Expected an array \'capturedResources\'')
+    }
     return {
         ...baseParams,
         name: json['name'],
         description: json['description'],
         requiresSupervisor: json['requiresSupervisor'],
+        capturedResources: json['capturedResources'].map(resourceTypeFromJson)
     };
 }
 

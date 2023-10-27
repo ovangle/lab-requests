@@ -1,4 +1,4 @@
-import { Model, ModelLookup, ModelMeta, ModelParams, ModelPatch, modelLookupToHttpParams, modelParamsFromJson } from "src/app/common/model/model";
+import { Model, ModelLookup, ModelMeta, ModelParams, ModelPatch, modelLookupToHttpParams, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { LabType } from "../../type/lab-type";
 import { Injectable, Provider, inject } from "@angular/core";
 import { RestfulService, modelProviders } from "src/app/common/model/model-service";
@@ -37,7 +37,7 @@ export function equipmentParamsFromJson(json: unknown): EquipmentParams {
     }
     const obj: {[k: string]: unknown} = json as any;
 
-    const baseParams = modelParamsFromJson(obj);
+    const baseParams = modelParamsFromJsonObject(obj);
 
     if (typeof obj['name'] !== 'string') {
         throw new Error('Expected a string \'name\'');

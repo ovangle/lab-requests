@@ -2,6 +2,8 @@ import { Component, EventEmitter, Input, Output, TemplateRef } from "@angular/co
 import { CommonModule } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
+import { WorkUnit, formatWorkUnit } from "./work-unit";
+import { formatCampus } from "src/app/uni/campus/common/campus";
 
 @Component({
     selector: 'lab-work-unit-form-title',
@@ -12,7 +14,13 @@ import { MatIconModule } from "@angular/material/icon";
         MatIconModule
     ],
     template: `
-    <h2>{{action | titlecase}}</h2>
+    <h2>
+        Update {{workUnitName}} <br/>
+        <small class="subtitle" *ngIf="subtitle">
+            {{subtitle}}
+        </small>
+    </h2>
+    
 
     <div class="form-controls">
         <button mat-icon-button
@@ -37,8 +45,11 @@ import { MatIconModule } from "@angular/material/icon";
    `]
 })
 export class WorkUnitFormTitleComponent {
+    @Input({required: true})
+    workUnitName: string;
+
     @Input()
-    action: string;
+    subtitle: string | undefined;
 
     @Input()
     saveDisabled: boolean;
@@ -48,4 +59,8 @@ export class WorkUnitFormTitleComponent {
     
     @Output()
     requestClose = new EventEmitter<void>();
+}
+
+function formatDiscipline(discipline: any) {
+    throw new Error("Function not implemented.");
 }

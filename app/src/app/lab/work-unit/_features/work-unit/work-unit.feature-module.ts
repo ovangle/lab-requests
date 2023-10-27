@@ -49,13 +49,6 @@ const WORK_UNIT_FROM_PLAN_ROUTES: Routes = [
         WorkUnitCreatePage,
         WorkUnitDetailPage,
         WorkUnitIndexPage
-    ],
-    providers: [
-        WorkUnitContext,
-        {
-            provide: ResourceContainerContext,
-            useClass: WorkUnitResourceContainerContext
-        }
     ]
 })
 export class FromPlanWorkUnitModule {}

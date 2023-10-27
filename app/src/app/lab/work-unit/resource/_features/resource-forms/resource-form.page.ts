@@ -7,6 +7,8 @@ import { ResourceContext } from "../../resource";
 import { ResourceFormService } from "../../resource-form.service";
 import { BodyScrollbarHidingService } from "src/app/utils/body-scrollbar-hiding.service";
 import { ExperimentalPlanFormPaneControlService } from "src/app/lab/experimental-plan/experimental-plan-form-pane-control.service";
+import { WorkUnitContext } from "../../../common/work-unit";
+import { ResourceContainerContext } from "../../resource-container";
 
 export function typeIndexFromDetailRoute$(): Observable<[ResourceType, number | 'create']> {
     const activatedRoute = inject(ActivatedRoute);
@@ -34,6 +36,8 @@ export function typeIndexFromDetailRoute$(): Observable<[ResourceType, number | 
     template: `
     <ng-container *ngIf="_formService.isReady | async as typeIndex">
         <lab-resource-form-title
+            *ngIf="_context.containerName$ | async as containerName"
+            [containerName]="containerName"
             [resourceType]="_formService.resourceType"
             [resourceIndex]="_formService.resourceIndex"
             [saveDisabled]="!_formService.form.valid"
@@ -71,6 +75,10 @@ export class WorkUnitResourceFormPage {
         this._contextConnection = this._context.sendTypeIndex(
             typeIndexFromDetailRoute$()
         );
+        this._context.container$.subscribe(container => {
+            console.log('container', container);
+        })
+
         this._formConnection = this._formService.connect();
     }
 

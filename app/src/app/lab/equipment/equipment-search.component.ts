@@ -15,6 +15,7 @@ import { EquipmentRequestFormComponent } from "./request/equipment-request-form.
 import { Equipment, EquipmentCollection, EquipmentContext, EquipmentLookup } from './common/equipment';
 import { EquipmentRequest, isEquipmentRequest } from './request/equipment-request';
 import { EquipmentLike } from './equipment-like';
+import { isUUID } from 'src/app/utils/is-uuid';
 
 
 const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
@@ -156,9 +157,12 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
         this.searchControl.enable();
     }
 
-
-
     writeValue(obj: EquipmentLike | null): void {
+        if (isUUID(obj)) {
+            this.equipments.get(obj).then(
+                equipment => this.searchControl.setValue(equipment)
+            );
+        }
         if (typeof obj === 'string' || obj == null) {
             this.searchControl.setValue(obj || '');
         }

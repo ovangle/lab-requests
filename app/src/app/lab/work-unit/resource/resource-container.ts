@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { Observable, firstValueFrom, map } from "rxjs";
+import { Observable, defer, firstValueFrom, map, tap } from "rxjs";
 import { ALL_RESOURCE_TYPES, ResourceType } from "./resource-type";
 
 import { EquipmentLease, equipmentLeaseFromJson, equipmentLeaseParamsToJson } from "../resources/equipment/equipment-lease";
@@ -9,7 +9,7 @@ import { Software, SoftwareParams, softwareFromJson, softwareParamsToJson } from
 import { Task, TaskParams, taskFromJson, taskToJson } from "../resources/task/task";
 
 import type { Resource } from './resource';
-import { Model, ModelParams, ModelPatch, modelParamsFromJson } from "src/app/common/model/model";
+import { Model, ModelParams, ModelPatch, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { ModelContext } from "src/app/common/model/context";
 
 export interface ResourceContainerParams extends ModelParams {
@@ -62,7 +62,7 @@ export function resourceContainerAttr(type: ResourceType): keyof ResourceContain
 }
 
 export function resourceContainerFieldsFromJson(json: { [k: string]: any }) {
-    const baseParams = modelParamsFromJson(json);
+    const baseParams = modelParamsFromJsonObject(json);
     return {
         ...baseParams,
         equipments: Array.from<object>(json['equipments']).map(equip => equipmentLeaseFromJson(equip)),
@@ -139,6 +139,11 @@ export abstract class ResourceContainerContext<
     abstract getContainerPath(): Promise<string[]>;
 
     abstract committed$: Observable<T>;
+    abstract container$: Observable<T>;
+    readonly containerName$ = defer(() => this.container$.pipe(
+        tap(c => console.log('container', c)),
+        map(c => this.getContainerName(c)))
+    );
 
     committedResources$<TResource extends Resource>(resourceType: ResourceType): Observable<readonly TResource[]> {
         return this.committed$.pipe(
@@ -164,5 +169,7 @@ export abstract class ResourceContainerContext<
         );
         return this.commitContext(patch);
     }
+
+    abstract getContainerName(container: T): string; 
 
 }

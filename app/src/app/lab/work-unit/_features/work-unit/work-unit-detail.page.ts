@@ -7,10 +7,11 @@ import { WorkUnitBaseInfoComponent } from "../../base-info/work-unit-base-info.c
 import { ALL_RESOURCE_TYPES, ResourceType } from "../../resource/resource-type";
 import { Resource } from "../../resource/resource";
 import { ExperimentalPlanFormPaneControlService } from "src/app/lab/experimental-plan/experimental-plan-form-pane-control.service";
-import { WorkUnit, WorkUnitContext, WorkUnitService } from "../../common/work-unit";
+import { WorkUnit, WorkUnitContext, WorkUnitResourceContainerContext, WorkUnitService } from "../../common/work-unit";
 import { ExperimentalPlan, ExperimentalPlanContext } from "src/app/lab/experimental-plan/common/experimental-plan";
 import { ExperimentalPlanWorkUnitService } from "src/app/lab/experimental-plan/work-units/work-units";
 import { HttpParams } from "@angular/common/http";
+import { ResourceContainerContext } from "../../resource/resource-container";
 
 class WorkUnitContextError extends Error {}
 
@@ -42,7 +43,6 @@ function workUnitFromDetailRoute(): Observable<WorkUnit> {
     
 }
 
-
 @Component({
     selector: 'lab-work-unit-detail-page',
     template: `
@@ -55,7 +55,6 @@ function workUnitFromDetailRoute(): Observable<WorkUnit> {
         </lab-work-unit-base-info>
 
         <lab-work-unit-duration-info [workUnit]="workUnit" />
-       
     </div>
 
  
@@ -77,7 +76,14 @@ function workUnitFromDetailRoute(): Observable<WorkUnit> {
         flex-grow: 0;
         flex-shrink: 0;
     }
-    `]
+    `],
+    providers: [
+        WorkUnitContext,
+        {
+            provide: ResourceContainerContext,
+            useClass: WorkUnitResourceContainerContext
+        }
+    ]
 })
 export class WorkUnitDetailPage {
     readonly RESOURCE_TYPES = ALL_RESOURCE_TYPES;

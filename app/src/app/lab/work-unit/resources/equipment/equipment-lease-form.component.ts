@@ -13,6 +13,7 @@ import { CostEstimateForm, costEstimateForm } from "src/app/uni/research/funding
 import { EquipmentRiskAssessmentFileInputComponent } from "./risk-assessment-file-input.component";
 import { EquipmentLike } from "src/app/lab/equipment/equipment-like";
 import { Equipment } from "src/app/lab/equipment/common/equipment";
+import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 
 export type EquipmentLeaseForm = FormGroup<{
     equipment: FormControl<EquipmentLike | null>;
@@ -84,7 +85,7 @@ export type EquipmentLeaseFormErrors = ValidationErrors & {
 
         <ng-container>
             <lab-equipment-risk-assessment-file-input
-                [container_id]="workUnitId">
+                [containerId]="workUnitId">
             </lab-equipment-risk-assessment-file-input>
         </ng-container>
     </form>
@@ -96,6 +97,15 @@ export class EquipmentLeaseFormComponent {
     @Input()
     workUnitId: string;
 
+    @Input()
+    get isCreate() {
+        return this._isCreate;
+    }
+    set isCreate(isCreate: BooleanInput) {
+        this._isCreate = coerceBooleanProperty(isCreate);
+    }
+    _isCreate: boolean;
+
     get form(): EquipmentLeaseForm {
         return this.formService.form;
     }
@@ -103,6 +113,13 @@ export class EquipmentLeaseFormComponent {
     get equipmentControl(): FormControl<EquipmentLike | null> {
         return this.form.controls.equipment;
     }
+
+    ngOnInit() {
+        if (this._isCreate) {
+            this.equipmentControl.disable();
+        }
+    }
+
 
     readonly selectedEquipment$: Observable<EquipmentLike | null> = defer(
         () => this.equipmentControl.valueChanges.pipe(

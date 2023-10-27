@@ -4,7 +4,8 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 
 import { ResourceType, ResourceTypePipe } from "../resource-type";
-import { WorkUnitFormTitleComponent } from "../../work-unit-form-title.component";
+import { WorkUnitFormTitleComponent } from "../../common/work-unit-form-title.component";
+import { WorkUnit } from "../../common/work-unit";
 
 @Component({
     selector: 'lab-resource-form-title',
@@ -16,6 +17,8 @@ import { WorkUnitFormTitleComponent } from "../../work-unit-form-title.component
     ],
     template: `
     <lab-work-unit-form-title
+        [workUnitName]="containerName" 
+        subtitle="{{isCreate ? 'Add' : 'Update'}} {{resourceType}}"
         [saveDisabled]="saveDisabled"
         (requestSave)="requestSave.emit($event)"
         (requestClose)="requestClose.emit($event)">
@@ -31,10 +34,18 @@ import { WorkUnitFormTitleComponent } from "../../work-unit-form-title.component
 })
 export class ResourceFormTitleComponent {
     @Input({required: true})
+    containerName: string;
+
+    @Input({required: true})
     resourceType: ResourceType;
 
     @Input()
     resourceIndex: number | 'create'
+
+    get isCreate() {
+        return this.resourceIndex === 'create';
+    }
+
 
     @Input()
     saveDisabled: boolean;

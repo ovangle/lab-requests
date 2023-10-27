@@ -29,7 +29,7 @@ import { MatIconModule } from "@angular/material/icon";
         </mat-card-header>
 
         <mat-card-content>
-            <mat-selection-list [formControl]="selectedControl" [disabled]="readonly">
+            <mat-selection-list [formControl]="selectedControl">
                 <ng-container *ngIf="trainingDescriptions.length > 0; else listEmpty">
                     <mat-list-option 
                         *ngFor="let description of trainingDescriptions"
@@ -77,16 +77,17 @@ export class EquipmentTrainingAcknowlegementComponent implements ControlValueAcc
     @Input({required: true})
     trainingDescriptions: string[];
 
+    readonly selectedControl = new FormControl<string[]>([], {nonNullable: true});
     @Input()
     get readonly(): boolean {
-        return this._readonly;
+        return this.selectedControl.disabled;
     }
     set readonly(input: BooleanInput) {
-        this._readonly = coerceBooleanProperty(input);
+        const isDisabled = coerceBooleanProperty(input);
+        this._toggleSelectionDisabled(isDisabled);
     }
-    _readonly: boolean = false;
+    _toggleSelectionDisabled = disabledStateToggler(this.selectedControl);
     
-    readonly selectedControl = new FormControl<string[]>([], {nonNullable: true});
 
     constructor() {
         this.selectedControl.valueChanges.pipe(

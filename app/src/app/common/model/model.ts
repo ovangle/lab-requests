@@ -1,6 +1,7 @@
 import { HttpParams } from "@angular/common/http";
 import { Inject, Injectable, Type } from "@angular/core";
 import { parseISO } from "date-fns";
+import { JsonObject } from "src/app/utils/is-json-object";
 
 
 export abstract class Model {
@@ -22,7 +23,7 @@ export interface ModelParams {
     readonly updatedAt: Date;
 }
 
-export function modelParamsFromJson(json: {[k: string]: unknown}): ModelParams {
+export function modelParamsFromJsonObject(json: JsonObject): ModelParams {
     const id = json['id'];
     if (typeof id !== 'string') {
         throw new Error('Expected a string \'id\'');

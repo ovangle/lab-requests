@@ -11,3 +11,7 @@ class WorkUnitDoesNotExist(HTTPException):
     @classmethod
     def for_plan_id_and_index(cls, plan_id: UUID, index: int):
         return cls(404, f'Work unit does not exist for plan {plan_id} at index {index}')
+
+    @classmethod
+    def for_plan_id_and_name(cls, plan_id: UUID, name: str):
+        return cls(404, f'Work unit does not exist for plan {plan_id} with name {name}')

@@ -37,6 +37,14 @@ class ApiModel(BaseModel, Generic[TModel], ABC):
         ...
 
     @classmethod
+    async def create(
+        cls: Type[TApiModel], 
+        db: LocalSession,
+        patch: ModelCreate[TApiModel, TModel]
+    ):
+        return patch(db)
+
+    @classmethod
     async def gather_models(cls: Type[TApiModel], models: Iterable[TModel | TApiModel]) -> list[TApiModel]:
         return await asyncio.gather(*(cls.from_model(m) for m in models))
 
@@ -48,6 +56,11 @@ class ApiModel(BaseModel, Generic[TModel], ABC):
     @abstractmethod
     async def to_model(self, db: LocalSession) -> TModel:
         ...
+
+    async def apply_patch(self: TApiModel, db: LocalSession, model: TModel, patch: ModelPatch[TApiModel, TModel]):
+        return await patch(db, model)
+
+    
 
 class ModelPatch(BaseModel, Generic[TApiModel, TModel], ABC):
     __api_model__: ClassVar[Type[ApiModel]]

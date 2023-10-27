@@ -33,7 +33,7 @@ import { NgxMatFileInputModule } from "@angular-material-components/file-input";
 })
 export class EquipmentRiskAssessmentFileInputComponent implements ControlValueAccessor {
     @Input({required: true})
-    container_id: string;
+    containerId: string;
 
     _control = new FormControl<any | null>(null);
 

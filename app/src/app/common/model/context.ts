@@ -13,7 +13,10 @@ export abstract class ModelContext<T extends Model, TPatch extends ModelPatch<T>
     abstract readonly _doUpdate: (id: string, patch: TPatch) => Promise<T>;
 
     sendCommitted(source: Observable<T>): Subscription {
-        return source.subscribe((committed) => this.committedSubject.next(committed));
+        return source.subscribe((committed) => {
+            // console.log('sending committed', this,committed)
+            this.committedSubject.next(committed)
+        });
     }
 
     async commit(patch: TPatch): Promise<T> {

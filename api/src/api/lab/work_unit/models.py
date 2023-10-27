@@ -92,6 +92,15 @@ class WorkUnit_(ResourceContainer_, Base):
         return instance
 
     @staticmethod
+    async def get_for_plan_and_name(db: LocalSession, plan_id: UUID, name: str) -> WorkUnit_:
+        instance = await db.scalar(
+            select(WorkUnit_).where(WorkUnit_.plan_id == plan_id, WorkUnit_.name == name)
+        )
+        if not instance:
+            raise WorkUnitDoesNotExist.for_plan_id_and_name(plan_id, name)
+        return instance
+
+    @staticmethod
     def list_for_experimental_plan(db: LocalSession, plan_id: UUID) -> Select[tuple[WorkUnit_]]:
         return (
             select(WorkUnit_)

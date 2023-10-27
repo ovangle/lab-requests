@@ -1,15 +1,16 @@
-import { Model, ModelLookup, ModelMeta, ModelParams, ModelPatch, modelParamsFromJson} from "src/app/common/model/model";
+import { Model, ModelLookup, ModelMeta, ModelParams, ModelPatch, modelParamsFromJsonObject} from "src/app/common/model/model";
 import { Discipline, disciplineFromJson } from "src/app/uni/discipline/discipline";
 import { FundingModel, fundingModelFromJson } from "src/app/uni/research/funding/funding-model";
 import { Inject, Injectable, inject } from "@angular/core";
 import { HttpParams } from "@angular/common/http";
-import { parseISO } from "date-fns";
+import { min as minDate, max as maxDate, parseISO } from "date-fns";
 import { RestfulService, modelProviders } from "src/app/common/model/model-service";
 import { ModelCollection, injectModelUpdate } from "src/app/common/model/model-collection";
 import { Observable, defer } from "rxjs";
 import { Campus, campusFromJson, CampusCode, isCampusCode } from "src/app/uni/campus/common/campus";
 import { WorkUnit, WorkUnitCreate, workUnitFromJson } from "../../work-unit/common/work-unit";
 import { ModelContext } from "src/app/common/model/context";
+import { getFullFiscalYear } from "src/app/utils/date";
 
 export interface ExperimentalPlanParams extends ModelParams {
     researcher: string;
@@ -52,10 +53,40 @@ export class ExperimentalPlan extends Model {
 
         this.workUnits = Array.from(params.workUnits);
     }
+
+    get startDate(): Date | null {
+        const startDates = this.workUnits.map(w => w.startDate);
+        if (startDates.some(d => d == null)) {
+            return null;
+        }
+        return minDate(startDates as Date[]);
+    }
+
+    get endDate(): Date | null {
+        const endDates = this.workUnits.map(w => w.endDate);
+        if (endDates.some(d => d == null)) {
+            return null;
+        }
+        return maxDate(endDates as Date[]);
+    }
+
+    get projectFiscalYearRange(): Readonly<{start: number; end: number;}> | null {
+        if (this.startDate == null || this.endDate == null) {
+            return null;
+        }
+        const end = this.endDate.getMonth() >= 7
+            ? this.endDate.getFullYear() + 1
+            : this.endDate.getFullYear();
+
+        return {
+            start: getFullFiscalYear(this.startDate), 
+            end: getFullFiscalYear(this.endDate)
+        };
+    }
 }
 
 function experimentalPlanParamsFromJson(json: {[k: string]: unknown}): ExperimentalPlanParams {
-    const baseParams = modelParamsFromJson(json);
+    const baseParams = modelParamsFromJsonObject(json);
 
     if (typeof json['title'] !== 'string') {
         throw new Error('Expected a \'title\'')

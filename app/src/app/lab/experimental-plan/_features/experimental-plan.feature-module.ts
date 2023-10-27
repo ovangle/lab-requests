@@ -30,6 +30,11 @@ const EXPERIMENTAL_PLAN_ROUTES: Routes = [
         component: ExperimentalPlanDetailPage, 
         children: [
             {
+                path: '',
+                pathMatch: 'full',
+                redirectTo: 'work-units/0'
+            },
+            {
                 path: 'work-units',
                 loadChildren: () => import('src/app/lab/work-unit/_features/work-unit/work-unit.feature-module').then(
                     module => module.FromPlanWorkUnitModule

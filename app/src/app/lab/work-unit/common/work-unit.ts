@@ -2,7 +2,7 @@ import { Campus, campusFromJson, campusParamsFromJson, formatCampus } from "src/
 import { ResourceContainer, ResourceContainerContext, ResourceContainerParams, ResourceContainerPatch, resourceContainerFieldsFromJson, resourceContainerPatchToJson } from "../resource/resource-container";
 import { LabType, formatLabType, isLabType } from "../../type/lab-type";
 import { formatISO, parseISO } from "date-fns";
-import { Observable, filter, firstValueFrom, skipWhile } from "rxjs";
+import { Observable, defer, filter, firstValueFrom, map, skipWhile } from "rxjs";
 import { Inject, Injectable, Optional, Provider, SkipSelf, inject } from "@angular/core";
 import { ModelService, RestfulService, modelProviders } from "src/app/common/model/model-service";
 import { ExperimentalPlan, ExperimentalPlanContext, ExperimentalPlanService } from "../../experimental-plan/common/experimental-plan";
@@ -139,6 +139,7 @@ export function workUnitPatchFromWorkUnit(workUnit: WorkUnit): WorkUnitPatch {
 
 export function workUnitPatchToJson(patch: WorkUnitPatch): {[k: string]: any} {
     return {
+        name: patch.name,
         campus: (patch.campus instanceof Campus) ? patch.campus.id : patch.campus,
         labType: patch.labType,
         technician: patch.technician,
@@ -259,7 +260,14 @@ export class WorkUnitResourceContainerContext extends ResourceContainerContext<W
     readonly _workUnitContext = inject(WorkUnitContext);
     
     readonly committed$ = this._workUnitContext.committed$;
+    override readonly container$ = defer(() => this.committed$);
 
+    constructor() {
+        super();
+        this.committed$.subscribe(committed => console.log('committed', committed));
+        this.container$.subscribe(container => console.log('container 0', container));
+    }
+        
     override commitContext(patch: WorkUnitPatch): Promise<WorkUnit> {
         return this._workUnitContext.commit(patch);
     }
@@ -281,6 +289,11 @@ export class WorkUnitResourceContainerContext extends ResourceContainerContext<W
             throw new Error('Cannot access resources in empty context');
         }
         return ['work-units', `${workUnit.index || 0}`];
+    }
+
+    override getContainerName(container: WorkUnit) {
+        console.log('getting container name', container);
+        return formatWorkUnit(container);
     }
 }
 
