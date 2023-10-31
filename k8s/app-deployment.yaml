@@ -25,12 +25,10 @@ spec:
         io.kompose.service: app
     spec:
       containers:
-        - image: app
+        - image: ghcr.io/cqueng/lab-requests-app
           name: app
-          ports:
-            - containerPort: 4200
-              hostPort: 4201
-              protocol: TCP
           resources: {}
+      imagePullSecrets:
+        - name: dockerconfigjson-github-com
       restartPolicy: Always
 status: {}

@@ -2,6 +2,7 @@ version: "3"
 services:
   app:
     build: './app'
+    image: ghcr.io/cqueng/lab-requests-app
     ports:
       - "4201:4200"
     # profiles:
@@ -9,6 +10,7 @@ services:
 
   api:
     build: './api'
+    image: ghcr.io/cqueng/lab-requests-api
     ports:
       - "8000:8000"
       - "8765:8765"
@@ -38,7 +40,7 @@ services:
       - "5432:5432"
     restart: "on-failure"
 
-  pg_admin:
+  pg-admin:
     image: "dpage/pgadmin4:7"
     environment:
       PGADMIN_DEFAULT_EMAIL: 'tom@ovangle.com'

@@ -32,10 +32,6 @@ spec:
               value: secret
           image: dpage/pgadmin4:7
           name: pg-admin
-          ports:
-            - containerPort: 80
-              hostPort: 5433
-              protocol: TCP
           resources: {}
       restartPolicy: Always
 status: {}

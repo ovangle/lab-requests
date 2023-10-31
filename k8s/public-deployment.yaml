@@ -6,13 +6,13 @@ metadata:
     kompose.version: 1.31.2 (a92241f79)
   creationTimestamp: null
   labels:
-    io.kompose.service: api
-  name: api
+    io.kompose.service: public
+  name: public
 spec:
   replicas: 1
   selector:
     matchLabels:
-      io.kompose.service: api
+      io.kompose.service: public
   strategy:
     type: Recreate
   template:
@@ -23,32 +23,22 @@ spec:
       creationTimestamp: null
       labels:
         io.kompose.network/cqu-site-default: "true"
-        io.kompose.service: api
+        io.kompose.service: public
     spec:
       containers:
-        - env:
-            - name: API_DEBUG
-              value: "yes"
-            - name: DB_HOST
-              value: postgres
-            - name: DB_PASSWORD
-              value: secret
-          image: ghcr.io/cqueng/lab-requests-api
-          name: api
+        - image: nginx:1.25
+          name: public
           resources: {}
           volumeMounts:
-            - mountPath: /srv/api
-              name: api-claim0
-            - mountPath: /srv/files/lab/work-units
-              name: lab-work-attachments
+            - mountPath: /etc/nginx/nginx.conf
+              name: public-claim0
+              readOnly: true
       imagePullSecrets:
         - name: dockerconfigjson-github-com
       restartPolicy: Always
       volumes:
-        - name: api-claim0
+        - name: public-claim0
           persistentVolumeClaim:
-            claimName: api-claim0
-        - name: lab-work-attachments
-          persistentVolumeClaim:
-            claimName: lab-work-attachments
+            claimName: public-claim0
+            readOnly: true
 status: {}

@@ -1,0 +1,7 @@
+{
+    "public": "dist/lab_req",
+    "rewrites": [
+        {"source": "/", "destination": "index.html"},
+        {"source": "/(uni|lab|public|sso-redirect)/**", "destination": "index.html"}
+    ]
+}

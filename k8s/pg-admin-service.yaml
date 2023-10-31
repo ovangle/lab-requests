@@ -7,7 +7,7 @@ metadata:
   creationTimestamp: null
   labels:
     io.kompose.service: pg-admin
-  name: pg_admin
+  name: pg-admin
 spec:
   ports:
     - name: "5433"

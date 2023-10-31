@@ -16,10 +16,6 @@ spec:
           value: secret
       image: postgres
       name: postgres
-      ports:
-        - containerPort: 5432
-          hostPort: 5432
-          protocol: TCP
       resources: {}
       volumeMounts:
         - mountPath: /var/lib/postgresql/data

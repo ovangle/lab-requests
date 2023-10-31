@@ -1,0 +1,19 @@
+
+services:
+  app:
+    command: npm run serve
+    ports: []
+
+  api:
+    ports: []
+
+  filesrv:
+    ports: []
+
+  postgres:
+    ports: []
+
+  pg-admin:
+    ports: []
+
+  

@@ -9,5 +9,8 @@ RUN npm ci
 
 COPY . .
 
+RUN ng build
+
 EXPOSE 4200
+EXPOSE 80
 CMD ["npm", "run", "start"]
