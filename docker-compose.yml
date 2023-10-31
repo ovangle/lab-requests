@@ -46,14 +46,6 @@ services:
     ports:
       - "5433:80"
 
-    public:
-      image: nginx:1.25
-      volumes:
-        - './public/nginx.conf:/etc/nginx/nginx.conf:ro'
-      ports:
-        - "8300:80"
-        - "8343:443"
-
 volumes:
   pgdata: {}
   lab_work_attachments: {}
