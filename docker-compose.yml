@@ -19,7 +19,7 @@ services:
       DB_PASSWORD: secret
       API_DEBUG: 'yes'
     volumes:
-      - './api:/srv/api'
+      # - './api:/srv/api'
       - 'lab_work_attachments:/srv/files/lab/work-units:rw'
 
   filesrv:
@@ -32,10 +32,11 @@ services:
 
   postgres:
     build: './postgres'
+    image: ghcr.io/cqueng/lab-requests-postgres
     environment:
       POSTGRES_PASSWORD: 'secret'
     volumes:
-      - "pgdata:/var/lib/postgresql/data"
+      - "pgdata:/var/lib/postgresql"
     ports:
       - "5432:5432"
     restart: "on-failure"

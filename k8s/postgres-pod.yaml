@@ -14,12 +14,14 @@ spec:
     - env:
         - name: POSTGRES_PASSWORD
           value: secret
-      image: postgres
+      image: ghcr.io/cqueng/lab-requests-postgres
       name: postgres
       resources: {}
       volumeMounts:
-        - mountPath: /var/lib/postgresql/data
+        - mountPath: /var/lib/postgresql
           name: pgdata
+  imagePullSecrets:
+    - name: dockerconfigjson-github-com
   restartPolicy: OnFailure
   volumes:
     - name: pgdata

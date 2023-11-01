@@ -37,17 +37,12 @@ spec:
           name: api
           resources: {}
           volumeMounts:
-            - mountPath: /srv/api
-              name: api-claim0
             - mountPath: /srv/files/lab/work-units
               name: lab-work-attachments
       imagePullSecrets:
         - name: dockerconfigjson-github-com
       restartPolicy: Always
       volumes:
-        - name: api-claim0
-          persistentVolumeClaim:
-            claimName: api-claim0
         - name: lab-work-attachments
           persistentVolumeClaim:
             claimName: lab-work-attachments
