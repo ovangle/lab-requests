@@ -1,6 +1,6 @@
 FROM node:18.17
 
-WORKDIR /app
+WORKDIR /srv/app
 
 RUN npm i -g @angular/cli
 
@@ -11,6 +11,5 @@ COPY . .
 
 RUN ng build
 
-EXPOSE 4200
-EXPOSE 80
-CMD ["npm", "run", "start"]
+EXPOSE 3000
+CMD ["npm", "run", "serve"]

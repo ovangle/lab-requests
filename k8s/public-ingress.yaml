@@ -3,7 +3,7 @@ kind: Ingress
 metadata:
   name: public-ingress
   annotations:
-    kubernetes.io/ingress.global-static-ip-name: "web-static-ip"
+    kubernetes.io/ingress.global-static-ip-name: "public-static-ip"
 spec:
   rules:
   - http:
@@ -28,6 +28,6 @@ spec:
           service:
             name: app
             port:
-              number: 4200
+              number: 3000
 
           

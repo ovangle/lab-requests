@@ -3,12 +3,16 @@ kind: PersistentVolumeClaim
 metadata:
   creationTimestamp: null
   labels:
-    io.kompose.service: filesrv-claim0
-  name: filesrv-claim0
+    io.kompose.service: filesrv-nginx-mount
+  name: filesrv-nginx-mouunt
 spec:
+  capacity:
+    storage: 100Mi
+  volumeMode: Filesystem
   accessModes:
     - ReadOnlyMany
-  resources:
-    requests:
-      storage: 100Mi
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: local-storage
+  local:
+    path: /mnt/disks/ssd1
 status: {}

@@ -3,10 +3,12 @@ services:
   app:
     build: './app'
     image: ghcr.io/cqueng/lab-requests-app
+    command: npm run start
     ports:
-      - "4201:4200"
+      - "4200:4200"
     # profiles:
-    # - do_not_start
+      # preferable to disable the app server locally and run `ng serve` on the host.
+      # - do_not_start
 
   api:
     build: './api'
@@ -19,7 +21,7 @@ services:
       DB_PASSWORD: secret
       API_DEBUG: 'yes'
     volumes:
-      # - './api:/srv/api'
+      - './api:/srv/api'
       - 'lab_work_attachments:/srv/files/lab/work-units:rw'
 
   filesrv:

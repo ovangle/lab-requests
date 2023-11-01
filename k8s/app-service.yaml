@@ -10,9 +10,9 @@ metadata:
   name: app
 spec:
   ports:
-    - name: "4201"
-      port: 4201
-      targetPort: 4200
+    - name: "http"
+      port: 3000
+      targetPort: 3000
   selector:
     io.kompose.service: app
 status:

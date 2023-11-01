@@ -31,16 +31,16 @@ spec:
           resources: {}
           volumeMounts:
             - mountPath: /etc/nginx/nginx.conf
-              name: filesrv-claim0
+              name: filesrv-nginx-config-claim
               readOnly: true
             - mountPath: /srv/files/lab/work-units
               name: lab-work-attachments
               readOnly: true
       restartPolicy: Always
       volumes:
-        - name: filesrv-claim0
+        - name: filesrv-nginx-config-claim
           persistentVolumeClaim:
-            claimName: filesrv-claim0
+            claimName: filesrv-nginx-config-claim
             readOnly: true
         - name: lab-work-attachments
           persistentVolumeClaim:
