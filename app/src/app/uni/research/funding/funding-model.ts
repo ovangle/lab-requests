@@ -1,18 +1,26 @@
 import { HttpParams } from "@angular/common/http";
 import { Injectable, Type, inject, } from "@angular/core";
 import { Observable, map } from "rxjs";
+import { Role, roleFromJson } from "src/app/common/actor/actor";
 import { Model, ModelLookup, ModelMeta, ModelParams, ModelPatch, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { RestfulService, modelProviders } from "src/app/common/model/model-service";
 import { ResourceType, resourceTypeFromJson } from "src/app/lab/work-unit/resource/resource-type";
 import { isJsonObject } from "src/app/utils/is-json-object";
+
+export const FUNDING_MODEL_NAMES = [
+    'student_project'
+];
 
 export interface FundingModelParams extends ModelParams {
     name: string;
     description: string;
     requiresSupervisor: boolean;
 
+    readonly allowedRoles: Role[];
+
     /**
-     * The work resources captured when 
+     * The work unit resources which are captured by this 
+     * funding model. 
      */
     readonly capturedResources: ResourceType[];
 }
@@ -21,6 +29,8 @@ export class FundingModel extends Model {
     readonly name: string;
     readonly description: string;
     readonly requiresSupervisor: boolean;
+
+    readonly allowedRoles: Role[];
     readonly capturedResources: ResourceType[];
 
     constructor(params: FundingModelParams) {
@@ -28,6 +38,8 @@ export class FundingModel extends Model {
         this.name = params.name!;
         this.description = params.description!;
         this.requiresSupervisor = params.requiresSupervisor!;
+
+        this.allowedRoles = params.allowedRoles;
         this.capturedResources = params.capturedResources;
     }
 }
@@ -46,15 +58,21 @@ export function fundingModelParamsFromJson(json: unknown): FundingModelParams {
     if (typeof json['requiresSupervisor'] !== 'boolean') {
         throw new Error('Expected a boolean \'requiresSupervisor\'');
     }
-    if (!Array.isArray(json['capturedResources'])) {
-        throw new Error('Expected an array \'capturedResources\'')
+    let allowedRoles: Role[] = [];
+    if (Array.isArray(json['allowedRoles'])) {
+        allowedRoles = json['allowedRoles'].map(roleFromJson);
+    }
+    let capturedResources: ResourceType[] = [];
+    if (Array.isArray(json['capturedResources'])) {
+        capturedResources = json['capturedResources'].map(resourceTypeFromJson);
     }
     return {
         ...baseParams,
         name: json['name'],
         description: json['description'],
         requiresSupervisor: json['requiresSupervisor'],
-        capturedResources: json['capturedResources'].map(resourceTypeFromJson)
+        allowedRoles,
+        capturedResources
     };
 }
 
@@ -77,7 +95,8 @@ export function fundingModelPatchToJson(patch: FundingModelPatch) {
 
 export interface FundingModelLookup extends ModelLookup<FundingModel> {
     // Searches for funding models with this exact name
-    name_eq: string;
+    name_eq: string | string[];
+
     // Searches for the instance of this text anywhere in the funding model
     text: string;
 }
@@ -119,6 +138,10 @@ export class FundingModelService extends RestfulService<FundingModel, FundingMod
 
     search(input: string): Observable<FundingModel[]> {
         return this.query({text: input});
+    }
+
+    all(): Observable<FundingModel[]> {
+        return this.query({name_eq: FUNDING_MODEL_NAMES});
     }
 }
 

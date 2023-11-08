@@ -9,6 +9,7 @@ import { BodyScrollbarHidingService } from "src/app/utils/body-scrollbar-hiding.
 import { ExperimentalPlanFormPaneControlService } from "src/app/lab/experimental-plan/experimental-plan-form-pane-control.service";
 import { WorkUnitContext } from "../../../common/work-unit";
 import { ResourceContainerContext } from "../../resource-container";
+import { FundingModel } from "src/app/uni/research/funding/funding-model";
 
 export function typeIndexFromDetailRoute$(): Observable<[ResourceType, number | 'create']> {
     const activatedRoute = inject(ActivatedRoute);
@@ -45,12 +46,18 @@ export function typeIndexFromDetailRoute$(): Observable<[ResourceType, number | 
             (requestSave)="saveAndClose()">
         </lab-resource-form-title>
 
-        <ng-container [ngSwitch]="typeIndex[0]">
-            <lab-equipment-lease-form *ngSwitchCase="'equipment'"></lab-equipment-lease-form>
-            <lab-software-resource-form *ngSwitchCase="'software'"></lab-software-resource-form>
-            <lab-task-resource-form *ngSwitchCase="'task'"></lab-task-resource-form>
-            <lab-input-material-resource-form *ngSwitchCase="'input-material'"></lab-input-material-resource-form>
-            <lab-output-material-resource-form *ngSwitchCase="'output-material'"></lab-output-material-resource-form>
+        <ng-container *ngIf="containerId$ | async as containerId">
+            <ng-container *ngIf="fundingModel$ | async as fundingModel">
+                <ng-container [ngSwitch]="typeIndex[0]">
+                    <lab-equipment-lease-form *ngSwitchCase="'equipment'"
+                        [workUnitId]="containerId"
+                        [fundingModel]="fundingModel"></lab-equipment-lease-form>
+                    <lab-software-resource-form *ngSwitchCase="'software'"></lab-software-resource-form>
+                    <lab-task-resource-form *ngSwitchCase="'task'"></lab-task-resource-form>
+                    <lab-input-material-resource-form *ngSwitchCase="'input-material'"></lab-input-material-resource-form>
+                    <lab-output-material-resource-form *ngSwitchCase="'output-material'"></lab-output-material-resource-form>
+                </ng-container>
+            </ng-container>
         </ng-container>
     </ng-container>
     `,
@@ -70,6 +77,14 @@ export class WorkUnitResourceFormPage {
 
     readonly typeIndex$ = defer(() => this._context.committedTypeIndex$);
     readonly resourceType$ = defer(() => this._context.resourceType$);
+
+    readonly containerId$: Observable<string> = this._context.container$.pipe(
+        map(container => container.id)
+    );
+
+    readonly fundingModel$: Observable<FundingModel> = this._context.plan$.pipe(
+        map(plan => plan.fundingModel)
+    );
 
     constructor() {
         this._contextConnection = this._context.sendTypeIndex(

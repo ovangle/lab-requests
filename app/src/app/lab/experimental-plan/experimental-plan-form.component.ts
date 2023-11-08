@@ -10,7 +10,6 @@ import { CampusSearchComponent } from "src/app/uni/campus/campus-search.componen
 import { DisciplineSelectComponent } from "src/app/uni/discipline/discipline-select.component";
 import { FundingModel } from "src/app/uni/research/funding/funding-model";
 import { FundingModelSearchComponent } from "src/app/uni/research/funding/funding-model-search.component";
-import { FundingModelSelectComponent } from "../../uni/research/funding/funding-model-select.component";
 import { Equipment } from "../equipment/common/equipment";
 import { ExperimentalPlanPatch } from "./common/experimental-plan";
 import { ExperimentalPlanForm, ExperimentalPlanFormErrors } from "./common/experimental-plan-form";
@@ -30,7 +29,6 @@ import { ExperimentalPlanCreateDefaultWorkUnitForm } from "./work-units/create-d
         MatDatepickerModule,
 
         DisciplineSelectComponent,
-        FundingModelSelectComponent,
         FundingModelSearchComponent,
         CampusSearchComponent,
         ExperimentalPlanResearcherFormComponent,

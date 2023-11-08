@@ -10,6 +10,7 @@ import { equipmentRequestForm } from "./equipment-request-form";
 import { EquipmentRequest } from "./equipment-request";
 import { ResizeTextareaOnInputDirective } from "src/app/common/forms/resize-textarea-on-input.directive";
 import { CostEstimateFormComponent } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
+import { FundingModel } from "src/app/uni/research/funding/funding-model";
 
 @Component({
     selector: 'lab-equipment-request-form',
@@ -37,13 +38,18 @@ import { CostEstimateFormComponent } from "src/app/uni/research/funding/cost-est
         </mat-form-field>
 
         <uni-research-funding-cost-estimate-form
-            [form]="form.controls.cost">
+            [form]="form.controls.cost"
+            name="Purchase"
+            [funding]="purchaseFundingModel">
         </uni-research-funding-cost-estimate-form>
     </form>
     `,
 })
 export class EquipmentRequestFormComponent {
     readonly form = equipmentRequestForm();
+
+    @Input({required: true})
+    purchaseFundingModel: FundingModel;
 
     @Output()
     equipmentRequestChange = new EventEmitter<EquipmentRequest>();

@@ -14,6 +14,7 @@ import { EquipmentRiskAssessmentFileInputComponent } from "./risk-assessment-fil
 import { EquipmentLike } from "src/app/lab/equipment/equipment-like";
 import { Equipment } from "src/app/lab/equipment/common/equipment";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
+import { FundingModel } from "src/app/uni/research/funding/funding-model";
 
 export type EquipmentLeaseForm = FormGroup<{
     equipment: FormControl<EquipmentLike | null>;
@@ -67,7 +68,8 @@ export type EquipmentLeaseFormErrors = ValidationErrors & {
     ],
     template: `
     <form [formGroup]="form">
-        <lab-equipment-search formControlName="equipment">
+        <lab-equipment-search formControlName="equipment"
+            [purchaseRequestFundingModel]="fundingModel">
             <mat-label>Equipment</mat-label>
         </lab-equipment-search>
 
@@ -94,8 +96,11 @@ export type EquipmentLeaseFormErrors = ValidationErrors & {
 export class EquipmentLeaseFormComponent {
     readonly formService = inject(ResourceFormService<EquipmentLease, EquipmentLeaseForm>);
 
-    @Input()
+    @Input({required: true})
     workUnitId: string;
+
+    @Input({required: true})
+    fundingModel: FundingModel;
 
     @Input()
     get isCreate() {

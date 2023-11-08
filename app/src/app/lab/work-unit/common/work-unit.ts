@@ -260,6 +260,7 @@ export class WorkUnitResourceContainerContext extends ResourceContainerContext<W
     readonly _workUnitContext = inject(WorkUnitContext);
     
     readonly committed$ = this._workUnitContext.committed$;
+    override readonly plan$ = this._workUnitContext.plan$;
     override readonly container$ = defer(() => this.committed$);
 
     constructor() {

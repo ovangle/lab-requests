@@ -11,6 +11,7 @@ import { Task, TaskParams, taskFromJson, taskToJson } from "../resources/task/ta
 import type { Resource } from './resource';
 import { Model, ModelParams, ModelPatch, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { ModelContext } from "src/app/common/model/context";
+import { ExperimentalPlan } from "../../experimental-plan/common/experimental-plan";
 
 export interface ResourceContainerParams extends ModelParams {
     equipments: EquipmentLease[];
@@ -139,6 +140,7 @@ export abstract class ResourceContainerContext<
     abstract getContainerPath(): Promise<string[]>;
 
     abstract committed$: Observable<T>;
+    abstract plan$: Observable<ExperimentalPlan>;
     abstract container$: Observable<T>;
     readonly containerName$ = defer(() => this.container$.pipe(
         tap(c => console.log('container', c)),

@@ -4,6 +4,7 @@ import { Observable, ReplaySubject, Subscription, combineLatest, defer, filter, 
 import { ResourceContainer, ResourceContainerContext } from "./resource-container";
 import { ResourceType, isResourceType } from "./resource-type";
 import { ResourceFileAttachment } from "./file-attachment/file-attachment";
+import { ExperimentalPlan } from "../../experimental-plan/common/experimental-plan";
 
 export interface ResourceParams<T extends Resource> {
     id: string | null;
@@ -45,6 +46,7 @@ export function isResourceTypeIndex(obj: any): obj is ResourceTypeIndex {
 @Injectable()
 export class ResourceContext<T extends Resource> {
     readonly _containerContext = inject(ResourceContainerContext);
+    readonly plan$: Observable<ExperimentalPlan> = this._containerContext.plan$;
     readonly container$ = this._containerContext.committed$;
     readonly containerName$ = this._containerContext.containerName$;
     readonly _committedTypeIndexSubject = new ReplaySubject<[ResourceType, number | 'create']>(1);

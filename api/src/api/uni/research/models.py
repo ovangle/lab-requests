@@ -19,6 +19,8 @@ class FundingModel_(Base):
     name: Mapped[str] = mapped_column(VARCHAR(32), unique=True)
     description: Mapped[str] = mapped_column(TEXT)
     requires_supervisor: Mapped[bool] = mapped_column()
+
+    # The resource types which are required to be captured in the work unit
     captured_resources: Mapped[list[str]] = mapped_column(pg_dialect.ARRAY(VARCHAR(256)), server_default='{}')
 
     def __init__(self, name: str, description: str = '', requires_supervisor: bool = True, captured_resources: list[str] | None = None):

@@ -1,6 +1,6 @@
 import {validate as validateIsUUID} from 'uuid';
 import { CommonModule } from "@angular/common";
-import { Component, Injectable, inject } from "@angular/core";
+import { Component, Injectable, Input, inject } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from "@angular/material/autocomplete";
@@ -16,6 +16,7 @@ import { Equipment, EquipmentCollection, EquipmentContext, EquipmentLookup } fro
 import { EquipmentRequest, isEquipmentRequest } from './request/equipment-request';
 import { EquipmentLike } from './equipment-like';
 import { isUUID } from 'src/app/utils/is-uuid';
+import { FundingModel } from 'src/app/uni/research/funding/funding-model';
 
 
 const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
@@ -72,6 +73,7 @@ const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
                 <lab-equipment-request-form 
                     [name]="_equipmentRequest.value.name"
                     [disabled]="_disabled"
+                    [purchaseFundingModel]="purchaseRequestFundingModel"
                     (equipmentRequestChange)="_equipmentRequest.next($event)">
                 </lab-equipment-request-form>
             </mat-card-content>
@@ -101,6 +103,9 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
         map(value => value === this._NEW_EQUIPMENT_)
     );
     readonly _equipmentRequest = new BehaviorSubject<EquipmentRequest>({ name: '', reason: '', cost: null });
+
+    @Input({required: true})
+    purchaseRequestFundingModel: FundingModel;
 
     readonly value$: Observable<Equipment | EquipmentRequest | null> = defer(() => {
         return this.searchControl.valueChanges.pipe(
