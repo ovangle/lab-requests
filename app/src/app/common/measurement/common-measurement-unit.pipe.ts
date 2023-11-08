@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, HostBinding, Input, Pipe, PipeTransform } from "@angular/core";
+import { Component, HostBinding, Input, LOCALE_ID, Pipe, PipeTransform, inject } from "@angular/core";
 import { DomSanitizer, SafeHtml } from "@angular/platform-browser";
 import { UnitOfMeasurement, formatUnitOfMeasurement } from "./measurement";
 
@@ -9,11 +9,10 @@ import { UnitOfMeasurement, formatUnitOfMeasurement } from "./measurement";
     standalone: true
 })
 export class MeasurementUnitPipe implements PipeTransform {
-    constructor(
-        readonly sanitizer: DomSanitizer
-    ) {}
+    readonly sanitizer = inject(DomSanitizer);
+    readonly locale: string = inject(LOCALE_ID);
 
     transform(value: UnitOfMeasurement, pluralQuantity: number = 1, ...args: any[]) { 
-        return formatUnitOfMeasurement(value, pluralQuantity);
+        return formatUnitOfMeasurement(value, pluralQuantity, this.locale);
     }
 }

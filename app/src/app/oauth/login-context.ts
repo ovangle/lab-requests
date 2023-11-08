@@ -213,8 +213,6 @@ export class LoginContext {
             this.clearLocalStorage();
         }
 
-        console.log(this.localStorage, this.localStorage.getItem);
-
         const providerKey = this.localStorage.getItem(OAUTH_CURRENT_PROVIDER_KEY) as OauthProvider | null
         this._setCurrentProvider(providerKey, true);
 

@@ -1,4 +1,6 @@
-import * as pluralize from "pluralize";
+// import * as pluralize from "pluralize";
+
+import { formatPlural } from "../plural.pipe";
 
 export type UnitOfMeasurement = 'item' | string;
 
@@ -16,10 +18,10 @@ export function isSIUnit(unit: UnitOfMeasurement): boolean {
  * @param pluralQuantity
  * Accepts the following formats
  */
-export function formatUnitOfMeasurement(unitOfMeasurement: UnitOfMeasurement, pluralQuantity?: number) { 
+export function formatUnitOfMeasurement(unitOfMeasurement: UnitOfMeasurement, pluralQuantity: number, locale: string) { 
     if (typeof pluralQuantity === 'number') {
         if (!isSIUnit(unitOfMeasurement)) {
-            unitOfMeasurement = pluralize(unitOfMeasurement, pluralQuantity);
+            unitOfMeasurement = formatPlural(unitOfMeasurement, pluralQuantity, locale);
         }
     }
     return unitOfMeasurement.replaceAll(/\^(\d+)/g, '<sup>$1</sup>');

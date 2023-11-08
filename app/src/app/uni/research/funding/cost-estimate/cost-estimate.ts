@@ -72,7 +72,7 @@ export function formatCostEstimate(costEstimate: CostEstimate, format: 'total' |
         return totalCost;
     }
     const perUnitCost = formatCurrency(costEstimate.perUnitCost, locale, '$');
-    const unitOfMeasurement = formatUnitOfMeasurement(costEstimate.unit, costEstimate.quantityRequired);
+    const unitOfMeasurement = formatUnitOfMeasurement(costEstimate.unit, costEstimate.quantityRequired, locale);
     if (format === 'full') {
         return `${totalCost} (${costEstimate.quantityRequired} @ ${perUnitCost} per ${unitOfMeasurement})`
     }
