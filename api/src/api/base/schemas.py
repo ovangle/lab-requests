@@ -130,7 +130,7 @@ class PagedResultList(BaseModel, Generic[TItem]):
     @classmethod
     async def from_selection(cls, item_type: Type[TItem], db: LocalSession, selection: Select[tuple[TModel]]):
         total_item_count = await db.scalar(
-            selection.with_only_columns(func.count()).order_by(None)
+            selection.with_only_columns(func.count(), maintain_column_froms=True).order_by(None)
         )
         results = await item_type.gather_models(await db.scalars(selection))
 
