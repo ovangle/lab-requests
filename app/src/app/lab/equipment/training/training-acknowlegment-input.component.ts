@@ -88,7 +88,6 @@ export class EquipmentTrainingAcknowlegementComponent implements ControlValueAcc
     }
     _toggleSelectionDisabled = disabledStateToggler(this.selectedControl);
     
-
     constructor() {
         this.selectedControl.valueChanges.pipe(
             takeUntilDestroyed(),

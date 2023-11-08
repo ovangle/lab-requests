@@ -33,7 +33,7 @@ function equipmentContextFromDetailRoute(): Observable<Equipment> {
     <ng-container *ngIf="context.equipment$ | async as equipment">
         <lab-equipment-info [equipment]="equipment"></lab-equipment-info>
 
-    <h3>Description</h3>
+        <h3>Description</h3>
         <p>{{equipment.description}}</p>
 
         <lab-equipment-training-descriptions-info

@@ -74,7 +74,8 @@ export class ExperimentalPlanCreatePage {
             throw new Error('Cannot save invalid form');
         }
         const patch = await firstValueFrom(this.patch$);
-        return await this._add(patch);
+        const result: ExperimentalPlan = await this._add(patch);
+        return await this._router.navigate(['/lab/experimental-plans', result.id]);
     }
 
     _showAllFormErrors() {
