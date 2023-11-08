@@ -92,7 +92,7 @@ export function modelResponsePageFromJson<T extends Model, TLookup extends Model
         lookup,
         items,
         next: obj['next'],
-        totalItemCount: +obj['total_item_count']
+        totalItemCount: +obj['total']
     };
 }
 

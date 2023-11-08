@@ -32,5 +32,5 @@ import { EquipmentCollection } from "../common/equipment";
 export class EquipmentIndexPage {
     readonly equipmentCollection = inject(EquipmentCollection);
 
-    readonly equipments$ = this.equipmentCollection.items$;
+    readonly equipments$ = this.equipmentCollection.pageItems$;
 }

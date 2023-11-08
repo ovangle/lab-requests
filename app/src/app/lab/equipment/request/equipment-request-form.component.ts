@@ -39,8 +39,9 @@ import { FundingModel } from "src/app/uni/research/funding/funding-model";
 
         <uni-research-funding-cost-estimate-form
             [form]="form.controls.cost"
-            name="Purchase"
-            [funding]="purchaseFundingModel">
+            name="purchase"
+            [funding]="purchaseFundingModel"
+            unitOfMeasurement="unit">
         </uni-research-funding-cost-estimate-form>
     </form>
     `,

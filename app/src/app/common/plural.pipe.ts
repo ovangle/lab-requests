@@ -71,7 +71,7 @@ function formatOne(word: string) {
     if (word.toLowerCase() in IRREGULAR_WORDS) {
         return word;
     }
-    for (const [pattern, replace] of Object.entries(SINGULAR)) {
+    for (const [pattern, replace] of Object.entries(PLURAL)) {
         if (!__compiled.has(pattern)) {
             const regex = new RegExp(pattern, 'i');
             __compiled.set(pattern, regex);
@@ -88,7 +88,7 @@ function formatMany(word: string) {
     if (word.toLowerCase() in IRREGULAR_WORDS) {
         return IRREGULAR_WORDS[word];
     }
-    for (const [pattern, replace] of Object.entries(PLURAL)) {
+    for (const [pattern, replace] of Object.entries(SINGULAR)) {
         if (!__compiled.has(pattern)) {
             __compiled.set(pattern, new RegExp(pattern, 'i'));
         }

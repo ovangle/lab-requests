@@ -3,6 +3,7 @@ import { Injectable, Type, inject, } from "@angular/core";
 import { Observable, map } from "rxjs";
 import { Role, roleFromJson } from "src/app/common/actor/actor";
 import { Model, ModelLookup, ModelMeta, ModelParams, ModelPatch, modelParamsFromJsonObject } from "src/app/common/model/model";
+import { ModelCollection, injectModelQuery } from "src/app/common/model/model-collection";
 import { RestfulService, modelProviders } from "src/app/common/model/model-service";
 import { ResourceType, resourceTypeFromJson } from "src/app/lab/work-unit/resource/resource-type";
 import { isJsonObject } from "src/app/utils/is-json-object";
@@ -105,7 +106,7 @@ function fundingModelLookupToHttpParams(lookup: Partial<FundingModelLookup>) {
     return new HttpParams();
 }
 
-@Injectable()
+@Injectable({providedIn: 'root'})
 export class FundingModelMeta extends ModelMeta<FundingModel, FundingModelPatch, FundingModelLookup> {
     override readonly model = FundingModel;
     override readonly modelParamsFromJson = fundingModelParamsFromJson;
@@ -113,7 +114,7 @@ export class FundingModelMeta extends ModelMeta<FundingModel, FundingModelPatch,
     override readonly lookupToHttpParams = fundingModelLookupToHttpParams;
 }
 
-@Injectable()
+@Injectable({providedIn: 'root'})
 export class FundingModelService extends RestfulService<FundingModel, FundingModelPatch, FundingModelLookup> {
     override readonly metadata = inject(FundingModelMeta);
     override readonly path: string = '/uni/research/funding';
@@ -145,6 +146,13 @@ export class FundingModelService extends RestfulService<FundingModel, FundingMod
     }
 }
 
-export function uniFundingModelProviders() {
-    return modelProviders(FundingModelMeta, FundingModelService);
+@Injectable({providedIn: 'root'})
+export class FundingModelCollection extends ModelCollection<FundingModel, FundingModelPatch, FundingModelLookup> {
+    constructor() {
+        super(inject(FundingModelService));
+    }
+}
+
+export function injectFundingModelQuery() {
+    return inject(FundingModelCollection);
 }

@@ -98,7 +98,7 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
     readonly equipments = inject(EquipmentCollection);
     readonly searchControl = new FormControl<Equipment | string>('', { nonNullable: true });
 
-    readonly searchOptions$ = defer(() => this.equipments.items$);
+    readonly searchOptions$ = defer(() => this.equipments.pageItems$);
     readonly isNewEquipment$ = this.searchControl.valueChanges.pipe(
         map(value => value === this._NEW_EQUIPMENT_)
     );
