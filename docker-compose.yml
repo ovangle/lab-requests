@@ -6,9 +6,9 @@ services:
     command: npm run start
     ports:
       - "4200:4200"
-    # profiles:
+    profiles:
       # preferable to disable the app server locally and run `ng serve` on the host.
-      # - do_not_start
+      - do_not_start
 
   api:
     build: './api'

@@ -50,13 +50,8 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
   ],
   providers: [
     {
-      provide: APP_BASE_HREF,
-      useFactory: getBaseHref,
-      deps: [PlatformLocation]
-    },
-    {
       provide: API_BASE_URL,
-      useValue: 'http://127.0.0.1:8000'
+      useValue: '/api'
     },
     ...provideLocalStorage(),
     ...provideExternalNavigation(),

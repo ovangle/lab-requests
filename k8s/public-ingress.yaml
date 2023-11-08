@@ -4,6 +4,8 @@ metadata:
   name: public-ingress
   annotations:
     kubernetes.io/ingress.global-static-ip-name: "public-static-ip"
+    networking.gke.io/managed-certificates: 'public-ingress-certificate'
+    kubernetes.io/ingress.class: 'gce'
 spec:
   rules:
   - http:
@@ -15,13 +17,6 @@ spec:
             name: api
             port: 
               number: 8000
-      - path: /files/*
-        pathType: ImplementationSpecific
-        backend:
-          service:
-            name: filesrv
-            port: 
-              number: 6767
       - path: /*
         pathType: ImplementationSpecific
         backend:

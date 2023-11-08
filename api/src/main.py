@@ -1,6 +1,6 @@
 import os
 from typing import Type, cast
-from fastapi import FastAPI, Request, Response
+from fastapi import APIRouter, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from uuid import UUID
 
@@ -50,21 +50,40 @@ app.add_middleware(
     allow_headers=['*']
 )
 
-from api.lab.equipment.views import lab_equipments, lab_equipment_tags
-app.include_router(lab_equipments)
-app.include_router(lab_equipment_tags)
 
-from api.lab.plan.views import lab_plans
-app.include_router(lab_plans)
 
-from api.lab.work_unit.views import lab_work_units
-app.include_router(lab_work_units)
+def api_router():
+    api_router = APIRouter(
+        prefix="/api",
+        tags=["api"]
+    )
+    from api.lab.equipment.views import lab_equipments, lab_equipment_tags
+    api_router.include_router(lab_equipments)
+    api_router.include_router(lab_equipment_tags)
 
-from api.uni.views import uni_campuses
-app.include_router(uni_campuses)
+    from api.lab.plan.views import lab_plans
+    api_router.include_router(lab_plans)
 
-from api.uni.research.views import uni_research_funding
-app.include_router(uni_research_funding)
+    from api.lab.work_unit.views import lab_work_units
+    api_router.include_router(lab_work_units)
+
+    from api.uni.views import uni_campuses
+    api_router.include_router(uni_campuses)
+
+    from api.uni.research.views import uni_research_funding
+    api_router.include_router(uni_research_funding)
+
+    return api_router
+
+app.include_router(api_router())
+
+@app.get('/')
+async def health_check():
+    """
+    Used only for internal health checks. 
+    Everything useful is under /api
+    """
+    return {"message": "no content"}
 
 
 if __name__ == '__main__':
