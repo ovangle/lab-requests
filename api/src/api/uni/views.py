@@ -28,13 +28,14 @@ async def read_campus(code_or_id: CampusCode | UUID, db = Depends(get_db)):
 
 @uni_campuses.get('/')
 async def index_campuses(
-    text: Optional[str] = None,
+    code_eq: Optional[CampusCode] = None,
+    text_like: Optional[str] = None,
     db = Depends(get_db)
 ) -> PagedResultList[Campus]:
-    return await PagedResultList[Campus].from_selection(
-        Campus,
-        db,
-        query_campuses(text_like=text),
+    query = query_campuses(
+        code_eq=code_eq,
+        text_like=text_like
     )
+    return await PagedResultList[Campus].from_selection( Campus, db, query)
         
 

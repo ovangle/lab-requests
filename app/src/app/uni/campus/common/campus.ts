@@ -40,10 +40,10 @@ export function campusFromJson(json: unknown) {
     return new Campus(campusParamsFromJson(json));
 }
 
-export class Campus extends Model {
+export class Campus extends Model implements CampusParams {
     readonly code: CampusCode;
 
-    name: string;
+    readonly name: string;
 
     constructor(params: CampusParams) {
         super(params);
@@ -77,13 +77,16 @@ export function campusPatchToJson(patch: CampusPatch): {[k: string]: unknown} {
 
 export interface CampusLookup extends ModelLookup<Campus> {
     code?: CampusCode;
-
+    textLike?: string;
 }
 
 export function campusLookupToHttpParams(lookup: Partial<CampusLookup>): HttpParams {
-    const params = modelLookupToHttpParams(lookup);
+    let params = modelLookupToHttpParams(lookup);
     if (lookup.code) {
-        params.set('code', lookup.code);
+        params = params.set('code_eq', lookup.code);
+    }
+    if (lookup.textLike) {
+        params = params.set('text_like', lookup.textLike);
     }
     return params;
 }

@@ -80,9 +80,22 @@ export abstract class RestfulService<
         return urlJoin(this._apiBaseUrl, this.path);
     }
 
+    /** A static method on the resource index. 
+     * e.g. /users/me
+    */
+    indexMethodUrl(name: string) {
+        return urlJoin(this.indexUrl, name);
+    }
+
     resourceUrl(id: string) {
         return urlJoin(this._apiBaseUrl, this.path, id);
     }
+
+    resourceMethodUrl(id: string, name: string) {
+        return urlJoin(this.resourceUrl(id), name);
+    }
+
+
 
     override fetch(id: string, options?: {params: {[k: string]: any} | HttpParams}): Observable<T> {
         return this._httpClient.get<{[k: string]: unknown}>(this.resourceUrl(id), {params: options?.params}).pipe(

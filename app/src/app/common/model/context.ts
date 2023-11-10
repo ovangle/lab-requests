@@ -10,7 +10,7 @@ export abstract class ModelContext<T extends Model, TPatch extends ModelPatch<T>
     readonly committedSubject = new ReplaySubject<T>(1);
     readonly committed$: Observable<T> = this.committedSubject.asObservable();
 
-    abstract readonly _doUpdate: (id: string, patch: TPatch) => Promise<T>;
+    abstract _doUpdate(id: string, patch: TPatch): Promise<T>;
 
     sendCommitted(source: Observable<T>): Subscription {
         return source.subscribe((committed) => {

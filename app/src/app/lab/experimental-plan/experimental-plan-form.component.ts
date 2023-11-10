@@ -15,6 +15,7 @@ import { ExperimentalPlanPatch } from "./common/experimental-plan";
 import { ExperimentalPlanForm, ExperimentalPlanFormErrors } from "./common/experimental-plan-form";
 import { ExperimentalPlanResearcherFormComponent } from "./researcher/researcher-form.component";
 import { ExperimentalPlanCreateDefaultWorkUnitForm } from "./work-units/create-default-work-unit-form.component";
+import { FundingModelSelectComponent } from "src/app/uni/research/funding/funding-model-select.component";
 
 
 @Component({
@@ -30,6 +31,7 @@ import { ExperimentalPlanCreateDefaultWorkUnitForm } from "./work-units/create-d
 
         DisciplineSelectComponent,
         FundingModelSearchComponent,
+        FundingModelSelectComponent,
         CampusSearchComponent,
         ExperimentalPlanResearcherFormComponent,
         ExperimentalPlanCreateDefaultWorkUnitForm
@@ -56,7 +58,7 @@ import { ExperimentalPlanCreateDefaultWorkUnitForm } from "./work-units/create-d
             [form]="form">
         </lab-experimental-plan-researcher-form>
 
-        <uni-research-funding-model-search formControlName="fundingModel">
+        <uni-research-funding-model-select formControlName="fundingModel">
             <mat-label>Funding source</mat-label>
 
             <span class="error" *ngIf="fundingModelErrors?.required">
@@ -65,7 +67,7 @@ import { ExperimentalPlanCreateDefaultWorkUnitForm } from "./work-units/create-d
             <span class="error" *ngIf="fundingModelErrors?.notAFundingModel">
                 Unrecognised funding source
             </span>
-        </uni-research-funding-model-search>
+        </uni-research-funding-model-select>
         <!--
         <mat-error *ngIf="fundingModelErrors?.notAFundingModel">
                 Unrecognised funding source

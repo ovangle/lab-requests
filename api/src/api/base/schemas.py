@@ -122,6 +122,7 @@ class PageInfo:
 
 
 class PagedResultList(BaseModel, Generic[TItem]):
+    model_config = SCHEMA_CONFIG
     items: list[TItem]
 
     total_item_count: int

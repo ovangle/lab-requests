@@ -1,17 +1,17 @@
 import { Component, OnInit, inject } from "@angular/core";
-import { ActorContext } from "src/app/actor/actor";
-import { FundingModel, FundingModelCollection } from "./funding-model";
+import { FUNDING_MODEL_NAMES, FundingModel, FundingModelCollection } from "./funding-model";
 import { Observable } from "rxjs";
 import { injectModelQuery } from "src/app/common/model/model-collection";
 import { MatSelectModule } from "@angular/material/select";
 import { CommonModule } from "@angular/common";
-import { ControlValueAccessor, FormControl, ReactiveFormsModule } from "@angular/forms";
+import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
+import { UserContext } from "src/app/user/user-context";
 
 
 @Component({
-    selector: 'uni-funding-model-select',
+    selector: 'uni-research-funding-model-select',
     standalone: true,
     imports: [
         CommonModule,
@@ -23,19 +23,30 @@ import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler"
     <mat-form-field>
         <mat-label><ng-content select="mat-label"></ng-content></mat-label>
         <mat-select [formControl]="formControl">
+            <ng-container *ngIf="options$ | async as options">
+                <mat-option *ngFor="let option of options">
+                    {{option.name}}
+                </mat-option>
+            </ng-container>
         </mat-select>
     </mat-form-field>
     `,
+    providers: [
+        { provide: NG_VALUE_ACCESSOR, multi: true, useExisting: FundingModelSelectComponent}
+    ]
 })
-export class FundingModelSelect implements ControlValueAccessor {
+export class FundingModelSelectComponent implements ControlValueAccessor {
     
-    readonly _actorContext = inject(ActorContext);
+    readonly userContext = inject(UserContext);
 
     readonly collection = inject(FundingModelCollection);
     readonly options$ = this.collection.pageItems$;
 
-    readonly formControl = new FormControl<FundingModel | null>(null);
+    ngOnInit() {
+        this.collection.setLookup({name_eq: FUNDING_MODEL_NAMES});
+    }
 
+    readonly formControl = new FormControl<FundingModel | null>(null);
 
     writeValue(obj: FundingModel | string | null): void {
         if (obj instanceof FundingModel || obj == null) {

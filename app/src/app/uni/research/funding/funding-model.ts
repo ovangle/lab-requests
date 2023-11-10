@@ -1,7 +1,7 @@
 import { HttpParams } from "@angular/common/http";
 import { Injectable, Type, inject, } from "@angular/core";
 import { Observable, map } from "rxjs";
-import { Role, roleFromJson } from "src/app/common/actor/actor";
+import { Role, roleFromJson } from "src/app/user/role";
 import { Model, ModelLookup, ModelMeta, ModelParams, ModelPatch, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { ModelCollection, injectModelQuery } from "src/app/common/model/model-collection";
 import { RestfulService, modelProviders } from "src/app/common/model/model-service";
@@ -17,6 +17,9 @@ export interface FundingModelParams extends ModelParams {
     description: string;
     requiresSupervisor: boolean;
 
+    /**
+     * The funding model is disabled for these roles.
+     */
     readonly allowedRoles: Role[];
 
     /**
@@ -151,8 +154,4 @@ export class FundingModelCollection extends ModelCollection<FundingModel, Fundin
     constructor() {
         super(inject(FundingModelService));
     }
-}
-
-export function injectFundingModelQuery() {
-    return inject(FundingModelCollection);
 }
