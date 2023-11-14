@@ -57,6 +57,9 @@ def api_router():
         prefix="/api",
         tags=["api"]
     )
+    from api.user.views import users
+    api_router.include_router(users)
+
     from api.lab.equipment.views import lab_equipments, lab_equipment_tags
     api_router.include_router(lab_equipments)
     api_router.include_router(lab_equipment_tags)

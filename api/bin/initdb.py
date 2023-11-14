@@ -21,14 +21,24 @@ async def initdb():
         
     print('done')
 
+def log_seed_fn(name, seed_fn):
+    async def do_seed(db):
+        print(f'seeding {name}', end='\t')
+        await seed_fn(db)
+        print('done')
+    return do_seed
+
 
 async def seed_db():
     from api.uni.models import seed_campuses
     from api.uni.research.models import seed_funding_models
-    print('seeding db...', end='\t')
+    from api.user.models import seed_users
+    print('seeding db...')
     async with local_sessionmaker() as db:
-        await seed_campuses(db)
-        await seed_funding_models(db)
+        await log_seed_fn('campuses', seed_campuses)(db)
+        await log_seed_fn('funding_models', seed_funding_models)(db)
+        await log_seed_fn('users', seed_users)(db)
+
     print('done')
 
 async def main():

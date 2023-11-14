@@ -1,4 +1,5 @@
 from __future__ import annotations
+from enum import Enum
 
 import re
 from typing import Annotated, Any
@@ -7,6 +8,11 @@ from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema, CoreSchema
 from sqlalchemy import VARCHAR
 from sqlalchemy.orm import mapped_column
+
+
+class UserType(Enum):
+    NATIVE = 'native'
+
 
 
 class UserRole(str):

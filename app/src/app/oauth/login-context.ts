@@ -113,8 +113,6 @@ export class LoginContext {
         @Inject(OAUTH_PARAMS) readonly oauthParams: OauthParams[]
     ) {}
 
-    private _saveCurrentNavigation: Subscription;
-
     get authorizeRedirectUri(): string {
         let isDefaultPortForProtocol = false;
         switch (this.platformLocation.protocol) {
@@ -130,7 +128,6 @@ export class LoginContext {
             isDefaultPortForProtocol ? '' : `:${this.platformLocation.port}`
         );
 
-        const baseHref = this.platformLocation.getBaseHrefFromDOM();
         const baseUrl = `${this.platformLocation.protocol}//${host}`
         return baseUrl + this.location.prepareExternalUrl('/sso-redirect');
     }

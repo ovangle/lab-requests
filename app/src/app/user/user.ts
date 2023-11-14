@@ -68,6 +68,19 @@ function userPatchToJson(patch: UserPatch) {
     return modelPatchToJson(patch);
 }
 
+export interface NativeUserLoginRequest {
+    email: string;
+    password: string;
+}
+
+export function isNativeUserLoginRequest(obj: unknown): obj is NativeUserLoginRequest {
+    return typeof obj === 'object' && obj != null
+        && typeof (obj as any)['email'] === 'string'
+        && typeof (obj as any)['password'] === 'string';
+}
+
+export type UserLoginRequest = NativeUserLoginRequest;
+
 export interface UserLookup extends ModelLookup<User> {}
 
 function userLookupToHttpParams(lookup: Partial<UserLookup>): HttpParams {
