@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, security
 
 from db import get_db
 
-from .schemas import NativeUser, UserLoginRequest
+from .schemas import User, UserLoginRequest
 from . import model_fns
 
 users = APIRouter(
@@ -13,16 +13,16 @@ users = APIRouter(
 )
 
 @users.get('/{id}')
-async def get_user(id: UUID, db = Depends(get_db)) -> NativeUser:
-    return await NativeUser.get_for_id(db, id)
+async def get_user(id: UUID, db = Depends(get_db)) -> User:
+    return await User.get_for_id(db, id)
 
 @users.get('/me')
 async def get_current_active_user(
-    db = Depends(get_db),
-    token = Depends(model_fns.oauth2_scheme)
-) -> NativeUser:
+    token = Depends(model_fns.oauth2_scheme),
+    db = Depends(get_db)
+) -> User:
     return await model_fns.get_current_active_user(db, token)
 
 @users.post('/login')
-async def login_user(request: UserLoginRequest, db = Depends(get_db)) -> NativeUser:
+async def login_user(request: UserLoginRequest, db = Depends(get_db)) -> User:
     return await model_fns.login_user(db, request)

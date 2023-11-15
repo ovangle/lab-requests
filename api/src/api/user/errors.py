@@ -2,14 +2,22 @@
 from uuid import UUID
 from fastapi import HTTPException
 
+from .types import UserDomain
+
 class UserDoesNotExist(HTTPException):
     @classmethod
-    def for_id(cls, id: UUID):
-        return cls(404, f'No user exists with id {id}')
+    def for_id(cls, id: UUID, domain: UserDomain | None = None):
+        detail = f'No user exists with id {id}'
+        if domain:
+            detail += f' in domain {domain!s}'
+        return cls(404, detail)
 
     @classmethod
-    def for_email(cls, email: str):
-        return cls(404, f'No user exists with email {email}')
+    def for_email(cls, email: str, domain: UserDomain | None = None):
+        detail = f'No user exists with email {email}'
+        if domain:
+            detail += f' in domain {domain}'
+        return cls(404, detail)
 
 
 class InvalidCredentials(HTTPException):

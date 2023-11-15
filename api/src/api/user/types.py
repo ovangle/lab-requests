@@ -10,9 +10,14 @@ from sqlalchemy import VARCHAR
 from sqlalchemy.orm import mapped_column
 
 
-class UserType(Enum):
+class UserDomain(Enum):
+    """
+    Represents the origin of the user in question. Native users are
+    users which are stored in our database, external users exist in 
+    some external user information store we trust.
+    """
     NATIVE = 'native'
-
+    EXTERNAL = 'external'
 
 
 class UserRole(str):

@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
@@ -10,20 +11,27 @@ from .errors import InvalidCredentials, UserDoesNotExist, InvalidCredentials
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 
-async def login_native_user(db: LocalSession, login_request: schemas.NativeUserLoginRequest) -> schemas.NativeUser:
+async def get_user_for_id(db: LocalSession, id: UUID):
+    return await schemas.User.get_for_id(db, id)
+
+async def get_user_for_email(db: LocalSession, email: str):
+    return await schemas.User.get_for_email(db, email)
+
+async def _login_native_user(db: LocalSession, login_request: schemas.NativeUserLoginRequest) -> schemas.User:
     try:
         user = await models.NativeUser.get_for_email(db, login_request.email)
     except UserDoesNotExist:
         raise InvalidCredentials.login_failed()
     
-    if not await user.verify_password(login_request.password):
+    password = login_request.password.get_secret_value()
+    if not await user.verify_password(login_request.password.get_secret_value()):
         raise InvalidCredentials.login_failed()
 
-    return await schemas.NativeUser.from_model(user)
+    return await schemas.User.from_model(user)
 
-async def login_user(db: LocalSession, login_request: schemas.UserLoginRequest) -> schemas.NativeUser:
+async def login_user(db: LocalSession, login_request: schemas.UserLoginRequest) -> schemas.User:
     if isinstance(login_request, schemas.NativeUserLoginRequest):
-        return await login_native_user(db, login_request)
+        return await _login_native_user(db, login_request)
     else:
         raise ValueError('Expected a login request')
 
