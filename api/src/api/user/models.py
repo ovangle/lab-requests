@@ -15,7 +15,7 @@ from sqlalchemy_utils.generic import generic_relationship
 from passlib.hash import pbkdf2_sha256
 
 from db import LocalSession
-from db.orm import uuid_pk
+from db.orm import uuid_pk, email_str
 from api.base.models import Base
 
 from .types import UserRole, user_role, UserDomain
@@ -26,7 +26,8 @@ class AbstractUser(Base):
     domain: ClassVar[UserDomain]
 
     id: Mapped[uuid_pk]
-    email: Mapped[str] = mapped_column(VARCHAR(256), unique=True, index=True)
+    email: Mapped[email_str] 
+    name: Mapped[str] = mapped_column(VARCHAR(256))
     disabled: Mapped[bool] = mapped_column(default=False)
 
     roles: Mapped[set[UserRole]] = mapped_column(
@@ -64,10 +65,7 @@ class NativeUser(AbstractUser):
     __tablename__ = 'native_users'
     domain = UserDomain.NATIVE
 
-    id: Mapped[uuid_pk]
     password_hash: Mapped[str] = mapped_column(VARCHAR(256), default=None)
-
-    name: Mapped[str] = mapped_column(VARCHAR(256))
 
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID) -> NativeUser:

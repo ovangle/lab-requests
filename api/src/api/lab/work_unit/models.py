@@ -13,7 +13,7 @@ from sqlalchemy.dialects import postgresql as pg_dialect
 from api.base.files.models import StoredFile_
 
 from db import LocalSession
-from db.orm import uuid_pk, email
+from db.orm import uuid_pk, email_str
 from api.base.models import Base
 from api.uni.models import Campus
 from api.lab.types import LabType
@@ -44,7 +44,7 @@ class WorkUnit_(ResourceContainer_, Base):
 
 
     lab_type: Mapped[LabType] = mapped_column(pg_dialect.ENUM(LabType))
-    technician_email: Mapped[email]
+    technician_email: Mapped[email_str]
 
     process_summary: Mapped[str] = mapped_column(TEXT)
 

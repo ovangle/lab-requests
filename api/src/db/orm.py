@@ -1,5 +1,6 @@
 from typing import Annotated
 from uuid import UUID
+from sqlalchemy import VARCHAR
 
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.dialects import postgresql as pg_dialect
@@ -20,8 +21,8 @@ _POSTGRES_EMAIL_RE = (
 
 EMAIL_DOMAIN = pg_dialect.DOMAIN(
     'email',
-    pg_dialect.CITEXT(128),
+    pg_dialect.CITEXT(),
     check=rf"value ~ '{_POSTGRES_EMAIL_RE}'"
-)
+) 
 
-email = Annotated[str, mapped_column(EMAIL_DOMAIN)]
+email_str = Annotated[str, mapped_column(EMAIL_DOMAIN)]

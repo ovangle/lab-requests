@@ -15,7 +15,7 @@ from sqlalchemy.types import VARCHAR, TEXT
 from api.lab.plan.errors import ExperimentalPlanDoesNotExist
 
 from api.uni.types import Discipline
-from db.orm import uuid_pk, email
+from db.orm import uuid_pk, email_str
 from api.base.models import Base
 from ..types import LabType
 
@@ -41,9 +41,9 @@ class ExperimentalPlan_(Base):
     researcher_discipline: Mapped[Discipline] = mapped_column(ENUM(Discipline))
 
     # The name of the researcher responsible for this experimental plan
-    researcher_email: Mapped[email]
+    researcher_email: Mapped[email_str]
     # The supervisor associated with the plan, or None if the researcher is an academic
-    supervisor_email: Mapped[email | None]
+    supervisor_email: Mapped[email_str | None]
 
     process_summary: Mapped[str] = mapped_column(
         TEXT,

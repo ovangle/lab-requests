@@ -94,8 +94,15 @@ async def run_migrations_online() -> None:
 if context.is_offline_mode():
     run_migrations_offline()
 else:
+    loop: asyncio.AbstractEventLoop | None
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
-        loop = asyncio.new_event_loop()
-    loop.run_until_complete(run_migrations_online())
+        loop = None
+
+    if loop and loop.is_running():
+        task = loop.create_task(run_migrations_online())
+        task.add_done_callback(lambda t: f'Migrations complete with result {t.result()}')
+
+    else:
+        asyncio.run(run_migrations_online())
