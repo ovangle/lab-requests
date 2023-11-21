@@ -1,17 +1,17 @@
 import { Injectable, inject } from "@angular/core";
 import { ModelContext } from "../common/model/context";
-import { User, UserPatch, UserService, UserCollection, UserLoginRequest, isNativeUserLoginRequest } from "./user";
+import { User, UserPatch, UserService, UserCollection, UserLoginRequest, isNativeUserLoginRequest } from "./common/user";
 import { BehaviorSubject, firstValueFrom, of, tap } from "rxjs";
 import { injectModelUpdate } from "../common/model/model-collection";
 import { Role } from "./role";
-import { LoginContext } from "../oauth/login-context";
+import { LoginService } from "../oauth/login-service";
 
 
 
 @Injectable({providedIn: 'root'})
 export class UserContext extends ModelContext<User, UserPatch> {
     readonly userService = inject(UserService);
-    readonly loginContext = inject(LoginContext);
+    readonly loginContext = inject(LoginService);
     override readonly _doUpdate = injectModelUpdate(UserService, UserCollection);
 
     readonly user = new BehaviorSubject<User | null>(null);
@@ -26,7 +26,7 @@ export class UserContext extends ModelContext<User, UserPatch> {
         }
     }
 
-    async fetchUser(): Promise<User> {
+    async fetchCurrentUser(): Promise<User> {
         return await firstValueFrom(this.userService.me().pipe(
             tap((user) => this.user.next(user))
         ));

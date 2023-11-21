@@ -2,7 +2,7 @@ import { HTTP_INTERCEPTORS, HttpEvent, HttpHandler, HttpInterceptor, HttpRequest
 import { Inject, Injectable, InjectionToken, Provider } from "@angular/core";
 import { Router } from "@angular/router";
 import { Observable, from, switchMap, takeUntil, takeWhile, tap } from "rxjs";
-import { LoginContext } from "./login-context";
+import { LoginService } from "./login-service";
 
 type UrlMatcherFn = (request: HttpRequest<any>) => boolean;
 
@@ -19,7 +19,7 @@ export const AUTHORIZED_API_URL_MATCHERS = new InjectionToken<UrlMatcherFn[]>('A
 export class AuthorizationInterceptor implements HttpInterceptor {
     constructor(
         readonly router: Router,
-        readonly loginContext: LoginContext,
+        readonly loginContext: LoginService,
 
         @Inject(AUTHORIZED_API_URL_MATCHERS)
         readonly interceptUrlMatchers: UrlMatcherFn[]

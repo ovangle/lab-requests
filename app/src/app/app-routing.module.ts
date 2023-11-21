@@ -39,6 +39,11 @@ const routes: Routes = [
     path: 'uni/campuses',
     loadChildren: () => import('./uni/campus/_features/campus.feature-module')
       .then(module => module.CampusFeature)
+  },
+  {
+    path: 'user',
+    loadChildren: () => import('./user/_features/user.feature-module')
+      .then(module => module.UserFeatureModule)
   }
 ]
 

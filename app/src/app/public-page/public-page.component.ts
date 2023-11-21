@@ -1,5 +1,5 @@
 import { Component } from "@angular/core";
-import { LoginContext } from "../oauth/login-context";
+import { LoginService } from "../oauth/login-service";
 import { MatButtonModule } from "@angular/material/button";
 import { RouterModule } from "@angular/router";
 
@@ -13,13 +13,12 @@ import { RouterModule } from "@angular/router";
 
     ],
     template: `
-        <button mat-button (click)="loginContext.login('microsoft')">Login via microsoft</button>
-
+        <button mat-button (click)="loginContext.loginExternalUser('microsoft')">Login via microsoft</button>
         <a mat-button routerLink="/lab">MyLab</a>
     `
 })
 export class PublicPageComponent {
     constructor(
-        readonly loginContext: LoginContext
+        readonly loginContext: LoginService
     ) {}
 }

@@ -1,8 +1,11 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject } from "rxjs";
 import { isJsonObject } from "src/app/utils/is-json-object";
-import { Role, roleFromJson } from "./role";
+import { Role, roleFromJson } from "./common/role";
 
+/**
+ * An actor is a user which is fulfilling a role
+ */
 export interface Actor {
     readonly role: Role;
 }

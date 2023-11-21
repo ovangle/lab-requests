@@ -1,44 +1,40 @@
 import { isJsonObject } from "src/app/utils/is-json-object";
-import { Model, ModelLookup, ModelMeta, ModelParams, ModelPatch, modelLookupToHttpParams, modelParamsFromJsonObject, modelPatchToJson } from "../common/model/model";
-import { Role } from './role';
-import { Actor, actorFromJson } from "./actor";
-import { HttpParams } from "@angular/common/http";
+import { Model, ModelLookup, ModelMeta, ModelParams, ModelPatch, modelLookupToHttpParams, modelParamsFromJsonObject, modelPatchToJson } from "../../common/model/model";
+import { Role, roleFromJson } from './role';
+import { HttpErrorResponse, HttpParams } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
-import { RestfulService } from "../common/model/model-service";
-import { ModelCollection } from "../common/model/model-collection";
-import { Observable, map } from "rxjs";
+import { RestfulService } from "../../common/model/model-service";
+import { ModelCollection } from "../../common/model/model-collection";
+import { NEVER, Observable, Observer, Subject, catchError, firstValueFrom, map, of, tap, throwError } from "rxjs";
+import { Actor } from "../actor";
 
 
 export interface UserParams extends ModelParams {
+    name: string;
     email: string; 
 
-    actors: readonly Actor[];
+    roles: ReadonlySet<Role>;
 }
 
 export class User extends Model implements UserParams {
     readonly email: string;
-    readonly actors: readonly Actor[];
+    readonly name: string;
+    readonly roles: ReadonlySet<Role>;
 
     constructor(params: UserParams) {
         super(params);
         this.email = params.email;
+        this.name = params.name;
 
-        this.actors = params.actors;
-    }
-
-    get roles() {
-        return this.actors.map(actor => actor.role);
-    }
-    hasRole(role: Role): boolean {
-        return this.actors.some(actor => actor.role === role);
+        this.roles = params.roles;
     }
 
     canActAs(actor: Actor) {
-        return this.hasRole(actor.role);
+        return this.roles.has(actor.role);
     }
 }
 
-function userParamsFromJson(json: unknown) {
+function userParamsFromJson(json: unknown): UserParams {
     if (!isJsonObject(json)) {
         throw new Error('Not a json object');
     }
@@ -47,14 +43,19 @@ function userParamsFromJson(json: unknown) {
         throw new Error('Expected a string \'email\'')
     }
 
-    let actors: ReadonlyArray<Actor> = [];
-    if (Array.isArray(json['actors'])) {
-        actors = json['actors'].map(actorFromJson);
+    if (typeof json['name'] !== 'string') {
+        throw new Error('Expected a string \'name\'');
+    }
+
+    let roles: ReadonlySet<Role> = new Set(); 
+    if (Array.isArray(json['roles'])) {
+        roles = new Set(json['roles'].map(roleFromJson));
     }
     return {
         ...baseParams,
+        name: json['name'],
         email: json['email'],
-        actors
+        roles
     };
 }
 
@@ -67,19 +68,6 @@ export interface UserPatch extends ModelPatch<User> {}
 function userPatchToJson(patch: UserPatch) {
     return modelPatchToJson(patch);
 }
-
-export interface NativeUserLoginRequest {
-    email: string;
-    password: string;
-}
-
-export function isNativeUserLoginRequest(obj: unknown): obj is NativeUserLoginRequest {
-    return typeof obj === 'object' && obj != null
-        && typeof (obj as any)['email'] === 'string'
-        && typeof (obj as any)['password'] === 'string';
-}
-
-export type UserLoginRequest = NativeUserLoginRequest;
 
 export interface UserLookup extends ModelLookup<User> {}
 
@@ -110,7 +98,21 @@ export class UserService extends RestfulService<User, UserPatch, UserLookup> {
 
 @Injectable({providedIn: 'root'})
 export class UserCollection extends ModelCollection<User, UserPatch> {
+    private _activeUserId: string | null = null;
+
     constructor(service: UserService) {
         super(service);
+    }
+
+    async me(fetch=false): Promise<User> {
+        if (fetch && this._activeUserId != null) {
+            const me = await this.get(this._activeUserId);
+        }
+        return firstValueFrom((this.service as UserService).me().pipe(
+            this._cacheResult,
+            tap((result) => {
+                this._activeUserId = result.id
+            })
+        ));
     }
 }

@@ -1,11 +1,7 @@
-import { Component } from "@angular/core";
-import { HttpClient, HttpClientModule } from "@angular/common/http";
-import { FormArray } from "@angular/forms";
-import { ActivatedRoute, Router, RouterModule } from "@angular/router";
-import { Observable, firstValueFrom, from, lastValueFrom, timeout } from "rxjs";
-import {add, format, formatISO, isAfter, parseISO} from "date-fns";
-import { getResolvedUrl } from "../utils/router-utils";
-import { LoginContext, isAccessTokenResponse } from "./login-context";
+import { Component, inject } from "@angular/core";
+import { HttpClientModule } from "@angular/common/http";
+import { ActivatedRoute, RouterModule } from "@angular/router";
+import { LoginError, LoginService } from "./login-service";
 import { CommonModule } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 
@@ -36,7 +32,9 @@ import { MatButtonModule } from "@angular/material/button";
             </div>
         </ng-template>
 
-        <button mat-button (click)="clearLoginState()">Reset app state</button>
+        <!--
+            <button mat-button (click)="clearLoginState()">Reset app state</button>
+        -->
         <a mat-button routerLink="/">Return home</a>
     `,
     styles: [
@@ -50,10 +48,8 @@ import { MatButtonModule } from "@angular/material/button";
     ]
 })
 export class AuthRedirectPageComponent {
-    constructor(
-        readonly loginContext: LoginContext,
-        readonly activatedRoute: ActivatedRoute
-    ) { }
+    readonly _loginService = inject(LoginService);
+    readonly activatedRoute = inject(ActivatedRoute);
 
     error: string | null;
     errorDescription: string | null;
@@ -70,20 +66,17 @@ export class AuthRedirectPageComponent {
             const authCode = params['code'];
             const stateToken = params['state'];
 
-            const response = await this.loginContext.finalizeLogin(authCode, stateToken);
-            if (!isAccessTokenResponse(response)) {
-                this.error = response.error
-                this.errorDescription = response.error_description;
-                return;
+            try {
+                await this._loginService.handleExternalAuthorizationRedirect({ authCode, stateToken });
+            } catch (err) {
+                if (err instanceof LoginError) {
+                    this.error = err.message;
+                    this.errorDescription = err.description;
+                }
+                throw err;
             }
-            this.loginContext.restorePreviousRoute();
         });
     }
-
-    clearLoginState() {
-        this.loginContext.clearLocalStorage();
-    }
-
 }
 
 

@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { LoginContext } from './oauth/login-context';
+import { LoginService } from './oauth/login-service';
 
 @Component({
   selector: 'app-root',
@@ -10,7 +10,7 @@ export class AppComponent {
   title = 'lab_req';
 
   constructor(
-    readonly loginContext: LoginContext
+    readonly loginContext: LoginService
   ) {}
 
   ngOnInit() {
