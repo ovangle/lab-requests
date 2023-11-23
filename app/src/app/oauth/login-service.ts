@@ -7,29 +7,25 @@ import { Subscription, catchError, firstValueFrom, map, of, timeout } from "rxjs
 import { LocalStorage } from "../utils/local-storage";
 import { ExternalNavigation } from "../utils/router-utils";
 import { NATIVE_OAUTH_PROVIDER, OauthProvider, OauthProviderContext, OauthProviderParams, OauthProviderRegistry } from "./oauth-provider";
-import { AccessTokenData, AccessTokenStore, accessTokenDataFromAccessTokenResponse } from "./access-token";
+import { AccessTokenData, AccessTokenStore, accessTokenResponseToAccessTokenData } from "./access-token";
 import { OauthGrantType } from "./oauth-grant-type";
-import { AbstractOauthFlow } from "./flows/abstract-oauth-flow";
-import { ResourceOwnerPasswordCredentialsFlow } from "./flows/resource-owner-password-flow";
-import { AuthorizationCodeFlow } from "./flows/authorization-code-flow";
-import { RefreshTokenFlow } from "./flows/refresh-token-flow";
+import { AUTH_REDIRECT_URL, AbstractOauthFlow, OauthFlowEnv, OauthFlowFactory, OauthFlowStateStore } from "./flows/abstract-oauth-flow";
+import { ResourceOwnerPasswordCredentialsFlow, ResourceOwnerPasswordCredentialsFlowFactory } from "./flows/resource-owner-password-flow";
+import { AuthorizationCodeFlow, AuthorizationCodeFlowFactory } from "./flows/authorization-code-flow";
+import { RefreshTokenFlow, RefreshTokenFlowFactory } from "./flows/refresh-token-flow";
+import { injectModelQuery } from "../common/model/model-collection";
+import { InvalidCredentials } from "./loigin-error";
 
-export class LoginError extends Error {
-    readonly code: string;
-    readonly description: string;
-
-    constructor(code: string, description: string) {
-        super(description);
-        this.code = code;
-        this.description = description;
-    }
-}
 
 @Injectable({providedIn: 'root'})
-export class LoginService {
+export class LoginService implements OauthFlowEnv {
     readonly router = inject(Router);
+    readonly externalNavigation = inject(ExternalNavigation);
+    readonly httpClient = inject(HttpClient);
 
     readonly _oauthProviderContext = inject(OauthProviderContext);
+
+    readonly authorizationRedirectUrl = inject(AUTH_REDIRECT_URL);
 
     get currentProvider(): OauthProvider {
         return this._oauthProviderContext.current;
@@ -38,10 +34,10 @@ export class LoginService {
         return this._oauthProviderContext.currentParams
     }
 
-    readonly _accessTokenStore = inject(AccessTokenStore);
+    readonly accessTokenStore = inject(AccessTokenStore);
 
     get currentAccessTokenData(): AccessTokenData | null {
-        return this._accessTokenStore.load();
+        return this.accessTokenStore.load();
     }
 
     get currentAccessToken(): string | null {
@@ -50,6 +46,20 @@ export class LoginService {
 
     get isLoggedIn(): boolean {
         return this.currentAccessTokenData != null;
+    }
+
+    readonly flowStateStore = inject(OauthFlowStateStore);
+
+    isFlowInProgress(provider: OauthProvider | 'any', grantType: OauthGrantType | 'any') {
+        return this.flowStateStore.isFlowInProgress(provider, grantType);
+    }
+
+    checkIsAnyFlowInProgress() {
+        return this.flowStateStore.checkIsAnyFlowInProgress();
+    }
+
+    checkIsNoFlowInProgress() {
+        return this.flowStateStore.checkIsNoFlowInProgress();
     }
 
     async checkLoggedIn(): Promise<boolean> {
@@ -65,89 +75,74 @@ export class LoginService {
         return !!accessTokenData && !isExpired;
     }
 
-    /**
-     * Begins a new login flow.
-     * 
-     * @param provider 
-     * @param grantType 
-     * @param restoreRoute 
-     * @returns 
-     * The url of the redirected user, or `null`
-     */
-    async _beginNewLoginFlow(
-        provider: OauthProvider,
-        grantType: OauthGrantType,  
-        restoreRoute?: ActivatedRoute | null
-    ): Promise<string | null> {
-        const isLoggedIn = await this.checkLoggedIn();
-        if (isLoggedIn) {
-            throw new Error('Already logged in');
+    async finalizeFlow(grantType: OauthGrantType, params: unknown) {
+        const flow = this.getInProgressFlow(grantType);
+
+        try {
+            const accessTokenData = await flow.fetchToken(params);
+            this.accessTokenStore.saveToken(accessTokenData);
+            return accessTokenData;
+        } finally {
+            this.flowStateStore.clearCurrentFlowState()
         }
+    }
+
+    readonly _flows: {[K in OauthGrantType]: OauthFlowFactory } = {
+        'password': inject(ResourceOwnerPasswordCredentialsFlowFactory),
+        'authorization_code': inject(AuthorizationCodeFlowFactory),
+        'refresh_token': inject(RefreshTokenFlowFactory)
+    };
+
+    /**
+     * @param grantType 
+     * @returns 
+     */
+    getFlow(grantType: OauthGrantType): AbstractOauthFlow<unknown> {
+        return this._flows[grantType].get(this, this.currentProviderParams);
+    }
+
+    async beginFlow(grantType: OauthGrantType): Promise<AbstractOauthFlow<unknown>> {
+        this.checkIsNoFlowInProgress();
 
         const flow = this.getFlow(grantType);
-        await flow.init(provider);
+        this.flowStateStore.initialize(await flow.generateInitialFlowState());
 
-        return flow.redirectToLogin();
+        return flow;
     }
 
-    async _finalizeCurrentLoginFlow(params: unknown) {
-        const flow = this.getCurrentInProgressFlow();
-        this._oauthProviderContext.setCurrent(flow.state.provider);
-
-        const accessTokenData = await flow.fetchToken(params);
-        this._accessTokenStore.saveToken(accessTokenData);
-        await this._destroyCurrentLoginFlow();
-        return accessTokenData;
-    }
-
-    async _destroyCurrentLoginFlow() {
-        const flow = this.getCurrentInProgressFlow();
-        this._oauthProviderContext.clearCurrent();
-    }
-
-    readonly _flows: {[K in OauthGrantType]: AbstractOauthFlow<any, any> } = {
-        'password': inject(ResourceOwnerPasswordCredentialsFlow),
-        'authorization_code': inject(AuthorizationCodeFlow),
-        'refresh_token': inject(RefreshTokenFlow)
-    };
-    getFlow<Params>(grantType: OauthGrantType): AbstractOauthFlow<Params> {
-        return this._flows[grantType];
-    }
-    getCurrentInProgressFlow<Params>(): AbstractOauthFlow<Params> {
-        const provider = this.currentProvider;
-        for (const flow of Object.values(this._flows)) {
-            if (flow.isProviderFlowInProgress(provider)) {
-                return flow;
-            }
+    getInProgressFlow(grantType: OauthGrantType): AbstractOauthFlow<unknown> {
+        const flow = this.getFlow(grantType);
+        if (!flow.isInProgress()) {
+            throw new Error('No flow in progress');
         }
-        throw new Error('No flow currently in progress');
+        return flow;
     }
 
     async loginNativeUser(credentials: {username: string; password: string; }) {
-        await this._beginNewLoginFlow(NATIVE_OAUTH_PROVIDER, 'password');
-        return await this._finalizeCurrentLoginFlow(credentials);
+        this._oauthProviderContext.setCurrent(NATIVE_OAUTH_PROVIDER);
+        return await this.finalizeFlow('password', credentials);
     }
 
     async loginExternalUser(provider: OauthProvider) {
-        await this._beginNewLoginFlow(provider, 'authorization_code');
+        this._oauthProviderContext.setCurrent(provider);
+        await this.beginFlow('authorization_code');
     }
 
-    async handleExternalAuthorizationRedirect(content: {}) {
-        const flow = this.getCurrentInProgressFlow();
-        if (flow.grantType !== 'authorization_code') {
-            throw new Error('No authorization code flow in progress');
-        }
-
-        return await this._finalizeCurrentLoginFlow(content);
+    async handleExternalAuthorizationRedirect(params: unknown) {
+        const flow = this.getInProgressFlow('authorization_code');
+        return await this.finalizeFlow('authorization_code', params);
     }
 
     async _refreshToken(accessToken: AccessTokenData) {
-        await this._beginNewLoginFlow(accessToken.provider, 'refresh_token');
-        return await this._finalizeCurrentLoginFlow(accessToken);
+        if (this.currentProvider !== accessToken.provider) {
+            throw new Error('Cannot refresh access token for different provider');
+        }
+        await this.beginFlow('refresh_token');
+        return await this.finalizeFlow('refresh_token', accessToken);
     }
 
     logout(): void {
-        this._accessTokenStore.clearTokenData();
+        this.accessTokenStore.clearTokenData();
         this._oauthProviderContext.clearCurrent();
         this.router.navigateByUrl('/public');
     }

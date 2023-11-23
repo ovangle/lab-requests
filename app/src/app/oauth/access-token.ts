@@ -1,5 +1,5 @@
 import { add, formatISO, parseISO } from "date-fns";
-import { OauthProvider, isOauthProvider } from "./oauth-provider";
+import { OauthProvider, OauthProviderContext, OauthProviderParams, isOauthProvider } from "./oauth-provider";
 import { Injectable, inject } from "@angular/core";
 import { LocalStorage } from "../utils/local-storage";
 import { isJsonObject } from "../utils/is-json-object";
@@ -34,16 +34,14 @@ export function isAccessTokenData(obj: unknown): obj is AccessTokenData {
         
 }
 
-export function accessTokenDataFromAccessTokenResponse(
-    provider: OauthProvider, 
-    clientId: string,
-    scope: string[],
+export function accessTokenResponseToAccessTokenData(
+    {provider, clientId, requiredScope}: OauthProviderParams,
     response: AccessTokenResponse
 ): AccessTokenData {
     return {
         provider,
         clientId,
-        scope,
+        scope: requiredScope,
         accessToken: response.access_token,
         expiresAt: add(new Date(), {seconds: response.expires_in}),
         refreshToken: response.refresh_token
@@ -96,6 +94,22 @@ export const OAUTH_ACCESS_TOKEN_STORAGE_KEY = 'oauthAccessToken';
 @Injectable({providedIn: 'root'})
 export class AccessTokenStore {
     readonly storage = inject(LocalStorage);
+    readonly _oauthProviderContext = inject(OauthProviderContext);
+
+    constructor() {
+        const tokenData = this.load();
+        if (tokenData != null) {
+            this._oauthProviderContext.setCurrent(tokenData.provider);
+        }
+        this._oauthProviderContext.registerOnChange(() => {
+            console.warn('clearing token data on provider change');
+            this.clearTokenData();
+        });
+    }
+
+    hasTokenData() {
+        return this.storage.getItem(OAUTH_ACCESS_TOKEN_STORAGE_KEY) != null;
+    }
 
     clearTokenData() {
         this.storage.removeItem(OAUTH_ACCESS_TOKEN_STORAGE_KEY);

@@ -1,12 +1,13 @@
 import { Injectable } from "@angular/core";
 import { AccessTokenData, isAccessTokenData } from "../access-token";
-import { AbstractOauthFlow, OauthFlowStateParams, oauthFlowState } from "./abstract-oauth-flow";
+import { OauthGrantType } from "../oauth-grant-type";
+import { OauthProviderParams } from "../oauth-provider";
 import { oauthScopeToQueryParam } from "../utils";
+import { AbstractOauthFlow, OauthFlowEnv, OauthFlowFactory } from "./abstract-oauth-flow";
 
 
-@Injectable({providedIn: 'root'})
 export class RefreshTokenFlow extends AbstractOauthFlow<AccessTokenData> {
-    override readonly grantType = 'refresh_token';
+    override readonly grantType: OauthGrantType = 'refresh_token';
 
     override requestToUrlSearchParams(currentToken: AccessTokenData): URLSearchParams {
         if (currentToken.refreshToken == null) {
@@ -21,16 +22,27 @@ export class RefreshTokenFlow extends AbstractOauthFlow<AccessTokenData> {
         return params;
     }
 
-    override _getInitialFlowState(provider: string): Promise<OauthFlowStateParams> {
-        return Promise.resolve(oauthFlowState(this.grantType, provider, {}));
+    override generateInitialFlowState() {
+        return Promise.resolve(
+            {provider: this.provider, grantType: this.grantType}
+        );
     }
 
     override redirectToLogin(): string | null {
         return null;
     }
 
-    override isValidParams(params: unknown): params is AccessTokenData {
+    override isValidTokenParams(params: unknown): params is AccessTokenData {
         return isAccessTokenData(params);
     }
 
+}
+
+
+@Injectable({providedIn: 'root'})
+export class RefreshTokenFlowFactory extends OauthFlowFactory {
+    override readonly grantType: OauthGrantType = 'refresh_token';
+    override get(env: OauthFlowEnv, provider: OauthProviderParams) {
+        return new RefreshTokenFlow(env, provider);
+    }
 }

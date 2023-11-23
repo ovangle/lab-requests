@@ -115,12 +115,16 @@ export class OauthProviderContext {
         return this._oauthProviderRegistry.get(this.current);
     }
 
+    /**
+     * Set the current oauth provider and notify any onChange listeners
+     * that may have been registered.
+     * 
+     * @param provider 
+     */
     setCurrent(provider: OauthProvider) {
-        if (provider !== this._current) {
-            const change = new SimpleChange(this._current, provider, this._current === undefined);
-            this._current = provider;
-            this._onChangeSubscriptions.forEach(listener => listener(change))
-        }
+        const change = new SimpleChange(this._current, provider, this._current === undefined);
+        this._current = provider;
+        this._onChangeSubscriptions.forEach(listener => listener(change))
     }
 
     clearCurrent() {

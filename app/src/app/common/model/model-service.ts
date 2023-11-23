@@ -80,8 +80,8 @@ export abstract class RestfulService<
         return urlJoin(this._apiBaseUrl, this.path);
     }
 
-    /** A static method on the resource index. 
-     * e.g. /users/me
+    /** A static RPC method on the resource index. 
+     *  e.g. /users/me
     */
     indexMethodUrl(name: string) {
         return urlJoin(this.indexUrl, name);
@@ -91,6 +91,14 @@ export abstract class RestfulService<
         return urlJoin(this._apiBaseUrl, this.path, id);
     }
 
+    /**
+     * An RPC method which acts on a particular resource
+     * e.g. /users/
+     * 
+     * @param id
+     * @param name 
+     * @returns 
+     */
     resourceMethodUrl(id: string, name: string) {
         return urlJoin(this.resourceUrl(id), name);
     }

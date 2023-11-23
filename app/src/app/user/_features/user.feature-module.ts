@@ -2,7 +2,7 @@ import { NgModule } from "@angular/core";
 import { UserLoginPage } from "./user-login.page";
 import { RouterModule, Routes } from "@angular/router";
 import { CommonModule } from "@angular/common";
-import { UserLoginFormComponent } from "../common/login/user-login-form.component";
+import { UserLoginFormComponent } from "../common/login/login-form.component";
 
 const USER_ROUTES: Routes = [
     {

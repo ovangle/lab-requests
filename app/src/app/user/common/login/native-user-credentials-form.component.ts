@@ -6,7 +6,8 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { BehaviorSubject, ReplaySubject } from "rxjs";
 import { AccessTokenData } from "src/app/oauth/access-token";
-import { LoginError, LoginService } from "src/app/oauth/login-service";
+import { LoginService } from "src/app/oauth/login-service";
+import { InvalidCredentials } from "src/app/oauth/loigin-error";
 
 export interface NativeUserLoginError {
     invalidCredentials: string;
@@ -102,7 +103,7 @@ export class NativeUserCredentialsFormComponent implements OnDestroy {
         try {
         const accessToken = await this._loginService.loginNativeUser(credentials); 
         } catch (err) {
-            if (err instanceof LoginError) {
+            if (err instanceof InvalidCredentials) {
                 this.submissionErrorSubject.next({invalidCredentials: 'Invalid credentials'});
             }
         }

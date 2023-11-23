@@ -1,9 +1,10 @@
 import { Component, inject } from "@angular/core";
 import { HttpClientModule } from "@angular/common/http";
 import { ActivatedRoute, RouterModule } from "@angular/router";
-import { LoginError, LoginService } from "./login-service";
+import { LoginService } from "../login-service";
 import { CommonModule } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
+import { InvalidCredentials } from "../loigin-error";
 
 @Component({
     selector: 'lab-req-auth-redirect-page',
@@ -69,9 +70,9 @@ export class AuthRedirectPageComponent {
             try {
                 await this._loginService.handleExternalAuthorizationRedirect({ authCode, stateToken });
             } catch (err) {
-                if (err instanceof LoginError) {
-                    this.error = err.message;
-                    this.errorDescription = err.description;
+                if (err instanceof InvalidCredentials) {
+                    this.error = err.error;
+                    this.errorDescription = err.errorDescription;
                 }
                 throw err;
             }

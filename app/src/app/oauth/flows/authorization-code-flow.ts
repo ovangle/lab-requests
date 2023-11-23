@@ -1,8 +1,9 @@
-import { Injectable, inject } from "@angular/core";
-import { AbstractOauthFlow, OauthFlowState, OauthFlowStateStore } from "./abstract-oauth-flow";
-import { OauthProvider, isOauthProvider } from "../oauth-provider";
+import { Injectable } from "@angular/core";
 import { isJsonObject } from "src/app/utils/is-json-object";
-import { ExternalNavigation } from "src/app/utils/router-utils";
+import { OauthGrantType } from "../oauth-grant-type";
+import { OauthProviderParams } from "../oauth-provider";
+import { oauthScopeToQueryParam } from "../utils";
+import { AbstractOauthFlow, OauthFlowEnv, OauthFlowFactory, OauthFlowState } from "./abstract-oauth-flow";
 
 export interface AuthorizationCodeGrantRequest {
     code: string;
@@ -31,36 +32,34 @@ function verifyAuthCode(state: AuthorizationCodeFlowState, ): AuthorizationCodeF
 }
 
 
-@Injectable({providedIn: 'root'})
 export class AuthorizationCodeFlow extends AbstractOauthFlow<AuthorizationCodeGrantRequest, AuthorizationCodeFlowState> {
-    readonly grantType = 'authorization_code';
-    readonly _externalNavigation = inject(ExternalNavigation);
-
-    async _getInitialFlowState(provider: OauthProvider) {
+    override readonly grantType: OauthGrantType = 'authorization_code';
+    async generateInitialFlowState() {
         const stateToken = generateStateToken();
         const codeVerifier = generateCodeVerifierToken();
         const codeChallenge = await getCodeChallenge(codeVerifier);
 
-        return { provider, stateToken, codeVerifier, codeChallenge };
+        return { 
+            provider: this.provider, 
+            grantType: this.grantType,
+            stateToken, codeVerifier, 
+            codeChallenge 
+    };
     }
 
     redirectToLogin() {
-        const providerParams = this.oauthProviderParams;
-
         const authUrlQueryParams = this.getAuthorizeQueryParams()
-        const authUrl = `${providerParams.authorizeUrl}?${authUrlQueryParams}`;
-        this._externalNavigation.go(authUrl);
+        const authUrl = `${this.providerParams.authorizeUrl}?${authUrlQueryParams}`;
+        this.externalNavigation.go(authUrl);
         return authUrl;
     }
 
     getAuthorizeQueryParams(): URLSearchParams {
-        const providerParams = this.oauthProviderParams;
-
         const params = new URLSearchParams();
-        params.set('client_id', providerParams.clientId);
+        params.set('client_id', this.providerParams.clientId);
         params.set('response_type', 'code');
-        params.set('redirect_uri', this.authorizationRedirectUrl);
-        params.set('scope', this.requiredScope);
+        params.set('redirect_uri', this.redirectUrl);
+        params.set('scope', oauthScopeToQueryParam(this.providerParams.requiredScope));
         params.set('state', this.state.stateToken);
         params.set('code_challenge_method', 'S256');
         params.set('code_challenge', this.state.codeChallenge);
@@ -71,19 +70,27 @@ export class AuthorizationCodeFlow extends AbstractOauthFlow<AuthorizationCodeGr
         const request = new URLSearchParams();
         
         request.set('grant_type', 'authorization_code');
-        request.set('client_id', this.oauthProviderParams.clientId);
-        request.set('scope', this.requiredScope);
+        request.set('client_id', this.providerParams.clientId);
+        request.set('scope', oauthScopeToQueryParam(this.providerParams.requiredScope));
         request.set('code', params.code);
         request.set('code_verifier', params.codeVerifier);
-        request.set('redirect_uri', this.authorizationRedirectUrl);
+        request.set('redirect_uri', this.redirectUrl);
 
         return request;
     }
 
-    override isValidParams(obj: unknown): obj is AuthorizationCodeGrantRequest {
+    override isValidTokenParams(obj: unknown): obj is AuthorizationCodeGrantRequest {
         return isAuthorizationCodeGrantRequest(obj); 
     }
 
+}
+
+@Injectable({providedIn: 'root'})
+export class AuthorizationCodeFlowFactory extends OauthFlowFactory {
+    override readonly grantType = 'authorization_code';
+    override get(env: OauthFlowEnv, provider: OauthProviderParams) {
+        return new AuthorizationCodeFlow(env, provider);
+    }
 }
 
 

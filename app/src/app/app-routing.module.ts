@@ -1,10 +1,11 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { AuthRedirectPageComponent } from './oauth/auth-redirect-page.component';
+import { AuthRedirectPageComponent } from './oauth/_feature/oauth-redirect.page';
 import { requiresAuthorizationGuard } from './utils/router-utils';
 import { PublicPageComponent } from './public-page/public-page.component';
 import { IotDeviceCreateFormComponent } from './iot/iot-device-create-form.component';
+import { OauthModule } from './oauth/_feature/oauth.feature-module';
 
 const routes: Routes = [
   {
@@ -23,8 +24,9 @@ const routes: Routes = [
     ]
   },
   {
-    path: 'sso-redirect',
-    component: AuthRedirectPageComponent
+    path: 'oauth',
+    loadChildren: () => import('./oauth/_features/oauth.feature-module')
+      .then(module => module.OauthFeatureModule)
   },
   {
     path: 'public',
@@ -51,6 +53,7 @@ const routes: Routes = [
 @NgModule({
   imports: [
     RouterModule.forRoot(routes, {enableTracing: false}),
+    OauthModule.forRoot('/oauth')
   ],
   exports: [RouterModule]
 })

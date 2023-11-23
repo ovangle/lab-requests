@@ -8,7 +8,6 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MAT_DATE_FNS_FORMATS, MatDateFnsModule } from '@angular/material-date-fns-adapter';
 import { enAU } from 'date-fns/locale';
 import { MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
-import { provideLoginContext } from './oauth/login-service';
 import { provideLocalStorage } from './utils/local-storage';
 import { provideExternalNavigation } from './utils/router-utils';
 import { APP_BASE_HREF, PlatformLocation } from '@angular/common';
@@ -57,7 +56,6 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
     ...provideExternalNavigation(),
     { provide: MAT_DATE_LOCALE, useValue: enAU },
     { provide: MAT_DATE_FORMATS, useValue: MAT_DATE_FNS_FORMATS },
-    ...provideLoginContext(),
     ...authorizationInterceptorProviders(BASE_API_MATCHERS),
     BodyScrollbarHidingService,
 
