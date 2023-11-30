@@ -21,7 +21,7 @@ class UserDomain(Enum):
 
 
 class UserRole(str):
-    _RE = re.compile(r'[_A-Z]{0,64}', re.IGNORECASE)
+    _RE = re.compile(r'[-A-Z]{0,64}', re.IGNORECASE)
 
     def __new__(cls, value: str | UserRole):
         if isinstance(value, UserRole):

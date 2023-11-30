@@ -1,8 +1,9 @@
 import { HTTP_INTERCEPTORS, HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from "@angular/common/http";
-import { Inject, Injectable, InjectionToken, Provider } from "@angular/core";
+import { Inject, Injectable, InjectionToken, Provider, inject } from "@angular/core";
 import { Router } from "@angular/router";
 import { Observable, from, switchMap, takeUntil, takeWhile, tap } from "rxjs";
 import { LoginService } from "./login-service";
+import { PUBLIC_PAGE_PATH } from "./utils";
 
 type UrlMatcherFn = (request: HttpRequest<any>) => boolean;
 
@@ -15,15 +16,16 @@ type UrlMatcherFn = (request: HttpRequest<any>) => boolean;
  */
 export const AUTHORIZED_API_URL_MATCHERS = new InjectionToken<UrlMatcherFn[]>('AUTH_INTERCEPT_URL_MATCHERS');
 
-@Injectable()
+@Injectable({providedIn: 'root'})
 export class AuthorizationInterceptor implements HttpInterceptor {
-    constructor(
-        readonly router: Router,
-        readonly loginContext: LoginService,
+    readonly router = Inject(Router);
+    readonly loginContext = Inject(LoginService);
 
-        @Inject(AUTHORIZED_API_URL_MATCHERS)
-        readonly interceptUrlMatchers: UrlMatcherFn[]
-    ) { }
+    readonly publicPagePath = inject(PUBLIC_PAGE_PATH);
+
+    @Inject(AUTHORIZED_API_URL_MATCHERS)
+    readonly interceptUrlMatchers: UrlMatcherFn[] = inject(AUTHORIZED_API_URL_MATCHERS);
+
     intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
         const isMatched = this.interceptUrlMatchers.some(
             matchFn => matchFn(req)
@@ -35,8 +37,7 @@ export class AuthorizationInterceptor implements HttpInterceptor {
             return from(this.loginContext.checkLoggedIn()).pipe(
                 tap(isLoggedIn => {
                     if (!isLoggedIn) {
-                        this.loginContext.clearLocalStorage();
-                        this.router.navigateByUrl('/')
+                        this.router.navigateByUrl(this.publicPagePath)
                     }
                 }),
                 takeWhile(isLoggedIn => !isLoggedIn),

@@ -12,30 +12,6 @@ import { InvalidCredentials } from "../loigin-error";
 import { ExternalNavigation } from "src/app/utils/router-utils";
 
 
-export const AUTH_REDIRECT_URL = new InjectionToken<string>('AUTH_REDIRECT_URI');
-export function provideAuthRedirectUri(): Provider {
-    const platformLocation = inject(PlatformLocation);
-    const location = inject(Location);
-    let isDefaultPortForProtocol = false;
-    switch (platformLocation.protocol) {
-        case 'http:':
-            isDefaultPortForProtocol = (platformLocation.port === '80');
-            break;
-        case 'https:':
-            isDefaultPortForProtocol = (platformLocation.port === '443');
-            break;
-    }
-
-    const host = platformLocation.hostname + (
-        isDefaultPortForProtocol ? '' : `:${platformLocation.port}`
-    );
-
-    const baseUrl = `${platformLocation.protocol}//${host}`
-    return {
-        provide: AUTH_REDIRECT_URL,
-        useValue: baseUrl + location.prepareExternalUrl('/sso-redirect')
-    };
-}
 
 export interface OauthFlowState {
     readonly grantType: OauthGrantType;
@@ -75,8 +51,8 @@ export class OauthFlowStateStore {
             if (this.isFlowInProgress('any', 'any')) {
                 const {provider, grantType} = this.load();
                 console.warn(`Clearing data for paritally completed ${grantType} flow ${provider}`)
+                this.clearCurrentFlowState();
             }
-            this.clearCurrentFlowState();
         });
     }
 
@@ -198,7 +174,7 @@ export abstract class AbstractOauthFlow<TokenParams, FlowState extends OauthFlow
         params: unknown 
     ): Promise<AccessTokenData> {
         if (!this.isValidTokenParams(params)) {
-            throw new Error(`Received invalid params for ${grantType}`)
+            throw new Error(`Received invalid params for oauth '${this.grantType}' flow`);
         }
 
         const content = this.requestToUrlSearchParams(params);

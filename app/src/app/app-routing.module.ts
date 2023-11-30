@@ -1,11 +1,11 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { AuthRedirectPageComponent } from './oauth/_feature/oauth-redirect.page';
 import { requiresAuthorizationGuard } from './utils/router-utils';
 import { PublicPageComponent } from './public-page/public-page.component';
 import { IotDeviceCreateFormComponent } from './iot/iot-device-create-form.component';
-import { OauthModule } from './oauth/_feature/oauth.feature-module';
+import { OauthFeatureModule } from './oauth/_features/oauth.feature-module';
+import { APP_OAUTH_PROVIDER_PARAMS, provideAppOauthProviderParams } from './app-oauth-provider-params';
 
 const routes: Routes = [
   {
@@ -25,8 +25,7 @@ const routes: Routes = [
   },
   {
     path: 'oauth',
-    loadChildren: () => import('./oauth/_features/oauth.feature-module')
-      .then(module => module.OauthFeatureModule)
+    loadChildren: () => OauthFeatureModule
   },
   {
     path: 'public',
@@ -53,8 +52,17 @@ const routes: Routes = [
 @NgModule({
   imports: [
     RouterModule.forRoot(routes, {enableTracing: false}),
-    OauthModule.forRoot('/oauth')
+    OauthFeatureModule.forRoot(
+      {
+        publicPage: '/public',
+        oauthFeature: '/oauth'
+      }, 
+      APP_OAUTH_PROVIDER_PARAMS
+    )
   ],
-  exports: [RouterModule]
+  exports: [RouterModule],
+  providers: [
+    provideAppOauthProviderParams()
+  ]
 })
 export class AppRoutingModule { }

@@ -22,7 +22,3 @@ async def get_current_active_user(
     db = Depends(get_db)
 ) -> User:
     return await model_fns.get_current_active_user(db, token)
-
-@users.post('/login')
-async def login_user(request: UserLoginRequest, db = Depends(get_db)) -> User:
-    return await model_fns.login_user(db, request)

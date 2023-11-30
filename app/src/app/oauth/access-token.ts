@@ -3,6 +3,7 @@ import { OauthProvider, OauthProviderContext, OauthProviderParams, isOauthProvid
 import { Injectable, inject } from "@angular/core";
 import { LocalStorage } from "../utils/local-storage";
 import { isJsonObject } from "../utils/is-json-object";
+import { ReplaySubject } from "rxjs";
 
 
 export interface AccessTokenResponse {
@@ -96,8 +97,15 @@ export class AccessTokenStore {
     readonly storage = inject(LocalStorage);
     readonly _oauthProviderContext = inject(OauthProviderContext);
 
+    readonly _tokenDataSubject = new ReplaySubject<AccessTokenData | null>(1);
+    readonly tokenData$ = this._tokenDataSubject.asObservable();
+
     constructor() {
         const tokenData = this.load();
+
+        this._tokenDataSubject.subscribe(); // keepalive subscription
+        this._tokenDataSubject.next(tokenData);
+
         if (tokenData != null) {
             this._oauthProviderContext.setCurrent(tokenData.provider);
         }
@@ -113,11 +121,13 @@ export class AccessTokenStore {
 
     clearTokenData() {
         this.storage.removeItem(OAUTH_ACCESS_TOKEN_STORAGE_KEY);
+        this._tokenDataSubject.next(null);
     }
 
     saveToken(tokenData: AccessTokenData) {
         const json = accessTokenDataToJson(tokenData);
         this.storage.setItem(OAUTH_ACCESS_TOKEN_STORAGE_KEY, JSON.stringify(json))
+        this._tokenDataSubject.next(tokenData);
     }
 
     load(): AccessTokenData | null {

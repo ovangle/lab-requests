@@ -8,6 +8,8 @@ import { BehaviorSubject, ReplaySubject } from "rxjs";
 import { AccessTokenData } from "src/app/oauth/access-token";
 import { LoginService } from "src/app/oauth/login-service";
 import { InvalidCredentials } from "src/app/oauth/loigin-error";
+import { User } from "../user";
+import { UserContext } from "../../user-context";
 
 export interface NativeUserLoginError {
     invalidCredentials: string;
@@ -58,12 +60,12 @@ export interface NativeUserLoginError {
     `
 })
 export class NativeUserCredentialsFormComponent implements OnDestroy {
-    readonly _loginService = inject(LoginService);
-    protected submissionErrorSubject = new BehaviorSubject<NativeUserLoginError | null>(null);
+    readonly _userContext = inject(UserContext);
+    protected submissionErrorSubject = new BehaviorSubject<InvalidCredentials | null>(null);
     readonly submissionErrors$ = this.submissionErrorSubject.asObservable();
 
     @Output()
-    readonly login = new EventEmitter<AccessTokenData>();
+    readonly login = new EventEmitter<User>();
 
     readonly form = new FormGroup(
         {
@@ -88,7 +90,7 @@ export class NativeUserCredentialsFormComponent implements OnDestroy {
             : null;
     }
 
-    get submissionErrors(): {invalidCredentials: string | null } | null {
+    get submissionErrors(): InvalidCredentials | null {
         return this.submissionErrorSubject.value;
     }
 
@@ -97,16 +99,18 @@ export class NativeUserCredentialsFormComponent implements OnDestroy {
             throw new Error('Invalid form has no credentials');
         }
         const credentials = {
-            username: this.form.value.email!,
+            email: this.form.value.email!,
             password: this.form.value.password!
         }
         try {
-        const accessToken = await this._loginService.loginNativeUser(credentials); 
+            return await this._userContext.login(credentials).then(user => {
+                this.login.next(user);
+            });
         } catch (err) {
             if (err instanceof InvalidCredentials) {
-                this.submissionErrorSubject.next({invalidCredentials: 'Invalid credentials'});
+                this.submissionErrorSubject.next(err);
             }
+            throw err;
         }
-
     }
 }

@@ -92,7 +92,7 @@ class NativeUser(AbstractUser):
     def set_password(self, secret: str):
         self.password_hash = pbkdf2_sha256.hash(secret)
 
-    async def verify_password(self, secret: str) -> bool:
+    def verify_password(self, secret: str) -> bool:
         return pbkdf2_sha256.verify(secret, self.password_hash)
 
 
@@ -141,7 +141,7 @@ class _UserDomainMap(Base):
         return user2domain
 
 
-async def create_domain_map_entry(mapper, connection: Connection, target: AbstractUser, **kwargs):
+def create_domain_map_entry(mapper, connection: Connection, target: AbstractUser, **kwargs):
     print(f'creating domain map entry for created user {target.id}')
     connection.execute(
         insert(_UserDomainMap).values(

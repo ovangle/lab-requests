@@ -3,6 +3,7 @@ import { OauthGrantType } from "../oauth-grant-type";
 import { OauthProviderParams } from "../oauth-provider";
 import { oauthScopeToQueryParam } from "../utils";
 import { AbstractOauthFlow, OauthFlowEnv, OauthFlowFactory } from "./abstract-oauth-flow";
+import { Injectable } from "@angular/core";
 
 export interface ResourceOwnerPasswordGrantRequest {
     username: string;
@@ -43,6 +44,7 @@ export class ResourceOwnerPasswordCredentialsFlow extends AbstractOauthFlow<Reso
     }
 }
 
+@Injectable({providedIn: 'root'})
 export class ResourceOwnerPasswordCredentialsFlowFactory extends OauthFlowFactory {
     override readonly grantType = 'password';
     override get(env: OauthFlowEnv, provider: OauthProviderParams) {

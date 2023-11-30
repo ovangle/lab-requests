@@ -26,7 +26,8 @@ import { OauthProvider } from "src/app/oauth/oauth-provider";
     ],
     template: `
     <user-native-user-credentials-form
-        (login)="_onNativeUserLogin()"/>
+        (login)="_onNativeUserLogin()"
+    />
 
     <p>Alternatively, </p>
 

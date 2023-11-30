@@ -9,8 +9,7 @@ import { MAT_DATE_FNS_FORMATS, MatDateFnsModule } from '@angular/material-date-f
 import { enAU } from 'date-fns/locale';
 import { MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
 import { provideLocalStorage } from './utils/local-storage';
-import { provideExternalNavigation } from './utils/router-utils';
-import { APP_BASE_HREF, PlatformLocation } from '@angular/common';
+import { PlatformLocation } from '@angular/common';
 import { BASE_API_MATCHERS, authorizationInterceptorProviders } from './oauth/auth-interceptor';
 import { MatButtonModule } from '@angular/material/button';
 import { BodyScrollbarHidingService } from './utils/body-scrollbar-hiding.service';
@@ -45,7 +44,7 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
     HttpClientModule,
 
     MatButtonModule,
-    MatDateFnsModule
+    MatDateFnsModule,
   ],
   providers: [
     {
@@ -53,7 +52,6 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
       useValue: '/api'
     },
     ...provideLocalStorage(),
-    ...provideExternalNavigation(),
     { provide: MAT_DATE_LOCALE, useValue: enAU },
     { provide: MAT_DATE_FORMATS, useValue: MAT_DATE_FNS_FORMATS },
     ...authorizationInterceptorProviders(BASE_API_MATCHERS),

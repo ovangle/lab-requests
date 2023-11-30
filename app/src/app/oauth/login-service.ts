@@ -3,18 +3,19 @@ import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { Inject, Injectable, InjectionToken, Injector, Provider, inject } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { add, differenceInSeconds, isBefore, parseISO } from "date-fns";
-import { Subscription, catchError, firstValueFrom, map, of, timeout } from "rxjs";
+import { Observable, ReplaySubject, Subscription, catchError, defer, firstValueFrom, fromEventPattern, map, of, timeout } from "rxjs";
 import { LocalStorage } from "../utils/local-storage";
 import { ExternalNavigation } from "../utils/router-utils";
 import { NATIVE_OAUTH_PROVIDER, OauthProvider, OauthProviderContext, OauthProviderParams, OauthProviderRegistry } from "./oauth-provider";
 import { AccessTokenData, AccessTokenStore, accessTokenResponseToAccessTokenData } from "./access-token";
 import { OauthGrantType } from "./oauth-grant-type";
-import { AUTH_REDIRECT_URL, AbstractOauthFlow, OauthFlowEnv, OauthFlowFactory, OauthFlowStateStore } from "./flows/abstract-oauth-flow";
+import { AbstractOauthFlow, OauthFlowEnv, OauthFlowFactory, OauthFlowStateStore } from "./flows/abstract-oauth-flow";
 import { ResourceOwnerPasswordCredentialsFlow, ResourceOwnerPasswordCredentialsFlowFactory } from "./flows/resource-owner-password-flow";
 import { AuthorizationCodeFlow, AuthorizationCodeFlowFactory } from "./flows/authorization-code-flow";
 import { RefreshTokenFlow, RefreshTokenFlowFactory } from "./flows/refresh-token-flow";
 import { injectModelQuery } from "../common/model/model-collection";
 import { InvalidCredentials } from "./loigin-error";
+import { injectOuauthRedirectUrl } from "./utils";
 
 
 @Injectable({providedIn: 'root'})
@@ -25,7 +26,7 @@ export class LoginService implements OauthFlowEnv {
 
     readonly _oauthProviderContext = inject(OauthProviderContext);
 
-    readonly authorizationRedirectUrl = inject(AUTH_REDIRECT_URL);
+    readonly authorizationRedirectUrl = injectOuauthRedirectUrl();
 
     get currentProvider(): OauthProvider {
         return this._oauthProviderContext.current;
@@ -35,6 +36,7 @@ export class LoginService implements OauthFlowEnv {
     }
 
     readonly accessTokenStore = inject(AccessTokenStore);
+    readonly accessTokenData$ = defer(() => this.accessTokenStore.tokenData$);
 
     get currentAccessTokenData(): AccessTokenData | null {
         return this.accessTokenStore.load();
@@ -119,7 +121,9 @@ export class LoginService implements OauthFlowEnv {
     }
 
     async loginNativeUser(credentials: {username: string; password: string; }) {
+        debugger;
         this._oauthProviderContext.setCurrent(NATIVE_OAUTH_PROVIDER);
+        const flow = await this.beginFlow('password');
         return await this.finalizeFlow('password', credentials);
     }
 
@@ -141,10 +145,11 @@ export class LoginService implements OauthFlowEnv {
         return await this.finalizeFlow('refresh_token', accessToken);
     }
 
-    logout(): void {
+    logout(): Promise<void> {
         this.accessTokenStore.clearTokenData();
         this._oauthProviderContext.clearCurrent();
         this.router.navigateByUrl('/public');
+        return Promise.resolve();
     }
 
     /**

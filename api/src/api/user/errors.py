@@ -19,16 +19,25 @@ class UserDoesNotExist(HTTPException):
             detail += f' in domain {domain}'
         return cls(404, detail)
 
+    @classmethod
+    def for_access_token(cls, token: str):
+        detail = f'No user exists with access token {token}'
+        return cls(404, detail)
+
+    @classmethod
+    def user_inactive(cls, email: str):
+        detail = f'User {email} is inactive'
+        return cls(404, detail)
 
 class InvalidCredentials(HTTPException):
     @classmethod
-    def login_failed(cls):
-        return cls(401, 'Login failed')
+    def login_failed(cls, email: str):
+        return cls(401, 'Invalid credentials')
 
     @classmethod
     def token_error(cls):
         return cls(401, 'Invalid credentials')
 
     @classmethod
-    def user_inactive(cls, email: str):
-        return cls(401, f'User {email} is currently inactive')
+    def user_not_found(cls, email: str):
+        return cls(401, f'Invalid credentials')

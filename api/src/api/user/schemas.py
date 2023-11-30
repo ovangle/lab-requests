@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Coroutine, Type, Union
+from typing_extensions import override
 from uuid import UUID
 
 from pydantic import SecretStr
@@ -17,8 +18,11 @@ class User(ApiModel[models.AbstractUser]):
         return await cls.from_model(user)
 
     @classmethod
-    async def get_for_email(cls, db: LocalSession, email: str):
-        user = await models.AbstractUser.get_for_email(db, email)
+    async def get_for_email(cls, db: LocalSession, email: str, native_only=False):
+        if native_only: 
+            user = await models.NativeUser.get_for_email(db, email)
+        else:
+            user = await models.AbstractUser.get_for_email(db, email)
         return await cls.from_model(user)
 
     @classmethod
@@ -38,6 +42,19 @@ class User(ApiModel[models.AbstractUser]):
     disabled: bool
 
     roles: set[UserRole]
+
+    @override
+    async def to_model(self, db: LocalSession):
+        match self.domain:
+            case 'external':
+                return await models.ExternalUser.get_for_email(db, self.email)
+            case 'native':
+                return await models.NativeUser.get_for_email(db, self.email)
+            case _:
+                raise ValueError(f'Unrecognised user domain {self.domain}')
+
+            
+
 
 
 class NativeUserLoginRequest(BaseModel):

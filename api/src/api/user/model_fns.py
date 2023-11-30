@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, overload
 from uuid import UUID
 
 from fastapi import Depends
@@ -7,7 +7,7 @@ from db import LocalSession
 from . import models 
 from . import schemas
 
-from .errors import InvalidCredentials, UserDoesNotExist, InvalidCredentials
+from .errors import UserDoesNotExist, InvalidCredentials
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 
@@ -16,24 +16,6 @@ async def get_user_for_id(db: LocalSession, id: UUID):
 
 async def get_user_for_email(db: LocalSession, email: str):
     return await schemas.User.get_for_email(db, email)
-
-async def _login_native_user(db: LocalSession, login_request: schemas.NativeUserLoginRequest) -> schemas.User:
-    try:
-        user = await models.NativeUser.get_for_email(db, login_request.email)
-    except UserDoesNotExist:
-        raise InvalidCredentials.login_failed()
-    
-    password = login_request.password.get_secret_value()
-    if not await user.verify_password(login_request.password.get_secret_value()):
-        raise InvalidCredentials.login_failed()
-
-    return await schemas.User.from_model(user)
-
-async def login_user(db: LocalSession, login_request: schemas.UserLoginRequest) -> schemas.User:
-    if isinstance(login_request, schemas.NativeUserLoginRequest):
-        return await _login_native_user(db, login_request)
-    else:
-        raise ValueError('Expected a login request')
 
 # async def alter_password(db: LocalSession, request: schemas.AlterPasswordRequest):
 #     user = await login_native_user(NativeLoginUserRequest(
@@ -45,8 +27,8 @@ async def login_user(db: LocalSession, login_request: schemas.UserLoginRequest) 
 #     db.add(user)
 #     return user
 
-async def fake_decode_token(db: LocalSession, token):
-    token = await models.NativeUser.get_for_id(db, token)
+async def fake_decode_token(db: LocalSession, token) -> schemas.User:
+    return await schemas.User.get_for_id(db, UUID(hex=token))
 
 async def get_current_user(
     db: LocalSession,
@@ -54,14 +36,28 @@ async def get_current_user(
 ):
     user = await fake_decode_token(db, token)
     if not user:
-        raise InvalidCredentials.token_error()
+        raise UserDoesNotExist.for_access_token(token)
     return user
+
 
 async def get_current_active_user(
     db: LocalSession,
-    token: Annotated[str, Depends(oauth2_scheme)]
+    current_user: Annotated[schemas.User, Depends(get_current_user)]
 ):
-    current_user = await get_current_user(db, token)
     if current_user.disabled:
-        raise InvalidCredentials.user_inactive(current_user.id)
+        raise UserDoesNotExist.user_inactive(current_user.email)
     return current_user
+
+
+async def login_native_user(db: LocalSession, email: str, password: str) -> schemas.User:
+    try:
+        user = await models.NativeUser.get_for_email(db, email)
+    except UserDoesNotExist:
+        raise InvalidCredentials.user_not_found(email)
+
+    if not user.verify_password(password):
+        raise InvalidCredentials.login_failed(email)
+
+    return await schemas.User.from_model(user)
+
+            

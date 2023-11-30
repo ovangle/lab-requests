@@ -1,10 +1,10 @@
 import { Injectable, inject } from "@angular/core";
 import { ModelContext } from "../common/model/context";
-import { User, UserPatch, UserService, UserCollection, UserLoginRequest, isNativeUserLoginRequest } from "./common/user";
-import { BehaviorSubject, firstValueFrom, of, tap } from "rxjs";
+import { User, UserPatch, UserService, UserCollection } from "./common/user";
+import { BehaviorSubject, filter, firstValueFrom, of, switchMap, tap } from "rxjs";
 import { injectModelUpdate } from "../common/model/model-collection";
-import { Role } from "./role";
 import { LoginService } from "../oauth/login-service";
+import { Role } from "./common/role";
 
 
 
@@ -19,38 +19,36 @@ export class UserContext extends ModelContext<User, UserPatch> {
     constructor() {
         super();
 
-        if (this.loginContext.currentAccessToken != null) {
-            this.userService.me().subscribe(me => {
-                this.user.next(me);
-            })
-        }
+        this.loginContext.accessTokenData$.pipe(
+            switchMap(tokenData => tokenData != null ? this.userService.me() : of(null))
+        ).subscribe(this.user);
     }
 
-    async fetchCurrentUser(): Promise<User> {
-        return await firstValueFrom(this.userService.me().pipe(
-            tap((user) => this.user.next(user))
-        ));
-    }
-
-    async login(request: UserLoginRequest): Promise<User> {
-        if (this.user.value != null) {
-            return Promise.resolve(this.user.value);
-        }
-        if (isNativeUserLoginRequest(request)) {
-            const user = await firstValueFrom(this.userService.me());
-            this.user.next(user);
-            return user;
-        }
-        throw new Error('not implemented');
-        // await this.loginContext.login(request);
-        // return await this.fetchUser();
-    }
-
-    logout() {
-        throw new Error('not implemented');
+    get currentUser(): User | null {
+        return this.user.value;
     }
 
     async hasRole(role: Role): Promise<boolean> {
-        return (await firstValueFrom(this.committed$)).hasRole(role);
+        return !!this.currentUser?.roles?.has(role);
     }
+
+    async login(credentials: {email: string, password: string}): Promise<User> {
+        if (this.loginContext.isLoggedIn) {
+            throw new Error('Already logged in');
+        }
+
+        await this.loginContext.loginNativeUser({
+            username: credentials.email, 
+            password: credentials.password
+        });
+        return await firstValueFrom(this.user.pipe(
+            filter((user): user is User => user != null)
+        ));
+    }
+
+
+    logout(): Promise<void> {
+        return this.loginContext.logout();
+    }
+
 }

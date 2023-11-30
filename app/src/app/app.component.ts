@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { LoginService } from './oauth/login-service';
 
 @Component({
@@ -9,13 +9,6 @@ import { LoginService } from './oauth/login-service';
 export class AppComponent {
   title = 'lab_req';
 
-  constructor(
-    readonly loginContext: LoginService
-  ) {}
+  readonly loginContext = inject(LoginService);
 
-  ngOnInit() {
-    this.loginContext.init().catch(() => {
-      console.log('login context failed to initialized');
-    });
-  }
 }

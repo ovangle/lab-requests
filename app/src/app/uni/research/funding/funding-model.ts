@@ -1,7 +1,7 @@
 import { HttpParams } from "@angular/common/http";
 import { Injectable, Type, inject, } from "@angular/core";
 import { Observable, map } from "rxjs";
-import { Role, roleFromJson } from "src/app/user/role";
+import { Role, roleFromJson } from "src/app/user/common/role";
 import { Model, ModelLookup, ModelMeta, ModelParams, ModelPatch, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { ModelCollection, injectModelQuery } from "src/app/common/model/model-collection";
 import { RestfulService, modelProviders } from "src/app/common/model/model-service";

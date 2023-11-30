@@ -25,63 +25,27 @@ export interface OauthProviderParams {
     requiredScope: string[];
 }
 
-function provideNativeProviderParams(): Provider {
-    const apiBaseUrl = inject(API_BASE_URL);
-    return {
-        provide: OAUTH_PARAMS, 
-        multi: true, 
-        useValue: {
-            provider: 'ovangle.com',
-            authorizeUrl: `${apiBaseUrl}/auth/authorize`,
-            tokenUrl: `${apiBaseUrl}/auth/token`,
-            clientId: 'client-id',
-            requiredScope: [
-                `${apiBaseUrl}/user/read`,
-                `${apiBaseUrl}/lab/read+write`,
-            ]
-        }
-    };
-}
 
-
-function provideMicrosoftProviderParams(params: {
-    tenantId: string,
-    clientId: string,
-    requiredScope: string[]
-}): Provider {
-    const baseUrl = `https://login.microsoft.com/${params.tenantId}/oauth2/v2.0`;
-
-    return {
-        provide: OAUTH_PARAMS, 
-        multi: true,
-        useValue: {
-            provider: 'cqu--microsoft',
-            authorizeUrl: `${baseUrl}/authorize`,
-            tokenUrl: `${baseUrl}/token`,
-            clientId: params.clientId,
-            requiredScope: params.requiredScope
-        }
-    };
-}
-
-export const OAUTH_PARAMS = new InjectionToken<OauthProviderParams>('OAUTH_PARAMS');
+export const OAUTH_PROVIDER_PARAMS = new InjectionToken<OauthProviderParams>('OAUTH_PARAMS');
     
 @Injectable({providedIn: 'root'})
 export class OauthProviderRegistry {
     private _registry = new Map<OauthProvider, OauthProviderParams>();
 
     constructor(
-        @Inject(OAUTH_PARAMS)
+        @Inject(OAUTH_PROVIDER_PARAMS)
         params: OauthProviderParams[]
     ) {
         for (const oauthParams of params) {
-            try {
-                this.get(oauthParams.provider);
-            } catch {
+            if (this.has(oauthParams.provider)) {
                 throw new Error(`Multiple param objects registered for provider ${oauthParams.provider}`)
             }
             this._registry.set(oauthParams.provider, oauthParams);
         }
+    }
+
+    has(provider: OauthProvider): boolean {
+        return this._registry.has(provider);
     }
 
     get(provider: OauthProvider): OauthProviderParams {

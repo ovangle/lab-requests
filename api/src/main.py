@@ -57,6 +57,9 @@ def api_router():
         prefix="/api",
         tags=["api"]
     )
+    from api.auth.views import oauth
+    api_router.include_router(oauth)
+
     from api.user.views import users
     api_router.include_router(users)
 
