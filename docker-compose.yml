@@ -6,9 +6,6 @@ services:
     command: npm run start
     ports:
       - "4200:4200"
-    profiles:
-      # preferable to disable the app server locally and run `ng serve` on the host.
-      - do_not_start
 
   api:
     build: './api'
@@ -21,7 +18,6 @@ services:
       DB_PASSWORD: secret
       API_DEBUG: 'yes'
     volumes:
-      - './api:/srv/api'
       - 'lab_work_attachments:/srv/files/lab/work-units:rw'
 
   filesrv:

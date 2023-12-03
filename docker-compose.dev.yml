@@ -1,0 +1,8 @@
+services:
+  api:
+    volumes:
+      - "./api:/srv/api"
+    profiles:
+      # Disable this in development and run ng serve from host
+      - do_not_start
+

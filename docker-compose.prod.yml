@@ -1,0 +1,17 @@
+services:
+  app:
+    command: npm run serve   
+    ports:
+      - 3000:3000
+  api: {}
+
+  certbot:
+    image: certbot/certbot
+    command: renew
+    init: true
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt/:rw
+      - /var/lib/letsencrypt:/var/lib/letsencrypt/:rw
+      - /var/www/certbot:/var/www/certbot/:rw
+
+
