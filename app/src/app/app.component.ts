@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { LoginService } from './oauth/login-service';
+import { LoginContext } from './oauth/login-context';
 
 @Component({
   selector: 'app-root',
@@ -9,6 +9,6 @@ import { LoginService } from './oauth/login-service';
 export class AppComponent {
   title = 'lab_req';
 
-  readonly loginContext = inject(LoginService);
+  readonly loginContext = inject(LoginContext);
 
 }

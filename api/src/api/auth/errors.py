@@ -6,7 +6,7 @@ class InvalidCredentials(HTTPException):
         return cls(401, 'Invalid credentials')
 
     @classmethod
-    def token_error(cls):
+    def malformed_token(cls, access_token: str):
         return cls(401, 'Invalid credentials')
 
     @classmethod

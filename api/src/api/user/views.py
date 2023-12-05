@@ -18,7 +18,7 @@ async def get_user(id: UUID, db = Depends(get_db)) -> User:
 
 @users.get('/me')
 async def get_current_active_user(
-    token = Depends(model_fns.oauth2_scheme),
+    user = Depends(model_fns.get_current_active_user),
     db = Depends(get_db)
 ) -> User:
-    return await model_fns.get_current_active_user(db, token)
+    return user

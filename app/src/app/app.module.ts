@@ -10,13 +10,15 @@ import { enAU } from 'date-fns/locale';
 import { MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
 import { provideLocalStorage } from './utils/local-storage';
 import { PlatformLocation } from '@angular/common';
-import { BASE_API_MATCHERS, authorizationInterceptorProviders } from './oauth/auth-interceptor';
+import { AUTHORIZED_API_URL_MATCHER, baseUrlMatcherFn } from './oauth/_root/auth-interceptor';
 import { MatButtonModule } from '@angular/material/button';
 import { BodyScrollbarHidingService } from './utils/body-scrollbar-hiding.service';
 import { uniModelServiceProviders } from './uni/uni';
 import { labModelServiceProviders } from './lab/lab-model-providers';
 import { FileUploadService } from './common/file/file-upload.service';
 import { API_BASE_URL } from './common/model/model-service';
+import { OauthRootModule } from './oauth/_root/oauth.root-module';
+import { APP_OAUTH_PROVIDER_PARAMS, provideAppOauthProviderParams } from './app-oauth-provider-params';
 
 /**
  * This function is used internal to get a string instance of the `<base href="" />` value from `index.html`.
@@ -45,6 +47,14 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
 
     MatButtonModule,
     MatDateFnsModule,
+    OauthRootModule.forRoot(
+      {
+        publicPage: '/public',
+        oauthFeature: '/oauth',
+        defaultUserHomePage: '/user/home'
+      }, 
+      APP_OAUTH_PROVIDER_PARAMS
+    )
   ],
   providers: [
     {
@@ -54,8 +64,15 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
     ...provideLocalStorage(),
     { provide: MAT_DATE_LOCALE, useValue: enAU },
     { provide: MAT_DATE_FORMATS, useValue: MAT_DATE_FNS_FORMATS },
-    ...authorizationInterceptorProviders(BASE_API_MATCHERS),
     BodyScrollbarHidingService,
+
+    {
+      provide: AUTHORIZED_API_URL_MATCHER,
+      multi: true,
+      useFactory: (apiBaseUrl: string) => baseUrlMatcherFn(apiBaseUrl, ['/oauth/token']),
+      deps: [API_BASE_URL]
+    },
+    provideAppOauthProviderParams(),
 
     FileUploadService,
     ...uniModelServiceProviders(),

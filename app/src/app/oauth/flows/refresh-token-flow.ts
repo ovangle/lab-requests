@@ -1,15 +1,20 @@
 import { Injectable } from "@angular/core";
 import { AccessTokenData, isAccessTokenData } from "../access-token";
-import { OauthGrantType } from "../oauth-grant-type";
+import { OauthGrantRequest, OauthGrantType } from "../oauth-grant-type";
 import { OauthProviderParams } from "../oauth-provider";
 import { oauthScopeToQueryParam } from "../utils";
-import { AbstractOauthFlow, OauthFlowEnv, OauthFlowFactory } from "./abstract-oauth-flow";
+import { AbstractOauthFlow, OauthFlowEnv, OauthFlowFactory } from "../flow/abstract-flow";
+import { OauthFlowState } from "../flow/flow-state-store.service";
 
+export interface RefreshTokenGrant extends OauthGrantRequest<'refresh_token'> {
+    token: AccessTokenData;
+}
 
-export class RefreshTokenFlow extends AbstractOauthFlow<AccessTokenData> {
-    override readonly grantType: OauthGrantType = 'refresh_token';
+export class RefreshTokenFlow extends AbstractOauthFlow<'refresh_token', RefreshTokenGrant> {
+    override readonly grantType: 'refresh_token' = 'refresh_token';
 
-    override requestToUrlSearchParams(currentToken: AccessTokenData): URLSearchParams {
+    override getGrantRequestBodyParams(request: RefreshTokenGrant): URLSearchParams {
+        const currentToken = request.token;
         if (currentToken.refreshToken == null) {
             throw new Error('Unrefreshable token');
         }
@@ -17,12 +22,12 @@ export class RefreshTokenFlow extends AbstractOauthFlow<AccessTokenData> {
         const params = new URLSearchParams();
         params.set('grant_type', this.grantType);
         params.set('client_id', currentToken.clientId);
-        params.set('scope', oauthScopeToQueryParam(currentToken.scope));
+        params.set('scope', oauthScopeToQueryParam(currentToken.scopes));
         params.set('refresh_token', currentToken.refreshToken);
         return params;
     }
 
-    override generateInitialFlowState() {
+    override generateInitialState() {
         return Promise.resolve(
             {provider: this.provider, grantType: this.grantType}
         );
@@ -32,7 +37,7 @@ export class RefreshTokenFlow extends AbstractOauthFlow<AccessTokenData> {
         return null;
     }
 
-    override isValidTokenParams(params: unknown): params is AccessTokenData {
+    override isValidGrantRequest(params: unknown): params is RefreshTokenGrant {
         return isAccessTokenData(params);
     }
 
@@ -40,9 +45,9 @@ export class RefreshTokenFlow extends AbstractOauthFlow<AccessTokenData> {
 
 
 @Injectable({providedIn: 'root'})
-export class RefreshTokenFlowFactory extends OauthFlowFactory {
-    override readonly grantType: OauthGrantType = 'refresh_token';
-    override get(env: OauthFlowEnv, provider: OauthProviderParams) {
-        return new RefreshTokenFlow(env, provider);
+export class RefreshTokenFlowFactory extends OauthFlowFactory<'refresh_token'> {
+    override readonly grantType = 'refresh_token';
+    override get(provider: OauthProviderParams) {
+        return new RefreshTokenFlow(this, provider);
     }
 }

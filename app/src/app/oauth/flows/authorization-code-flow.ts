@@ -1,11 +1,12 @@
 import { Injectable } from "@angular/core";
 import { isJsonObject } from "src/app/utils/is-json-object";
-import { OauthGrantType } from "../oauth-grant-type";
+import { OauthGrantRequest, OauthGrantType } from "../oauth-grant-type";
 import { OauthProviderParams } from "../oauth-provider";
 import { oauthScopeToQueryParam } from "../utils";
-import { AbstractOauthFlow, OauthFlowEnv, OauthFlowFactory, OauthFlowState } from "./abstract-oauth-flow";
+import { AbstractOauthFlow, OauthFlowEnv, OauthFlowFactory } from "../flow/abstract-flow";
+import { OauthFlowState } from "../flow/flow-state-store.service";
 
-export interface AuthorizationCodeGrantRequest {
+export interface AuthorizationCodeGrantRequest extends OauthGrantRequest<'authorization_code'> {
     code: string;
     codeVerifier: string;
 }
@@ -15,7 +16,7 @@ function isAuthorizationCodeGrantRequest(obj: unknown): obj is AuthorizationCode
         && typeof obj['codeVerifier'] === 'string';
 }
 
-export interface AuthorizationCodeFlowState extends OauthFlowState {
+export interface AuthorizationCodeFlowState extends OauthFlowState<'authorization_code'> {
     readonly stateToken: string;
     readonly stateTokenVerified?: boolean;
     readonly codeVerifier: string;
@@ -32,9 +33,10 @@ function verifyAuthCode(state: AuthorizationCodeFlowState, ): AuthorizationCodeF
 }
 
 
-export class AuthorizationCodeFlow extends AbstractOauthFlow<AuthorizationCodeGrantRequest, AuthorizationCodeFlowState> {
-    override readonly grantType: OauthGrantType = 'authorization_code';
-    async generateInitialFlowState() {
+export class AuthorizationCodeFlow extends AbstractOauthFlow<'authorization_code', AuthorizationCodeGrantRequest, AuthorizationCodeFlowState> {
+    override readonly grantType: 'authorization_code' = 'authorization_code';
+
+    async generateInitialState() {
         const stateToken = generateStateToken();
         const codeVerifier = generateCodeVerifierToken();
         const codeChallenge = await getCodeChallenge(codeVerifier);
@@ -44,7 +46,7 @@ export class AuthorizationCodeFlow extends AbstractOauthFlow<AuthorizationCodeGr
             grantType: this.grantType,
             stateToken, codeVerifier, 
             codeChallenge 
-    };
+        };
     }
 
     redirectToLogin() {
@@ -66,7 +68,7 @@ export class AuthorizationCodeFlow extends AbstractOauthFlow<AuthorizationCodeGr
         return params;
     }
 
-    requestToUrlSearchParams(params: AuthorizationCodeGrantRequest) {
+    getGrantRequestBodyParams(params: AuthorizationCodeGrantRequest) {
         const request = new URLSearchParams();
         
         request.set('grant_type', 'authorization_code');
@@ -79,17 +81,17 @@ export class AuthorizationCodeFlow extends AbstractOauthFlow<AuthorizationCodeGr
         return request;
     }
 
-    override isValidTokenParams(obj: unknown): obj is AuthorizationCodeGrantRequest {
+    override isValidGrantRequest(obj: unknown): obj is AuthorizationCodeGrantRequest {
         return isAuthorizationCodeGrantRequest(obj); 
     }
 
 }
 
 @Injectable({providedIn: 'root'})
-export class AuthorizationCodeFlowFactory extends OauthFlowFactory {
+export class AuthorizationCodeFlowFactory extends OauthFlowFactory<'authorization_code'> {
     override readonly grantType = 'authorization_code';
-    override get(env: OauthFlowEnv, provider: OauthProviderParams) {
-        return new AuthorizationCodeFlow(env, provider);
+    override get(provider: OauthProviderParams) {
+        return new AuthorizationCodeFlow(this, provider);
     }
 }
 
@@ -109,13 +111,6 @@ function generateStateToken(): string {
     .replace(/=/g, '')
     .replace(/\+/g, '-')
     .replace(/\//g, '_');
-}
-
-function verifyStateToken(expectedValue: string, receivedValue: string): {[k: string]: string} | null {
-    if (expectedValue !== receivedValue) {
-        return {invalidState: `Received invalid state token ${receivedValue} in response`}
-    }
-    return null;
 }
 
 function generateCodeVerifierToken() {

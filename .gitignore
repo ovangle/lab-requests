@@ -1,3 +1,5 @@
+# environment files
+.env
 
 # Visual Studio Code
 .vscode/*

@@ -1,6 +1,6 @@
 import { add, formatISO, parseISO } from "date-fns";
 import { OauthProvider, OauthProviderContext, OauthProviderParams, isOauthProvider } from "./oauth-provider";
-import { Injectable, inject } from "@angular/core";
+import { Injectable, SimpleChange, inject } from "@angular/core";
 import { LocalStorage } from "../utils/local-storage";
 import { isJsonObject } from "../utils/is-json-object";
 import { ReplaySubject } from "rxjs";
@@ -20,7 +20,7 @@ export interface AccessTokenErrorResponse {
 export interface AccessTokenData {
     readonly provider: OauthProvider;
     readonly clientId: string;
-    readonly scope: string[];
+    readonly scopes: string[];
 
     readonly accessToken: string;
     readonly expiresAt: Date;
@@ -32,7 +32,6 @@ export function isAccessTokenData(obj: unknown): obj is AccessTokenData {
         && isOauthProvider((obj as any)['provider'])
         && typeof (obj as any)['clientId'] === 'string'
         && typeof (obj as any)['accessToken'] === 'string';
-        
 }
 
 export function accessTokenResponseToAccessTokenData(
@@ -42,7 +41,7 @@ export function accessTokenResponseToAccessTokenData(
     return {
         provider,
         clientId,
-        scope: requiredScope,
+        scopes: requiredScope,
         accessToken: response.access_token,
         expiresAt: add(new Date(), {seconds: response.expires_in}),
         refreshToken: response.refresh_token
@@ -62,7 +61,7 @@ export function accessTokenDataFromJson(json: unknown): AccessTokenData {
     if (typeof json['accessToken'] !== 'string') {
         throw new Error('Expected a string \'accessToken\'')
     }
-    if (!Array.isArray(json['scope'])) {
+    if (!Array.isArray(json['scopes'])) {
         throw new Error('Expected an array of strings \'scope\'')
     }
     if (typeof json['expiresAt'] !== 'string') {
@@ -75,7 +74,7 @@ export function accessTokenDataFromJson(json: unknown): AccessTokenData {
         provider: json['provider'],
         clientId: json['clientId'],
         accessToken: json['accessToken'],
-        scope: json['scope'],
+        scopes: json['scopes'],
         expiresAt: parseISO(json['expiresAt']),
         refreshToken: json['refreshToken']
     };
@@ -84,7 +83,9 @@ export function accessTokenDataFromJson(json: unknown): AccessTokenData {
 export function accessTokenDataToJson(data: AccessTokenData) {
     return {
         provider: data.provider,
+        clientId: data.clientId,
         accessToken: data.accessToken,
+        scopes: data.scopes,
         expiresAt: formatISO(data.expiresAt),
         refreshToken: data.refreshToken
     };
@@ -109,9 +110,11 @@ export class AccessTokenStore {
         if (tokenData != null) {
             this._oauthProviderContext.setCurrent(tokenData.provider);
         }
-        this._oauthProviderContext.registerOnChange(() => {
-            console.warn('clearing token data on provider change');
-            this.clearTokenData();
+        this._oauthProviderContext.registerOnChange((change: SimpleChange) => {
+            if (!change.isFirstChange()) {
+                console.warn('clearing token data on provider change');
+                this.clearTokenData();
+            }
         });
     }
 
@@ -132,15 +135,17 @@ export class AccessTokenStore {
 
     load(): AccessTokenData | null {
         const json = this.storage.getItem(OAUTH_ACCESS_TOKEN_STORAGE_KEY);
-        if (json) {
-            try {
-                return accessTokenDataFromJson(JSON.parse(json));
-            } catch (err) {
-                console.log('Received error when attempting to load non-null token');
-                console.log(err);
-                return null;
-            }
+        if (!json) {
+            return null;
         }
-        return null;
+
+        try {
+            return accessTokenDataFromJson(JSON.parse(json));
+        } catch (err) {
+            console.log('parse error when attempting to load existing token data');
+            console.log('Parse  ' + err);
+            this.clearTokenData();
+            return null;
+        }
     }
 }

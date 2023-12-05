@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
-from db import LocalSession
+from db import LocalSession, get_db
 from . import models 
 from . import schemas
 
@@ -31,18 +31,16 @@ async def fake_decode_token(db: LocalSession, token) -> schemas.User:
     return await schemas.User.get_for_id(db, UUID(hex=token))
 
 async def get_current_user(
-    db: LocalSession,
     token: Annotated[str, Depends(oauth2_scheme)],
+    db: Annotated[LocalSession, Depends(get_db)],
 ):
-    user = await fake_decode_token(db, token)
-    if not user:
-        raise UserDoesNotExist.for_access_token(token)
-    return user
+    from api.auth.schemas import parse_user_email_from_token
+    user_email = parse_user_email_from_token(token)
+    return await get_user_for_email(db, user_email)
 
 
 async def get_current_active_user(
-    db: LocalSession,
-    current_user: Annotated[schemas.User, Depends(get_current_user)]
+    current_user: Annotated[schemas.User, Depends(get_current_user)],
 ):
     if current_user.disabled:
         raise UserDoesNotExist.user_inactive(current_user.email)

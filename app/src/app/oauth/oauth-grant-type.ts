@@ -12,3 +12,5 @@ export function isOauthGrantType(obj: unknown): obj is OauthGrantType {
     return typeof obj === 'string'
         && OAUTH_GRANT_TYPES.includes(obj as any);
 }
+
+export interface OauthGrantRequest<GrantType extends OauthGrantType> {}

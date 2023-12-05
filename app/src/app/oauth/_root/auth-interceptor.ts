@@ -1,11 +1,22 @@
 import { HTTP_INTERCEPTORS, HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from "@angular/common/http";
-import { Inject, Injectable, InjectionToken, Provider, inject } from "@angular/core";
+import { Injectable, InjectionToken, Provider, inject } from "@angular/core";
 import { Router } from "@angular/router";
 import { Observable, from, switchMap, takeUntil, takeWhile, tap } from "rxjs";
-import { LoginService } from "./login-service";
-import { PUBLIC_PAGE_PATH } from "./utils";
+import { LoginContext } from "../login-context";
+import { PUBLIC_PAGE_PATH } from "../utils";
 
 type UrlMatcherFn = (request: HttpRequest<any>) => boolean;
+
+export function baseUrlMatcherFn(baseUrl: string, ignorePaths?: string[]): UrlMatcherFn {
+    ignorePaths = ignorePaths || [];
+    return (request: HttpRequest<any>) => {
+        if (!request.url.startsWith(baseUrl)) {
+            return false;
+        }
+        const path = request.url.substring(baseUrl.length);
+        return ignorePaths!.every(ignorePath => !path.startsWith(ignorePath))
+    }
+}
 
 /**
  * API urls which should be intercepted in order to authorize tokens.
@@ -14,17 +25,16 @@ type UrlMatcherFn = (request: HttpRequest<any>) => boolean;
  * checked (and refreshed if necessary), attaching an Authorization header with the currently
  * stored oauth bearer token.
  */
-export const AUTHORIZED_API_URL_MATCHERS = new InjectionToken<UrlMatcherFn[]>('AUTH_INTERCEPT_URL_MATCHERS');
+export const AUTHORIZED_API_URL_MATCHER = new InjectionToken<UrlMatcherFn[]>('AUTH_INTERCEPT_URL_MATCHERS');
 
-@Injectable({providedIn: 'root'})
+@Injectable()
 export class AuthorizationInterceptor implements HttpInterceptor {
-    readonly router = Inject(Router);
-    readonly loginContext = Inject(LoginService);
+    readonly router = inject(Router);
+    readonly loginContext = inject(LoginContext);
 
     readonly publicPagePath = inject(PUBLIC_PAGE_PATH);
 
-    @Inject(AUTHORIZED_API_URL_MATCHERS)
-    readonly interceptUrlMatchers: UrlMatcherFn[] = inject(AUTHORIZED_API_URL_MATCHERS);
+    readonly interceptUrlMatchers: UrlMatcherFn[] = inject(AUTHORIZED_API_URL_MATCHER);
 
     intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
         const isMatched = this.interceptUrlMatchers.some(
@@ -55,23 +65,20 @@ export class AuthorizationInterceptor implements HttpInterceptor {
 
 }
 
-export function authorizationInterceptorProviders(
-    matcherFns?: UrlMatcherFn[]
-): Provider[] {
+export function provideAuthorizationRequestMatcher(matcherFn: UrlMatcherFn): Provider {
+    return {
+        provide: AUTHORIZED_API_URL_MATCHER,
+        multi: true,
+        useValue: matcherFn
+    }
+}
+
+export function authorizationInterceptorProviders(): Provider[] {
     return [
-        ...(matcherFns || []).map(fn => ({
-            provide: AUTHORIZED_API_URL_MATCHERS,
-            useValue: fn,
-            multi: true
-        })),
-        {
+       {
             provide: HTTP_INTERCEPTORS,
-            useClass: AuthorizationInterceptor,
-            multi: true
+            multi: true,
+            useClass: AuthorizationInterceptor
         }
     ]
 }
-
-export const BASE_API_MATCHERS = [
-    (req: HttpRequest<any>) => req.url.startsWith('https://graph.microsoft.com')
-]

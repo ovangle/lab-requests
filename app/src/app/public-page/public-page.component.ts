@@ -1,5 +1,5 @@
 import { Component } from "@angular/core";
-import { LoginService } from "../oauth/login-service";
+import { LoginContext } from "../oauth/login-context";
 import { MatButtonModule } from "@angular/material/button";
 import { RouterModule } from "@angular/router";
 
@@ -19,6 +19,6 @@ import { RouterModule } from "@angular/router";
 })
 export class PublicPageComponent {
     constructor(
-        readonly loginContext: LoginService
+        readonly loginContext: LoginContext
     ) {}
 }

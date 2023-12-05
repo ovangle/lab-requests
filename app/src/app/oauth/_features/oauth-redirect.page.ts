@@ -1,20 +1,13 @@
 import { Component, inject } from "@angular/core";
 import { HttpClientModule } from "@angular/common/http";
 import { ActivatedRoute, RouterModule } from "@angular/router";
-import { LoginService } from "../login-service";
+import { LoginContext } from "../login-context";
 import { CommonModule } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { InvalidCredentials } from "../loigin-error";
 
 @Component({
     selector: 'lab-req-auth-redirect-page',
-    standalone: true,
-    imports: [
-        CommonModule,
-        HttpClientModule,
-        MatButtonModule,
-        RouterModule,
-    ],
     template: `
         <ng-container *ngIf="!error; else errorDisplay">
             <p>Redirecting...</p>
@@ -48,8 +41,8 @@ import { InvalidCredentials } from "../loigin-error";
 
     ]
 })
-export class AuthRedirectPageComponent {
-    readonly _loginService = inject(LoginService);
+export class AuthRedirectPage {
+    readonly _loginService = inject(LoginContext);
     readonly activatedRoute = inject(ActivatedRoute);
 
     error: string | null;

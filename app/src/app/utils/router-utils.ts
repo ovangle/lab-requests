@@ -1,7 +1,7 @@
 import { DOCUMENT } from "@angular/common";
 import { Injectable, Inject, Provider, inject, InjectionToken, Pipe } from "@angular/core";
 import { ActivatedRoute, ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree } from "@angular/router";
-import { LoginService } from "../oauth/login-service";
+import { LoginContext } from "../oauth/login-context";
 
 export function getResolvedUrl(router: Router, route: ActivatedRoute): string {
     const urlTree = router.createUrlTree(["."], { relativeTo: route });
@@ -38,7 +38,7 @@ export async function requiresAuthorizationGuard(
     state: RouterStateSnapshot
 ): Promise<boolean | UrlTree> {
     const router = inject(Router);
-    const loginContext = inject(LoginService);
+    const loginContext = inject(LoginContext);
 
     const isLoggedIn = await loginContext.checkLoggedIn();
     if (!isLoggedIn) {

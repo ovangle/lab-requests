@@ -1,25 +1,24 @@
 import { NgModule } from "@angular/core";
-import { UserLoginPage } from "./user-login.page";
 import { RouterModule, Routes } from "@angular/router";
+import { UserHomePage } from "./user-home.page";
 import { CommonModule } from "@angular/common";
-import { UserLoginFormComponent } from "../common/login/login-form.component";
 
 const USER_ROUTES: Routes = [
     {
-        path: 'login',
-        component: UserLoginPage
+        path: 'home',
+        component: UserHomePage
     }
 ]
 
 @NgModule({
     imports: [
         CommonModule,
-        RouterModule.forChild(USER_ROUTES),
-
-        UserLoginFormComponent
+        RouterModule.forChild(USER_ROUTES)
     ],
     declarations: [
-        UserLoginPage
+        UserHomePage
     ]
 })
-export class UserFeatureModule {}
+export class UserFeatureModule {
+
+}

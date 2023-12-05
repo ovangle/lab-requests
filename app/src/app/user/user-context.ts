@@ -3,7 +3,7 @@ import { ModelContext } from "../common/model/context";
 import { User, UserPatch, UserService, UserCollection } from "./common/user";
 import { BehaviorSubject, filter, firstValueFrom, of, switchMap, tap } from "rxjs";
 import { injectModelUpdate } from "../common/model/model-collection";
-import { LoginService } from "../oauth/login-service";
+import { LoginContext } from "../oauth/login-context";
 import { Role } from "./common/role";
 
 
@@ -11,7 +11,7 @@ import { Role } from "./common/role";
 @Injectable({providedIn: 'root'})
 export class UserContext extends ModelContext<User, UserPatch> {
     readonly userService = inject(UserService);
-    readonly loginContext = inject(LoginService);
+    readonly loginContext = inject(LoginContext);
     override readonly _doUpdate = injectModelUpdate(UserService, UserCollection);
 
     readonly user = new BehaviorSubject<User | null>(null);

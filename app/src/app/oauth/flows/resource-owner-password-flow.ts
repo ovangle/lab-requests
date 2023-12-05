@@ -1,11 +1,11 @@
 import { isJsonObject } from "src/app/utils/is-json-object";
-import { OauthGrantType } from "../oauth-grant-type";
+import { OauthGrantRequest, OauthGrantType } from "../oauth-grant-type";
 import { OauthProviderParams } from "../oauth-provider";
 import { oauthScopeToQueryParam } from "../utils";
-import { AbstractOauthFlow, OauthFlowEnv, OauthFlowFactory } from "./abstract-oauth-flow";
+import { AbstractOauthFlow, OauthFlowEnv, OauthFlowFactory } from "../flow/abstract-flow";
 import { Injectable } from "@angular/core";
 
-export interface ResourceOwnerPasswordGrantRequest {
+export interface ResourceOwnerPasswordGrantRequest extends OauthGrantRequest<'password'> {
     username: string;
     password: string;
 }
@@ -17,10 +17,10 @@ function isResourceOwnerPasswordGrantRequest(obj: unknown): obj is ResourceOwner
 }
 
 
-export class ResourceOwnerPasswordCredentialsFlow extends AbstractOauthFlow<ResourceOwnerPasswordGrantRequest> {
-    override readonly grantType: OauthGrantType = 'password';
+export class ResourceOwnerPasswordCredentialsFlow extends AbstractOauthFlow<'password', ResourceOwnerPasswordGrantRequest> {
+    override readonly grantType: 'password' = 'password';
 
-    override generateInitialFlowState() {
+    override generateInitialState() {
         return Promise.resolve({provider: this.provider, grantType: this.grantType});
     }
 
@@ -28,7 +28,7 @@ export class ResourceOwnerPasswordCredentialsFlow extends AbstractOauthFlow<Reso
         return null;
     }
 
-    override requestToUrlSearchParams(
+    override getGrantRequestBodyParams(
         request: ResourceOwnerPasswordGrantRequest
     ) {
         const searchParams = new URLSearchParams();
@@ -39,16 +39,16 @@ export class ResourceOwnerPasswordCredentialsFlow extends AbstractOauthFlow<Reso
         return searchParams;
     }
 
-    override isValidTokenParams(obj: unknown): obj is ResourceOwnerPasswordGrantRequest {
+    override isValidGrantRequest(obj: unknown): obj is ResourceOwnerPasswordGrantRequest {
         return isResourceOwnerPasswordGrantRequest(obj);
     }
 }
 
 @Injectable({providedIn: 'root'})
-export class ResourceOwnerPasswordCredentialsFlowFactory extends OauthFlowFactory {
+export class ResourceOwnerPasswordCredentialsFlowFactory extends OauthFlowFactory<'password'> {
     override readonly grantType = 'password';
-    override get(env: OauthFlowEnv, provider: OauthProviderParams) {
-        return new ResourceOwnerPasswordCredentialsFlow(env, provider);
+    override get(provider: OauthProviderParams) {
+        return new ResourceOwnerPasswordCredentialsFlow(this, provider);
     }
 }
 
