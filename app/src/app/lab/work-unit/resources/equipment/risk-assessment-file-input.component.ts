@@ -3,7 +3,7 @@ import { Component, Input } from "@angular/core";
 import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { CommonFileInputComponent } from "src/app/common/file/file-input.component";
-import { NgxMatFileInputModule } from "@angular-material-components/file-input";
+// import { NgxMatFileInputModule } from "@angular-material-components/file-input";
 
 
 @Component({
@@ -15,12 +15,12 @@ import { NgxMatFileInputModule } from "@angular-material-components/file-input";
         MatFormFieldModule,
 
         CommonFileInputComponent,
-        NgxMatFileInputModule
+        /* NgxMatFileInputModule */
     ],
     template: `
     <mat-form-field>
         <mat-label>Risk assessment form</mat-label>
-        <ngx-mat-file-input [formControl]="_control" />
+        <!-- <ngx-mat-file-input [formControl]="_control" /> -->
     </mat-form-field>
     `,
     providers: [
