@@ -15,10 +15,10 @@ import { EquipmentCollection } from "../common/equipment";
         </a>
     </h1>
 
-    <ng-container *ngIf="equipments$ | async as equipments">
+    @if (equipments$ | async; as equipments) {
         <lab-equipment-list [equipments]="equipments">
         </lab-equipment-list>
-    </ng-container>
+    }
     `,
     styles: [`
     a.create-button {

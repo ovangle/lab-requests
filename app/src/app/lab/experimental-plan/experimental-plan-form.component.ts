@@ -43,9 +43,9 @@ import { FundingModelSelectComponent } from "src/app/uni/research/funding/fundin
 
             <input matInput type="text" id="title" formControlName="title" required />
 
-            <mat-error *ngIf="titleErrors?.required">
-                A value is required
-            </mat-error>
+            @if (titleErrors?.required) {
+                <mat-error>A value is required</mat-error>
+            }
         </mat-form-field>
 
         <mat-form-field>
@@ -61,24 +61,19 @@ import { FundingModelSelectComponent } from "src/app/uni/research/funding/fundin
         <uni-research-funding-model-select formControlName="fundingModel">
             <mat-label>Funding source</mat-label>
 
-            <span class="error" *ngIf="fundingModelErrors?.required">
-                A value is required
-            </span>
-            <span class="error" *ngIf="fundingModelErrors?.notAFundingModel">
-                Unrecognised funding source
-            </span>
+            @if (fundingModelErrors?.required) {
+                <span class="error">A value is required</span>
+            }
+            @if (fundingModelErrors?.notAFundingModel) {
+            <span class="error">Unrecognised funding source</span>
+            }
         </uni-research-funding-model-select>
-        <!--
-        <mat-error *ngIf="fundingModelErrors?.notAFundingModel">
-                Unrecognised funding source
-        </mat-error>
-        -->
-        <ng-container *ngIf="isCreate">
 
+        @if (isCreate) {
             <lab-experimental-plan-create-default-work-unit-form 
                 [form]="form">
             </lab-experimental-plan-create-default-work-unit-form>
-        </ng-container>
+        }
 
         <ng-content select=".form-controls">
         </ng-content>

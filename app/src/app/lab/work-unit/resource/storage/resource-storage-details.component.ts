@@ -13,15 +13,13 @@ import { CommonModule } from "@angular/common";
     <div>
         <h4>Storage</h4>
 
-        <ng-container *ngIf="storage; else notStored">
+        @if (storage) {
             <div class="storage-type">
                 Type: {{storage.description}}
             </div>
-        </ng-container>
-
-        <ng-template #notStored>
+        } @else {
             No storage required
-        </ng-template>
+        }
     </div>
     `
 })

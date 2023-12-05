@@ -9,27 +9,20 @@ import { InvalidCredentials } from "../loigin-error";
 @Component({
     selector: 'lab-req-auth-redirect-page',
     template: `
-        <ng-container *ngIf="!error; else errorDisplay">
-            <p>Redirecting...</p>
-        </ng-container>
+    @if (!error) {
+        <p>Redirecting...</p>
+    } @else {
+        <div class="error-info">
+            <h2> An error occurred: ({{error}}) </h2>
 
-        <ng-template #errorDisplay>
-            <div class="error-info">
-                <h2>
-                    An error occurred: ({{error}})
-                </h2>
-
-                <p>
-                    {{errorDescription}}
-                </p>
-
-            </div>
-        </ng-template>
+            <p> {{errorDescription}} </p>
+        </div>
 
         <!--
             <button mat-button (click)="clearLoginState()">Reset app state</button>
         -->
         <a mat-button routerLink="/">Return home</a>
+    }
     `,
     styles: [
         `
@@ -38,7 +31,6 @@ import { InvalidCredentials } from "../loigin-error";
                 max-width: 1000px;
             }
         `
-
     ]
 })
 export class AuthRedirectPage {

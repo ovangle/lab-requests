@@ -12,13 +12,14 @@ import { defer, map } from "rxjs";
 @Component({
     selector: 'lab-work-unit-update-form-page',
     template: `
-    <lab-work-unit-form-title
-        *ngIf="workUnit$ | async as workUnit"
-        [workUnitName]="workUnit.name"
-        formType="update"
-        [saveDisabled]="!form.valid"
-        (requestSave)="_onRequestSave()"
-        (requestClose)="_onRequestClose()" />
+    @if (workUnit$ | async; as workUnit) {
+        <lab-work-unit-form-title
+            [workUnitName]="workUnit.name"
+            formType="update"
+            [saveDisabled]="!form.valid"
+            (requestSave)="_onRequestSave()"
+            (requestClose)="_onRequestClose()" />
+    }
     <lab-work-unit-form 
         [form]="form"
         [fixedFields]="['campus','labType']" />

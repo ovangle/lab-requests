@@ -98,21 +98,22 @@ export function patchResourceStorageFormValue(form: ResourceStorageForm, storage
             per week storage cost: {{perWeekStorageCost}}
             quantity required: {{numWeeksInProject}}
 
-            <uni-research-funding-cost-estimate-form
-                *ngIf="funding"
-                [form]="form.controls.estimatedCost" 
-                [funding]="funding"
-                name="storage costs"
-                [perUnitCost]="perWeekStorageCost"
-                [quantityRequired]="numWeeksInProject"
-                unitOfMeasurement="weeks" />
+            @if (funding) {
+                <uni-research-funding-cost-estimate-form
+                    [form]="form.controls.estimatedCost" 
+                    [funding]="funding"
+                    name="storage costs"
+                    [perUnitCost]="perWeekStorageCost"
+                    [quantityRequired]="numWeeksInProject"
+                    unitOfMeasurement="weeks" />
 
-            <uni-cost-estimate-input *ngIf="funding"
-                formControlName="cost"
-                [fundingModel]="funding"
-                unitOfMeasurement="week" 
-                [perUnitCost]="perWeekStorageCost"
-                [quantityRequired]="numWeeksInProject" />
+                <uni-cost-estimate-input
+                    formControlName="cost"
+                    [fundingModel]="funding"
+                    unitOfMeasurement="week" 
+                    [perUnitCost]="perWeekStorageCost"
+                    [quantityRequired]="numWeeksInProject" />
+            }
     </ng-container>
     `,
     styles: [`

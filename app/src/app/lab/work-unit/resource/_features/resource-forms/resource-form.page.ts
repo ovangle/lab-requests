@@ -7,7 +7,7 @@ import { ResourceContext } from "../../resource";
 import { ResourceFormService } from "../../resource-form.service";
 import { BodyScrollbarHidingService } from "src/app/utils/body-scrollbar-hiding.service";
 import { ExperimentalPlanFormPaneControlService } from "src/app/lab/experimental-plan/experimental-plan-form-pane-control.service";
-import { WorkUnitContext } from "../../../common/work-unit";
+import { WorkUnit, WorkUnitContext } from "../../../common/work-unit";
 import { ResourceContainerContext } from "../../resource-container";
 import { FundingModel } from "src/app/uni/research/funding/funding-model";
 
@@ -35,31 +35,48 @@ export function typeIndexFromDetailRoute$(): Observable<[ResourceType, number | 
 @Component({
     selector: 'lab-work-unit-resource-form-page',
     template: `
-    <ng-container *ngIf="_formService.isReady | async as typeIndex">
-        <lab-resource-form-title
-            *ngIf="_context.containerName$ | async as containerName"
-            [containerName]="containerName"
-            [resourceType]="_formService.resourceType"
-            [resourceIndex]="_formService.resourceIndex"
-            [saveDisabled]="!_formService.form.valid"
-            (requestClose)="close()"
-            (requestSave)="saveAndClose()">
-        </lab-resource-form-title>
+    @if (_formService.isReady | async; as typeIndex) {
+        @if (containerName$ | async; as containerName) {
+            <lab-resource-form-title
+                [containerName]="containerName"
+                [resourceType]="_formService.resourceType"
+                [resourceIndex]="_formService.resourceIndex"
+                [saveDisabled]="!_formService.form.valid"
+                (requestClose)="close()"
+                (requestSave)="saveAndClose()">
+            </lab-resource-form-title>
+        }
 
-        <ng-container *ngIf="containerId$ | async as containerId">
-            <ng-container *ngIf="fundingModel$ | async as fundingModel">
-                <ng-container [ngSwitch]="typeIndex[0]">
-                    <lab-equipment-lease-form *ngSwitchCase="'equipment'"
-                        [workUnitId]="containerId"
-                        [fundingModel]="fundingModel"></lab-equipment-lease-form>
-                    <lab-software-resource-form *ngSwitchCase="'software'"></lab-software-resource-form>
-                    <lab-task-resource-form *ngSwitchCase="'task'"></lab-task-resource-form>
-                    <lab-input-material-resource-form *ngSwitchCase="'input-material'"></lab-input-material-resource-form>
-                    <lab-output-material-resource-form *ngSwitchCase="'output-material'"></lab-output-material-resource-form>
-                </ng-container>
-            </ng-container>
-        </ng-container>
-    </ng-container>
+        @if (containerId$ | async; as containerId) {
+
+            @if (fundingModel$ | async; as fundingModel) {
+                @switch (typeIndex[0]) {
+
+                    @case('equipment') {
+                        <lab-equipment-lease-form
+                            [workUnitId]="containerId"
+                            [fundingModel]="fundingModel" />
+                    }
+
+                    @case ('software') {
+                        <lab-software-resource-form />
+                    }
+
+                    @case ('task') {
+                        <lab-task-resource-form />
+                    }
+
+                    @case ('input-material') {
+                        <lab-input-material-resource-form />
+                    }
+
+                    @case ('output-material') {
+                        <lab-output-material-resource-form />
+                    }
+                }
+            }
+        }
+    }
     `,
     providers: [
         ResourceContext,
@@ -79,7 +96,10 @@ export class WorkUnitResourceFormPage {
     readonly resourceType$ = defer(() => this._context.resourceType$);
 
     readonly containerId$: Observable<string> = this._context.container$.pipe(
-        map(container => container.id)
+        map((container: WorkUnit) => container.id)
+    );
+    readonly containerName$ = this._context.container$.pipe(
+        map((container: WorkUnit) => container.name)
     );
 
     readonly fundingModel$: Observable<FundingModel> = this._context.plan$.pipe(

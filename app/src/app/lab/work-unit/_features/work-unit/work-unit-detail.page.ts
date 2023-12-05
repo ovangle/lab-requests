@@ -49,20 +49,24 @@ function workUnitFromDetailRoute(): Observable<WorkUnit> {
     <button mat-button (click)="openUpdateForm()">
         <mat-icon>update</mat-icon>
     </button>
+    
+    @if (workUnit$ | async; as workUnit) {
+        <div class="container">
+                    <lab-work-unit-base-info [workUnit]="workUnit">
+            </lab-work-unit-base-info>
 
-    <div *ngIf="workUnit$ | async as workUnit" class="container">
-                <lab-work-unit-base-info [workUnit]="workUnit">
-        </lab-work-unit-base-info>
-
-        <lab-work-unit-duration-info [workUnit]="workUnit" />
-    </div>
+            <lab-work-unit-duration-info [workUnit]="workUnit" />
+        </div>
+    }
 
  
     <div class="resources">
-        <lab-work-unit-resource-card *ngFor="let resourceType of RESOURCE_TYPES"
-            [resourceType]="resourceType"
-            [resources]="(getResources(resourceType) | async) || []">
-        </lab-work-unit-resource-card>
+        @for (resourceType of RESOURCE_TYPES; track resourceType) {
+            <lab-work-unit-resource-card
+                [resourceType]="resourceType"
+                [resources]="(getResources(resourceType) | async) || []">
+            </lab-work-unit-resource-card>
+        }
     </div>
     `,
     styles: [`

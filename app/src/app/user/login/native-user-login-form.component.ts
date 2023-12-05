@@ -65,18 +65,18 @@ export class LoginRequest {
             <mat-label>Email</mat-label>
             <input matInput type="email" formControlName="email" />
             
-            <mat-error *ngIf="emailErrors?.required">
-                A value is required
-            </mat-error>
+            @if (emailErrors?.required) {
+                <mat-error>A value is required</mat-error>
+            }
         </mat-form-field>
 
         <mat-form-field>
             <mat-label>Password</mat-label>
             <input matInput type="password" formControlName="password" />
 
-            <mat-error *ngIf="passwordErrors?.required">
-                A value is required
-            </mat-error>
+            @if (passwordErrors?.required) {
+                <mat-error>A value is required</mat-error>
+            }
         </mat-form-field>
 
         <button mat-raised-button type="submit"
@@ -85,9 +85,9 @@ export class LoginRequest {
         </button>
     </form>
 
-    <div id="submission-errors" *ngIf="_loginErrors">
-        Invalid credentials 
-    </div>
+    @if (_loginErrors) {
+        <div id="submission-errors">Invalid credentials</div>
+    }
     `
 })
 export class NativeUserCredentialsFormComponent {

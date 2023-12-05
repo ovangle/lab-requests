@@ -11,10 +11,7 @@ import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
         CommonModule
     ],
     template: `
-    {{fundingModel.name}}
-    <ng-container *ngIf="!nameonly">
-        - {{fundingModel.description}}
-    </ng-container>
+    {{fundingModel.name}} @if (!nameonly) { - {{fundingModel.description}} }
     `
 })
 export class FundingModelInfoComponent {

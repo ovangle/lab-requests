@@ -20,12 +20,11 @@ import { EquipmentRequestInfoComponent } from "src/app/lab/equipment/request/equ
     ],
     template: `
     <div class="equipment-or-equipment-request">
-        <ng-container *ngIf="equipment | async as equipment">
+        @if (equipment | async; as equipment) {
             <lab-equipment-info [equipment]="equipment" />
-        </ng-container>
-        <ng-container *ngIf="equipmentRequest">
+        } @else if (equipmentRequest) {
             <lab-equipment-request-info [equipment]="equipmentRequest" />
-        </ng-container>
+        }
     </div>
     `
 })

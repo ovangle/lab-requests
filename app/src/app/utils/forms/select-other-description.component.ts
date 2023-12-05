@@ -26,7 +26,11 @@ import { disabledStateToggler } from "./disable-state-toggler";
                    [formControl]="_control"
                    required
                    (blur)="_onTouched()"/>
-            <mat-error *ngIf="_control.value == ''">A value is required</mat-error>
+
+            <!-- TODO: FIXME -->
+            @if (_control.value == '') {
+                <mat-error>A value is required</mat-error>
+            }
         </mat-form-field>
     `,
     styles: [`

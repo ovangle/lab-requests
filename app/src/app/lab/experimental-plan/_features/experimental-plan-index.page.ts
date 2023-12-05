@@ -17,17 +17,23 @@ const researcherFixture = {
 @Component({
     selector: 'lab-experimental-plan-index',
     template: `
-    <div *ngIf="actor$ | async as actor">{{actor | json}}</div>
+    @if (actor$ | async; as actor) {
+        <div>{{actor | json}}</div>
+    }
 
     <a mat-button routerLink="./create">
         + Add
     </a>
 
-    <mat-list *ngIf="items$ | async as items">
-        <mat-list-item *ngFor="let item of items">
-            <a routerLink="./{{item.id}}">{{item.title}}</a>
-        </mat-list-item>
-    </mat-list>
+    @if (items$ | async; as items) {
+        <mat-list>
+
+        @for (item of items; track item.id) {
+            <mat-list-item><a routerLink="./{{item.id}}">{{item.title}}</a></mat-list-item>
+        }
+        </mat-list>
+    }
+
     `
 })
 export class ExperimentalPlanIndexPage {

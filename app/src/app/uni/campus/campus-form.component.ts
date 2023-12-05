@@ -64,24 +64,33 @@ export function campusForm(): CampusForm {
             <mat-label>Code</mat-label>
             <input matInput formControlName="code"> 
 
-            <mat-error *ngIf="codeErrors && codeErrors['required']"> 
-                A value is required
-            </mat-error>
-            <mat-error *ngIf="codeErrors && codeErrors['pattern'] as pattern">
-                Value must match pattern {{pattern}}
-            </mat-error>
-            <mat-error *ngIf="codeErrors && codeErrors['notUnique']">
-                Value is not unique
-            </mat-error>
+            @if (codeErrors && codeErrors['required']) {
+                <mat-error>
+                    A value is required
+                </mat-error>
+            }
+
+            @if (codeErrors && codeErrors['pattern']; as pattern) {
+                <mat-error>
+                    Value must match pattern {{pattern}}
+                </mat-error>
+            }
+            @if (codeErrors && codeErrors['notUnique']) {
+                <mat-error>
+                    Value is not unique
+                </mat-error>
+            }
         </mat-form-field>
     
         <mat-form-field>
             <mat-label>Name</mat-label>
             <input matInput type="text" formControlName="name"/>
 
-            <mat-error *ngIf="nameErrors && nameErrors['required']">
-                A name is required
-            </mat-error>
+            @if (nameErrors && nameErrors['required']) {
+                <mat-error>
+                    A name is required
+                </mat-error>
+            }
         </mat-form-field>
 
         <div class="form-actions">

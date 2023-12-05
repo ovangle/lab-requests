@@ -32,8 +32,9 @@
 
             <button mat-icon-button (click)="expandElementDetail(element, $event)"
                     [disabled]="isActionsDisabled">
-                <mat-icon *ngIf="element === expandedElement">expand_less</mat-icon>
-                <mat-icon *ngIf="element !== expandedElement">expand_more</mat-icon>
+                <mat-icon>
+                    @if (element === expandedElement) { expand_less } @else { expand_more }
+                </mat-icon>
             </button>
             </div>
         </td>

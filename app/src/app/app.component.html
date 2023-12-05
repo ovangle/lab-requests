@@ -22,13 +22,12 @@
     </a>
   -->
 
-  <ng-container *ngIf="loginContext.isLoggedIn; else loginButton">
+  @if (loginContext.isLoggedIn) {
     <button mat-button (click)="loginContext.logout()">Logout</button>
-  </ng-container>
-
-  <ng-template #loginButton>
+  } @else {
     <button mat-button routerLink="/oauth/login">Login</button>
-  </ng-template>
+  }
+
 </div>
 
 <div class="content" role="main">

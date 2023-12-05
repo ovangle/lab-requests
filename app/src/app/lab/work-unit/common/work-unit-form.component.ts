@@ -30,56 +30,64 @@ import { coerceArray, coerceStringArray } from "@angular/cdk/coercion";
     ],
     template: `
     <form [formGroup]="form">
-        <mat-form-field *ngIf="isEditableField('name')">
+        @if (isEditableField('name')) {
+        <mat-form-field>
             <mat-label>Name</mat-label>
             <input matInput formControlName="name" required />
 
-            <mat-error *ngIf="nameErrors?.required">
-                A value is required
-            </mat-error>
+            @if (nameErrors?.required) {
+                <mat-error>A value is required</mat-error>
+            }
         </mat-form-field>
+        }
 
-        <uni-campus-search 
-            *ngIf="isEditableField('campus')"
-            formControlName="campus" 
-            required>
-            <mat-label>Campus</mat-label>
+        @if (isEditableField('campus')) {
+            <uni-campus-search 
+                formControlName="campus" 
+                required>
+                <mat-label>Campus</mat-label>
 
-            <mat-error *ngIf="campusErrors?.notACampus">
-                Expected a campus
-            </mat-error>
-            <mat-error *ngIf="campusErrors?.required">
-                A value is required
-            </mat-error>
-        </uni-campus-search>
+                @if (campusErrors?.notACampus) {
+                    <mat-error>Expected a campus</mat-error>
+                }
+                @if (campusErrors?.required) {
+                    <mat-error>A value is required</mat-error>
+                }
+            </uni-campus-search>
+        }
 
-        <lab-type-select 
-            *ngIf="isEditableField('labType')"
-            formControlName="labType"
-            required>
-            <mat-label>Lab type</mat-label>
-            <mat-error *ngIf="labTypeErrors?.required">
-                A value is required
-            </mat-error>
-        </lab-type-select>
+        @if (isEditableField('labType')) {
+            <lab-type-select 
+                formControlName="labType"
+                required>
+                <mat-label>Lab type</mat-label>
+                @if (labTypeErrors?.required) {
+                    <mat-error>A value is required</mat-error>
+                }
+            </lab-type-select>
+        }
 
-        <mat-form-field *ngIf="isEditableField('technician')">
-            <mat-label>technician</mat-label>
-            <input matInput formControlName="technician">
+        @if (isEditableField('technician')) {
+            <mat-form-field>
+                <mat-label>technician</mat-label>
+                <input matInput formControlName="technician">
 
-            <mat-error *ngIf="technicianErrors?.required">
-                A value is required
-            </mat-error>
-            <mat-error *ngIf="technicianErrors?.email">
-                Invalid email
-            </mat-error>
-        </mat-form-field>
+                @if (technicianErrors?.required) {
+                    <mat-error>A value is required</mat-error>
+                }
+                @if (technicianErrors?.email) {
+                    <mat-error>Invalid email</mat-error>
+                }
+            </mat-form-field>
+        }
 
-        <mat-form-field *ngIf="isEditableField('processSummary')">
-            <mat-label>Process summary</mat-label>
-            <textarea matInput formControlName="processSummary">
-            </textarea>
-        </mat-form-field>
+        @if (isEditableField('processSummary')) {
+            <mat-form-field>
+                <mat-label>Process summary</mat-label>
+                <textarea matInput formControlName="processSummary">
+                </textarea>
+            </mat-form-field>
+        }
 
         <lab-work-unit-duration-form [form]="form" />
     </form>

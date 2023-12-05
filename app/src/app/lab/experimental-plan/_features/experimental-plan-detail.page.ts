@@ -24,19 +24,24 @@ export function experimentalPlanContextFromDetailRoute(): Observable<Experimenta
 @Component({
     selector: 'lab-experimental-plan-detail-page',
     template: `
-    <ng-container *ngIf="plan$ | async as plan">
+    @if (plan$ | async; as plan) {
         <lab-experimental-plan-info [plan]="plan" />
         <mat-card>
             <mat-card-header>
                 <nav mat-tab-nav-bar [tabPanel]="tabPanel"
                     mat-align-tabs="start"
                     mat-stretch-tabs="false">
-                    <a mat-tab-link *ngFor="let workUnit of plan.workUnits; let index=index"
-                    [routerLink]="['./', 'work-units', index]"
-                    routerLinkActive #linkActive="routerLinkActive"
-                    [active]="linkActive.isActive">
-                        {{workUnit.campus.name}} - {{workUnit.labType}}
-                    </a>
+
+                    @for (workUnit of plan.workUnits; track workUnit.id; let index= $index) {
+
+                        <a mat-tab-link 
+                           [routerLink]="['./', 'work-units', index]"
+                           routerLinkActive #linkActive="routerLinkActive"
+                           [active]="linkActive.isActive"
+                        >
+                           {{workUnit.campus.name}} - {{workUnit.labType}}
+                        </a>
+                    }
                     <div class="spacer" [style.flex-grow]="1"></div>
                     <a mat-tab-link
                         #createLink
@@ -55,7 +60,7 @@ export function experimentalPlanContextFromDetailRoute(): Observable<Experimenta
                 </mat-tab-nav-panel>
             </mat-card-content>
         </mat-card>
-    </ng-container>
+    }
     <div class="resource-form-pane" [class.resource-form-pane-isopen]="_formPaneService.isOpen$ | async">
         <div class="sticky-top">
             <router-outlet name="form"></router-outlet>

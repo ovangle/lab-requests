@@ -27,7 +27,7 @@ import { WorkUnitFormComponent } from "../../work-unit/common/work-unit-form.com
         the researcher's base campus and discipline
     </mat-checkbox>
 
-    <ng-container *ngIf="isAddingWorkUnit">
+    @if (isAddingWorkUnit) {
         <mat-card>
             <mat-card-header>
                 <h3>Work Unit</h3>
@@ -37,7 +37,7 @@ import { WorkUnitFormComponent } from "../../work-unit/common/work-unit-form.com
             </mat-card-content>
         </mat-card>
         
-    </ng-container>
+    }
     `,
 })
 export class ExperimentalPlanCreateDefaultWorkUnitForm {

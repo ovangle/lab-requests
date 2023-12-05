@@ -84,9 +84,9 @@ export type InputMaterialFormErrors = ValidationErrors & {
             <mat-label>Name</mat-label>
             <input matInput formControlName="name">
 
-            <mat-error *ngIf="nameErrors?.required">
-                A value is required
-            </mat-error>
+            @if (nameErrors?. required) {
+                <mat-error>A value is required</mat-error>
+            }
         </mat-form-field>
 
         <mat-form-field>
@@ -100,11 +100,12 @@ export type InputMaterialFormErrors = ValidationErrors & {
             <mat-label>Units</mat-label>
         </common-measurement-unit-input>
 
-        <uni-research-funding-cost-estimate-form
-            *ngIf="fundingModel"
-            [form]="form.controls.perUnitCostEstimate"
-            [funding]="fundingModel" 
-            [unitOfMeasurement]="baseUnit" />
+        @if (fundingModel) {
+            <uni-research-funding-cost-estimate-form
+                [form]="form.controls.perUnitCostEstimate"
+                [funding]="fundingModel" 
+                [unitOfMeasurement]="baseUnit" />
+        }
 
         <lab-resource-storage-form 
                 [form]="form.controls.storage" 

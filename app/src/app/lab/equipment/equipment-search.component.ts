@@ -48,11 +48,14 @@ const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
         <mat-autocomplete #autocomplete 
                           [displayWith]="_displaySearch(_equipmentRequest.value.name)"
                           (optionSelected)="_optionSelected($event)">
-            <ng-container *ngIf="searchOptions$ | async as searchOptions">
-                <mat-option *ngFor="let equipment of searchOptions" [value]="equipment">
-                    {{equipment.name}} 
-                </mat-option>
-            </ng-container>
+
+            @if (searchOptions$ | async; as searchOptions) {
+                @for (equipment of searchOptions; track equipment.id) {
+                    <mat-option [value]="equipment">
+                        {{equipment.name}} 
+                    </mat-option>
+                }
+            }
 
             <mat-option [value]="_NEW_EQUIPMENT_">
                 The required equipment was not in this list
@@ -60,7 +63,7 @@ const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
         </mat-autocomplete>
     </mat-form-field>
 
-    <ng-container *ngIf="isNewEquipment$ | async">
+    @if (isNewEquipment$ | async; as isNewEquipment) {
         <mat-card>
             <mat-card-header>
                 <h3>Request other equipment</h3>
@@ -80,7 +83,7 @@ const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
             <mat-card-footer #createFormControls>
             </mat-card-footer>
         </mat-card>
-    </ng-container>
+    }
     `,
     providers: [
         EquipmentCollection,

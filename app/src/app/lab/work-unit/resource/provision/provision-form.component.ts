@@ -24,27 +24,29 @@ import { CampusInfoComponent } from 'src/app/uni/campus/campus-info.component';
     ],
     template: `
     <ng-container [formGroup]="form">
-        <div *ngIf="canResearcherSupply" class="is-university-supplied">
-            <div>This {{resourceType}} is to be supplied:</div>
-            <mat-radio-group formControlName="isUniversitySupplied">
-                <mat-radio-button [value]="false">By the researcher</mat-radio-button>
-                <mat-radio-button [value]="true">By the university</mat-radio-button>
-            </mat-radio-group>
-        </div>
+        @if (canResearcherSupply) {
+            <div class="is-university-supplied">
+                <div>This {{resourceType}} is to be supplied:</div>
+                <mat-radio-group formControlName="isUniversitySupplied">
+                    <mat-radio-button [value]="false">By the researcher</mat-radio-button>
+                    <mat-radio-button [value]="true">By the university</mat-radio-button>
+                </mat-radio-group>
+            </div>
+        }
 
-        <ng-container *ngIf="isUniversitySupplied">
+        @if (isUniversitySupplied) {
             <mat-form-field>
                 <mat-label>Estimated cost</mat-label>
                 <input matInput type="number" formControlName="estimatedCost">
                 <div matTextPrefix>$</div>
                 <div matTextSuffix>per <span [innerHTML]="provisioningUnit | commonMeasurementUnit"></span></div>
             </mat-form-field>
-        </ng-container>
+        }
     </ng-container>
 
-    <div *ngIf="totalCost">
-        Total \${{totalCost}}
-    </div>
+    @if (totalCost) {
+        <div>Total \${{totalCost}}</div>
+    }
     `
 })
 export class ProvisionFormComponent {

@@ -73,17 +73,17 @@ export type EquipmentLeaseFormErrors = ValidationErrors & {
             <mat-label>Equipment</mat-label>
         </lab-equipment-search>
 
-        <ng-container *ngIf="selectedEquipmentTrainingDescriptions$ | async as trainingDescriptions">
+        @if (selectedEquipmentTrainingDescriptions$ | async; as trainingDescriptions) {
             <lab-equipment-training-acknowledgement
                 [trainingDescriptions]="trainingDescriptions"
                 formControlName="equipmentTrainingCompleted" />
-        </ng-container>
+        }
 
-        <ng-container *ngIf="selectedEquipment$ | async as equipment">
+        @if (selectedEquipment$ | async; as equipment) {
             <mat-checkbox formControlName="requiresAssistance">
                 I require additional assistance using this equipment
             </mat-checkbox>
-        </ng-container>
+        }
 
         <ng-container>
             <lab-equipment-risk-assessment-file-input

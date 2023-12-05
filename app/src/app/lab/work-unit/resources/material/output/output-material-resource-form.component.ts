@@ -94,7 +94,7 @@ export type OutputMaterialFormErrors = ValidationErrors & {
             <input matInput formControlName="baseUnit" />
         </mat-form-field>
 
-        <ng-container *ngIf="baseUnit">
+        @if (baseUnit) {
             <mat-form-field>
                 <mat-label>Estimated units produced</mat-label>
                 <input matInput type="number" formControlName="numUnitsProduced" />
@@ -109,7 +109,7 @@ export type OutputMaterialFormErrors = ValidationErrors & {
 
             <lab-req-hazard-classes-select formControlName="hazardClasses">
             </lab-req-hazard-classes-select>
-        </ng-container>
+        }
     </form>
     `
 })

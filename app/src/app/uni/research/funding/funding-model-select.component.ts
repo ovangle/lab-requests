@@ -23,11 +23,11 @@ import { UserContext } from "src/app/user/user-context";
     <mat-form-field>
         <mat-label><ng-content select="mat-label"></ng-content></mat-label>
         <mat-select [formControl]="formControl">
-            <ng-container *ngIf="options$ | async as options">
-                <mat-option *ngFor="let option of options">
+            @if (options$ | async; as options) {
+                @for (option of options; track option) {
                     {{option.name}}
-                </mat-option>
-            </ng-container>
+                }
+            }
         </mat-select>
     </mat-form-field>
     `,

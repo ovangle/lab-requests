@@ -43,11 +43,11 @@ const _NEW_SOFTWARE_ = '_NEW_SOFTWARE_'
                 [formControl]="searchControl" />
             
         <mat-autocomplete #autocomplete>
-            <ng-container *ngIf="searchOptions$ | async as searchOptions">
-                <mat-option *ngFor="let software of searchOptions" [value]="software">
-                    {{software.name}}
-                </mat-option>
-            </ng-container>
+            @if (searchOptions$ | async; as searchOptions) {
+                @for (software of searchOptions; track software.id) {
+                    <mat-option [value]="software">{{software.name}}</mat-option>
+                }
+            }
 
             <mat-option [value]="_NEW_SOFTWARE_">
                 Not listed
@@ -55,7 +55,7 @@ const _NEW_SOFTWARE_ = '_NEW_SOFTWARE_'
         </mat-autocomplete>
     </mat-form-field>
 
-    <ng-container *ngIf="isNewSoftware$ | async">
+    @if (isNewSoftware$ | async) {
         <mat-card>
             <mat-card-header>
                 <h3>Request other software</h3>
@@ -67,7 +67,7 @@ const _NEW_SOFTWARE_ = '_NEW_SOFTWARE_'
                     (softwareRequestChange)="_softwareRequest.next($event)" />
             </mat-card-content>
         </mat-card>
-    </ng-container>
+    }
     
     `
 })

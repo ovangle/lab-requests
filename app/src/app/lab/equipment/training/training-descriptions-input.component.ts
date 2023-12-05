@@ -39,7 +39,7 @@ import { EquipmentTrainingDescriptionListComponent } from "./training-descriptio
         (mouseover)="_onMouseOverCard()">
         <mat-card-title>Required training</mat-card-title>
         <mat-card-content>
-            <ng-container *ngIf="focused; else readonlyDescriptions">
+            @if (focused) {
                 <mat-form-field>
                     <textarea matInput #descriptionInput
                               [formControl]="_descriptionTextControl"
@@ -50,14 +50,12 @@ import { EquipmentTrainingDescriptionListComponent } from "./training-descriptio
                         Prefix paragraphs with '-' to create multiple descriptions
                     </mat-hint>
                 </mat-form-field>
-            </ng-container>
-
-            <ng-template #readonlyDescriptions>
+            } 
+            @if (descriptions$ | async; as descriptions) {
                 <lab-equipment-training-description-list
-                    *ngIf="descriptions$ | async as descriptions"
                     [trainingDescriptions]="descriptions">
                 </lab-equipment-training-description-list>
-            </ng-template> 
+            }
         </mat-card-content>
         <mat-card-footer>
             <ng-content select="#controls"></ng-content>

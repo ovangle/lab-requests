@@ -7,7 +7,8 @@ import { InvalidCredentials } from "../loigin-error";
 @Component({
     selector: 'oauth-login-page',
     template: `
-    <user-native-user-credentials-form (loginRequest)="_onSubmitNativeLoginRequest($event)">
+    <user-native-user-credentials-form 
+        (loginRequest)="_onSubmitNativeLoginRequest($event)">
     </user-native-user-credentials-form>
     
     <div id="supportedExternalProviders">

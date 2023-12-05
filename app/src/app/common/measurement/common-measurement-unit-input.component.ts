@@ -28,17 +28,23 @@ import { MatFormFieldModule } from "@angular/material/form-field";
                [required]="_required"
                (blur)="_onInputBlur()">
 
-        <mat-hint *ngIf="!_touched">
-            Use caret ('^') to indicate superscript (e.g. m^2 -> m<sup>2</sup>)
-        </mat-hint>
+        @if (!_touched) {
+            <mat-hint>
+                Use caret ('^') to indicate superscript (e.g. m^2 -> m<sup>2</sup>)
+            </mat-hint>
+        }
 
-        <mat-error *ngIf="_control.errors && _control.errors['required']">
-            A value is required
-        </mat-error>
+        @if (_control.errors && _control.errors['required']) {
+            <mat-error>
+                A value is required
+            </mat-error>
+        }
 
-        <mat-error *ngIf="_control.errors && _control.errors['pattern']">
-            Unit can only contain letters, digits or \'^\'
-        </mat-error>
+        @if (_control.errors && _control.errors['pattern']) {
+            <mat-error>
+                Unit can only contain letters, digits or \'^\'
+            </mat-error>
+        }
 
         <mat-error>
             <ng-content select="mat-error"></ng-content>

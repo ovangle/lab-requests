@@ -15,18 +15,14 @@ import { MatListModule } from "@angular/material/list";
     ],
     template: `
     <mat-list> 
-        <ng-container *ngIf="trainingDescriptions.length > 0; else noTrainingRequired">
-            <mat-list-item *ngFor="let description of trainingDescriptions">
-                {{description}}
-            </mat-list-item>
-        </ng-container>
-
-        <ng-template #noTrainingRequired>
+        @for (description of trainingDescriptions; track description) {
+            <mat-list-item>{{description}}</mat-list-item>
+        } @empty {
             <mat-list-item class="empty-list">
                 <mat-icon>warning</mat-icon>
                 <i>No training required</i>
             </mat-list-item>
-        </ng-template>
+        }
     </mat-list>
     `,
     styles: [`

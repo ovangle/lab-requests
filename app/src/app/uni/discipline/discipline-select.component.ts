@@ -22,9 +22,13 @@ import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler"
             <ng-content select="mat-label"></ng-content>
         </mat-label>
         <mat-select [formControl]="_control" (closed)="_onTouched()">
-            <mat-option *ngFor="let discipline of disciplines" [value]="discipline">
-                {{discipline}}
-            </mat-option>
+
+            @for (discipline of disciplines; track discipline) {
+                <mat-option [value]="discipline">
+                    {{discipline}}
+                </mat-option>
+            }
+
         </mat-select>
 
         <mat-error>

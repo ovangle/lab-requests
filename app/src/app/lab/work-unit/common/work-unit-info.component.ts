@@ -18,12 +18,13 @@ import { WorkUnitDurationInfoComponent } from "../duration/work-unit-duration-in
         <dt>Name</dt>
             <dd>{{workUnit.name}}</dd>
         <dt>Process summary</dt>
-            <dd *ngIf="workUnit.processSummary">
-                {{workUnit.processSummary}}
-            </dd>
-            <dd *ngIf="!workUnit.processSummary">
+        <dd>
+            @if (workUnit.processSummary) {
+                <p>{{workUnit.processSummary}}</p>
+            } @else {
                 <p><i>No process description provided</i>
-            </dd>
+            }
+        </dd>
     </dl>
 
     <lab-work-unit-duration-info [workUnit]="workUnit" />

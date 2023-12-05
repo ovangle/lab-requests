@@ -30,7 +30,7 @@ function equipmentContextFromDetailRoute(): Observable<Equipment> {
 @Component({
     selector: 'lab-equipment-detail-page',
     template: `
-    <ng-container *ngIf="context.equipment$ | async as equipment">
+    @if (context.equipment$ | async; as equipment) {
         <lab-equipment-info [equipment]="equipment"></lab-equipment-info>
 
         <h3>Description</h3>
@@ -39,7 +39,7 @@ function equipmentContextFromDetailRoute(): Observable<Equipment> {
         <lab-equipment-training-descriptions-info
             [trainingDescriptions]="equipment.trainingDescriptions">
         </lab-equipment-training-descriptions-info>
-    </ng-container>
+    }
     `,
     providers: [
         EquipmentContext

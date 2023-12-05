@@ -49,7 +49,7 @@ export class FileSizePipe implements PipeTransform {
             <ng-content />
         </mat-card-content>
         <mat-card-footer>
-            <ng-container *ngIf="storedFile$ | async as storedFile; else nullSelection">
+            @if (storedFile$ | async; as storedFile) {
                 <div class="file-description">
                     {{storedFile.origFilename}} ({{storedFile.size | fileSize}}
                 </div>
@@ -57,11 +57,9 @@ export class FileSizePipe implements PipeTransform {
                 <button mat-icon-button (click)="uploadFile($event)"> 
                     <mat-icon>attachment</mat-icon>
                 </button>
-            </ng-container>
-
-            <ng-template #nullSelection>
+            } @else {
                 None
-            </ng-template>
+            }
         </mat-card-footer>
     </mat-card>
     `

@@ -16,9 +16,9 @@ import { formatCampus } from "src/app/uni/campus/common/campus";
     template: `
     <h2>
         Update {{workUnitName}} <br/>
-        <small class="subtitle" *ngIf="subtitle">
-            {{subtitle}}
-        </small>
+        @if (subtitle) {
+            <small class="subtitle">{{subtitle}}</small>
+        }
     </h2>
     
 

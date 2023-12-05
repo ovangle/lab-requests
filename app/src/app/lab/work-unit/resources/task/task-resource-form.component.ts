@@ -68,9 +68,9 @@ export function taskFormErrors(form: TaskForm): Observable<TaskFormErrors | null
         <mat-form-field>
             <mat-label>Name</mat-label>
             <input matInput formControlName="name" />
-            <mat-error *ngIf="nameErrors?.required">
-                A value is required
-            </mat-error>
+            @if (nameErrors?.required) {
+                <mat-error>A value is required</mat-error>
+            }
         </mat-form-field>
 
         <mat-form-field>
@@ -92,19 +92,11 @@ export function taskFormErrors(form: TaskForm): Observable<TaskFormErrors | null
             </mat-radio-button> <br/>
         </mat-radio-group>
 
-        <ng-container [ngSwitch]="supplier">
-            <ng-container *ngSwitchCase="'other'">
-                <mat-form-field>
-                    <mat-label>Contractor name</mat-label>
-                    <input matInput 
-                           formControlName="externalSupplierDescription" />
-                </mat-form-field>
-
-                <lab-resource-provision-form [form]="form"
-                    [canResearcherSupply]="true">
-                </lab-resource-provision-form>
-            </ng-container>
-        </ng-container>
+        @switch (supplier) {
+            @case('other') {
+                <lab-resource-provision-form [form]="form" [canResearcherSupply]="true" />
+            }
+        }
     </form>
     `
 })

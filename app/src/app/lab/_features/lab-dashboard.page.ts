@@ -8,17 +8,25 @@ import { BehaviorSubject } from "rxjs";
         <mat-nav-list [ngClass]="{'expanded': isNavExpanded, 'collapsed': !isNavExpanded}">
             <a mat-list-item routerLink="./">
                 <mat-icon matListItemIcon>home</mat-icon>
-                <span matListItemTitle *ngIf="isNavExpanded">Home</span>
+                @if (isNavExpanded) {
+                    <span matListItemTitle>Home</span>
+                }
             </a>
             <a mat-list-item 
                 routerLink="./equipments" >
                 <mat-icon matListItemIcon></mat-icon>
-                <span matListItemTitle *ngIf="isNavExpanded">Equipment</span>
+
+                @if (isNavExpanded) {
+                <span matListItemTitle> Equipment</span>
+                }
             </a>
             <a mat-list-item 
                 routerLink="./experimental-plans">
                 <mat-icon matListItemIcon></mat-icon>
-                <span matListItemTitle *ngIf="isNavExpanded">Experimental plans</span>
+
+                @if (isNavExpanded) {
+                    <span matListItemTitle>Experimental plans</span>
+                }
             </a>
         </mat-nav-list>
         <main>

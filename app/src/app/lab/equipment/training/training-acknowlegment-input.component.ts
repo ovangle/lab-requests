@@ -30,21 +30,15 @@ import { MatIconModule } from "@angular/material/icon";
 
         <mat-card-content>
             <mat-selection-list [formControl]="selectedControl">
-                <ng-container *ngIf="trainingDescriptions.length > 0; else listEmpty">
-                    <mat-list-option 
-                        *ngFor="let description of trainingDescriptions"
-                        [value]="description">
-                        {{description}}
-                    </mat-list-option>
-                </ng-container>
-
-                <ng-template #listEmpty>
+                @for (description of trainingDescriptions; track description) {
+                    <mat-list-option [value]="description">{{description}}</mat-list-option>
+                } @empty {
                     <mat-list-item disabled class="empty-list">
                         <mat-icon>warning</mat-icon>
                         <i>No training required</i>
                     </mat-list-item>
-                </ng-template>
-            </mat-selection-list>
+                }
+           </mat-selection-list>
         </mat-card-content>
 
         <mat-card-footer>

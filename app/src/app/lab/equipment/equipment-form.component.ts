@@ -39,12 +39,12 @@ export const equipmentFixtures: Equipment[] = [];
             <input matInput 
                 id="equipment-name" 
                 formControlName="name" />
-            <mat-error *ngIf="nameErrors && nameErrors['required']">
-                A value is required
-            </mat-error>
-            <mat-error *ngIf="nameErrors && nameErrors['notUnique']">
-                An equipment already exists with that name
-            </mat-error>
+            @if (nameErrors && nameErrors['required']) {
+                <mat-error>A value is required </mat-error>
+            }
+            @if (nameErrors && nameErrors['notUnique']) {
+                <mat-error>An equipment already exists with that name</mat-error>
+            }
         </mat-form-field> 
 
         <mat-form-field>

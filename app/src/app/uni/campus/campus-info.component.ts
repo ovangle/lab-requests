@@ -10,9 +10,9 @@ import { Campus } from "./common/campus";
         CommonModule
     ],
     template: `
-        <ng-container *ngIf="!nameOnly">
+        @if (!nameOnly) {
             <span class="campus-code">{{campus.code}}</span> - 
-        </ng-container>
+        }
         {{campus.name}}
     ` 
 })

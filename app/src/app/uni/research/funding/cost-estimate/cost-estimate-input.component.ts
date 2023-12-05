@@ -32,7 +32,7 @@ import { CurrencyInputComponent } from "src/app/common/currency/currency-input.c
             <input matInput formControlName="quantityRequired" />
         </mat-form-field>
 
-        <span class="spacer">&#64;</span>
+        <span class="spacer"></span>
  
         <common-currency-input
             formControlName="perUnitCost">

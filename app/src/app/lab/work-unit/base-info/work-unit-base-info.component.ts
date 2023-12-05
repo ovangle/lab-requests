@@ -15,13 +15,11 @@ import { WorkUnit } from "../common/work-unit";
         <dt>Technician</dt><dd>{{workUnit.technician}}</dd>
         <dt>Process Summary</dt>
         <dd>
-            <ng-container *ngIf="workUnit.processSummary; else unknownProcess">
+            @if (workUnit.processSummary) {
                 {{workUnit.processSummary}}
-            </ng-container>
-
-            <ng-template #unknownProcess>
+            } @else {
                 <p><i>No process description provided</i>
-            </ng-template>
+            }
         </dd>
     </dl>
     `

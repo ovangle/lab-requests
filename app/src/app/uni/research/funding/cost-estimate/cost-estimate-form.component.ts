@@ -79,37 +79,42 @@ function costEstimatesFromFormValue(value: CostEstimateForm['value'], unit: Unit
             Include {{name}} in {{funding.name | lowercase}} budget
         </mat-checkbox>
 
-        <ng-container [ngSwitch]="includeInProjectFunding">
-            <ng-container *ngSwitchCase="true">
-                <common-currency-input
-                    formControlName="perUnitCost"
-                    *ngIf="!isFixedPerUnitCost">
+        @if (includeInProjectFunding) {
+            @if (!isFixedPerUnitCost) {
 
+                <common-currency-input formControlName="perUnitCost">
                     <mat-label>Cost</mat-label>
-                    <span *ngIf="unitOfMeasurement" matTextSuffix>
-                        per <span [innerHTML]="unitOfMeasurement | commonMeasurementUnit"></span> 
-                    </span>
-                </common-currency-input>
 
-                <mat-form-field
-                    *ngIf="!isFixedQuantityRequired">
+                    @if (unitOfMeasurement) {
+                        <span matTextSuffix>
+                            per <span [innerHTML]="unitOfMeasurement | commonMeasurementUnit"></span> 
+                        </span>
+                    }
+                </common-currency-input>
+            }
+
+            @if (!isFixedQuantityRequired) {
+                <mat-form-field>
                     <mat-label>Quantity required</mat-label>
                     <input matInput type="number" formControlName="quantityRequired" />
-                    <span *ngIf="unitOfMeasurement" matTextSuffix>
-                        <span [innerHTML]="unitOfMeasurement | commonMeasurementUnit"></span>
-                    </span>
+
+                    @if (unitOfMeasurement) {
+                        <span matTextSuffix>
+                            <span [innerHTML]="unitOfMeasurement | commonMeasurementUnit"></span>
+                        </span>
+                    }
                 </mat-form-field>
+            }
 
                 <div class="total-amount">Total</div>
-                <div *ngIf="totalCost$ | async as cost">
-                    <span [innerHTML]="cost | uniCostEstimate:'full'"></span>
-                </div>
-            </ng-container>
-            <div *ngSwitchCase="false">
-                <p>Will be supplied by researcher</p>
-            </div>
-        </ng-container>
-      
+                @if (totalCost$ | async; as cost) {
+                    <div>
+                        <span [innerHTML]="cost | uniCostEstimate:'full'"></span>
+                    </div>
+                }
+        } @else {
+            <p>Will be supplied by researcher</p>
+        }
     </form>
     `
 })

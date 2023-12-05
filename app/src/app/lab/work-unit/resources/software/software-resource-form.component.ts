@@ -81,10 +81,12 @@ export type SoftwareFormErrors = ValidationErrors & {
             This software requires a licence seat
         </mat-checkbox>
 
-        <lab-resource-provision-form *ngIf="isLicenseRequired" [form]="form"
-            [canResearcherSupply]="false"
-            provisioningUnit="per license">
-        </lab-resource-provision-form>
+        @if (isLicenseRequired) {
+            <lab-resource-provision-form [form]="form"
+                [canResearcherSupply]="false"
+                provisioningUnit="per license">
+            </lab-resource-provision-form>
+        }
     </form>
     `,
     styles: [`
