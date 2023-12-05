@@ -66,10 +66,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "lab_req:build:production"
+              "buildTarget": "lab_req:build:production"
             },
             "development": {
-              "browserTarget": "lab_req:build:development"
+              "buildTarget": "lab_req:build:development"
             }
           },
           "options": {
@@ -80,7 +80,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "lab_req:build"
+            "buildTarget": "lab_req:build"
           }
         },
         "test": {
