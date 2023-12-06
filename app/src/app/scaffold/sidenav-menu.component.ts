@@ -1,120 +1,26 @@
 import { CommonModule } from "@angular/common";
-import { Call } from "@angular/compiler";
-import { Component, Injectable, InjectionToken, inject } from "@angular/core";
-import { MatListModule } from "@angular/material/list";
-import { BehaviorSubject } from "rxjs";
+import { Component, Input, inject } from "@angular/core";
+import { MatTreeFlatDataSource, MatTreeFlattener, MatTreeModule } from "@angular/material/tree";
+import { SidenavMenuGroup, SidenavMenuLink, SidenavMenuNode, SidenavMenuService } from "./sidenav-menu.service";
+import { FlatTreeControl } from "@angular/cdk/tree";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
 
-export type SidenavMenuNodeType = 'group' | 'link';
 
-export interface SidenavMenuNodeBase {
-    readonly type: SidenavMenuNodeType;
+interface FlattenedMenuNode {
     readonly title: string;
-
-    readonly children: ReadonlyArray<SidenavMenuNode>;
+    readonly level: number;
+    readonly expandable: boolean;
 }
 
-export interface SidenavMenuGroup extends SidenavMenuNodeBase {
-    readonly type: 'group';
-    readonly name: string;
-
-    readonly isExpanded: boolean;
+const _nodeTypeLevels: {[K in SidenavMenuNode['type']]: number} = {
+    'group': 0,
+    'link': 1
+}
+function _getFlattenedNodeLevel(node: SidenavMenuNode) {
+    return _nodeTypeLevels[node.type];
 }
 
-export function sidenavMenuGroup(name: string, title: string, children: SidenavMenuNode[]): SidenavMenuGroup {
-    return {
-        type: 'group',
-        name,
-        title,
-        children,
-        isExpanded: false
-    };
-}
-
-function expandGroup(group: SidenavMenuGroup): SidenavMenuGroup {
-    return {...group, isExpanded: true}
-}
-function collapseGroup(group: SidenavMenuGroup): SidenavMenuGroup {
-    return {...group, isExpanded: false};
-}
-
-export interface SidenavMenuLink extends SidenavMenuNodeBase {
-    readonly type: 'link';
-    readonly routerLink: any[];
-}
-
-export function menuLink(title: string, routerLink: any[]): SidenavMenuLink {
-    return {
-        type: 'link',
-        title,
-        routerLink,
-        children: []
-    }
-}
-
-export type SidenavMenuNode = SidenavMenuGroup | SidenavMenuLink;
-
-function setChildren(node: SidenavMenuNode, children: SidenavMenuNode[]) {
-    if (node.children.length !== children.length
-        || node.children.some((child, i) => child !== children[i])
-    ) {
-        return {...node, children};
-    }
-    return node;
-}
-
-export const APP_SIDENAV_MENU = new InjectionToken<SidenavMenuGroup>('APP_SIDENAV_MENU');
-
-@Injectable({providedIn: 'root'})
-export class SidenavMenuController {
-    protected _menu: SidenavMenuComponent | undefined = undefined;
-    get menu(): SidenavMenuComponent {
-        return this._menu!;
-    }
-
-    readonly _initialTree = inject(APP_SIDENAV_MENU);
-    readonly treeSubject = new BehaviorSubject<SidenavMenuGroup>(this._initialTree);
-    readonly tree$ = this.treeSubject.asObservable()
-    get tree() {
-        return this.treeSubject.value;
-    }
-    
-    attach(menu: SidenavMenuComponent) {
-        if (this._menu !== undefined) {
-            throw new Error('Sidenav menu already attached');
-        }
-        this._menu = menu;
-    }
-
-    protected walk(
-        replaceNode: (node: SidenavMenuNode) => SidenavMenuNode, 
-        current: SidenavMenuNode | undefined = undefined
-    ) {
-        current  = current || this.tree; 
-
-        const children = current.children.map(child => this.walk(replaceNode, child));
-        current = setChildren(current, children);
-        return replaceNode(current);
-    }
-
-    expand(groupName: string): void {
-        this.walk((node) => {
-            if (node.type === 'group' && node.name === groupName) {
-                return expandGroup(node);
-            }
-            return node;
-        })
-    }
-
-    collapse(groupName: string): void {
-        this.walk((node) => {
-            if (node.type === 'group' && node.name === groupName) {
-                return collapseGroup(node);
-            }
-            return node;
-        });
-        
-    }
-}
 
 /**
  * The context menu is global to all applications
@@ -124,14 +30,52 @@ export class SidenavMenuController {
     standalone: true,
     imports: [
         CommonModule,
-        MatListModule
+        MatButtonModule,
+        MatIconModule,
+        MatTreeModule 
     ],
     template: `
-    <nav mat-nav-list>
-        
-    </nav>
+    <mat-tree [dataSource]="_dataSource" [treeControl]="_treeControl">
+        <mat-tree-node *matTreeNodeDef="let node; when: isExpandable" matTreeNodePadding>
+            <button mat-icon-button matTreeNodeToggle 
+                    [attr.aria-label]="'Toggle ' + node.title">
+                <mat-icon class="mat-icon-rtl-mirror">
+                    {{ _treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right' }}
+                </mat-icon>
+            </button>
+
+            {{node.title}}
+        </mat-tree-node>
+
+        <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
+            <button mat-icon-button disabled></button>
+            {{node.title}}
+        </mat-tree-node>
+    </mat-tree>
     `
 })
 export class SidenavMenuComponent {
+    readonly menuRoot = inject(SidenavMenuService);
 
+    readonly _treeControl = new FlatTreeControl<FlattenedMenuNode>((node) => node.level, (node) => node.expandable);
+    
+    readonly _treeFlattener = new MatTreeFlattener<SidenavMenuNode, FlattenedMenuNode>( 
+        (node: SidenavMenuNode, level: number) => {
+            return {
+                expandable: node.type === 'group',
+                title: node.title,
+                level
+            };
+        },
+        (node: FlattenedMenuNode) => node.level,
+        (node: FlattenedMenuNode) => node.expandable,
+        (node: SidenavMenuNode) => [...node.children]
+    );
+
+    readonly _dataSource = new MatTreeFlatDataSource<SidenavMenuNode, FlattenedMenuNode>(
+        this._treeControl, 
+        this._treeFlattener
+    );
+
+    isExpandable = (node: FlattenedMenuNode) => node.expandable;
 }

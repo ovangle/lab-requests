@@ -5,8 +5,6 @@ import { requiresAuthorizationGuard } from './utils/router-utils';
 import { PublicPageComponent } from './public-page/public-page.component';
 import { IotDeviceCreateFormComponent } from './iot/iot-device-create-form.component';
 import { OauthFeatureModule } from './oauth/_features/oauth.feature-module';
-import { APP_OAUTH_PROVIDER_PARAMS, provideAppOauthProviderParams } from './app-oauth-provider-params';
-import { OauthRootModule } from './oauth/_root/oauth.root-module';
 
 const routes: Routes = [
   {
@@ -42,19 +40,11 @@ const routes: Routes = [
     path: 'public',
     component: PublicPageComponent
   },
-  
   {
     path: 'uni/campuses',
     loadChildren: () => import('./uni/campus/_features/campus.feature-module')
       .then(module => module.CampusFeature)
   },
-  /*
-  {
-    path: 'user',
-    loadChildren: () => import('./user/_features/user.feature-module')
-      .then(module => module.UserFeatureModule)
-  }
-  */
 ]
 
 

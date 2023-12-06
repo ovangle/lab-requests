@@ -6,7 +6,7 @@ import { SidenavMenuComponent } from "./sidenav-menu.component";
 
 
 @Component({
-    selector: 'scaffold-layout',
+    selector: 'scaffold-main',
     standalone: true,
     imports: [
        CommonModule,
@@ -17,9 +17,12 @@ import { SidenavMenuComponent } from "./sidenav-menu.component";
     ],
     template: `
     <mat-sidenav-container>
-        <mat-sidenav>
-            <scaffold-sidenav-menu></scaffold-sidenav-menu>
+        <mat-sidenav mode="side" opened>
+            <scaffold-sidenav-menu />
         </mat-sidenav>
+        <mat-sidenav-content>
+            <ng-content select=".content"></ng-content>
+        <mat-sidenav-content>
     </mat-sidenav-container>
     `
 })
