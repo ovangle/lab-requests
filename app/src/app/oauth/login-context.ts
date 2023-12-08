@@ -12,7 +12,6 @@ import { NATIVE_OAUTH_PROVIDER, OauthProvider, OauthProviderContext, OauthProvid
 import { OauthFlowStateStore } from "./flow/flow-state-store.service";
 import { injectRedirectToPublic, injectRedirectToUserHomePage } from "./utils";
 
-
 @Injectable({providedIn: 'root'})
 export class LoginContext {
     readonly router = inject(Router);
@@ -143,7 +142,6 @@ export class LoginContext {
     }
 
     logout(): Promise<void> {
-        this.accessTokenStore.clearTokenData();
         this._oauthProviderContext.clearCurrent();
         this.router.navigateByUrl('/public');
         return Promise.resolve();

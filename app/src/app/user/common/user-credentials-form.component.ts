@@ -49,7 +49,7 @@ export class LoginRequest {
 }
 
 @Component({
-    selector: 'user-native-user-credentials-form',
+    selector: 'user-credentials-form',
     standalone: true,
     imports: [
         CommonModule,
@@ -90,7 +90,7 @@ export class LoginRequest {
     }
     `
 })
-export class NativeUserCredentialsFormComponent {
+export class UserCredentialsFormComponent {
     _loginErrors: LoginError | null;
 
     @Output()

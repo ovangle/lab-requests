@@ -70,11 +70,18 @@ $theme: mat.define-light-theme((
 ));
 
 @include mat.all-component-themes($theme);
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
 /**
  * Hiding scrollbars without setting overflow: hidden.
  * Every browser does it differently :D
  */
-
+// FIXME: This won't work now that scaffold-layout exists.
+// Move this logic into scaffold.
 body.hide-scrollbar::-webkit-scrollbar {
     display: none;
 }

@@ -47,4 +47,29 @@ export async function requiresAuthorizationGuard(
     return true;
 }
 
+export async function logoutGuard(
+    next: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot
+): Promise<UrlTree> {
+    const router = inject(Router);
+    const loginContext = inject(LoginContext);
 
+    if (loginContext.isLoggedIn) {
+        await loginContext.logout();
+    }
+    return router.parseUrl('/public');
+}
+
+export async function publicPageGuard(
+    next: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot
+): Promise<UrlTree | boolean> {
+    const router = inject(Router);
+    const loginContext = inject(LoginContext);
+
+    const isLoggedIn= await loginContext.checkLoggedIn();
+    if (isLoggedIn) {
+        return router.parseUrl('/user/home');
+    }
+    return true;
+}

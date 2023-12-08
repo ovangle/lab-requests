@@ -1,14 +1,12 @@
-import { InjectionToken, ModuleWithProviders, NgModule } from "@angular/core";
-import { RouterModule } from "@angular/router";
-import { AuthRedirectPage } from "./oauth-redirect.page";
-import urlJoin from "url-join";
-import { OAUTH_FEATURE_PATH, PUBLIC_PAGE_PATH } from "../utils";
-import { OAUTH_PROVIDER_PARAMS, OauthProviderParams } from "../oauth-provider";
-import { NativeUserCredentialsFormComponent } from "src/app/user/login/native-user-login-form.component";
 import { CommonModule } from "@angular/common";
-import { AuthLoginPage } from "./oauth-login.page";
 import { HttpClientModule } from "@angular/common/http";
+import { NgModule } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
+import { RouterModule } from "@angular/router";
+import { logoutGuard, requiresAuthorizationGuard } from "src/app/utils/router-utils";
+import { AuthLoginPage } from "./oauth-login.page";
+import { AuthRedirectPage } from "./oauth-redirect.page";
+import { UserCredentialsFormComponent } from "src/app/user/common/user-credentials-form.component";
 
 @NgModule({
     imports: [
@@ -22,12 +20,16 @@ import { MatButtonModule } from "@angular/material/button";
             {
                 path: 'login',
                 component: AuthLoginPage
+            },
+            {
+                path: 'logout',
+                canActivate: [logoutGuard],
+                children: []
             }
         ]),
 
         MatButtonModule,
-
-        NativeUserCredentialsFormComponent
+        UserCredentialsFormComponent
     ],
     declarations: [
         AuthRedirectPage,

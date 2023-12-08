@@ -1,7 +1,7 @@
 import { isJsonObject } from "src/app/utils/is-json-object";
 import { Model, ModelLookup, ModelMeta, ModelParams, ModelPatch, modelLookupToHttpParams, modelParamsFromJsonObject, modelPatchToJson } from "../../common/model/model";
 import { Role, roleFromJson } from './role';
-import { HttpErrorResponse, HttpParams } from "@angular/common/http";
+import { HttpErrorResponse, HttpParams, HttpStatusCode } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { RestfulService } from "../../common/model/model-service";
 import { ModelCollection } from "../../common/model/model-collection";
@@ -75,6 +75,13 @@ function userLookupToHttpParams(lookup: Partial<UserLookup>): HttpParams {
     return modelLookupToHttpParams(lookup);
 }
 
+export interface AlterPassword {
+    currentValue: string;
+    newValue: string;
+}
+
+export class AlterPasswordError extends Error {}
+
 @Injectable({providedIn: 'root'})
 export class UserMeta extends ModelMeta<User, UserPatch, UserLookup> {
     readonly model = User;
@@ -91,6 +98,21 @@ export class UserService extends RestfulService<User, UserPatch, UserLookup> {
     me(): Observable<User> {
         return this._httpClient.get(this.indexMethodUrl('me')).pipe(
             map(result => this.modelFromJson(result))
+        )
+    }
+
+    alterPassword(alterPasswordRequest: AlterPassword): Observable<User> {
+        return this._httpClient.post(
+            this.indexMethodUrl('alter-password'),
+            alterPasswordRequest
+        ).pipe(
+            map(result => this.modelFromJson(result)),
+            catchError(err => {
+                if (err instanceof HttpErrorResponse && err.status === HttpStatusCode.Conflict) {
+                    throw new AlterPasswordError('Invalid current value');
+                }
+                throw err;
+            })
         )
     }
 }

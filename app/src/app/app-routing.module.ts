@@ -1,7 +1,7 @@
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
+import { Injectable, NgModule, inject } from '@angular/core';
+import { Router, RouterModule, Routes } from '@angular/router';
 
-import { requiresAuthorizationGuard } from './utils/router-utils';
+import { publicPageGuard, requiresAuthorizationGuard } from './utils/router-utils';
 import { PublicPageComponent } from './public-page/public-page.component';
 import { IotDeviceCreateFormComponent } from './iot/iot-device-create-form.component';
 import { OauthFeatureModule } from './oauth/_features/oauth.feature-module';
@@ -38,7 +38,8 @@ const routes: Routes = [
   },
   {
     path: 'public',
-    component: PublicPageComponent
+    component: PublicPageComponent,
+    canActivate: [publicPageGuard]
   },
   {
     path: 'uni/campuses',
@@ -46,6 +47,15 @@ const routes: Routes = [
       .then(module => module.CampusFeature)
   },
 ]
+
+@Injectable({providedIn: 'root'})
+export class AppRoutes {
+  readonly public = '/public';
+
+  readonly oauth = '/oauth';
+  readonly user = '/user';
+  readonly lab = '/lab';
+}
 
 
 @NgModule({

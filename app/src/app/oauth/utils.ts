@@ -1,5 +1,5 @@
 import { PlatformLocation, Location } from "@angular/common";
-import { InjectionToken, Provider, inject } from "@angular/core";
+import { Injectable, InjectionToken, Provider, inject } from "@angular/core";
 import { Router } from "@angular/router";
 import urlJoin from "url-join";
 import { OauthFlowStateStore } from "./flow/flow-state-store.service";
@@ -72,3 +72,4 @@ export function injectRedirectToPublic(): () => Promise<boolean> {
     }
 
 }
+

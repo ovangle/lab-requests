@@ -1,16 +1,18 @@
 import { CommonModule } from "@angular/common";
-import { Component, Input, inject } from "@angular/core";
+import { Component, Input, OnInit, inject } from "@angular/core";
 import { MatTreeFlatDataSource, MatTreeFlattener, MatTreeModule } from "@angular/material/tree";
-import { SidenavMenuGroup, SidenavMenuLink, SidenavMenuNode, SidenavMenuService } from "./sidenav-menu.service";
+import { SidenavMenuGroup, SidenavMenuLink, SidenavMenuNode, SidenavMenuRoot } from "./sidenav-menu.service";
 import { FlatTreeControl } from "@angular/cdk/tree";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
+import { RouterModule } from "@angular/router";
 
 
 interface FlattenedMenuNode {
     readonly title: string;
     readonly level: number;
     readonly expandable: boolean;
+    readonly link?: any[];
 }
 
 const _nodeTypeLevels: {[K in SidenavMenuNode['type']]: number} = {
@@ -30,6 +32,8 @@ function _getFlattenedNodeLevel(node: SidenavMenuNode) {
     standalone: true,
     imports: [
         CommonModule,
+        RouterModule,
+
         MatButtonModule,
         MatIconModule,
         MatTreeModule 
@@ -49,13 +53,13 @@ function _getFlattenedNodeLevel(node: SidenavMenuNode) {
 
         <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
             <button mat-icon-button disabled></button>
-            {{node.title}}
+            <a [routerLink]="node.link!">{{node.title}}</a>
         </mat-tree-node>
     </mat-tree>
     `
 })
-export class SidenavMenuComponent {
-    readonly menuRoot = inject(SidenavMenuService);
+export class SidenavMenuComponent implements OnInit {
+    readonly menuRoot = inject(SidenavMenuRoot);
 
     readonly _treeControl = new FlatTreeControl<FlattenedMenuNode>((node) => node.level, (node) => node.expandable);
     
@@ -78,4 +82,10 @@ export class SidenavMenuComponent {
     );
 
     isExpandable = (node: FlattenedMenuNode) => node.expandable;
+
+    ngOnInit() {
+        this.menuRoot.group$.subscribe(root => {
+            this._dataSource.data = [...root.children];
+        });
+    }
 }

@@ -19,6 +19,7 @@ import { FileUploadService } from './common/file/file-upload.service';
 import { API_BASE_URL } from './common/model/model-service';
 import { OauthRootModule } from './oauth/_root/oauth.root-module';
 import { APP_OAUTH_PROVIDER_PARAMS, provideAppOauthProviderParams } from './app-oauth-provider-params';
+import { ScaffoldLayoutComponent } from './scaffold/scaffold-layout.component';
 
 /**
  * This function is used internal to get a string instance of the `<base href="" />` value from `index.html`.
@@ -54,7 +55,8 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
         defaultUserHomePage: '/user/home'
       }, 
       APP_OAUTH_PROVIDER_PARAMS
-    )
+    ),
+    ScaffoldLayoutComponent,
   ],
   providers: [
     {
