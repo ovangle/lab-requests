@@ -1,12 +1,12 @@
 import { CommonModule } from "@angular/common";
-import { Component, EventEmitter, Output } from "@angular/core";
+import { Component, EventEmitter, Injectable, Output, inject } from "@angular/core";
 import { AbstractControl, AsyncValidatorFn, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatIconModule } from '@angular/material/icon';
 import { BehaviorSubject, Observable, firstValueFrom } from "rxjs";
-import { AlterPassword, AlterPasswordError, User } from "./user";
+import { AlterPassword, AlterPasswordError, User, UserService } from "./user";
 
 
 type AlterPasswordForm = FormGroup<{
@@ -37,7 +37,6 @@ function createCurrentPasswordValidator(resultErrors: Observable<AlterPasswordEr
         };
     }
 }
-
 
 export class AlterPasswordRequest implements AlterPassword {
     _result: Promise<User>;
@@ -75,7 +74,7 @@ export class AlterPasswordRequest implements AlterPassword {
     <form [formGroup]="form" (ngSubmit)="_handleSubmit($event)">
         <mat-form-field>
             <mat-label>Current password</mat-label>
-            <input matInput type="password" formControlName="newValue" required/>
+            <input matInput type="password" formControlName="currentValue" required/>
 
             @if (currentValueErrors?.required) {
                 <mat-error>A value is required</mat-error>

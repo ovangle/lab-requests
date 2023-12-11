@@ -41,3 +41,13 @@ class InvalidCredentials(HTTPException):
     @classmethod
     def user_not_found(cls, email: str):
         return cls(401, f'Invalid credentials')
+
+
+class NotANativeUserError(HTTPException):
+    def __init__(self, user):
+        super().__init__(401, F"Operation is only valid for native user")
+    
+
+class AlterPasswordConflictError(HTTPException):
+    def __init__(self, user): 
+        super().__init__(409, f"Alter password. Incorrect password for user '${user.email}'")

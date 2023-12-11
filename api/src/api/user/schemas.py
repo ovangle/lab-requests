@@ -5,7 +5,9 @@ from typing_extensions import override
 from uuid import UUID
 
 from pydantic import SecretStr
+from api.base.schema_config import SCHEMA_CONFIG
 from api.base.schemas import BaseModel, ApiModel
+from api.user.errors import AlterPasswordConflictError, NotANativeUserError
 from db import LocalSession
 
 from .types import UserDomain, UserRole
@@ -53,9 +55,6 @@ class User(ApiModel[models.AbstractUser]):
             case _:
                 raise ValueError(f'Unrecognised user domain {self.domain}')
 
-            
-
-
 
 class NativeUserLoginRequest(BaseModel):
     email: str
@@ -71,4 +70,22 @@ class ExternalUserLoginRequest(BaseModel):
 UserLoginRequest = NativeUserLoginRequest | ExternalUserLoginRequest
 
 
-        
+class AlterPasswordRequest(BaseModel):
+    model_config = SCHEMA_CONFIG
+
+    current_value: str
+    new_value: str
+    
+    async def __call__(self, db: LocalSession, user: User):
+        if user.domain == 'native':
+            model_user = await user.to_model(db)
+            assert isinstance(model_user, models.NativeUser)
+            if not model_user.verify_password(self.current_value):
+                raise AlterPasswordConflictError(user)
+            model_user.set_password(self.new_value)            
+            db.add(model_user)
+            return user
+        else:
+            raise NotANativeUserError(user)
+
+            

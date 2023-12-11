@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, security
 
 from db import get_db
 
-from .schemas import User, UserLoginRequest
+from .schemas import AlterPasswordRequest, User, UserLoginRequest
 from . import model_fns
 
 users = APIRouter(
@@ -22,3 +22,11 @@ async def get_current_active_user(
     db = Depends(get_db)
 ) -> User:
     return user
+
+@users.post('/alter-password')
+async def alter_password(
+    alter_password: AlterPasswordRequest,
+    user = Depends(model_fns.get_current_active_user),
+    db = Depends(get_db)
+) -> User:
+    return await alter_password(db, user)
