@@ -1,15 +1,19 @@
+ARG NG_VERSION
 FROM node:18.17
 
-WORKDIR /srv/app
+RUN npm i -g @angular/cli@>=${NG_VERSION}
 
-RUN npm i -g @angular/cli
+USER node
+WORKDIR /home/node
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/home/node/.npm,uid=1000 \
+    npm ci
 
 COPY . .
-
-RUN ng build
+RUN --mount=type=cache,target=/home/node/.angular/cache,uid=1000 \
+    ng build
 
 EXPOSE 3000
-CMD ["npm", "run", "serve"]
+ENTRYPOINT ["npm", "run"]
+CMD ["start"]

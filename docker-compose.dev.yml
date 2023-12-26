@@ -1,7 +1,10 @@
+version: "3.8"
+
 services:
   api:
     volumes:
       - "./api:/srv/api"
+  app:
     profiles:
       # Disable this in development and run ng serve from host
       - do_not_start

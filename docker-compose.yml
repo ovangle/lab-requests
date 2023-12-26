@@ -8,15 +8,17 @@ services:
       - "4200:4200"
 
   api:
-    build: './api'
+    build:
+      context: './api'
+      args:
+        NG_VERSION: ${NG_VERSION}
     image: ghcr.io/cqueng/lab-requests-api
     ports:
       - "8000:8000"
       - "8765:8765"
     environment:
       DB_HOST: postgres
-      DB_PASSWORD: secret
-      API_DEBUG: 'yes'
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - 'lab_work_attachments:/srv/files/lab/work-units:rw'
 
@@ -32,7 +34,7 @@ services:
     build: './postgres'
     image: ghcr.io/cqueng/lab-requests-postgres
     environment:
-      POSTGRES_PASSWORD: 'secret'
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - "pgdata:/var/lib/postgresql"
     ports:
@@ -43,7 +45,7 @@ services:
     image: "dpage/pgadmin4:7"
     environment:
       PGADMIN_DEFAULT_EMAIL: 'tom@ovangle.com'
-      PGADMIN_DEFAULT_PASSWORD: 'secret'
+      PGADMIN_DEFAULT_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5433:80"
 
