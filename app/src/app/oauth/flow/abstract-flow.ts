@@ -81,6 +81,11 @@ export abstract class AbstractOauthFlow<
     abstract isValidGrantRequest(obj: unknown): obj is GrantRequest;
     abstract getGrantRequestBodyParams(request: GrantRequest): URLSearchParams;
 
+    /**
+     * 
+     * @param params 
+     * @returns 
+     */
     async fetchToken(
         params: unknown 
     ): Promise<AccessTokenData> {
@@ -95,12 +100,12 @@ export abstract class AbstractOauthFlow<
                 map((response: AccessTokenResponse) => {
                     return accessTokenResponseToAccessTokenData(this.providerParams, response);
                 }),
-                catchError(err => throwError(() => {
+                catchError(err => {
                     if (err instanceof HttpErrorResponse && err.status === 401) {
-                        return InvalidCredentials.fromHttpErrorResponse(err);
+                        throw InvalidCredentials.fromHttpErrorResponse(err);
                     }
-                    return err;
-                }))
+                    throw err;
+                 })
             )
         );
     }

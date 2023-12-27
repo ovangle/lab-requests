@@ -29,21 +29,20 @@ import { ToolbarComponent } from "./scaffold-toolbar.component";
     `,
     styles: `
     :host { 
-        min-height: calc(100% - var(--scaffold-toolbar-height)); 
+        min-height: calc(100% - var(--mat-toolbar-standard-height)); 
         --scaffold-toolbar-height: 40px;
     }
 
     scaffold-toolbar {
         position: fixed;
         top: 0;
-        height: var(--scaffold-toolbar-height);
         width: 100%;
         z-index: 100;
     }
     
     mat-sidenav-container {
-        margin-top: var(--scaffold-toolbar-height);
-        height: calc(100% - var(--scaffold-toolbar-height));
+        margin-top: var(--mat-toolbar-standard-height);
+        height: calc(100% - var(--mat-toolbar-standard-height));
         overflow-y: auto;
     }
 

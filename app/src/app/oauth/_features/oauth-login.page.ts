@@ -1,7 +1,9 @@
-import { Component, OnInit, inject } from "@angular/core";
+import { Component, DestroyRef, OnInit, inject } from "@angular/core";
 import { LoginContext } from "../login-context";
 import { InvalidCredentials } from "../loigin-error";
 import { LoginRequest } from "src/app/user/common/user-credentials-form.component";
+import { ScaffoldToolbarControl } from "src/app/scaffold/scaffold-toolbar.component";
+import { bindCallback } from "rxjs";
 
 
 @Component({
@@ -38,13 +40,18 @@ import { LoginRequest } from "src/app/user/common/user-credentials-form.componen
     `
 })
 export class AuthLoginPage implements OnInit {
+    readonly scaffoldToolbar = inject(ScaffoldToolbarControl);
     readonly loginContext = inject(LoginContext);
+
+    readonly  _destroyRef = inject(DestroyRef);
 
     ngOnInit() {
         if (this.loginContext.isLoggedIn) {
             // Can't navigate to a login page when already logged in.
             throw new Error('Already logged in!');
         }
+
+        this.scaffoldToolbar.disableLogin(this._destroyRef);
     }
 
     async _onSubmitNativeLoginRequest(loginRequest: LoginRequest) {
@@ -55,6 +62,7 @@ export class AuthLoginPage implements OnInit {
             });
             loginRequest.setResultSuccess({accessToken: accessTokenData.accessToken})
         } catch (err) {
+            debugger;
             if (err instanceof InvalidCredentials) {
                 return loginRequest.setResultError({invalidCredentials: err.errorDescription})
             }

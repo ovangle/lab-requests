@@ -19,7 +19,9 @@ import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
     @if (isLoggedIn) {
         <button mat-button [matMenuTriggerFor]="menu">{{userFullName}}</button>
     } @else {
-        <button mat-button [routerLink]="loginLink">Login</button>
+        <button mat-button 
+                [disabled]="loginDisabled"
+                [routerLink]="loginLink">Login</button>
     }
 
     <mat-menu #menu>
@@ -37,6 +39,15 @@ export class UserMenuComponent {
         this._isLoggedIn = coerceBooleanProperty(value);
     }
     _isLoggedIn: boolean;
+
+    @Input()
+    get loginDisabled() {
+        return this._loginDisabled;
+    }
+    set loginDisabled(input: BooleanInput) {
+        this._loginDisabled = coerceBooleanProperty(input);
+    }
+    _loginDisabled: boolean;
 
     @Input({required: true})
     userFullName: string | null;
