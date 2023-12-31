@@ -8,18 +8,24 @@ from pydantic import Field
 
 from api.lab.equipment.schemas import EquipmentRequest
 from api.lab.work_unit.resource.models import ResourceContainer_
-from ..common.schemas import ResourceBase, ResourceCostEstimate, ResourceParams, ResourceType
+from ..common.schemas import (
+    ResourceBase,
+    ResourceCostEstimate,
+    ResourceParams,
+    ResourceType,
+)
+
 
 class EquipmentLease(ResourceBase):
     __resource_type__ = ResourceType.EQUIPMENT
 
     equipment: UUID | EquipmentRequest
 
-    # Have any required inductions been 
+    # Have any required inductions been
     # previously completed?
     equipment_training_completed: set[str]
 
-    # Is the lab tech required in order to 
+    # Is the lab tech required in order to
     # assist in the usage of the machine?
     requires_assistance: bool
 
@@ -32,9 +38,14 @@ class EquipmentLease(ResourceBase):
     usage_cost_estimate: ResourceCostEstimate | None = None
 
     @classmethod
-    def create(cls, container: UUID | ResourceContainer_, index: int, params: ResourceParams[EquipmentLease]):
+    def create(
+        cls,
+        container: UUID | ResourceContainer_,
+        index: int,
+        params: ResourceParams,
+    ):
         if not isinstance(params, EquipmentLeaseParams):
-            raise TypeError('Expected EquipmentLeaseParams')
+            raise TypeError("Expected EquipmentLeaseParams")
 
         return cls(
             container_id=container if isinstance(container, UUID) else container.id,
@@ -46,21 +57,21 @@ class EquipmentLease(ResourceBase):
             usage_cost_estimate=params.usage_cost_estimate,
             setup_instructions=params.setup_instructions,
             created_at=datetime.now(),
-            updated_at=datetime.now()
+            updated_at=datetime.now(),
         )
 
-    def apply(self, params: ResourceParams[EquipmentLease]):
+    def apply(self, params: ResourceParams):
         params = EquipmentLeaseParams(**params.model_dump())
 
         match params.equipment:
             case UUID():
                 if params.equipment != self.equipment:
-                    raise HTTPException(409, 'cannot update equipment')
+                    raise HTTPException(409, "cannot update equipment")
             case EquipmentRequest():
                 if isinstance(params.equipment, UUID):
                     self.equipment = params.equipment
                 elif params.equipment != self.equipment:
-                    raise HTTPException(409, 'cannot update equipment')
+                    raise HTTPException(409, "cannot update equipment")
 
         self.equipment_training_completed = set(params.equipment_training_completed)
         self.requires_assistance = params.requires_assistance
@@ -68,10 +79,10 @@ class EquipmentLease(ResourceBase):
         return super().apply(params)
 
 
-class EquipmentLeaseParams(ResourceParams[EquipmentLease]):
+class EquipmentLeaseParams(ResourceParams):
     equipment: UUID | EquipmentRequest
     equipment_training_completed: set[str] = Field(default_factory=set)
     requires_assistance: bool = False
-    setup_instructions: str = ''
+    setup_instructions: str = ""
 
     usage_cost_estimate: ResourceCostEstimate | None = None
