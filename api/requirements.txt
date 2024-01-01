@@ -1,30 +1,30 @@
-fastapi==0.103.2
-python-multipart==0.0.6
+fastapi>=0.108.0
+python-multipart>=0.0.6
 
-pydantic==2.4.2
-pydantic_core==2.10.1
-pydantic-settings==2.0.3
+pydantic>=2.5
+pydantic_core>=2.14
+pydantic-settings>=2.1
 
-SQLAlchemy[asyncio]==2.0.21
-sqlalchemy-utils==0.41.1
+SQLAlchemy[asyncio]>=2.0
+sqlalchemy-utils>=0.41
 types-sqlalchemy-utils
-psycopg[c]==3.1.12
-alembic==1.12.0
-uvicorn[standard]==0.23.2
+psycopg[c]>=3.1
+alembic>=1.12
+uvicorn[standard]>=0.23
 
-passlib==1.7.4
-python-jose>=3.3.0
+passlib>=1.7
+python-jose>=3.3
 types-python-jose
 types-passlib
-pyhumps==3.8.0
+pyhumps>=3.8
 
-aiofiles==23.2.1
-types-aiofiles==23.2.0
+aiofiles>=23.2.1
+types-aiofiles>=23.2.0
 
 # DEV ONLY
 
 packaging>=23.2
-mypy>=1.5.1
+mypy>=1.6.0
 debugpy>=1.8.0
-typing_extensions>=4.8.0
-black>=23.10  
+typing_extensions>=4.9.0
+black>=23.11  
