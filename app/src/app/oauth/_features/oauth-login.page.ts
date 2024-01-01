@@ -1,28 +1,31 @@
-import { Component, DestroyRef, OnInit, inject } from "@angular/core";
-import { LoginContext } from "../login-context";
-import { InvalidCredentials } from "../loigin-error";
-import { LoginRequest } from "src/app/user/common/user-credentials-form.component";
-import { ScaffoldToolbarControl } from "src/app/scaffold/scaffold-toolbar.component";
-import { bindCallback } from "rxjs";
-
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { LoginContext } from '../login-context';
+import { InvalidCredentials } from '../loigin-error';
+import { LoginRequest } from 'src/app/user/common/user-credentials-form.component';
+import { bindCallback } from 'rxjs';
+import { ScaffoldStateService } from 'src/app/scaffold/scaffold-state.service';
 
 @Component({
-    selector: 'oauth-login-page',
-    template: `
+  selector: 'oauth-login-page',
+  template: `
     <div>
-        <user-credentials-form 
-            (loginRequest)="_onSubmitNativeLoginRequest($event)" />
-        <div id="supportedExternalProviders">
-            <h4>Alternatively, you can</h4>
+      <user-credentials-form
+        (loginRequest)="_onSubmitNativeLoginRequest($event)"
+      />
+      <div id="supportedExternalProviders">
+        <h4>Alternatively, you can</h4>
 
-            <button mat-button disabled
-                    (click)="_onClickExternalProviderLogin('microsoft-cqu')">
-                Login via CQU (not working)
-            </button>
-        </div>
+        <button
+          mat-button
+          disabled
+          (click)="_onClickExternalProviderLogin('microsoft-cqu')"
+        >
+          Login via CQU (not working)
+        </button>
+      </div>
     </div>
-    `,
-    styles: `
+  `,
+  styles: `
     :host {
         display: flex;
         flex-direction: column;
@@ -37,40 +40,49 @@ import { bindCallback } from "rxjs";
         margin-bottom: 2em;
     }
 
-    `
+    `,
 })
 export class AuthLoginPage implements OnInit {
-    readonly scaffoldToolbar = inject(ScaffoldToolbarControl);
-    readonly loginContext = inject(LoginContext);
+  readonly scaffold = inject(ScaffoldStateService);
+  readonly loginContext = inject(LoginContext);
 
-    readonly  _destroyRef = inject(DestroyRef);
+  readonly _destroyRef = inject(DestroyRef);
 
-    ngOnInit() {
-        if (this.loginContext.isLoggedIn) {
-            // Can't navigate to a login page when already logged in.
-            throw new Error('Already logged in!');
+  ngOnInit() {
+    this.loginContext
+      .checkLoggedIn()
+      .then((isLoggedIn) => {
+        if (isLoggedIn) {
+          return this.loginContext.redirectToHome();
         }
+        return null;
+      })
+      .then(() => {
+        this.scaffold.disableLoginButton(this._destroyRef);
+      });
+  }
 
-        this.scaffoldToolbar.disableLogin(this._destroyRef);
+  async _onSubmitNativeLoginRequest(loginRequest: LoginRequest) {
+    try {
+      const accessTokenData = await this.loginContext.loginNativeUser({
+        username: loginRequest.email,
+        password: loginRequest.password,
+      });
+      loginRequest.setResultSuccess({
+        accessToken: accessTokenData.accessToken,
+      });
+    } catch (err) {
+      debugger;
+      if (err instanceof InvalidCredentials) {
+        return loginRequest.setResultError({
+          invalidCredentials: err.errorDescription,
+        });
+      }
+      throw err;
     }
+  }
 
-    async _onSubmitNativeLoginRequest(loginRequest: LoginRequest) {
-        try {
-            const accessTokenData = await this.loginContext.loginNativeUser({
-                username: loginRequest.email,
-                password: loginRequest.password
-            });
-            loginRequest.setResultSuccess({accessToken: accessTokenData.accessToken})
-        } catch (err) {
-            debugger;
-            if (err instanceof InvalidCredentials) {
-                return loginRequest.setResultError({invalidCredentials: err.errorDescription})
-            }
-            throw err;
-        }
-    }
-
-    async _onClickExternalProviderLogin(provider: string) { 
-        return await this.loginContext.loginExternalUser(provider)
-    }
+  async _onClickExternalProviderLogin(provider: string) {
+    return await this.loginContext.loginExternalUser(provider);
+  }
 }

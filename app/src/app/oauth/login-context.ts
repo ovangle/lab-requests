@@ -41,10 +41,6 @@ export class LoginContext {
     return this.currentAccessTokenData?.accessToken || null;
   }
 
-  get isLoggedIn(): boolean {
-    return this.currentAccessTokenData != null;
-  }
-
   readonly flowStateStore = inject(OauthFlowStateStore);
 
   isFlowInProgress(
@@ -60,6 +56,14 @@ export class LoginContext {
 
   checkIsNoFlowInProgress() {
     return this.flowStateStore.checkIsNoFlowInProgress();
+  }
+
+  get isLoggedIn(): boolean {
+    let accessTokenData = this.currentAccessTokenData;
+    if (!accessTokenData) return false;
+
+    let isExpired = isBefore(accessTokenData.expiresAt, new Date());
+    return !!accessTokenData && !isExpired;
   }
 
   async checkLoggedIn(): Promise<boolean> {

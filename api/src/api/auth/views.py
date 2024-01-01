@@ -3,7 +3,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 from db import get_db
-from api.user.models import NativeUser
 from api.user.errors import UserDoesNotExist
 from api.user.model_fns import get_user_for_email, login_native_user
 

@@ -13,30 +13,28 @@ from db import LocalSession
 from .types import UserDomain, UserRole
 from . import models
 
-class User(ApiModel[models.AbstractUser]):
+
+class User(ApiModel[models.User_]):
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID):
-        user = await models.AbstractUser.get_for_id(db, id)
+        user = await models.User_.get_for_id(db, id)
         return await cls.from_model(user)
 
     @classmethod
-    async def get_for_email(cls, db: LocalSession, email: str, native_only=False):
-        if native_only: 
-            user = await models.NativeUser.get_for_email(db, email)
-        else:
-            user = await models.AbstractUser.get_for_email(db, email)
+    async def get_for_email(cls, db: LocalSession, email: str):
+        user = await models.User_.get_for_email(db, email)
         return await cls.from_model(user)
 
     @classmethod
-    async def from_model(cls, model: models.AbstractUser | User):
+    async def from_model(cls, model: models.User_ | User):
         return cls(
             domain=model.domain,
             id=model.id,
             email=model.email,
             disabled=model.disabled,
-            roles=set(model.roles),
+            roles={UserRole(r) for r in model.roles},
             created_at=model.created_at,
-            updated_at=model.updated_at
+            updated_at=model.updated_at,
         )
 
     domain: UserDomain
@@ -47,13 +45,7 @@ class User(ApiModel[models.AbstractUser]):
 
     @override
     async def to_model(self, db: LocalSession):
-        match self.domain:
-            case 'external':
-                return await models.ExternalUser.get_for_email(db, self.email)
-            case 'native':
-                return await models.NativeUser.get_for_email(db, self.email)
-            case _:
-                raise ValueError(f'Unrecognised user domain {self.domain}')
+        return await models.User_.get_for_email(db, self.email)
 
 
 class NativeUserLoginRequest(BaseModel):
@@ -75,17 +67,15 @@ class AlterPasswordRequest(BaseModel):
 
     current_value: str
     new_value: str
-    
+
     async def __call__(self, db: LocalSession, user: User):
-        if user.domain == 'native':
+        if user.domain == "native":
             model_user = await user.to_model(db)
-            assert isinstance(model_user, models.NativeUser)
+            assert isinstance(model_user, models.NativeUser_)
             if not model_user.verify_password(self.current_value):
                 raise AlterPasswordConflictError(user)
-            model_user.set_password(self.new_value)            
+            model_user.set_password(self.new_value)
             db.add(model_user)
             return user
         else:
             raise NotANativeUserError(user)
-
-            

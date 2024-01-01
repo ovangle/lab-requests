@@ -1,33 +1,32 @@
-import { CommonModule } from "@angular/common";
-import { Component } from "@angular/core";
+import { CommonModule } from '@angular/common';
+import { Component, Input } from '@angular/core';
 
 import { MatSidenavModule } from '@angular/material/sidenav';
-import { SidenavMenuComponent } from "./sidenav-menu.component";
-import { ToolbarComponent } from "./scaffold-toolbar.component";
-
+import { SidenavMenuComponent } from './sidenav-menu/sidenav-menu.component';
+import { ToolbarComponent } from './scaffold-toolbar.component';
 
 @Component({
-    selector: 'scaffold-layout',
-    standalone: true,
-    imports: [
-       CommonModule,
-       MatSidenavModule,
+  selector: 'scaffold-layout',
+  standalone: true,
+  imports: [
+    CommonModule,
+    MatSidenavModule,
 
-       SidenavMenuComponent,
-       ToolbarComponent
-    ],
-    template: `
+    SidenavMenuComponent,
+    ToolbarComponent,
+  ],
+  template: `
     <scaffold-toolbar />
     <mat-sidenav-container>
-        <mat-sidenav mode="side" opened>
-            <scaffold-sidenav-menu />
-        </mat-sidenav>
-        <mat-sidenav-content>
-            <ng-content select=".content" />
-        </mat-sidenav-content>
+      <mat-sidenav mode="side" opened>
+        <scaffold-sidenav-menu />
+      </mat-sidenav>
+      <mat-sidenav-content>
+        <ng-content select=".content" />
+      </mat-sidenav-content>
     </mat-sidenav-container>
-    `,
-    styles: `
+  `,
+  styles: `
     :host { 
         min-height: calc(100% - var(--mat-toolbar-standard-height)); 
         --scaffold-toolbar-height: 40px;
@@ -41,16 +40,16 @@ import { ToolbarComponent } from "./scaffold-toolbar.component";
     }
     
     mat-sidenav-container {
-        margin-top: var(--mat-toolbar-standard-height);
-        height: calc(100% - var(--mat-toolbar-standard-height));
-        overflow-y: auto;
+        position: absolute;
+        top: var(--mat-toolbar-standard-height);
+        bottom: 0;
+        left: 0;
+        right: 0;
     }
 
-    :host ::ng-deep .content {
-        height: 100%;
+    mat-sidenav {
+      width: 20em;
     }
-    `
+    `,
 })
-export class ScaffoldLayoutComponent {
-
-}
+export class ScaffoldLayoutComponent {}

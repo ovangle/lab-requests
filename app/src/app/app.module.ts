@@ -5,12 +5,18 @@ import { HttpClientModule } from '@angular/common/http';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { MAT_DATE_FNS_FORMATS, MatDateFnsModule } from '@angular/material-date-fns-adapter';
+import {
+  MAT_DATE_FNS_FORMATS,
+  MatDateFnsModule,
+} from '@angular/material-date-fns-adapter';
 import { enAU } from 'date-fns/locale';
 import { MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
 import { provideLocalStorage } from './utils/local-storage';
 import { PlatformLocation } from '@angular/common';
-import { AUTHORIZED_API_URL_MATCHER, baseUrlMatcherFn } from './oauth/_root/auth-interceptor';
+import {
+  AUTHORIZED_API_URL_MATCHER,
+  baseUrlMatcherFn,
+} from './oauth/_root/auth-interceptor';
 import { MatButtonModule } from '@angular/material/button';
 import { BodyScrollbarHidingService } from './utils/body-scrollbar-hiding.service';
 import { uniModelServiceProviders } from './uni/uni';
@@ -18,8 +24,13 @@ import { labModelServiceProviders } from './lab/lab-model-providers';
 import { FileUploadService } from './common/file/file-upload.service';
 import { API_BASE_URL } from './common/model/model-service';
 import { OauthRootModule } from './oauth/_root/oauth.root-module';
-import { APP_OAUTH_PROVIDER_PARAMS, provideAppOauthProviderParams } from './app-oauth-provider-params';
+import {
+  APP_OAUTH_PROVIDER_PARAMS,
+  provideAppOauthProviderParams,
+} from './app-oauth-provider-params';
 import { ScaffoldLayoutComponent } from './scaffold/scaffold-layout.component';
+import { provideSidenavMenuRootGroupControl } from './scaffold/sidenav-menu/sidenav-menu-group-control';
+import { LabSidenavMenuGroupControl } from './lab/_root/lab-sidenav-menu-group-control';
 
 /**
  * This function is used internal to get a string instance of the `<base href="" />` value from `index.html`.
@@ -37,9 +48,7 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
 }
 
 @NgModule({
-  declarations: [
-    AppComponent
-  ],
+  declarations: [AppComponent],
   imports: [
     BrowserModule,
     AppRoutingModule,
@@ -52,8 +61,8 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
       {
         publicPage: '/public',
         oauthFeature: '/oauth',
-        defaultUserHomePage: '/user/home'
-      }, 
+        defaultUserHomePage: '/user/home',
+      },
       APP_OAUTH_PROVIDER_PARAMS
     ),
     ScaffoldLayoutComponent,
@@ -61,7 +70,7 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
   providers: [
     {
       provide: API_BASE_URL,
-      useValue: '/api'
+      useValue: '/api',
     },
     ...provideLocalStorage(),
     { provide: MAT_DATE_LOCALE, useValue: enAU },
@@ -71,15 +80,18 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
     {
       provide: AUTHORIZED_API_URL_MATCHER,
       multi: true,
-      useFactory: (apiBaseUrl: string) => baseUrlMatcherFn(apiBaseUrl, ['/oauth/token']),
-      deps: [API_BASE_URL]
+      useFactory: (apiBaseUrl: string) =>
+        baseUrlMatcherFn(apiBaseUrl, ['/oauth/token']),
+      deps: [API_BASE_URL],
     },
     provideAppOauthProviderParams(),
 
     FileUploadService,
     ...uniModelServiceProviders(),
-    ...labModelServiceProviders()
+    ...labModelServiceProviders(),
+
+    provideSidenavMenuRootGroupControl(LabSidenavMenuGroupControl),
   ],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
 })
-export class AppModule { }
+export class AppModule {}
