@@ -31,7 +31,7 @@ import {
   throwError,
 } from 'rxjs';
 import { Actor } from '../actor';
-import { Lab } from 'src/app/lab/lab';
+import { Lab } from 'src/app/lab/common/lab';
 
 export interface UserParams extends ModelParams {
   name: string;

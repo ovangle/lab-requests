@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Coroutine, Type, Union
+from typing import TYPE_CHECKING, Any, Coroutine, Type, Union
 from typing_extensions import override
 from uuid import UUID
 
@@ -13,8 +13,11 @@ from db import LocalSession
 from .types import UserDomain, UserRole
 from . import models
 
+if TYPE_CHECKING:
+    from api.lab.schemas import Lab
 
-class User(ApiModel[models.User_]):
+
+class User(ApiModel[models.AbstractUserImpl_]):
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID):
         user = await models.User_.get_for_id(db, id)
@@ -26,7 +29,13 @@ class User(ApiModel[models.User_]):
         return await cls.from_model(user)
 
     @classmethod
-    async def from_model(cls, model: models.User_ | User):
+    async def from_model(cls, model: models.AbstractUserImpl_ | User):
+        if isinstance(model, models.AbstractUserImpl_):
+            session = async_object_session(model)
+            if session is None:
+                raise RuntimeError('Detached object')
+            select_lab_ids = select(Lab_)
+            
         return cls(
             domain=model.domain,
             id=model.id,
@@ -42,6 +51,8 @@ class User(ApiModel[models.User_]):
     disabled: bool
 
     roles: set[UserRole]
+
+    labs: list[Lab]
 
     @override
     async def to_model(self, db: LocalSession):

@@ -1,8 +1,17 @@
 import asyncio
+
+from sqlalchemy import delete, select
 from db import local_sessionmaker
 
-from api.user.models import NativeUser_
+from api.user.models import NativeUser_, User_
 from api.user.model_fns import login_native_user, get_user_for_email
+
+async def delete_all_users(db):
+    for u in await db.scalars(select(User_)):
+        print('deleting user', u.email, 'id: ', u.id)
+        await db.execute(delete(User_).where(User_.id == u.id))
+    await db.commit()
+
 
 
 async def main():

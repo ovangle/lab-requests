@@ -4,6 +4,7 @@ import { UserHomePage } from "./user-home.page";
 import { CommonModule } from "@angular/common";
 import { AlterPasswordPage } from "./alter-password.page";
 import { AlterPasswordFormComponent } from "../common/alter-password-form.component";
+import { LabListComponent } from "src/app/lab/common/lab-list.component";
 
 const USER_ROUTES: Routes = [
     {
@@ -29,11 +30,12 @@ const USER_ROUTES: Routes = [
         CommonModule,
         RouterModule.forChild(USER_ROUTES),
 
-        AlterPasswordFormComponent
+        AlterPasswordFormComponent,
+        LabListComponent
     ],
     declarations: [
         UserHomePage,
-        AlterPasswordPage
+        AlterPasswordPage,
     ] 
 })
 export class UserFeatureModule {

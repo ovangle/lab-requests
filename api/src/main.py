@@ -63,17 +63,20 @@ def api_router():
     from api.user.views import users
     api_router.include_router(users)
 
-    from api.lab.equipment.views import lab_equipments, lab_equipment_tags
-    api_router.include_router(lab_equipments)
-    api_router.include_router(lab_equipment_tags)
+    from api.lab.views import lab
+    api_router.include_router(lab)
 
-    from api.lab.plan.views import lab_plans
-    api_router.include_router(lab_plans)
+    # from api.lab.equipment.views import lab_equipments, lab_equipment_tags
+    # api_router.include_router(lab_equipments)
+    # api_router.include_router(lab_equipment_tags)
 
-    from api.lab.work_unit.views import lab_work_units
-    api_router.include_router(lab_work_units)
+    # from api.lab.plan.views import lab_plans
+    # api_router.include_router(lab_plans)
 
-    from api.uni.views import uni_campuses
+    # from api.lab.work_unit.views import lab_work_units
+    # api_router.include_router(lab_work_units)
+
+    # from api.uni.views import uni_campuses
     api_router.include_router(uni_campuses)
 
     from api.uni.research.views import uni_research_funding

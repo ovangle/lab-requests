@@ -20,7 +20,6 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { BodyScrollbarHidingService } from './utils/body-scrollbar-hiding.service';
 import { uniModelServiceProviders } from './uni/uni';
-import { labModelServiceProviders } from './lab/lab-model-providers';
 import { FileUploadService } from './common/file/file-upload.service';
 import { API_BASE_URL } from './common/model/model-service';
 import { OauthRootModule } from './oauth/_root/oauth.root-module';
@@ -88,7 +87,6 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
 
     FileUploadService,
     ...uniModelServiceProviders(),
-    ...labModelServiceProviders(),
 
     provideSidenavMenuRootGroupControl(LabSidenavMenuGroupControl),
   ],
