@@ -45,17 +45,16 @@ export class AuthorizationInterceptor implements HttpInterceptor {
             console.log('Attaching implicit authorization...')
 
             return from(this.loginContext.checkLoggedIn()).pipe(
-                tap(isLoggedIn => {
-                    if (!isLoggedIn) {
-                        this.router.navigateByUrl(this.publicPagePath)
+                switchMap((isLoggedIn) => {
+                    if (isLoggedIn) {
+                        req = req.clone({
+                            setHeaders: {
+                                Authorization: `Bearer ${this.loginContext.currentAccessToken}`
+                            }
+                        })
                     }
-                }),
-                takeWhile(isLoggedIn => !isLoggedIn),
-                switchMap(() => next.handle(req.clone({
-                    setHeaders: {
-                        Authorization: `Bearer ${this.loginContext.currentAccessToken}`
-                    }
-                })))
+                    return next.handle(req);
+                })
             )
         }
 
@@ -75,7 +74,7 @@ export function provideAuthorizationRequestMatcher(matcherFn: UrlMatcherFn): Pro
 
 export function authorizationInterceptorProviders(): Provider[] {
     return [
-       {
+        {
             provide: HTTP_INTERCEPTORS,
             multi: true,
             useClass: AuthorizationInterceptor

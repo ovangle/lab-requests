@@ -6,26 +6,13 @@ from sqlalchemy import MetaData
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from fastapi.encoders import jsonable_encoder
 
-from .settings import Settings
+from .engine import db_engine
+from .settings import DbSettings
+from .session import local_sessionmaker, LocalSession
 
 db_metadata = MetaData()
-db_settings = Settings()
+db_url = DbSettings().db_url
 
-db_url = db_settings.db_url
-
-db_engine = create_async_engine(
-    db_url,
-    json_serializer=lambda d: json.dumps(jsonable_encoder(d)),
-)
-
-class LocalSession(AsyncSession):
-    pass
-
-local_sessionmaker = async_sessionmaker(
-    db_engine,
-    class_=LocalSession,
-    expire_on_commit=False
-)
 
 async def get_db():
     db = local_sessionmaker()
@@ -33,4 +20,3 @@ async def get_db():
         yield db
     finally:
         await db.close()
-    

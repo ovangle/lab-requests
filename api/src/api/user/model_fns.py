@@ -9,7 +9,7 @@ from db import LocalSession, get_db
 from . import models
 from . import schemas
 
-from .errors import UserDoesNotExist, InvalidCredentials
+from .errors import NotANativeUserError, UserDoesNotExist, InvalidCredentials
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -59,10 +59,13 @@ async def login_native_user(
     db: LocalSession, email: str, password: str
 ) -> schemas.User:
     try:
-        user = await models.NativeUser_.get_for_email(db, email)
+        user = await models.User_.get_for_email(db, email)
     except UserDoesNotExist:
         raise InvalidCredentials.user_not_found(email)
+    credentials = await user.awaitable_attrs.credentials
+    if not isinstance(credentials, models.NativeUserCredentials_):
+        raise NotANativeUserError(user)
 
-    if not user.verify_password(password):
+    if not await credentials.verify_password(password):
         raise InvalidCredentials.login_failed(email)
-    return await schemas.User.from_model(await user.awaitable_attrs.user)
+    return await schemas.User.from_model(user)

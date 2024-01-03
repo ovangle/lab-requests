@@ -6,19 +6,23 @@
       "name": "debug api server",
       "type": "python",
       "request": "attach",
-      "port": 8765,
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 8765
+      },
       "pathMappings": [
         {
           "localRoot": "${workspaceFolder}/api",
           "remoteRoot": "/srv/api"
         }
       ],
+      "logToFile": true,
       "justMyCode": false
     },
     {
       "name": "debug client app",
       "type": "chrome",
-      "request": "launch",
+      "request": "attach",
       "url": "http://localhost:4200",
       "webRoot": "${workspaceFolder}/app"
     }

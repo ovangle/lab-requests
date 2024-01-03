@@ -6,7 +6,7 @@ import asyncio
 from sqlalchemy import select, delete
 # from sqlalchemy import func, or_, select, update
 from db import local_sessionmaker, LocalSession
-from api.user.models import AbstractUserImpl_, seed_users, NativeUser
+from api.user.models import UserCredentials_, seed_users, NativeUser
 
 async def pretest():
     async with local_sessionmaker() as db:

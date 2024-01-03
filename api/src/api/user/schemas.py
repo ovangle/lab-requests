@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from api.lab.schemas import Lab
 
 
-class User(ApiModel[models.AbstractUserImpl_]):
+class User(ApiModel[models.User_]):
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID):
         user = await models.User_.get_for_id(db, id)
@@ -29,19 +29,19 @@ class User(ApiModel[models.AbstractUserImpl_]):
         return await cls.from_model(user)
 
     @classmethod
-    async def from_model(cls, model: models.AbstractUserImpl_ | User):
-        if isinstance(model, models.AbstractUserImpl_):
-            session = async_object_session(model)
-            if session is None:
-                raise RuntimeError('Detached object')
-            select_lab_ids = select(Lab_)
-            
+    async def from_model(cls, model: models.User_ | User):
+        if isinstance(model, User):
+            labs = list(model.labs)
+        else:
+            labs = await model.awaitable_attrs.labs
+
         return cls(
             domain=model.domain,
             id=model.id,
             email=model.email,
             disabled=model.disabled,
             roles={UserRole(r) for r in model.roles},
+            labs=labs,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
@@ -52,7 +52,7 @@ class User(ApiModel[models.AbstractUserImpl_]):
 
     roles: set[UserRole]
 
-    labs: list[Lab]
+    labs: list
 
     @override
     async def to_model(self, db: LocalSession):
@@ -82,10 +82,12 @@ class AlterPasswordRequest(BaseModel):
     async def __call__(self, db: LocalSession, user: User):
         if user.domain == "native":
             model_user = await user.to_model(db)
-            assert isinstance(model_user, models.NativeUser_)
-            if not model_user.verify_password(self.current_value):
+            credentials = await model_user.awaitable_attrs.credentials
+            assert isinstance(credentials, models.NativeUserCredentials_)
+            if not credentials.verify_password(self.current_value):
                 raise AlterPasswordConflictError(user)
-            model_user.set_password(self.new_value)
+
+            credentials.set_password(self.new_value)
             db.add(model_user)
             return user
         else:

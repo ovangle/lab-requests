@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+
 from typing import TYPE_CHECKING
+from typing_extensions import override
 from uuid import UUID
 from fastapi import HTTPException
 
@@ -12,35 +14,50 @@ from api.base.schemas import ApiModel, ModelCreate, ModelPatch
 from ..types import LabType
 from . import models
 
+
 class EquipmentTagBase(BaseModel):
     id: UUID | None
     name: str
 
+
 class EquipmentTag(EquipmentTagBase, ApiModel[models.EquipmentTag]):
     id: UUID
 
+    @override
     @classmethod
-    def from_model(cls, equipment: EquipmentTag | models.EquipmentTag):
+    async def from_model(cls, equipment: EquipmentTag | models.EquipmentTag):
         return cls(
             id=equipment.id,
             name=equipment.name,
             created_at=equipment.created_at,
-            updated_at=equipment.updated_at
+            updated_at=equipment.updated_at,
         )
 
+    @override
+    @classmethod
+    async def get_for_id(cls, db: LocalSession, id: UUID):
+        tag = await models.EquipmentTag.fetch_for_id(db, id)
+        return await cls.from_model(tag)
+
+    @override
     async def to_model(self, db: LocalSession):
         return await models.EquipmentTag.fetch_for_id(db, self.id)
 
-class EquipmentTagPatch(EquipmentTagBase, ModelPatch[EquipmentTag, models.EquipmentTag]):
+
+class EquipmentTagPatch(
+    EquipmentTagBase, ModelPatch[EquipmentTag, models.EquipmentTag]
+):
     async def do_update(self, db: LocalSession, tag: models.EquipmentTag):
         if self.id and self.id != tag.id:
-            raise HTTPException(409, 'Mismatched tags')
+            raise HTTPException(409, "Mismatched tags")
         if tag.name != self.name:
             tag.name = self.name
             db.add(tag)
-        
 
-class EquipmentTagCreate(EquipmentTagBase, ModelCreate[EquipmentTag, models.EquipmentTag]):
+
+class EquipmentTagCreate(
+    EquipmentTagBase, ModelCreate[EquipmentTag, models.EquipmentTag]
+):
     async def do_create(self, db: LocalSession):
         instance = models.EquipmentTag(id=self.id, name=self.name)
         db.add(instance)
@@ -54,6 +71,7 @@ class EquipmentBase(BaseModel):
     training_descriptions: list[str]
     tags: set[str]
 
+
 class Equipment(EquipmentBase, ApiModel[models.Equipment]):
     id: UUID
 
@@ -66,7 +84,7 @@ class Equipment(EquipmentBase, ApiModel[models.Equipment]):
             training_descriptions=list(equipment.training_descriptions),
             tags=set(equipment.tags),
             created_at=equipment.created_at,
-            updated_at=equipment.updated_at
+            updated_at=equipment.updated_at,
         )
 
     async def to_model(self, db: LocalSession):
@@ -82,8 +100,10 @@ class EquipmentRequest(BaseModel):
     """
     Represents a request to create an equipment
     """
+
     name: str
     description: str
+
 
 class EquipmentPatch(EquipmentBase, ModelPatch[Equipment, models.Equipment]):
     __api_model__ = Equipment
@@ -106,6 +126,7 @@ class EquipmentPatch(EquipmentBase, ModelPatch[Equipment, models.Equipment]):
             db.add(model)
         return model
 
+
 class EquipmentCreate(EquipmentBase, ModelCreate[Equipment, models.Equipment]):
     __api_model__ = Equipment
 
@@ -113,6 +134,3 @@ class EquipmentCreate(EquipmentBase, ModelCreate[Equipment, models.Equipment]):
         equipment = models.Equipment(**self.model_dump())
         db.add(equipment)
         return equipment
-
-
-

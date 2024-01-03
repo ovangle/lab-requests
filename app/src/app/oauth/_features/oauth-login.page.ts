@@ -72,7 +72,6 @@ export class AuthLoginPage implements OnInit {
         accessToken: accessTokenData.accessToken,
       });
     } catch (err) {
-      debugger;
       if (err instanceof InvalidCredentials) {
         return loginRequest.setResultError({
           invalidCredentials: err.errorDescription,

@@ -17,6 +17,7 @@ services:
       - "8000:8000"
       - "8765:8765"
     environment:
+      API_DEBUG: ${API_DEBUG}
       DB_HOST: postgres
       DB_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
