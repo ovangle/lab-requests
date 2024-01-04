@@ -34,6 +34,7 @@ async def get_user_for_email(db: LocalSession, email: str):
 
 
 async def fake_decode_token(db: LocalSession, token) -> schemas.User:
+    print("token", token)
     return await schemas.User.get_for_id(db, UUID(hex=token))
 
 

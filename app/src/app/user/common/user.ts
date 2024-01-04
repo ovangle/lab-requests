@@ -31,13 +31,14 @@ import {
   throwError,
 } from 'rxjs';
 import { Actor } from '../actor';
-import { Lab } from 'src/app/lab/common/lab';
+import { Lab, labFromJson } from 'src/app/lab/common/lab';
 
 export interface UserParams extends ModelParams {
   name: string;
   email: string;
 
   roles: ReadonlySet<Role>;
+  labs: ReadonlyArray<Lab>;
 }
 
 export class User extends Model implements UserParams {
@@ -56,6 +57,7 @@ export class User extends Model implements UserParams {
     this.name = params.name;
 
     this.roles = params.roles;
+    this.labs = params.labs;
   }
 
   canActAs(actor: Actor) {
@@ -80,11 +82,16 @@ function userParamsFromJson(json: unknown): UserParams {
   if (Array.isArray(json['roles'])) {
     roles = new Set(json['roles'].map(roleFromJson));
   }
+  let labs: ReadonlyArray<Lab> = [];
+  if (Array.isArray(json['labs'])) {
+    labs = json['labs'].map(labFromJson);
+  }
   return {
     ...baseParams,
     name: json['name'],
     email: json['email'],
     roles,
+    labs
   };
 }
 
@@ -92,13 +99,13 @@ export function userFromJson(json: unknown) {
   return new User(userParamsFromJson(json));
 }
 
-export interface UserPatch extends ModelPatch<User> {}
+export interface UserPatch extends ModelPatch<User> { }
 
 function userPatchToJson(patch: UserPatch) {
   return modelPatchToJson(patch);
 }
 
-export interface UserLookup extends ModelLookup<User> {}
+export interface UserLookup extends ModelLookup<User> { }
 
 function userLookupToHttpParams(lookup: Partial<UserLookup>): HttpParams {
   return modelLookupToHttpParams(lookup);
@@ -109,7 +116,7 @@ export interface AlterPassword {
   newValue: string;
 }
 
-export class AlterPasswordError extends Error {}
+export class AlterPasswordError extends Error { }
 
 @Injectable({ providedIn: 'root' })
 export class UserMeta extends ModelMeta<User, UserPatch, UserLookup> {

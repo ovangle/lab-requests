@@ -55,8 +55,9 @@ class Lab_(Base):
 
         return await db.scalars(select(Lab_).where(Lab_.id.in_(supervisor_ids)))
 
-    @property
-    async def supervisor_emails(self):
+    async def get_supervisor_emails(self):
+        from api.user.models import User_
+
         session = async_object_session(self)
         if session is None:
             raise RuntimeError("detached instance")
@@ -90,6 +91,13 @@ async def seed_labs(db: LocalSession):
         await create_lab(CampusCode("MEL"), Discipline.ICT, "t.stephenson@cqu.edu.au")
     ]
 
-    all_campus_code_disciplines = await db.scalars(
-        select(Lab_.campus_id, Lab_.discipline)
+    all_campus_id_disciplines = set(
+        await db.execute(select(Lab_.campus_id, Lab_.discipline))
     )
+    print("all campus code disciplines", all_campus_id_disciplines)
+
+    for lab in all_labs:
+        if (lab.campus_id, lab.discipline) not in all_campus_id_disciplines:
+            db.add(lab)
+
+    await db.commit()

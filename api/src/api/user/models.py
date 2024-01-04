@@ -58,8 +58,7 @@ class User_(Base):
             raise UserDoesNotExist.for_email(email)
         return u
 
-    @property
-    async def labs(self):
+    async def get_supervised_labs(self):
         from api.lab.models import Lab_
 
         session = async_object_session(self)

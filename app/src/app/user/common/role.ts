@@ -1,16 +1,18 @@
 
 
+/*
 export const ACTOR_ROLES = [
     'student',
     'lab-technician',
     'academic',
     'supervisor',
 ];
+*/
 
-export type Role = typeof ACTOR_ROLES[number];
+export type Role = string;
 
 export function isRole(obj: unknown): obj is Role {
-    return typeof obj === 'string' && ACTOR_ROLES.includes(obj);
+    return typeof obj === 'string';
 }
 
 export function roleFromJson(json: unknown): Role {

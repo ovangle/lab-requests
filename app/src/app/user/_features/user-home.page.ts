@@ -15,6 +15,10 @@ import { LabListComponent } from 'src/app/lab/common/lab-list.component';
       <lab-list [labs]="labs" />
     }
   </div>
+
+  <div class="plans-container">
+    <h1>Plans</h1>
+  </div>
   `,
 })
 export class UserHomePage {

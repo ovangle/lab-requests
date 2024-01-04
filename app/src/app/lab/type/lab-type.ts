@@ -8,7 +8,7 @@ export const labTypes = [
 
 export type LabType = typeof labTypes[number];
 
-export function isLabType(obj: any): obj is LabType {
+export function isLabType(obj: unknown): obj is LabType {
     return typeof obj === 'string'
         && labTypes.includes(obj as any);
 }

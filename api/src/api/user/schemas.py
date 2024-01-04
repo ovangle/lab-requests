@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 
 from typing import TYPE_CHECKING, Any, Coroutine, Type, Union
 from typing_extensions import override
@@ -18,6 +19,15 @@ if TYPE_CHECKING:
 
 
 class User(ApiModel[models.User_]):
+    domain: UserDomain
+    name: str
+    email: str
+    disabled: bool
+
+    roles: set[UserRole]
+
+    labs: list
+
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID):
         user = await models.User_.get_for_id(db, id)
@@ -30,14 +40,18 @@ class User(ApiModel[models.User_]):
 
     @classmethod
     async def from_model(cls, model: models.User_ | User):
+        from api.lab.schemas import Lab
+
         if isinstance(model, User):
             labs = list(model.labs)
         else:
-            labs = await model.awaitable_attrs.labs
+            lab_models = await model.get_supervised_labs()
+            labs = await asyncio.gather(*(Lab.from_model(l) for l in lab_models))
 
         return cls(
             domain=model.domain,
             id=model.id,
+            name=model.name,
             email=model.email,
             disabled=model.disabled,
             roles={UserRole(r) for r in model.roles},
@@ -45,14 +59,6 @@ class User(ApiModel[models.User_]):
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
-
-    domain: UserDomain
-    email: str
-    disabled: bool
-
-    roles: set[UserRole]
-
-    labs: list
 
     @override
     async def to_model(self, db: LocalSession):
