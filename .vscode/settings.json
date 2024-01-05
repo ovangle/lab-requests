@@ -17,5 +17,6 @@
     "editor.formatOnSave": true,
     "[typescript]": {
         "editor.defaultFormatter": "vscode.typescript-language-features"
-    }
+    },
+    "typescript.tsserver.experimental.enableProjectDiagnostics": true
 }
