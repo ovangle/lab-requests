@@ -8,7 +8,7 @@ import { Equipment, EquipmentService } from 'src/app/lab/equipment/common/equipm
 import { equipmentRequestToJson, isEquipmentRequest } from 'src/app/lab/equipment/request/equipment-request';
 import { EquipmentLike, equipmentLikeFromJson, equipmentLikeToJson } from 'src/app/lab/equipment/equipment-like';
 
-export interface EquipmentLeaseParams extends ResourceParams<EquipmentLease> {
+export interface EquipmentLeaseParams extends ResourceParams {
     equipment: EquipmentLike;
     equipmentTrainingCompleted?: string[];
     requiresAssistance?: boolean;
@@ -19,7 +19,7 @@ export interface EquipmentLeaseParams extends ResourceParams<EquipmentLease> {
 }
 
 
-export class EquipmentLease extends Resource {
+export class EquipmentLease extends Resource<EquipmentLeaseParams> {
     override readonly type = 'equipment';
 
     equipment: EquipmentLike;
@@ -49,7 +49,7 @@ export class EquipmentLease extends Resource {
     async resolveEquipment(equipments: EquipmentService): Promise<EquipmentLease> {
         if (typeof this.equipment === 'string') {
             const equipment = await firstValueFrom(equipments.fetch(this.equipment));
-            return new EquipmentLease({...this, equipment});
+            return new EquipmentLease({ ...this, equipment });
         }
         return this;
     }
@@ -58,11 +58,11 @@ export class EquipmentLease extends Resource {
     }
 }
 
-export function equipmentLeaseFromJson(json: {[k: string]: any}): EquipmentLease {
+export function equipmentLeaseFromJson(json: { [k: string]: any }): EquipmentLease {
     const jsonEquipment = json['equipment'];
     const equipment = typeof jsonEquipment === 'string'
-            ? jsonEquipment
-            : equipmentLikeFromJson(jsonEquipment);
+        ? jsonEquipment
+        : equipmentLikeFromJson(jsonEquipment);
 
     const attachments = Array.from(json['attachments'] || [])
         .map((value) => resourceFileAttachmentFromJson(value));
@@ -80,7 +80,7 @@ export function equipmentLeaseFromJson(json: {[k: string]: any}): EquipmentLease
     });
 }
 
-export function equipmentLeaseParamsToJson(lease: EquipmentLeaseParams): {[k: string]: any} {
+export function equipmentLeaseParamsToJson(lease: EquipmentLeaseParams): { [k: string]: any } {
     let equipment;
     if (lease.equipment instanceof Equipment) {
         equipment = lease.equipment.id;

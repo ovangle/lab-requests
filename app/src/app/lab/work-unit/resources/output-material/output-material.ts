@@ -1,11 +1,10 @@
-import { ResourceDisposal, ResourceDisposalParams, resourceDisposalFromJson, resourceDisposalParamsToJson } from "../../../resource/disposal/resource-disposal";
-import { ResourceFileAttachment, resourceFileAttachmentFromJson, resourceFileAttachmentToJson } from "../../../resource/file-attachment/file-attachment";
-import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../../resource/hazardous/hazardous";
-import { ResourceParams } from "../../../resource/resource";
-import { ResourceStorage, ResourceStorageParams, resourceStorageFromJson, resourceStorageParamsToJson } from "../../../resource/storage/resource-storage";
-import { Material } from "../material";
+import { ResourceDisposal, ResourceDisposalParams, resourceDisposalFromJson, resourceDisposalParamsToJson } from "../../resource/disposal/resource-disposal";
+import { ResourceFileAttachment, resourceFileAttachmentFromJson, resourceFileAttachmentToJson } from "../../resource/file-attachment/file-attachment";
+import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../resource/hazardous/hazardous";
+import { Resource, ResourceParams } from "../../resource/resource";
+import { ResourceStorage, ResourceStorageParams, resourceStorageFromJson, resourceStorageParamsToJson } from "../../resource/storage/resource-storage";
 
-export interface OutputMaterialParams extends ResourceParams<OutputMaterial> {
+export interface OutputMaterialParams extends ResourceParams {
     name: string;
     baseUnit: string;
     numUnitsProduced: number;
@@ -14,7 +13,7 @@ export interface OutputMaterialParams extends ResourceParams<OutputMaterial> {
     hazardClasses: HazardClass[];
 }
 
-export class OutputMaterial extends Material {
+export class OutputMaterial extends Resource<OutputMaterialParams> {
     override readonly type = 'output-material';
 
     name: string;

@@ -6,15 +6,15 @@ import { ResourceType, isResourceType } from "./resource-type";
 import { ResourceFileAttachment } from "./file-attachment/file-attachment";
 import { ExperimentalPlan } from "../../experimental-plan/common/experimental-plan";
 
-export interface ResourceParams<T extends Resource> {
+export interface ResourceParams {
     id: string | null;
     containerId: string;
     index: number | 'create';
 
-    attachments?: ResourceFileAttachment<T>[];
+    attachments?: ResourceFileAttachment[];
 }
 
-export class Resource {
+export class Resource<T extends ResourceParams = ResourceParams> {
     readonly type: ResourceType;
 
     readonly containerId: string;
@@ -23,7 +23,7 @@ export class Resource {
 
     readonly attachments: ResourceFileAttachment<this>[];
 
-    constructor(params: ResourceParams<any>) {
+    constructor(params: T) {
         if (!params.id) {
             throw new Error('No id in params');
         }
@@ -37,8 +37,8 @@ export class Resource {
 export type ResourceTypeIndex = [ResourceType, number | 'create'];
 
 export function isResourceTypeIndex(obj: any): obj is ResourceTypeIndex {
-    return Array.isArray(obj) 
-        && obj.length == 2 
+    return Array.isArray(obj)
+        && obj.length == 2
         && isResourceType(obj[0])
         && (typeof obj[1] === 'number' || obj[1] === 'create');
 }
@@ -63,7 +63,7 @@ export class ResourceContext<T extends Resource> {
     ]).pipe(
         map(([container, typeIndex]: [ResourceContainer, ResourceTypeIndex]) => {
             const [resourceType, index] = typeIndex;
-            
+
             return index === 'create' ? null : container.getResourceAt<T>(resourceType, index);
         }),
         shareReplay(1)

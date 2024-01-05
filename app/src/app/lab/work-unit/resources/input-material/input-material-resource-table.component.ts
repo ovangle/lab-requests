@@ -2,9 +2,9 @@ import { Component, Injectable } from "@angular/core";
 import { InputMaterial } from "./input-material";
 import { CommonModule } from "@angular/common";
 import { MatTableModule } from "@angular/material/table";
-import { ResourceTableDataSource, ResourceTableComponent } from "../../../resource/common/resource-table.component";
-import { ResourceStorageDetailsComponent } from "../../../resource/storage/resource-storage-details.component";
-import { HazardClassLabelsComponent } from "../../../resource/hazardous/hazard-classes-labels.component";
+import { ResourceTableDataSource, ResourceTableComponent } from "../../resource/common/resource-table.component";
+import { ResourceStorageDetailsComponent } from "../../resource/storage/resource-storage-details.component";
+import { HazardClassLabelsComponent } from "../../resource/hazardous/hazard-classes-labels.component";
 import { MeasurementUnitPipe } from "src/app/common/measurement/common-measurement-unit.pipe";
 
 
@@ -68,7 +68,7 @@ export class InputMaterialResourceTableDataSource extends ResourceTableDataSourc
         </ng-template>
     `,
     providers: [
-        {provide: ResourceTableDataSource, useClass: InputMaterialResourceTableDataSource}
+        { provide: ResourceTableDataSource, useClass: InputMaterialResourceTableDataSource }
     ]
 })
 export class InputMaterialResourceTableComponent {

@@ -6,8 +6,8 @@ import { ALL_RESOURCE_TYPES } from "../../resource-type";
 import { EquipmentLeaseFormComponent } from "../../../resources/equipment/equipment-lease-form.component";
 import { SoftwareResourceFormComponent } from "../../../resources/software/software-resource-form.component";
 import { ServiceResourceTableComponent } from "../../../resources/task/task-resource-table.component";
-import { OutputMaterialResourceFormComponent } from "../../../resources/material/output/output-material-resource-form.component";
-import { InputMaterialResourceFormComponent } from "../../../resources/material/input/input-material-resource-form.component";
+import { OutputMaterialResourceFormComponent } from "../../../resources/output-material/output-material-resource-form.component";
+import { InputMaterialResourceFormComponent } from "../../../resources/input-material/input-material-resource-form.component";
 import { ResourceFormTitleComponent } from "../../common/resource-form-title.component";
 import { TaskResourceFormComponent } from "../../../resources/task/task-resource-form.component";
 
@@ -39,4 +39,4 @@ const RESOURCE_FORM_ROUTES: Routes = ALL_RESOURCE_TYPES.flatMap(
         WorkUnitResourceFormPage
     ]
 })
-export class WorkUnitResourceFormsFeatureModule {}
+export class WorkUnitResourceFormsFeatureModule { }

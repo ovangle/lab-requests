@@ -2,7 +2,7 @@ import { Component, Injectable } from "@angular/core";
 import { OutputMaterial } from "./output-material";
 import { CommonModule } from "@angular/common";
 import { MatTableModule } from "@angular/material/table";
-import { ResourceTableDataSource, ResourceTableComponent } from "../../../resource/common/resource-table.component";
+import { ResourceTableDataSource, ResourceTableComponent } from "../../resource/common/resource-table.component";
 
 
 @Injectable()
@@ -37,7 +37,7 @@ export class OutputMaterialResourceTableDataSource extends ResourceTableDataSour
         </ng-template>
     `,
     providers: [
-        {provide: ResourceTableDataSource, useClass: OutputMaterialResourceTableDataSource}
+        { provide: ResourceTableDataSource, useClass: OutputMaterialResourceTableDataSource }
     ]
 })
 export class OutputMaterialResourceTableComponent {

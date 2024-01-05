@@ -1,11 +1,10 @@
-import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../../resource/hazardous/hazardous";
-import { ResourceParams } from "../../../resource/resource";
-import { ResourceStorage, ResourceStorageParams, resourceStorageFromJson, resourceStorageParamsToJson } from "../../../resource/storage/resource-storage";
-import { Material } from "../material";
-import { ResourceFileAttachment, resourceFileAttachmentFromJson, resourceFileAttachmentToJson } from "../../../resource/file-attachment/file-attachment";
+import { HazardClass, hazardClassesFromJson, hazardClassesToJson } from "../../resource/hazardous/hazardous";
+import { Resource, ResourceParams } from "../../resource/resource";
+import { ResourceStorage, ResourceStorageParams, resourceStorageFromJson, resourceStorageParamsToJson } from "../../resource/storage/resource-storage";
+import { ResourceFileAttachment, resourceFileAttachmentFromJson, resourceFileAttachmentToJson } from "../../resource/file-attachment/file-attachment";
 import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/cost-estimate";
 
-export interface InputMaterialParams extends ResourceParams<InputMaterial> {
+export interface InputMaterialParams extends ResourceParams {
     name: string;
     baseUnit: string;
 
@@ -16,7 +15,7 @@ export interface InputMaterialParams extends ResourceParams<InputMaterial> {
     hazardClasses?: HazardClass[];
 }
 
-export class InputMaterial extends Material {
+export class InputMaterial extends Resource<InputMaterialParams> {
     override readonly type = 'input-material';
 
     name: string;
@@ -25,7 +24,7 @@ export class InputMaterial extends Material {
 
     numUnitsRequired: number;
 
-    perUnitCostEstimate: CostEstimate | null; 
+    perUnitCostEstimate: CostEstimate | null;
 
     storage: ResourceStorage;
     hazardClasses: HazardClass[];
@@ -50,8 +49,8 @@ export class InputMaterial extends Material {
     }
 }
 
-export function inputMaterialFromJson(json: {[k: string]: any}): InputMaterial {
-    const attachments = Array.from(json['attachments'] || [])
+export function inputMaterialFromJson(json: { [k: string]: any }): InputMaterial {
+    const attachments: ResourceFileAttachment<any>[] = Array.from(json['attachments'] || [])
         .map(resourceFileAttachmentFromJson);
 
     return new InputMaterial({
@@ -69,7 +68,7 @@ export function inputMaterialFromJson(json: {[k: string]: any}): InputMaterial {
 }
 
 
-export function inputMaterialToJson(inputMaterial: InputMaterial): {[k: string]: any} {
+export function inputMaterialToJson(inputMaterial: InputMaterial): { [k: string]: any } {
     return {
         containerId: inputMaterial.containerId,
         id: inputMaterial.id,

@@ -4,18 +4,18 @@ import { FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validato
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { InputMaterial } from "./input-material";
-import { ResourceFormService } from "../../../resource/resource-form.service";
-import { HazardClassesSelectComponent } from "../../../resource/hazardous/hazard-classes-select.component";
-import { ProvisionFormComponent } from "../../../resource/provision/provision-form.component";
-import { ResourceStorageForm, ResourceStorageFormComponent, resourceStorageForm } from "../../../resource/storage/resource-storage-form.component";
+import { ResourceFormService } from "../../resource/resource-form.service";
+import { HazardClassesSelectComponent } from "../../resource/hazardous/hazard-classes-select.component";
+import { ProvisionFormComponent } from "../../resource/provision/provision-form.component";
+import { ResourceStorageForm, ResourceStorageFormComponent, resourceStorageForm } from "../../resource/storage/resource-storage-form.component";
 import { CommonMeasurementUnitInputComponent } from "src/app/common/measurement/common-measurement-unit-input.component";
 import { MeasurementUnitPipe } from "src/app/common/measurement/common-measurement-unit.pipe";
 import { CostEstimateForm, CostEstimateFormComponent, costEstimateForm } from "src/app/uni/research/funding/cost-estimate/cost-estimate-form.component";
-import { HazardClass } from "../../../resource/hazardous/hazardous";
+import { HazardClass } from "../../resource/hazardous/hazardous";
 import { FundingModel } from "src/app/uni/research/funding/funding-model";
 import { ExperimentalPlanContext } from "src/app/lab/experimental-plan/common/experimental-plan";
 import { BehaviorSubject, Observable, map } from "rxjs";
-import { WorkUnitContext } from "../../../common/work-unit";
+import { WorkUnitContext } from "../../common/work-unit";
 
 
 export type InputMaterialForm = FormGroup<{
@@ -35,29 +35,29 @@ export function inputMaterialForm(): InputMaterialForm {
     return new FormGroup({
         name: new FormControl<string>(
             '',
-            {nonNullable: true, validators: [Validators.required]}
+            { nonNullable: true, validators: [ Validators.required ] }
         ),
         description: new FormControl<string>(
             '',
-            {nonNullable: true}
+            { nonNullable: true }
         ),
         baseUnit: new FormControl<string>(
-           '',
-            {nonNullable: true, validators: [Validators.required]}
+            '',
+            { nonNullable: true, validators: [ Validators.required ] }
         ),
         numUnitsRequired: new FormControl<number>(
             0,
-            {nonNullable: true}
+            { nonNullable: true }
         ),
         perUnitCostEstimate: costEstimateForm(),
         storage: resourceStorageForm(),
-        hazardClasses: new FormControl<HazardClass[]>([], {nonNullable: true})
+        hazardClasses: new FormControl<HazardClass[]>([], { nonNullable: true })
     });
 }
 
 export type InputMaterialFormErrors = ValidationErrors & {
     name?: { required: string | null };
-    baseUnit?: {required: string | null };
+    baseUnit?: { required: string | null };
 };
 
 @Component({
@@ -118,7 +118,7 @@ export type InputMaterialFormErrors = ValidationErrors & {
         </lab-req-hazard-classes-select>
     </form>
     `,
-    styles: [`
+    styles: [ `
     form {
         width: 100%;
         display: flex;
@@ -142,10 +142,10 @@ export class InputMaterialResourceFormComponent {
 
     ngOnInit() {
         this.form.statusChanges.subscribe(status => {
-            for (const [key, control] of Object.entries(this.form.controls)) {
+            for (const [ key, control ] of Object.entries(this.form.controls)) {
                 console.log(key, control.valid, control.errors);
             }
-            console.log('status',status);
+            console.log('status', status);
         })
 
         this._planContext.plan$.subscribe(plan => {
@@ -153,7 +153,7 @@ export class InputMaterialResourceFormComponent {
         })
 
         this._workUnitContext.workUnit$.subscribe(workUnit => {
-            this._durationSubject.next({startDate: workUnit.startDate, endDate: workUnit.endDate});
+            this._durationSubject.next({ startDate: workUnit.startDate, endDate: workUnit.endDate });
         })
     }
 
@@ -166,9 +166,9 @@ export class InputMaterialResourceFormComponent {
         return this.form.value?.baseUnit || '';
     }
 
-    get nameErrors(): InputMaterialFormErrors['name'] | null {
+    get nameErrors(): InputMaterialFormErrors[ 'name' ] | null {
         const control = this.form.controls.name;
-        return control.errors as InputMaterialFormErrors['name'] | null;
+        return control.errors as InputMaterialFormErrors[ 'name' ] | null;
     }
 
     readonly _fundingModelSubject = new BehaviorSubject<FundingModel | null>(null);
@@ -176,7 +176,7 @@ export class InputMaterialResourceFormComponent {
         return this._fundingModelSubject.value;
     }
 
-    readonly _durationSubject = new BehaviorSubject<{startDate: Date | null; endDate: Date | null}>({startDate: null, endDate: null});
+    readonly _durationSubject = new BehaviorSubject<{ startDate: Date | null; endDate: Date | null }>({ startDate: null, endDate: null });
     get startDate(): Date | null {
         return this._durationSubject.value.startDate;
     }

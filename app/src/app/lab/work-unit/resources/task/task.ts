@@ -5,7 +5,7 @@ import { Observable, filter, map, startWith } from "rxjs";
 import { ResourceFileAttachment, resourceFileAttachmentFromJson, resourceFileAttachmentToJson } from "../../resource/file-attachment/file-attachment";
 import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/cost-estimate";
 
-export interface TaskParams extends ResourceParams<Task> {
+export interface TaskParams extends ResourceParams {
     readonly name: string;
     readonly description: string;
 
@@ -21,7 +21,7 @@ export interface TaskParams extends ResourceParams<Task> {
  * the research plan.
  * 
  */
-export class Task extends Resource {
+export class Task extends Resource<TaskParams> {
     override readonly type = 'task';
 
     readonly name: string;
@@ -41,7 +41,7 @@ export class Task extends Resource {
         this.name = params.name;
         this.description = params.description || '';
 
-        if (!['researcher', 'technician', 'external'].includes(params.supplier || '')) {
+        if (![ 'researcher', 'technician', 'external' ].includes(params.supplier || '')) {
             throw new Error('Invalid service. Expected a supplier')
         }
 
@@ -51,19 +51,19 @@ export class Task extends Resource {
     }
 }
 
-export function taskFromJson(json: {[k: string]: any}): Task {
-    const attachments = (json['attachments'] || [])
+export function taskFromJson(json: { [ k: string ]: any }): Task {
+    const attachments = (json[ 'attachments' ] || [])
         .map(resourceFileAttachmentFromJson);
 
     return new Task({
-        containerId: json['containerId'],
-        id: json['id'],
-        index: json['index'],
-        name: json['name'],
-        description: json['description'],
-        supplier: json['supplier'],
-        externalSupplierDescription: json['externalSupplierDescription'],
-        costEstimate: json['costEstimate'] ? costEstimateFromJson(json['costEstimate']) : null,
+        containerId: json[ 'containerId' ],
+        id: json[ 'id' ],
+        index: json[ 'index' ],
+        name: json[ 'name' ],
+        description: json[ 'description' ],
+        supplier: json[ 'supplier' ],
+        externalSupplierDescription: json[ 'externalSupplierDescription' ],
+        costEstimate: json[ 'costEstimate' ] ? costEstimateFromJson(json[ 'costEstimate' ]) : null,
         attachments
     })
 }
@@ -94,12 +94,12 @@ export type TaskForm = FormGroup<{
 
 export function serviceForm(task: Partial<Task>): TaskForm {
     return new FormGroup({
-        name: new FormControl(task.name || '', {nonNullable: true, validators: [Validators.required]}),
-        description: new FormControl(task.description || '', {nonNullable: true}),
-        supplier: new FormControl<'researcher' | 'technician' | 'other'>('researcher', {nonNullable: true}),
-        externalSupplierDescription: new FormControl<string>('', {nonNullable: true}),
-        isUniversitySupplied: new FormControl(!!task.costEstimate?.isUniversitySupplied, {nonNullable: true}),
-        estimatedCost: new FormControl(task.costEstimate?.perUnitCost || 0, {nonNullable: true}),
+        name: new FormControl(task.name || '', { nonNullable: true, validators: [ Validators.required ] }),
+        description: new FormControl(task.description || '', { nonNullable: true }),
+        supplier: new FormControl<'researcher' | 'technician' | 'other'>('researcher', { nonNullable: true }),
+        externalSupplierDescription: new FormControl<string>('', { nonNullable: true }),
+        isUniversitySupplied: new FormControl(!!task.costEstimate?.isUniversitySupplied, { nonNullable: true }),
+        estimatedCost: new FormControl(task.costEstimate?.perUnitCost || 0, { nonNullable: true }),
     }, {
         asyncValidators: [
             (c) => collectFieldErrors(c as TaskForm)
