@@ -1,9 +1,12 @@
 from __future__ import annotations
+import asyncio
+from pathlib import Path
 
 from typing import TYPE_CHECKING
 from uuid import UUID
+import pandas
 
-from sqlalchemy import ForeignKey, and_, event, Table, Column, select
+from sqlalchemy import ForeignKey, and_, event, Table, Column, insert, select
 from sqlalchemy.ext.asyncio import async_object_session
 from sqlalchemy.orm import Mapped, mapped_column, relationship, object_session
 from sqlalchemy.dialects import postgresql as pg_dialect
@@ -71,33 +74,65 @@ class Lab_(Base):
 
 
 async def seed_labs(db: LocalSession):
-    from api.user.models import User_
     from api.uni.models import Campus
-
-    async def create_lab(
-        campus_code: CampusCode, discipline: Discipline, supervisor_email: str
-    ):
-        campus = await Campus.get_for_campus_code(db, campus_code)
-        if campus is None:
-            raise ValueError("No campus with code {campus_code}")
-
-        supervisor = await User_.get_for_email(db, supervisor_email)
-
-        lab = Lab_(campus=campus, discipline=discipline)
-        lab.supervisors.append(supervisor)
-        return lab
-
-    all_labs = [
-        await create_lab(CampusCode("MEL"), Discipline.ICT, "t.stephenson@cqu.edu.au")
-    ]
 
     all_campus_id_disciplines = set(
         await db.execute(select(Lab_.campus_id, Lab_.discipline))
     )
-    print("all campus code disciplines", all_campus_id_disciplines)
 
-    for lab in all_labs:
+    def create_lab_if_not_exists(campus_id: UUID, discipline: Discipline):
+        lab = Lab_(campus_id=campus_id, discipline=discipline)
         if (lab.campus_id, lab.discipline) not in all_campus_id_disciplines:
+            print("adding lab", lab.campus_id, lab.discipline)
             db.add(lab)
 
+    def create_all_labs_for_campus(campus_id: UUID):
+        for discipline in Discipline:
+            create_lab_if_not_exists(campus_id, discipline)
+
+    all_campuses = await db.scalars(select(Campus.id))
+
+    for campus_id in all_campuses:
+        create_all_labs_for_campus(campus_id)
     await db.commit()
+
+
+async def seed_lab_supervisors(db: LocalSession, project_root: Path):
+    from api.user.models import (
+        User_,
+        get_user_seeds,
+        parse_discipline_from_user_seed_discipline,
+    )
+
+    user_seeds = get_user_seeds(project_root)
+
+    async def add_lab_supervisors(lab: Lab_):
+        existing_supervisors = set(
+            await db.execute(
+                select(lab_supervisor.c.user_id).where(
+                    lab_supervisor.c.lab_id == lab.id
+                )
+            )
+        )
+
+        campus_users = await User_.get_all_for_campus_id(db, lab.campus_id)
+        for user in campus_users:
+            _, user_row = next(
+                iter(user_seeds.query("Email == @user.email").iterrows())
+            )
+
+            location_str = str(user_row.get("Dis"))
+            disciplines = parse_discipline_from_user_seed_discipline(location_str)
+
+            if lab.discipline in disciplines:
+                if user.id not in existing_supervisors:
+                    print(
+                        f"\tAdding supervisor {user.email} to campus {lab.campus_id} - {lab.discipline.value}"
+                    )
+                    await db.execute(
+                        insert(lab_supervisor).values(user_id=user.id, lab_id=lab.id)
+                    )
+        await db.commit()
+
+    for lab in await db.scalars(select(Lab_)):
+        await add_lab_supervisors(lab)

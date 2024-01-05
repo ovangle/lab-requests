@@ -21,6 +21,10 @@ pyhumps>=3.8
 aiofiles>=23.2.1
 types-aiofiles>=23.2.0
 
+pandas>=2.1.4
+openpyxl>=3.1.2
+pandas-stubs
+
 # DEV ONLY
 
 packaging>=23.2

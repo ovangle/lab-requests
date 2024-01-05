@@ -20,8 +20,8 @@ class Campus(Base):
     __tablename__ = "campuses"
 
     id: Mapped[uuid_pk]
-    code: Mapped[campus_code]
-    name: Mapped[str] = mapped_column(VARCHAR(64))
+    code: Mapped[campus_code] = mapped_column(VARCHAR(8), index=True, unique=True)
+    name: Mapped[str] = mapped_column(VARCHAR(64), index=True, unique=True)
 
     def __init__(self, code: CampusCode, name: str = ""):
         super().__init__()
@@ -60,7 +60,7 @@ async def seed_campuses(db: LocalSession):
     all_known_campuses = [
         Campus(code=CampusCode("BNG"), name="Bundaberg"),
         Campus(code=CampusCode("CNS"), name="Cairns"),
-        Campus(code=CampusCode("GLD"), name="Gold Coast"),
+        Campus(code=CampusCode("GLD"), name="Gladstone"),
         Campus(code=CampusCode("MEL"), name="Melbourne"),
         Campus(code=CampusCode("MKY"), name="Mackay"),
         Campus(code=CampusCode("PTH"), name="Perth"),

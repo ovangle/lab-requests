@@ -1,8 +1,12 @@
 from __future__ import annotations
 import asyncio
+import os
+from pathlib import Path
+import re
 from typing import TYPE_CHECKING, Any, ClassVar, Iterable, TypeVar
 from uuid import UUID, uuid4
 import warnings
+import pandas
 from sqlalchemy import (
     ARRAY,
     VARCHAR,
@@ -18,6 +22,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncConnection, async_object_session
 from sqlalchemy.orm import Mapped, mapped_column, EXT_STOP, relationship, declared_attr
 from sqlalchemy.dialects import postgresql as pg_dialect
+from api.uni.types import CampusCode, Discipline
 from api.user.errors import UserDoesNotExist
 
 from sqlalchemy import Table, Column
@@ -38,6 +43,9 @@ class User_(Base):
     email: Mapped[str] = mapped_column(pg_dialect.VARCHAR(256), unique=True, index=True)
     name: Mapped[str] = mapped_column(pg_dialect.TEXT)
     disabled: Mapped[bool] = mapped_column(default=False)
+
+    campus_id: Mapped[UUID] = mapped_column(ForeignKey("campuses.id"))
+
     roles: Mapped[set[str]] = mapped_column(
         pg_dialect.ARRAY(pg_dialect.VARCHAR(64)), server_default="{}"
     )
@@ -57,6 +65,10 @@ class User_(Base):
         if u is None:
             raise UserDoesNotExist.for_email(email)
         return u
+
+    @classmethod
+    async def get_all_for_campus_id(cls, db: LocalSession, campus_id: UUID):
+        return await db.scalars(select(User_).where(User_.campus_id == campus_id))
 
     async def get_supervised_labs(self):
         from api.lab.models import Lab_
@@ -117,20 +129,91 @@ class ExternalUserCredentials_(UserCredentials_):
         self.provider = provider
 
 
-async def seed_users(db: LocalSession):
-    def create_tech(email, name, password, tech_type) -> User_:
+def get_user_seeds(project_root: Path) -> pandas.DataFrame:
+    import pandas
+
+    seed_users_xlsx = project_root / "assets" / "seed_users.xlsx"
+    if not seed_users_xlsx.exists():
+        raise RuntimeError(
+            f"Could not find excel file containing user seeds at {seed_users_xlsx!s}"
+        )
+    return pandas.read_excel(seed_users_xlsx)
+
+
+def parse_campus_code_from_user_seed_location(location_str: str) -> CampusCode:
+    m = re.search(r"\(([A-Z]+)\)", location_str)
+
+    if not m:
+        raise ValueError(f"Unexpected location {location_str}")
+
+    campus_code_mappings = {
+        "MELB": CampusCode("MEL"),
+        "CAIR": CampusCode("CNS"),
+        "GLAD": CampusCode("GLD"),
+        "ROCK": CampusCode("ROK"),
+        "MACK": CampusCode("MKY"),
+    }
+    return campus_code_mappings[m.group(1)]
+
+
+def parse_discipline_from_user_seed_discipline(discipline_str: str) -> list[Discipline]:
+    from api.uni.types import Discipline
+
+    discipline_str = discipline_str.strip().lower()
+
+    match discipline_str:
+        case "ict":
+            return [Discipline.ICT]
+        case "civil":
+            return [Discipline.CIVIL]
+        case "elec":
+            return [Discipline.ELECTRICAL]
+        case "mech":
+            return [Discipline.MECHANICAL]
+        case "multi":
+            return list(Discipline)
+        case "workshop":
+            return []
+        case _:
+            raise ValueError(f"Unexpected discipline from seed '{discipline_str}'")
+
+
+async def seed_users(db: LocalSession, *, project_root: Path):
+    def create_tech(email, name, campus, disciplines: list[Discipline]) -> User_:
         u = User_(
             id=uuid4(),
             domain=UserDomain.NATIVE,
+            campus_id=campus.id,
             email=email,
             name=name,
-            roles=["lab-tech", f"lab-tech-{tech_type}"],
+            roles=["lab-tech", *[f"lab-tech-{d.value}" for d in disciplines]],
         )
-        u.credentials = NativeUserCredentials_(u.id, password)
+        u.credentials = NativeUserCredentials_(u.id, "password")
         return u
 
+    async def get_campus(campus_code):
+        from api.uni.models import Campus
+
+        campus = await db.scalar(select(Campus).where(Campus.code == campus_code))
+        if campus is None:
+            raise ValueError("Unexpected campus code", campus_code)
+        return campus
+
+    campus_seeds = get_user_seeds(project_root)
+
+    for index, row in campus_seeds.iterrows():
+        print(index, row.get("Email"), row.get("Dis"))
+
     all_known_users = [
-        create_tech("t.stephenson@cqu.edu.au", "Thomas Stephenson", "password", "ICT")
+        create_tech(
+            email=row.get("Email"),
+            name=row.get("Name"),
+            campus=await get_campus(
+                parse_campus_code_from_user_seed_location(str(row.get("Location")))
+            ),
+            disciplines=parse_discipline_from_user_seed_discipline(str(row.get("Dis"))),
+        )
+        for _, row in campus_seeds.iterrows()
     ]
     existing_user_emails = set(
         await db.scalars(
