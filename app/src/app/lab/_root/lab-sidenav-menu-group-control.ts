@@ -24,7 +24,7 @@ export class LabSidenavMenuGroupControl extends SidenavMenuGroupControl {
 
   pushEquipmentLink(equipment: Equipment) {
     this.equipment.pushLink(
-      new SidenavMenuLink(equipment.name, ['lab', 'equipments', equipment.id])
+      new SidenavMenuLink(equipment.name, ['lab', 'equipments', equipment.id]),
     );
   }
   removeEquipmentLink() {

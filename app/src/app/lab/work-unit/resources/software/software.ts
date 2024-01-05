@@ -1,65 +1,79 @@
-import { Resource, ResourceParams } from "../../resource/resource";
-import { ResourceFileAttachment, resourceFileAttachmentFromJson, resourceFileAttachmentToJson } from "../../resource/file-attachment/file-attachment";
-import { CostEstimate, costEstimateFromJson, costEstimateToJson } from "src/app/uni/research/funding/cost-estimate/cost-estimate";
+import { Resource, ResourceParams } from '../../resource/resource';
+import {
+  ResourceFileAttachment,
+  resourceFileAttachmentFromJson,
+  resourceFileAttachmentToJson,
+} from '../../resource/file-attachment/file-attachment';
+import {
+  CostEstimate,
+  costEstimateFromJson,
+  costEstimateToJson,
+} from 'src/app/uni/research/funding/cost-estimate/cost-estimate';
 
 export interface SoftwareParams extends ResourceParams {
-    name: string;
-    description: string;
+  name: string;
+  description: string;
 
-    minVersion: string;
+  minVersion: string;
 
-    isLicenseRequired: boolean;
-    estimatedCost: CostEstimate | null;
+  isLicenseRequired: boolean;
+  estimatedCost: CostEstimate | null;
 }
 
 export class Software extends Resource<SoftwareParams> {
-    override readonly type = 'software';
+  override readonly type = 'software';
 
-    name: string;
-    description: string;
+  name: string;
+  description: string;
 
-    minVersion: string;
+  minVersion: string;
 
-    isLicenseRequired: boolean;
-    estimatedCost: CostEstimate | null;
+  isLicenseRequired: boolean;
+  estimatedCost: CostEstimate | null;
 
-    constructor(software: SoftwareParams) {
-        super(software);
+  constructor(software: SoftwareParams) {
+    super(software);
 
-        this.name = software.name || '';
-        this.description = software.description || '';
-        this.minVersion = software.minVersion || '';
+    this.name = software.name || '';
+    this.description = software.description || '';
+    this.minVersion = software.minVersion || '';
 
-        this.isLicenseRequired = !!software.isLicenseRequired;
-        this.estimatedCost = software.estimatedCost;
-    }
+    this.isLicenseRequired = !!software.isLicenseRequired;
+    this.estimatedCost = software.estimatedCost;
+  }
 }
 
-export function softwareFromJson(json: { [ k: string ]: any }): Software {
-    const attachments = Array.from(json[ 'attachments' ] || [])
-        .map(resourceFileAttachmentFromJson);
+export function softwareFromJson(json: { [k: string]: any }): Software {
+  const attachments = Array.from(json['attachments'] || []).map(
+    resourceFileAttachmentFromJson,
+  );
 
-    return new Software({
-        containerId: json[ 'containerId' ],
-        id: json[ 'id' ],
-        index: json[ 'index' ],
-        name: json[ 'name' ],
-        description: json[ 'description' ],
-        minVersion: json[ 'minVersion' ],
-        isLicenseRequired: json[ 'isLicenceRequired' ],
-        estimatedCost: json[ 'estimatedCost' ] ? costEstimateFromJson(json[ 'estimatedCost' ]) : null,
-        attachments
-    })
+  return new Software({
+    containerId: json['containerId'],
+    id: json['id'],
+    index: json['index'],
+    name: json['name'],
+    description: json['description'],
+    minVersion: json['minVersion'],
+    isLicenseRequired: json['isLicenceRequired'],
+    estimatedCost: json['estimatedCost']
+      ? costEstimateFromJson(json['estimatedCost'])
+      : null,
+    attachments,
+  });
 }
 
-export function softwareParamsToJson(software: SoftwareParams): { [ k: string ]: any } {
-    return {
-        containerId: software.containerId,
-        index: software.index,
-        name: software.name,
-        description: software.description,
-        minVersion: software.minVersion,
-        isLicenseRequired: software.isLicenseRequired,
-        estimatedCost: software.estimatedCost && costEstimateToJson(software.estimatedCost),
-    };
+export function softwareParamsToJson(software: SoftwareParams): {
+  [k: string]: any;
+} {
+  return {
+    containerId: software.containerId,
+    index: software.index,
+    name: software.name,
+    description: software.description,
+    minVersion: software.minVersion,
+    isLicenseRequired: software.isLicenseRequired,
+    estimatedCost:
+      software.estimatedCost && costEstimateToJson(software.estimatedCost),
+  };
 }

@@ -1,29 +1,24 @@
-import { CommonModule } from "@angular/common";
-import { Component, Input } from "@angular/core";
-import { ExperimentalPlanResearcherInfoComponent } from "./researcher/researcher-info.component";
-import { ExperimentalPlan } from "./common/experimental-plan";
+import { CommonModule } from '@angular/common';
+import { Component, Input } from '@angular/core';
+import { ExperimentalPlanResearcherInfoComponent } from './researcher/researcher-info.component';
+import { ExperimentalPlan } from './common/experimental-plan';
 
 @Component({
-    selector: 'lab-experimental-plan-info',
-    standalone: true,
-    imports: [
-        CommonModule,
-        ExperimentalPlanResearcherInfoComponent
-    ],
-    template: `
-        <h1>{{plan.title}} {{plan.fundingModel.description}}</h1>
+  selector: 'lab-experimental-plan-info',
+  standalone: true,
+  imports: [CommonModule, ExperimentalPlanResearcherInfoComponent],
+  template: `
+    <h1>{{ plan.title }} {{ plan.fundingModel.description }}</h1>
 
-        <lab-experimental-plan-researcher-info 
-            [plan]="plan">
-        </lab-experimental-plan-researcher-info>
+    <lab-experimental-plan-researcher-info [plan]="plan">
+    </lab-experimental-plan-researcher-info>
 
-        <div class="process-summary">
-            <p>{{plan.processSummary}}</p>
-        </div>
-    `
+    <div class="process-summary">
+      <p>{{ plan.processSummary }}</p>
+    </div>
+  `,
 })
 export class ExperimentalPlanInfoComponent {
-    @Input()
-    plan: ExperimentalPlan;
-
+  @Input()
+  plan: ExperimentalPlan;
 }

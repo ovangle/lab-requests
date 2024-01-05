@@ -1,81 +1,106 @@
-import { Injectable, InjectionToken, forwardRef, inject } from "@angular/core";
-import { Observable, ReplaySubject, Subscription, combineLatest, defer, filter, map, shareReplay } from "rxjs";
-import { ResourceType, isResourceType } from "./resource-type";
-import { ResourceFileAttachment } from "./file-attachment/file-attachment";
-import type { ExperimentalPlan } from "../../experimental-plan/common/experimental-plan";
-import type { ResourceContainer, ResourceContainerContext } from "./resource-container";
+import { Injectable, InjectionToken, forwardRef, inject } from '@angular/core';
+import {
+  Observable,
+  ReplaySubject,
+  Subscription,
+  combineLatest,
+  defer,
+  filter,
+  map,
+  shareReplay,
+} from 'rxjs';
+import { ResourceType, isResourceType } from './resource-type';
+import { ResourceFileAttachment } from './file-attachment/file-attachment';
+import type { ExperimentalPlan } from '../../experimental-plan/common/experimental-plan';
+import type {
+  ResourceContainer,
+  ResourceContainerContext,
+} from './resource-container';
 
 export interface ResourceParams {
-    id: string | null;
-    containerId: string;
-    index: number | 'create';
+  id: string | null;
+  containerId: string;
+  index: number | 'create';
 
-    attachments?: ResourceFileAttachment[];
+  attachments?: ResourceFileAttachment[];
 }
 
 export class Resource<T extends ResourceParams = ResourceParams> {
-    readonly type: ResourceType;
+  readonly type: ResourceType;
 
-    readonly containerId: string;
-    readonly index: number | 'create';
-    readonly id: string;
+  readonly containerId: string;
+  readonly index: number | 'create';
+  readonly id: string;
 
-    readonly attachments: ResourceFileAttachment<this>[];
+  readonly attachments: ResourceFileAttachment<this>[];
 
-    constructor(params: T) {
-        if (!params.id) {
-            throw new Error('No id in params');
-        }
-        this.id = params.id;
-
-        this.containerId = params.containerId;
-        this.index = params.index;
-        this.attachments = params.attachments || [];
+  constructor(params: T) {
+    if (!params.id) {
+      throw new Error('No id in params');
     }
+    this.id = params.id;
+
+    this.containerId = params.containerId;
+    this.index = params.index;
+    this.attachments = params.attachments || [];
+  }
 }
-export type ResourceTypeIndex = [ ResourceType, number | 'create' ];
+export type ResourceTypeIndex = [ResourceType, number | 'create'];
 
 export function isResourceTypeIndex(obj: any): obj is ResourceTypeIndex {
-    return Array.isArray(obj)
-        && obj.length == 2
-        && isResourceType(obj[ 0 ])
-        && (typeof obj[ 1 ] === 'number' || obj[ 1 ] === 'create');
+  return (
+    Array.isArray(obj) &&
+    obj.length == 2 &&
+    isResourceType(obj[0]) &&
+    (typeof obj[1] === 'number' || obj[1] === 'create')
+  );
 }
 
-export const RESOURCE_CONTAINER_CONTEXT = new InjectionToken<ResourceContainerContext<any, any>>('RESOURCE_CONTAINER_CONTEXT');
+export const RESOURCE_CONTAINER_CONTEXT = new InjectionToken<
+  ResourceContainerContext<any, any>
+>('RESOURCE_CONTAINER_CONTEXT');
 
 @Injectable()
 export class ResourceContext<T extends Resource> {
-    readonly _containerContext = inject(RESOURCE_CONTAINER_CONTEXT);
-    readonly plan$: Observable<ExperimentalPlan> = this._containerContext.plan$;
-    readonly container$: Observable<ResourceContainer> = this._containerContext.committed$;
+  readonly _containerContext = inject(RESOURCE_CONTAINER_CONTEXT);
+  readonly plan$: Observable<ExperimentalPlan> = this._containerContext.plan$;
+  readonly container$: Observable<ResourceContainer> =
+    this._containerContext.committed$;
 
-    readonly containerName$ = this._containerContext.containerName$;
-    readonly _committedTypeIndexSubject = new ReplaySubject<[ ResourceType, number | 'create' ]>(1);
-    readonly committedTypeIndex$ = this._committedTypeIndexSubject.asObservable();
+  readonly containerName$ = this._containerContext.containerName$;
+  readonly _committedTypeIndexSubject = new ReplaySubject<
+    [ResourceType, number | 'create']
+  >(1);
+  readonly committedTypeIndex$ = this._committedTypeIndexSubject.asObservable();
 
-    readonly resourceType$ = defer(() => this.committedTypeIndex$.pipe(map(([ type, _ ]) => type)));
-    readonly isCreate$ = defer(
-        () => this.committedTypeIndex$.pipe(map(([ _, index ]) => index === 'create'))
+  readonly resourceType$ = defer(() =>
+    this.committedTypeIndex$.pipe(map(([type, _]) => type)),
+  );
+  readonly isCreate$ = defer(() =>
+    this.committedTypeIndex$.pipe(map(([_, index]) => index === 'create')),
+  );
+
+  readonly committed$: Observable<T | null> = combineLatest([
+    this.container$,
+    this.committedTypeIndex$,
+  ]).pipe(
+    map(([container, typeIndex]: [ResourceContainer, ResourceTypeIndex]) => {
+      const [resourceType, index] = typeIndex;
+
+      return index === 'create'
+        ? null
+        : container.getResourceAt<T>(resourceType, index);
+    }),
+    shareReplay(1),
+  );
+
+  sendTypeIndex(typeIndex$: Observable<ResourceTypeIndex>): Subscription {
+    typeIndex$.subscribe((typeIndex) =>
+      this._committedTypeIndexSubject.next(typeIndex),
     );
 
-    readonly committed$: Observable<T | null> = combineLatest([
-        this.container$,
-        this.committedTypeIndex$
-    ]).pipe(
-        map(([ container, typeIndex ]: [ ResourceContainer, ResourceTypeIndex ]) => {
-            const [ resourceType, index ] = typeIndex;
-
-            return index === 'create' ? null : container.getResourceAt<T>(resourceType, index);
-        }),
-        shareReplay(1)
-    );
-
-    sendTypeIndex(typeIndex$: Observable<ResourceTypeIndex>): Subscription {
-        typeIndex$.subscribe((typeIndex) => this._committedTypeIndexSubject.next(typeIndex));
-
-        return new Subscription(() => {
-            this._committedTypeIndexSubject.complete();
-        });
-    }
+    return new Subscription(() => {
+      this._committedTypeIndexSubject.complete();
+    });
+  }
 }

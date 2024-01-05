@@ -1,6 +1,1 @@
-
-
-
-export interface FileState {
-
-}
+export interface FileState {}

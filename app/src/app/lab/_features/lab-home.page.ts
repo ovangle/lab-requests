@@ -1,8 +1,7 @@
-import { Component } from "@angular/core";
-
+import { Component } from '@angular/core';
 
 @Component({
-    selector: 'lab-home-page',
-    template: ``
+  selector: 'lab-home-page',
+  template: ``,
 })
 export class LabHomePage {}

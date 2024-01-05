@@ -28,9 +28,9 @@ import { ScaffoldStateService } from './scaffold-state.service';
       </div>
 
       @if (scaffoldState.title$ | async; as title) {
-      <div class="title">
-        {{ title }}
-      </div>
+        <div class="title">
+          {{ title }}
+        </div>
       }
 
       <div class="spacer"></div>

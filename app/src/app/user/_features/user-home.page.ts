@@ -8,21 +8,21 @@ import { LabListComponent } from 'src/app/lab/common/lab-list.component';
 @Component({
   selector: 'user-home-page',
   template: `
-  <div class="labs-container">
-    <h1>Labs</h1>
+    <div class="labs-container">
+      <h1>Labs</h1>
 
-    @if (labs$ | async; as labs) {
-      <lab-list [labs]="labs" />
-    }
-  </div>
+      @if (labs$ | async; as labs) {
+        <lab-list [labs]="labs" />
+      }
+    </div>
 
-  <div class="plans-container">
-    <h1>Plans</h1>
+    <div class="plans-container">
+      <h1>Plans</h1>
 
-    @if (plans$ | async; as plans) {
-      <lab-experimental-plan-list [plans]=plans />
-    }
-  </div>
+      @if (plans$ | async; as plans) {
+        <lab-experimental-plan-list [plans]="plans" />
+      }
+    </div>
   `,
 })
 export class UserHomePage {
@@ -30,14 +30,10 @@ export class UserHomePage {
 
   readonly user$ = this.userContext.user.pipe(
     filter((u): u is User => u != null),
-    shareReplay(1)
+    shareReplay(1),
   );
 
-  readonly labs$ = this.user$.pipe(
-    map((user) => user.labs)
-  );
+  readonly labs$ = this.user$.pipe(map((user) => user.labs));
 
-  readonly plans$ = this.user$.pipe(
-    map((user) => user.activePlans)
-  );
+  readonly plans$ = this.user$.pipe(map((user) => user.activePlans));
 }

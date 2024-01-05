@@ -25,18 +25,18 @@ export class ScaffoldStateService {
 
   protected _patchState<K extends keyof ScaffoldState>(
     key: K,
-    value: ScaffoldState[K]
+    value: ScaffoldState[K],
   ) {
     const current = this._stateSubject.value;
     this._stateSubject.next({ ...current, [key]: value });
   }
 
   protected _getState<K extends keyof ScaffoldState>(
-    key: K
+    key: K,
   ): Observable<ScaffoldState[K]> {
     return this._stateSubject.pipe(
       distinctUntilKeyChanged(key),
-      map((state) => state[key])
+      map((state) => state[key]),
     );
   }
 

@@ -45,7 +45,7 @@ export class LoginContext {
 
   isFlowInProgress(
     provider: OauthProvider | 'any',
-    grantType: OauthGrantType | 'any'
+    grantType: OauthGrantType | 'any',
   ) {
     return this.flowStateStore.isFlowInProgress(provider, grantType);
   }
@@ -82,7 +82,7 @@ export class LoginContext {
 
   async finalizeFlow(
     grantType: OauthGrantType,
-    params: unknown
+    params: unknown,
   ): Promise<AccessTokenData> {
     const flow = this.getInProgressFlow(grantType);
 
@@ -111,20 +111,20 @@ export class LoginContext {
    * @returns
    */
   getFlow<GrantType extends OauthGrantType>(
-    grantType: GrantType
+    grantType: GrantType,
   ): AbstractOauthFlow<GrantType> {
     return this._flows[grantType].get(this.currentProviderParams);
   }
 
   async beginFlow<GrantType extends OauthGrantType>(
     grantType: GrantType,
-    restoreRoute?: string
+    restoreRoute?: string,
   ): Promise<AbstractOauthFlow<GrantType>> {
     this.checkIsNoFlowInProgress();
 
     const flow = this.getFlow(grantType);
     this.flowStateStore.initialize(
-      await flow.generateInitialState({ restoreRoute })
+      await flow.generateInitialState({ restoreRoute }),
     );
 
     flow.redirectToLogin();
@@ -132,7 +132,7 @@ export class LoginContext {
   }
 
   getInProgressFlow<GrantType extends OauthGrantType>(
-    grantType: GrantType
+    grantType: GrantType,
   ): AbstractOauthFlow<GrantType> {
     const flow = this.getFlow(grantType);
     if (!flow.isInProgress()) {

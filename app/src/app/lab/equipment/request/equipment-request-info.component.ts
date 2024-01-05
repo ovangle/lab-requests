@@ -1,22 +1,20 @@
-import { Component, Input } from "@angular/core";
+import { Component, Input } from '@angular/core';
 
-import { CommonModule } from "@angular/common";
-import { EquipmentRequest } from "./equipment-request";
+import { CommonModule } from '@angular/common';
+import { EquipmentRequest } from './equipment-request';
 
 @Component({
-    selector: 'lab-equipment-request-info',
-    standalone: true,
-    imports: [
-        CommonModule
-    ],
-    template: `
-    <h1>(new) {{equipment.name}}</h1>
+  selector: 'lab-equipment-request-info',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
+    <h1>(new) {{ equipment.name }}</h1>
 
     <p>Reason</p>
-    <p>{{equipment.reason}}
-    `,
+    <p>{{ equipment.reason }}</p>
+  `,
 })
 export class EquipmentRequestInfoComponent {
-    @Input({required: true})
-    equipment: EquipmentRequest;
+  @Input({ required: true })
+  equipment: EquipmentRequest;
 }

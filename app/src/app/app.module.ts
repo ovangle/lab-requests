@@ -62,7 +62,7 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
         oauthFeature: '/oauth',
         defaultUserHomePage: '/user/home',
       },
-      APP_OAUTH_PROVIDER_PARAMS
+      APP_OAUTH_PROVIDER_PARAMS,
     ),
     ScaffoldLayoutComponent,
   ],

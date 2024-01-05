@@ -48,7 +48,7 @@ export class ExternalNavigation {
 
 export async function requiresAuthorizationGuard(
   next: ActivatedRouteSnapshot,
-  state: RouterStateSnapshot
+  state: RouterStateSnapshot,
 ): Promise<boolean | UrlTree> {
   const router = inject(Router);
   const loginContext = inject(LoginContext);
@@ -62,7 +62,7 @@ export async function requiresAuthorizationGuard(
 
 export async function logoutGuard(
   next: ActivatedRouteSnapshot,
-  state: RouterStateSnapshot
+  state: RouterStateSnapshot,
 ): Promise<UrlTree> {
   const router = inject(Router);
   const loginContext = inject(LoginContext);
@@ -75,7 +75,7 @@ export async function logoutGuard(
 
 export async function publicPageGuard(
   next: ActivatedRouteSnapshot,
-  state: RouterStateSnapshot
+  state: RouterStateSnapshot,
 ): Promise<UrlTree | boolean> {
   const router = inject(Router);
   const loginContext = inject(LoginContext);

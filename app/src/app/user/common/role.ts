@@ -1,5 +1,3 @@
-
-
 /*
 export const ACTOR_ROLES = [
     'student',
@@ -12,12 +10,12 @@ export const ACTOR_ROLES = [
 export type Role = string;
 
 export function isRole(obj: unknown): obj is Role {
-    return typeof obj === 'string';
+  return typeof obj === 'string';
 }
 
 export function roleFromJson(json: unknown): Role {
-    if (!isRole(json)) {
-        throw new Error('Expected an actor role');
-    }
-    return json;
+  if (!isRole(json)) {
+    throw new Error('Expected an actor role');
+  }
+  return json;
 }

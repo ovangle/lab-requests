@@ -1,132 +1,131 @@
-import { CommonModule } from "@angular/common";
-import { Component, Input } from "@angular/core";
-import { ReactiveFormsModule } from "@angular/forms";
-import { MatButtonModule } from "@angular/material/button";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatIconModule } from "@angular/material/icon";
-import { MatInputModule } from "@angular/material/input";
-import { LabTypeSelectComponent } from "../../type/lab-type-select.component";
-import { CampusSearchComponent } from "src/app/uni/campus/campus-search.component";
-import { WorkUnitForm, WorkUnitFormErrors, workUnitForm, workUnitFormErrors } from "./work-unit-form";
-import { WorkUnitDurationFormComponent } from "../duration/work-unit-duration-form.component";
-import { coerceArray, coerceStringArray } from "@angular/cdk/coercion";
-
+import { CommonModule } from '@angular/common';
+import { Component, Input } from '@angular/core';
+import { ReactiveFormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { LabTypeSelectComponent } from '../../type/lab-type-select.component';
+import { CampusSearchComponent } from 'src/app/uni/campus/campus-search.component';
+import {
+  WorkUnitForm,
+  WorkUnitFormErrors,
+  workUnitForm,
+  workUnitFormErrors,
+} from './work-unit-form';
+import { WorkUnitDurationFormComponent } from '../duration/work-unit-duration-form.component';
+import { coerceArray, coerceStringArray } from '@angular/cdk/coercion';
 
 @Component({
-    selector: 'lab-work-unit-form',
-    standalone: true,
-    imports: [
-        CommonModule,
-        ReactiveFormsModule,
+  selector: 'lab-work-unit-form',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
 
-        MatButtonModule,
-        MatFormFieldModule,
-        MatIconModule,
-        MatInputModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
 
-        CampusSearchComponent,
-        LabTypeSelectComponent,
-        WorkUnitDurationFormComponent
-    ],
-    template: `
+    CampusSearchComponent,
+    LabTypeSelectComponent,
+    WorkUnitDurationFormComponent,
+  ],
+  template: `
     <form [formGroup]="form">
-        @if (isEditableField('name')) {
+      @if (isEditableField('name')) {
         <mat-form-field>
-            <mat-label>Name</mat-label>
-            <input matInput formControlName="name" required />
+          <mat-label>Name</mat-label>
+          <input matInput formControlName="name" required />
 
-            @if (nameErrors?.required) {
-                <mat-error>A value is required</mat-error>
-            }
+          @if (nameErrors?.required) {
+            <mat-error>A value is required</mat-error>
+          }
         </mat-form-field>
-        }
+      }
 
-        @if (isEditableField('campus')) {
-            <uni-campus-search 
-                formControlName="campus" 
-                required>
-                <mat-label>Campus</mat-label>
+      @if (isEditableField('campus')) {
+        <uni-campus-search formControlName="campus" required>
+          <mat-label>Campus</mat-label>
 
-                @if (campusErrors?.notACampus) {
-                    <mat-error>Expected a campus</mat-error>
-                }
-                @if (campusErrors?.required) {
-                    <mat-error>A value is required</mat-error>
-                }
-            </uni-campus-search>
-        }
+          @if (campusErrors?.notACampus) {
+            <mat-error>Expected a campus</mat-error>
+          }
+          @if (campusErrors?.required) {
+            <mat-error>A value is required</mat-error>
+          }
+        </uni-campus-search>
+      }
 
-        @if (isEditableField('labType')) {
-            <lab-type-select 
-                formControlName="labType"
-                required>
-                <mat-label>Lab type</mat-label>
-                @if (labTypeErrors?.required) {
-                    <mat-error>A value is required</mat-error>
-                }
-            </lab-type-select>
-        }
+      @if (isEditableField('labType')) {
+        <lab-type-select formControlName="labType" required>
+          <mat-label>Lab type</mat-label>
+          @if (labTypeErrors?.required) {
+            <mat-error>A value is required</mat-error>
+          }
+        </lab-type-select>
+      }
 
-        @if (isEditableField('technician')) {
-            <mat-form-field>
-                <mat-label>technician</mat-label>
-                <input matInput formControlName="technician">
+      @if (isEditableField('technician')) {
+        <mat-form-field>
+          <mat-label>technician</mat-label>
+          <input matInput formControlName="technician" />
 
-                @if (technicianErrors?.required) {
-                    <mat-error>A value is required</mat-error>
-                }
-                @if (technicianErrors?.email) {
-                    <mat-error>Invalid email</mat-error>
-                }
-            </mat-form-field>
-        }
+          @if (technicianErrors?.required) {
+            <mat-error>A value is required</mat-error>
+          }
+          @if (technicianErrors?.email) {
+            <mat-error>Invalid email</mat-error>
+          }
+        </mat-form-field>
+      }
 
-        @if (isEditableField('processSummary')) {
-            <mat-form-field>
-                <mat-label>Process summary</mat-label>
-                <textarea matInput formControlName="processSummary">
-                </textarea>
-            </mat-form-field>
-        }
+      @if (isEditableField('processSummary')) {
+        <mat-form-field>
+          <mat-label>Process summary</mat-label>
+          <textarea matInput formControlName="processSummary"> </textarea>
+        </mat-form-field>
+      }
 
-        <lab-work-unit-duration-form [form]="form" />
+      <lab-work-unit-duration-form [form]="form" />
     </form>
-    `
+  `,
 })
 export class WorkUnitFormComponent {
-    @Input({required: true})
-    form: WorkUnitForm;
+  @Input({ required: true })
+  form: WorkUnitForm;
 
-    @Input()
-    fixedFields: string[] | undefined = undefined;
+  @Input()
+  fixedFields: string[] | undefined = undefined;
 
-    isEditableField(name: keyof WorkUnitForm['controls']): boolean {
-        if (this.fixedFields === undefined) {
-            return true;
-        }
-        return !this.fixedFields.includes(name);
+  isEditableField(name: keyof WorkUnitForm['controls']): boolean {
+    if (this.fixedFields === undefined) {
+      return true;
     }
+    return !this.fixedFields.includes(name);
+  }
 
-    get nameErrors(): WorkUnitFormErrors['name'] {
-        return workUnitFormErrors(this.form, 'name');
-    }
+  get nameErrors(): WorkUnitFormErrors['name'] {
+    return workUnitFormErrors(this.form, 'name');
+  }
 
-    get campusErrors(): WorkUnitFormErrors['campus'] {
-        return workUnitFormErrors(this.form, 'campus');
-    }
+  get campusErrors(): WorkUnitFormErrors['campus'] {
+    return workUnitFormErrors(this.form, 'campus');
+  }
 
-    get labTypeErrors(): WorkUnitFormErrors['labType'] {
-        return workUnitFormErrors(this.form, 'labType');
-    }
+  get labTypeErrors(): WorkUnitFormErrors['labType'] {
+    return workUnitFormErrors(this.form, 'labType');
+  }
 
-    get technicianErrors(): WorkUnitFormErrors['technician'] {
-        return workUnitFormErrors(this.form, 'technician');
-    }
+  get technicianErrors(): WorkUnitFormErrors['technician'] {
+    return workUnitFormErrors(this.form, 'technician');
+  }
 
-    get startDateErrors(): WorkUnitFormErrors['startDate'] {
-        return workUnitFormErrors(this.form, 'startDate');
-    }
-    get endDateErrors(): WorkUnitFormErrors['endDate'] {
-        return workUnitFormErrors(this.form, 'endDate')
-    }
+  get startDateErrors(): WorkUnitFormErrors['startDate'] {
+    return workUnitFormErrors(this.form, 'startDate');
+  }
+  get endDateErrors(): WorkUnitFormErrors['endDate'] {
+    return workUnitFormErrors(this.form, 'endDate');
+  }
 }

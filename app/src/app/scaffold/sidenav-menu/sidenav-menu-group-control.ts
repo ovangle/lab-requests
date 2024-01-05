@@ -30,13 +30,13 @@ export class SidenavMenuLink {
   constructor(
     readonly title: string,
     readonly routerLink: any[],
-    readonly icon?: string
+    readonly icon?: string,
   ) {}
 }
 
 export function formatSidenavMenuLink(
   link: SidenavMenuLink,
-  level: number = 0
+  level: number = 0,
 ): string {
   return `${'\t'.repeat(level)}[${link.title}](${link.routerLink})\n`;
 }
@@ -56,7 +56,7 @@ export interface SidenavMenuGroup extends SidenavMenuGroupState {
 
 export function formatSidenavMenuGroup(
   group: SidenavMenuGroup,
-  level: number = 0
+  level: number = 0,
 ): string {
   let str = `${'\t'.repeat(level)}${group.id}:\n`;
   for (const g of group.subgroups) {
@@ -114,12 +114,12 @@ export class SidenavMenuGroupControl {
     this._enabledSubgroupIdsSubject.pipe(
       switchMap((enabledIds) => {
         const enabledGroupControls = enabledIds.map(
-          (id) => this._subgroupControls[id]
+          (id) => this._subgroupControls[id],
         );
         return combineLatest(enabledGroupControls.map((c) => c.value$));
       }),
       startWith([]),
-      shareReplay(1)
+      shareReplay(1),
     );
 
   get links$() {
@@ -135,13 +135,13 @@ export class SidenavMenuGroupControl {
             id: this.id,
             ...state,
             subgroups,
-          })
-        )
-      )
+          }),
+        ),
+      ),
     ),
     {
       connector: () => new ReplaySubject(1),
-    }
+    },
   );
 
   constructor(id: string, title: string) {
@@ -152,7 +152,7 @@ export class SidenavMenuGroupControl {
 
   protected setState<K extends keyof SidenavMenuGroupState>(
     key: K,
-    value: SidenavMenuGroupState[K]
+    value: SidenavMenuGroupState[K],
   ) {
     const state = this._stateSubject.value;
     this._stateSubject.next({
@@ -172,7 +172,7 @@ export class SidenavMenuGroupControl {
   }
 
   getSubgroupControl(
-    path: string | string[]
+    path: string | string[],
   ): SidenavMenuGroupControl | undefined {
     if (typeof path === 'string') {
       path = [path];
@@ -191,7 +191,7 @@ export const SIDENAV_MENU_ROOT_GROUP_CONTROL =
 export function provideSidenavMenuRootGroupControl(
   control:
     | Type<SidenavMenuGroupControl>
-    | InjectionToken<SidenavMenuGroupControl>
+    | InjectionToken<SidenavMenuGroupControl>,
 ): Provider {
   return {
     provide: SIDENAV_MENU_ROOT_GROUP_CONTROL,
@@ -204,7 +204,7 @@ export function provideSidenavMenuRootGroupControl(
 export class SidenavMenuRootControl extends SidenavMenuGroupControl {
   constructor(
     @Inject(SIDENAV_MENU_ROOT_GROUP_CONTROL)
-    rootControls: SidenavMenuGroupControl[]
+    rootControls: SidenavMenuGroupControl[],
   ) {
     super('$', '');
     this._parent = null;

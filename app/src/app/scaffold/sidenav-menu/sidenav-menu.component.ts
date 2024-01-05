@@ -57,31 +57,31 @@ export class SidenavMenuLinkComponent {
   ],
   template: `
     @if (!(scaffoldState.isSidenavDisabled$ | async)) {
-    <mat-tree [dataSource]="_dataSource" [treeControl]="_treeControl">
-      <mat-tree-node
-        *matTreeNodeDef="let node; when: isExpandable"
-        matTreeNodePadding
-      >
-        <button
-          mat-icon-button
-          matTreeNodeToggle
-          [attr.aria-label]="'Toggle ' + node.title"
+      <mat-tree [dataSource]="_dataSource" [treeControl]="_treeControl">
+        <mat-tree-node
+          *matTreeNodeDef="let node; when: isExpandable"
+          matTreeNodePadding
         >
-          <mat-icon class="mat-icon-rtl-mirror">
-            {{
-              _treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'
-            }}
-          </mat-icon>
-        </button>
+          <button
+            mat-icon-button
+            matTreeNodeToggle
+            [attr.aria-label]="'Toggle ' + node.title"
+          >
+            <mat-icon class="mat-icon-rtl-mirror">
+              {{
+                _treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'
+              }}
+            </mat-icon>
+          </button>
 
-        {{ node.title }}
-      </mat-tree-node>
+          {{ node.title }}
+        </mat-tree-node>
 
-      <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
-        <button mat-icon-button disabled></button>
-        {{ node.title }}
-      </mat-tree-node>
-    </mat-tree>
+        <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
+          <button mat-icon-button disabled></button>
+          {{ node.title }}
+        </mat-tree-node>
+      </mat-tree>
     }
   `,
   styles: `
@@ -95,7 +95,7 @@ export class SidenavMenuComponent implements OnInit {
 
   readonly _treeControl = new FlatTreeControl<FlattenedMenuNode>(
     (node) => node.level,
-    (node) => node.expandable
+    (node) => node.expandable,
   );
 
   readonly _treeFlattener = new MatTreeFlattener<
@@ -109,7 +109,7 @@ export class SidenavMenuComponent implements OnInit {
     }),
     (node: FlattenedMenuNode) => node.level,
     (node: FlattenedMenuNode) => node.expandable,
-    (node: SidenavMenuNode) => sidenavMenuNodeChildren(node)
+    (node: SidenavMenuNode) => sidenavMenuNodeChildren(node),
   );
 
   readonly _dataSource = new MatTreeFlatDataSource<

@@ -1,45 +1,51 @@
-import { CommonModule } from "@angular/common";
-import { Component, Input } from "@angular/core";
-import { MatTableModule } from "@angular/material/table";
-import { MatListModule } from "@angular/material/list";
-import { EquipmentTagChipsComponent } from "./tag/equipment-tag-chips.component";
-import { RouterModule } from "@angular/router";
-import { Equipment } from "./common/equipment";
-
+import { CommonModule } from '@angular/common';
+import { Component, Input } from '@angular/core';
+import { MatTableModule } from '@angular/material/table';
+import { MatListModule } from '@angular/material/list';
+import { EquipmentTagChipsComponent } from './tag/equipment-tag-chips.component';
+import { RouterModule } from '@angular/router';
+import { Equipment } from './common/equipment';
 
 @Component({
-    selector: 'lab-equipment-list',
-    standalone: true,
-    imports: [
-        CommonModule,
-        RouterModule,
+  selector: 'lab-equipment-list',
+  standalone: true,
+  imports: [
+    CommonModule,
+    RouterModule,
 
-        MatListModule,
-        MatTableModule,
+    MatListModule,
+    MatTableModule,
 
-        EquipmentTagChipsComponent
-    ],
-    template: `
+    EquipmentTagChipsComponent,
+  ],
+  template: `
     <mat-list>
-        <a mat-list-item *ngFor="let equipment of equipments"
-           [routerLink]="['./', equipment.id]">
-            <span matListItemTitle>{{equipment.name}}</span>
-            <span matListItemLine>{{equipment.description}}</span>
-            <span matListItemMeta>
-                <lab-equipment-tag-chips [tags]="equipment.tags"></lab-equipment-tag-chips>
-            </span>
-        </a>
+      <a
+        mat-list-item
+        *ngFor="let equipment of equipments"
+        [routerLink]="['./', equipment.id]"
+      >
+        <span matListItemTitle>{{ equipment.name }}</span>
+        <span matListItemLine>{{ equipment.description }}</span>
+        <span matListItemMeta>
+          <lab-equipment-tag-chips
+            [tags]="equipment.tags"
+          ></lab-equipment-tag-chips>
+        </span>
+      </a>
     </mat-list>
-    `,
-    styles: [`
-    span.mat-mdc-list-item-meta {
+  `,
+  styles: [
+    `
+      span.mat-mdc-list-item-meta {
         display: flex !important;
         flex-basis: 60%;
         justify-content: flex-end;
-    }
-    `]
+      }
+    `,
+  ],
 })
 export class LabEquipmentListComponent {
-    @Input({required: true})
-    equipments: Equipment[];
+  @Input({ required: true })
+  equipments: Equipment[];
 }

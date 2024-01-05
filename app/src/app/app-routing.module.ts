@@ -27,14 +27,14 @@ const routes: Routes = [
         path: 'lab',
         loadChildren: () =>
           import('./lab/_features/lab.feature-module').then(
-            (module) => module.LabFeatureModule
+            (module) => module.LabFeatureModule,
           ),
       },
       {
         path: 'user',
         loadChildren: () =>
           import('./user/_features/user.feature-module').then(
-            (module) => module.UserFeatureModule
+            (module) => module.UserFeatureModule,
           ),
       },
     ],
@@ -52,7 +52,7 @@ const routes: Routes = [
     path: 'uni/campuses',
     loadChildren: () =>
       import('./uni/campus/_features/campus.feature-module').then(
-        (module) => module.CampusFeature
+        (module) => module.CampusFeature,
       ),
   },
 ];

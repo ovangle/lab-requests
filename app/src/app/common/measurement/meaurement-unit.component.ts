@@ -1,26 +1,21 @@
-import { CommonModule } from "@angular/common";
-import { Component, HostBinding, Input, inject } from "@angular/core";
-import { MeasurementUnitPipe } from "./common-measurement-unit.pipe";
-
+import { CommonModule } from '@angular/common';
+import { Component, HostBinding, Input, inject } from '@angular/core';
+import { MeasurementUnitPipe } from './common-measurement-unit.pipe';
 
 @Component({
-    selector: 'common-measurement-unit',
-    standalone: true,
-    imports: [
-        CommonModule,
-        MeasurementUnitPipe
-    ],
-    template: `
-    `
+  selector: 'common-measurement-unit',
+  standalone: true,
+  imports: [CommonModule, MeasurementUnitPipe],
+  template: ``,
 })
 export class CommonMeasurementUnitComponent {
-    @Input()
-    unit: string;
+  @Input()
+  unit: string;
 
-    readonly _measure = inject(MeasurementUnitPipe);
+  readonly _measure = inject(MeasurementUnitPipe);
 
-    @HostBinding('attr.innerHTML')
-    get hostInnerHtml() {
-        return this._measure.transform(this.unit);
-    }
+  @HostBinding('attr.innerHTML')
+  get hostInnerHtml() {
+    return this._measure.transform(this.unit);
+  }
 }

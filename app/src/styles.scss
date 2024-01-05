@@ -1,79 +1,87 @@
-@use '@angular/material' as mat;
+@use "@angular/material" as mat;
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
 
 /** Setup the core theme */
 
 @include mat.core();
 
 $cqu_primary_palette: (
-    900: #245f93,
-    800: #2e7fb5,
-    700: #3290C9,
-    600: #3496CE,
-    500: #39A3DD,
-    400: #47B1E2,
-    300: #5FBDE6,
-    200: #87D1EE,
-    100: #B5E3F5,
-    50: #E2F4FB,
-    contrast: (
-        50: rgba(black, 0.87),
-        100: rgba(black, 0.87),
-        200: rgba(black, 0.87),
-        300: rgba(black, 0.87),
-        400: rgba(black, 0.87),
-        500: rgba(black, 0.87),
-        600: white,
-        700: white,
-        800: white,
-        900: white
-    )
+  900: #245f93,
+  800: #2e7fb5,
+  700: #3290c9,
+  600: #3496ce,
+  500: #39a3dd,
+  400: #47b1e2,
+  300: #5fbde6,
+  200: #87d1ee,
+  100: #b5e3f5,
+  50: #e2f4fb,
+  contrast: (
+    50: rgba(black, 0.87),
+    100: rgba(black, 0.87),
+    200: rgba(black, 0.87),
+    300: rgba(black, 0.87),
+    400: rgba(black, 0.87),
+    500: rgba(black, 0.87),
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+  ),
 );
 
 $cqu_secondary_palette: (
-    900: #7E7200,
-    800: #9A9810,
-    700: #ACAF18,
-    600: #BCC520,
-    500: #CBD630,
-    400: #CBD626,
-    300: #D2DC4B,
-    200: #E5EB96,
-    100: #F0F2BF,
-    50: #F9FAE6,
-    contrast: (
-        50: rgba(black, 0.87),
-        100: rgba(black, 0.87),
-        200: rgba(black, 0.87),
-        300: rgba(black, 0.87),
-        400: rgba(black, 0.87),
-        500: rgba(black, 0.87),
-        600: white,
-        700: white,
-        800: white,
-        900: white
-    )
+  900: #7e7200,
+  800: #9a9810,
+  700: #acaf18,
+  600: #bcc520,
+  500: #cbd630,
+  400: #cbd626,
+  300: #d2dc4b,
+  200: #e5eb96,
+  100: #f0f2bf,
+  50: #f9fae6,
+  contrast: (
+    50: rgba(black, 0.87),
+    100: rgba(black, 0.87),
+    200: rgba(black, 0.87),
+    300: rgba(black, 0.87),
+    400: rgba(black, 0.87),
+    500: rgba(black, 0.87),
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+  ),
 );
 
 $primary: mat.define-palette($cqu_primary_palette, 800);
 $accent: mat.define-palette($cqu_secondary_palette, 300);
 
-$theme: mat.define-light-theme((
+$theme: mat.define-light-theme(
+  (
     color: (
-        primary: $primary,
-        accent: $accent,
+      primary: $primary,
+      accent: $accent,
     ),
     typography: mat.define-typography-config(),
-    density: 0
-));
+    density: 0,
+  )
+);
 
 @include mat.all-component-themes($theme);
 body {
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
 
 /**
@@ -83,14 +91,14 @@ body {
 // FIXME: This won't work now that scaffold-layout exists.
 // Move this logic into scaffold.
 body.hide-scrollbar::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 body.hide-scrollbar {
-    -ms-overflow-style: none;
-    // padding-right: 16px;
+  -ms-overflow-style: none;
+  // padding-right: 16px;
 }
 html:has(body.hide-scrollbar) {
-    scrollbar-width: 0;
+  scrollbar-width: 0;
 }
 
 /**
@@ -98,27 +106,28 @@ html:has(body.hide-scrollbar) {
  */
 
 mat-card {
-    margin-bottom: 1em;
+  margin-bottom: 1em;
 }
 
-mat-card-title, mat-card-footer {
-    padding-left: 1.5em;
-    padding-right: 1.5em;
+mat-card-title,
+mat-card-footer {
+  padding-left: 1.5em;
+  padding-right: 1.5em;
 }
 
 mat-form-field {
-    width: 100%;
+  width: 100%;
 }
 
 /**
  * Utitlity classes
  */
 .content-centered {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .d-flex {
-    display: flex;
+  display: flex;
 }
