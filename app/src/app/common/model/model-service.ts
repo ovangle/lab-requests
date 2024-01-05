@@ -3,16 +3,17 @@ import { Inject, Injectable, InjectionToken, Provider, Type, inject } from "@ang
 import { Model, ModelParams, ModelLookup, ModelResponsePage, modelResponsePageFromJson, ModelPatch, ModelMeta } from "./model";
 import urlJoin from "url-join";
 import { Observable, Subject, map, tap } from "rxjs";
+import { JsonObject } from "src/app/utils/is-json-object";
 
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL');
 
 @Injectable()
 export abstract class ModelService<
-    T extends Model, 
+    T extends Model,
     TPatch extends ModelPatch<T> = ModelPatch<T>,
     TLookup extends ModelLookup<T> = ModelLookup<T>
 > {
-    
+
     readonly _httpClient = inject(HttpClient);
     readonly _apiBaseUrl = inject(API_BASE_URL)
 
@@ -25,7 +26,7 @@ export abstract class ModelService<
         return this.metadata.model;
     }
 
-    modelFromJson(json: unknown) {
+    modelFromJson(json: JsonObject) {
         return this.metadata.modelFromJson(json);
     }
     modelPatchToJson(patch: TPatch) {
@@ -56,12 +57,12 @@ export abstract class ModelService<
             if (page.totalItemCount !== 1) {
                 throw new Error('Expected a response with a single item')
             }
-            return page.items[0];
+            return page.items[ 0 ];
         }))
     }
     abstract queryPage(lookup: Partial<TLookup>): Observable<ModelResponsePage<T, TLookup>>;
-    abstract create(patch: TPatch): Observable<T>; 
-    abstract update(id: string, params: TPatch): Observable<T>; 
+    abstract create(patch: TPatch): Observable<T>;
+    abstract update(id: string, params: TPatch): Observable<T>;
 }
 
 /**
@@ -70,7 +71,7 @@ export abstract class ModelService<
  */
 @Injectable()
 export abstract class RestfulService<
-    T extends Model, 
+    T extends Model,
     TPatch extends ModelPatch<T> = ModelPatch<T>,
     TLookup extends ModelLookup<T> = ModelLookup<T>
 > extends ModelService<T, TPatch, TLookup> {
@@ -105,27 +106,27 @@ export abstract class RestfulService<
 
 
 
-    override fetch(id: string, options?: {params: {[k: string]: any} | HttpParams}): Observable<T> {
-        return this._httpClient.get<{[k: string]: unknown}>(this.resourceUrl(id), {params: options?.params}).pipe(
+    override fetch(id: string, options?: { params: { [ k: string ]: any } | HttpParams }): Observable<T> {
+        return this._httpClient.get<{ [ k: string ]: unknown }>(this.resourceUrl(id), { params: options?.params }).pipe(
             map(result => this.modelFromJson(result))
         );
     }
 
     override queryPage(lookup: Partial<TLookup>): Observable<ModelResponsePage<T, TLookup>> {
         const params = this.metadata.lookupToHttpParams(lookup);
-        return this._httpClient.get(this.indexUrl, {params: params}).pipe(
+        return this._httpClient.get(this.indexUrl, { params: params }).pipe(
             map((response) => modelResponsePageFromJson(this.metadata, lookup, response))
         );
     }
 
     override create(patch: TPatch): Observable<T> {
-        return this._httpClient.post<{[k: string]: unknown}>(this.indexUrl, this.modelPatchToJson(patch)).pipe(
+        return this._httpClient.post<{ [ k: string ]: unknown }>(this.indexUrl + '/', this.modelPatchToJson(patch)).pipe(
             map(result => this.modelFromJson(result))
         );
     }
 
     override update(id: string, patch: TPatch): Observable<T> {
-        return this._httpClient.put<{[k: string]: unknown}>(this.resourceUrl(id), this.modelPatchToJson(patch)).pipe(
+        return this._httpClient.put<{ [ k: string ]: unknown }>(this.resourceUrl(id), this.modelPatchToJson(patch)).pipe(
             map(result => this.modelFromJson(result))
         );
     }
@@ -152,5 +153,5 @@ export function findModelService<T extends Model>(services: ModelService<any>[],
     if (nextIndex >= 0) {
         throw new Error(`Multiple services were provided for model ${model}`)
     }
-    return services[firstIndex] as ModelService<T>;
+    return services[ firstIndex ] as ModelService<T>;
 }

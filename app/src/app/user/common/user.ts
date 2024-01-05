@@ -1,4 +1,4 @@
-import { isJsonObject } from 'src/app/utils/is-json-object';
+import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import {
   Model,
   ModelLookup,
@@ -32,6 +32,8 @@ import {
 } from 'rxjs';
 import { Actor } from '../actor';
 import { Lab, labFromJson } from 'src/app/lab/common/lab';
+import { ExperimentalPlan, experimentalPlanFromJson } from 'src/app/lab/experimental-plan/common/experimental-plan';
+import { RIGHT_ARROW } from '@angular/cdk/keycodes';
 
 export interface UserParams extends ModelParams {
   name: string;
@@ -39,6 +41,8 @@ export interface UserParams extends ModelParams {
 
   roles: ReadonlySet<Role>;
   labs: ReadonlyArray<Lab>;
+
+  activePlans: ReadonlyArray<ExperimentalPlan>;
 }
 
 export class User extends Model implements UserParams {
@@ -51,6 +55,8 @@ export class User extends Model implements UserParams {
    */
   readonly labs: readonly Lab[];
 
+  readonly activePlans: readonly ExperimentalPlan[];
+
   constructor(params: UserParams) {
     super(params);
     this.email = params.email;
@@ -58,6 +64,7 @@ export class User extends Model implements UserParams {
 
     this.roles = params.roles;
     this.labs = params.labs;
+    this.activePlans = params.activePlans;
   }
 
   canActAs(actor: Actor) {
@@ -70,28 +77,33 @@ function userParamsFromJson(json: unknown): UserParams {
     throw new Error('Not a json object');
   }
   const baseParams = modelParamsFromJsonObject(json);
-  if (typeof json['email'] !== 'string') {
+  if (typeof json[ 'email' ] !== 'string') {
     throw new Error("Expected a string 'email'");
   }
 
-  if (typeof json['name'] !== 'string') {
+  if (typeof json[ 'name' ] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
 
   let roles: ReadonlySet<Role> = new Set();
-  if (Array.isArray(json['roles'])) {
-    roles = new Set(json['roles'].map(roleFromJson));
+  if (Array.isArray(json[ 'roles' ])) {
+    roles = new Set(json[ 'roles' ].map(roleFromJson));
   }
   let labs: ReadonlyArray<Lab> = [];
-  if (Array.isArray(json['labs'])) {
-    labs = json['labs'].map(labFromJson);
+  if (Array.isArray(json[ 'labs' ])) {
+    labs = json[ 'labs' ].map(labFromJson);
+  }
+  let activePlans: ReadonlyArray<ExperimentalPlan> = [];
+  if (Array.isArray(json[ 'activePlans' ])) {
+    activePlans = json[ 'activePlans' ].map(experimentalPlanFromJson);
   }
   return {
     ...baseParams,
-    name: json['name'],
-    email: json['email'],
+    name: json[ 'name' ],
+    email: json[ 'email' ],
     roles,
-    labs
+    labs,
+    activePlans
   };
 }
 
@@ -133,13 +145,13 @@ export class UserService extends RestfulService<User, UserPatch, UserLookup> {
 
   me(): Observable<User> {
     return this._httpClient
-      .get(this.indexMethodUrl('me'))
+      .get<JsonObject>(this.indexMethodUrl('me'))
       .pipe(map((result) => this.modelFromJson(result)));
   }
 
   alterPassword(alterPasswordRequest: AlterPassword): Observable<User> {
     return this._httpClient
-      .post(this.indexMethodUrl('alter-password'), alterPasswordRequest)
+      .post<JsonObject>(this.indexMethodUrl('alter-password'), alterPasswordRequest)
       .pipe(
         map((result) => this.modelFromJson(result)),
         catchError((err) => {

@@ -10,7 +10,8 @@ import { MatButtonModule } from "@angular/material/button";
 
 import { ResourceContainerContext } from "../resource-container";
 import { ExperimentalPlanFormPaneControlService } from "src/app/lab/experimental-plan/experimental-plan-form-pane-control.service";
-import { ResourceType, ResourceTypePipe } from "../resource-type";
+import type { ResourceType } from "../resource-type";
+import { ResourceTypePipe } from "../resource-type.pipe";
 import { Resource } from "../resource";
 
 @Injectable()
@@ -25,12 +26,12 @@ export abstract class ResourceTableDataSource<T extends Resource> extends DataSo
 
     async openResourceCreateForm(): Promise<boolean> {
         const containerPath = await this._containerContext.getContainerPath();
-        return this._formPane.open([...containerPath, this.resourceType, 'create']);
+        return this._formPane.open([ ...containerPath, this.resourceType, 'create' ]);
     }
 
     async openResourceUpdateFormAt(index: number): Promise<boolean> {
         const containerPath = await this._containerContext.getContainerPath();
-        return this._formPane.open([...containerPath, this.resourceType, `${index}`]);
+        return this._formPane.open([ ...containerPath, this.resourceType, `${index}` ]);
     }
 
     deleteElementAt(elementIndex: number): void {
@@ -65,8 +66,8 @@ export abstract class ResourceTableDataSource<T extends Resource> extends DataSo
     ],
     animations: [
         trigger('detailExpand', [
-            state('collapsed', style({height: '0px', minHeight: 0})),
-            state('expanded', style({height: '*'})),
+            state('collapsed', style({ height: '0px', minHeight: 0 })),
+            state('expanded', style({ height: '*' })),
             transition('expanded <=> collapsed', animate('225ms cubic-bezier(0.4, 0.0, 0.2, 1)'))
         ])
     ]
@@ -83,7 +84,7 @@ export class ResourceTableComponent<T extends Resource> implements AfterContentI
     }
     set displayedColumns(columns: string[]) {
         this._displayedColumns = columns;
-        this._displayedColumnsWithElementActions = [...columns, 'element-actions'];
+        this._displayedColumnsWithElementActions = [ ...columns, 'element-actions' ];
     }
 
     private _displayedColumns: string[]
@@ -94,9 +95,9 @@ export class ResourceTableComponent<T extends Resource> implements AfterContentI
     private _displayedColumnsWithElementActions: string[];
 
     @Input()
-    detailTemplate: TemplateRef<{$implicit: Resource, index: number}>;
+    detailTemplate: TemplateRef<{ $implicit: Resource, index: number }>;
 
-    @ViewChild(MatTable, {static: true})
+    @ViewChild(MatTable, { static: true })
     private table: MatTable<T>;
 
     @ContentChildren(MatColumnDef)

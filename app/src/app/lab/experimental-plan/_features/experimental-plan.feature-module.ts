@@ -3,12 +3,12 @@ import { NgModule } from "@angular/core";
 import { RouterModule, Routes } from "@angular/router";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
-import { ExperimentalPlanFormComponent } from "../experimental-plan-form.component";
 import { MatCardModule } from "@angular/material/card";
 import { MatTabsModule } from "@angular/material/tabs";
-import { ExperimentalPlanInfoComponent } from "../experimental-plan-info.component";
 import { MatListModule } from "@angular/material/list";
 
+import { ExperimentalPlanFormComponent } from "../experimental-plan-form.component";
+import { ExperimentalPlanInfoComponent } from "../experimental-plan-info.component";
 
 import { ExperimentalPlanIndexPage } from "./experimental-plan-index.page";
 import { ExperimentalPlanDetailPage } from "./experimental-plan-detail.page";
@@ -27,7 +27,7 @@ const EXPERIMENTAL_PLAN_ROUTES: Routes = [
     },
     {
         path: ':experimental_plan_id',
-        component: ExperimentalPlanDetailPage, 
+        component: ExperimentalPlanDetailPage,
         children: [
             {
                 path: '',
@@ -49,7 +49,7 @@ const EXPERIMENTAL_PLAN_ROUTES: Routes = [
             }
         ]
     },
-    
+
 ];
 
 @NgModule({
@@ -74,7 +74,7 @@ const EXPERIMENTAL_PLAN_ROUTES: Routes = [
     providers: [
         ExperimentalPlanContext
     ],
-    exports: [RouterModule]
+    exports: [ RouterModule ]
 })
-export class ExperimentalPlanFeatureModule {}
+export class ExperimentalPlanFeatureModule { }
 

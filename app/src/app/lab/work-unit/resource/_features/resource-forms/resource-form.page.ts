@@ -8,18 +8,18 @@ import { ResourceFormService } from "../../resource-form.service";
 import { BodyScrollbarHidingService } from "src/app/utils/body-scrollbar-hiding.service";
 import { ExperimentalPlanFormPaneControlService } from "src/app/lab/experimental-plan/experimental-plan-form-pane-control.service";
 import { WorkUnit, WorkUnitContext } from "../../../common/work-unit";
-import { ResourceContainerContext } from "../../resource-container";
+import { ResourceContainer, ResourceContainerContext } from "../../resource-container";
 import { FundingModel } from "src/app/uni/research/funding/funding-model";
 
-export function typeIndexFromDetailRoute$(): Observable<[ResourceType, number | 'create']> {
+export function typeIndexFromDetailRoute$(): Observable<[ ResourceType, number | 'create' ]> {
     const activatedRoute = inject(ActivatedRoute);
 
     return combineLatest([
         activatedRoute.paramMap,
         activatedRoute.data
     ]).pipe(
-        map(([paramMap, data]) => {
-            const resourceType = data['resourceType']
+        map(([ paramMap, data ]) => {
+            const resourceType = data[ 'resourceType' ]
             if (!isResourceType(resourceType)) {
                 throw new Error('No resource type in route data');
             }
@@ -27,8 +27,8 @@ export function typeIndexFromDetailRoute$(): Observable<[ResourceType, number | 
             if (Number.isNaN(index)) {
                 index = 'create';
             }
-            return [resourceType, index]
-       })
+            return [ resourceType, index ]
+        })
     )
 }
 
@@ -96,10 +96,10 @@ export class WorkUnitResourceFormPage {
     readonly resourceType$ = defer(() => this._context.resourceType$);
 
     readonly containerId$: Observable<string> = this._context.container$.pipe(
-        map((container: WorkUnit) => container.id)
+        map((container: ResourceContainer) => container.id)
     );
-    readonly containerName$ = this._context.container$.pipe(
-        map((container: WorkUnit) => container.name)
+    readonly containerName$: Observable<string> = this._context.container$.pipe(
+        map((container: ResourceContainer) => container.name)
     );
 
     readonly fundingModel$: Observable<FundingModel> = this._context.plan$.pipe(
@@ -110,10 +110,6 @@ export class WorkUnitResourceFormPage {
         this._contextConnection = this._context.sendTypeIndex(
             typeIndexFromDetailRoute$()
         );
-        this._context.container$.subscribe(container => {
-            console.log('container', container);
-        })
-
         this._formConnection = this._formService.connect();
     }
 

@@ -7,11 +7,10 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { LabSoftwareRequestFormComponent } from "./software-request-form.component";
 import { NewSoftwareRequest, Software, SoftwareModelService, isNewSoftwareRequest } from "./software";
-import { ModelCollection } from "src/app/utils/models/model-collection";
 import { BehaviorSubject, Observable, defer, map, of, startWith, switchMap } from "rxjs";
 import { isThisQuarter } from "date-fns";
-import { isEquipmentRequest } from "../equipment/equipment";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
+import { ModelCollection } from "src/app/common/model/model-collection";
 
 @Injectable()
 export class SoftwareModelCollection extends ModelCollection<Software> {
@@ -77,12 +76,12 @@ export class SoftwareSearchComponent implements ControlValueAccessor {
     readonly softwares = inject(SoftwareModelCollection);
     readonly searchControl = new FormControl<Software | string>('');
 
-    readonly searchOptions$ = defer(() => this.softwares.items$);
+    readonly searchOptions$ = defer(() => this.softwares.page$.pipe(map(page => page.items)));
     readonly isNewSoftware$ = this.searchControl.valueChanges.pipe(
         map(value => value === _NEW_SOFTWARE_)
     );
 
-    readonly _softwareRequest = new BehaviorSubject<NewSoftwareRequest>({name: '', description: ''});
+    readonly _softwareRequest = new BehaviorSubject<NewSoftwareRequest>({ name: '', description: '' });
 
 
     readonly value$: Observable<Software | NewSoftwareRequest | null> = defer(
@@ -112,7 +111,7 @@ export class SoftwareSearchComponent implements ControlValueAccessor {
             this.searchControl.setValue(obj);
         } else if (isNewSoftwareRequest(obj)) {
             this.searchControl.setValue(_NEW_SOFTWARE_);
-            this._softwareRequest.next({...obj});
+            this._softwareRequest.next({ ...obj });
         }
     }
 
@@ -121,7 +120,7 @@ export class SoftwareSearchComponent implements ControlValueAccessor {
         this._onChange = fn;
     }
 
-    _onTouched = () => {}
+    _onTouched = () => { }
     registerOnTouched(fn: any) {
         this._onTouched = fn;
     }

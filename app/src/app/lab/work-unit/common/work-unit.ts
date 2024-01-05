@@ -13,6 +13,7 @@ import urlJoin from "url-join";
 import { ResourceType } from "../resource/resource-type";
 import { ModelContext } from "src/app/common/model/context";
 import { ModelCollection, injectModelUpdate } from "src/app/common/model/model-collection";
+import { JsonObject } from "src/app/utils/is-json-object";
 
 
 export interface WorkUnitParams extends ResourceContainerParams {
@@ -41,8 +42,6 @@ export class WorkUnit extends ResourceContainer {
     readonly planId: string;
     readonly index: number;
 
-    readonly name: string;
-
     readonly campus: Campus;
     readonly labType: LabType;
     readonly technician: string;
@@ -56,7 +55,7 @@ export class WorkUnit extends ResourceContainer {
         params: WorkUnitParams
     ) {
         super(params);
-        
+
         if (typeof params.index !== 'number') {
             throw new Error('WorkUnit index must be a number')
         }
@@ -69,7 +68,7 @@ export class WorkUnit extends ResourceContainer {
 
         this.startDate = params.startDate || null;
         this.endDate = params.endDate || null;
-   }
+    }
 }
 
 export type WorkUnitFmt = 'campus+lab';
@@ -84,27 +83,56 @@ export function formatWorkUnit(workUnit: WorkUnit, format: WorkUnitFmt = 'campus
 }
 
 
-export function workUnitParamsFromJson(json: unknown): WorkUnitParams {
-    if (typeof json !== 'object' || json == null) {
-        throw new Error('Expected an object')
-    }
-    const obj: {[k: string]: any} = json as any;
+export function workUnitParamsFromJson(json: JsonObject): WorkUnitParams {
     const baseParams = resourceContainerFieldsFromJson(json);
+
+    if (typeof json[ 'name' ] !== 'string') {
+        throw new Error('Expected a string \'name\'');
+    }
+    if (typeof json[ 'planId' ] !== 'string') {
+        throw new Error('Expected a string \'planId\'');
+    }
+    if (typeof json[ 'index' ] !== 'number') {
+        throw new Error('Expected a number \'index\'');
+    }
+
+    if (!isLabType(json[ 'labType' ])) {
+        throw new Error('Expected a lab type \'labType\'');
+    }
+
+    if (typeof json[ 'technician' ] != 'string') {
+        throw new Error('Expected a string \'technician\'')
+    }
+
+    if (typeof json[ 'processSummary' ] != 'string') {
+        throw new Error('Expected a string \'processSummary\'');
+    }
+
+    if (typeof json[ 'startDate' ] !== 'string' && json[ 'startDate' ] != null) {
+        throw new Error('Expected either a string or null \'startDate\'');
+    }
+    const startDate = json[ 'startDate' ] != null ? parseISO(json[ 'startDate' ]) : null;
+    if (typeof json[ 'endDate' ] !== 'string' && json[ 'endDate' ] != null) {
+        throw new Error('Expected either a string or null \'endDate\'');
+    }
+    const endDate = json[ 'endDate' ] != null ? parseISO(json[ 'endDate' ]) : null;
+
     return {
         ...baseParams,
-        planId: obj['planId'],
-        index: obj['index'],
-        campus: new Campus(campusFromJson(obj['campus'])),
-        labType: obj['labType'],
-        technician: obj['technician'],
-        processSummary: obj['processSummary'],
+        name: json[ 'name' ],
+        planId: json[ 'planId' ],
+        index: json[ 'index' ],
+        campus: new Campus(campusFromJson(json[ 'campus' ])),
+        labType: json[ 'labType' ],
+        technician: json[ 'technician' ],
+        processSummary: json[ 'processSummary' ],
 
-        startDate: obj['startDate'] && parseISO(obj['startDate']),
-        endDate: obj['endDate'] && parseISO(obj['endDate']),
+        startDate,
+        endDate
     };
 }
 
-export function workUnitFromJson(json: unknown): WorkUnit {
+export function workUnitFromJson(json: JsonObject): WorkUnit {
     return new WorkUnit(workUnitParamsFromJson(json))
 }
 
@@ -131,13 +159,13 @@ export function workUnitPatchFromWorkUnit(workUnit: WorkUnit): WorkUnitPatch {
         endDate: workUnit.endDate,
         equipments: [],
         softwares: [],
-        tasks: [],  
+        tasks: [],
         inputMaterials: [],
         outputMaterials: []
     };
 }
 
-export function workUnitPatchToJson(patch: WorkUnitPatch): {[k: string]: any} {
+export function workUnitPatchToJson(patch: WorkUnitPatch): { [ k: string ]: any } {
     return {
         name: patch.name,
         campus: (patch.campus instanceof Campus) ? patch.campus.id : patch.campus,
@@ -167,7 +195,7 @@ export function workUnitCreateToJson(create: WorkUnitCreate) {
     };
 }
 
-export interface WorkUnitLookup extends ModelLookup<WorkUnit> {}
+export interface WorkUnitLookup extends ModelLookup<WorkUnit> { }
 export function workUnitLookupToHttpParams(lookup: Partial<WorkUnitLookup>) {
     return new HttpParams();
 }
@@ -179,27 +207,27 @@ export interface CreateWorkUnitAttachment {
 }
 
 export function createWorkUnitAttachmentToJson(createAttachment: CreateWorkUnitAttachment) {
-    const json: {[k: string]: any} = {
+    const json: { [ k: string ]: any } = {
         resourceType: createAttachment.resourceType
     }
     if (createAttachment.resourceId) {
-        json['resourceId'] = createAttachment.resourceId;
+        json[ 'resourceId' ] = createAttachment.resourceId;
     }
     if (createAttachment.resourceIndex) {
-        json['resourceIndex'] = createAttachment.resourceIndex;
+        json[ 'resourceIndex' ] = createAttachment.resourceIndex;
     }
     return json;
 }
 
 export class WorkUnitMeta extends ModelMeta<WorkUnit> {
-    
+
     readonly model = WorkUnit;
     override readonly modelParamsFromJson = workUnitParamsFromJson;
     override readonly modelPatchToJson = workUnitPatchToJson;
     override readonly lookupToHttpParams = workUnitLookupToHttpParams;
 }
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class WorkUnitService extends RestfulService<WorkUnit, WorkUnitPatch, WorkUnitLookup> {
     readonly _planModels = inject(ExperimentalPlanService);
     readonly _files = inject(FileUploadService);
@@ -228,7 +256,7 @@ export class WorkUnitService extends RestfulService<WorkUnit, WorkUnitPatch, Wor
     }
 }
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class WorkUnitCollection extends ModelCollection<WorkUnit, WorkUnitPatch, WorkUnitLookup> {
     override readonly service = inject(WorkUnitService);
 }
@@ -258,7 +286,7 @@ export class WorkUnitContext extends ModelContext<WorkUnit, WorkUnitPatch> {
 @Injectable()
 export class WorkUnitResourceContainerContext extends ResourceContainerContext<WorkUnit, WorkUnitPatch> {
     readonly _workUnitContext = inject(WorkUnitContext);
-    
+
     readonly committed$ = this._workUnitContext.committed$;
     override readonly plan$ = this._workUnitContext.plan$;
     override readonly container$ = defer(() => this.committed$);
@@ -268,11 +296,11 @@ export class WorkUnitResourceContainerContext extends ResourceContainerContext<W
         this.committed$.subscribe(committed => console.log('committed', committed));
         this.container$.subscribe(container => console.log('container 0', container));
     }
-        
+
     override commitContext(patch: WorkUnitPatch): Promise<WorkUnit> {
         return this._workUnitContext.commit(patch);
     }
-    
+
     override async patchFromContainerPatch(containerPatch: ResourceContainerPatch<WorkUnit>): Promise<WorkUnitPatch> {
         const workUnit = await firstValueFrom(this._workUnitContext.workUnit$);
         if (workUnit == null) {
@@ -289,15 +317,11 @@ export class WorkUnitResourceContainerContext extends ResourceContainerContext<W
         if (workUnit == null) {
             throw new Error('Cannot access resources in empty context');
         }
-        return ['work-units', `${workUnit.index || 0}`];
+        return [ 'work-units', `${workUnit.index || 0}` ];
     }
 
     override getContainerName(container: WorkUnit) {
         console.log('getting container name', container);
         return formatWorkUnit(container);
     }
-}
-
-export function labWorkUnitModelProviders(): Provider[] {
-    return modelProviders(WorkUnitMeta, WorkUnitService);
 }

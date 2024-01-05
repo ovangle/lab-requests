@@ -67,7 +67,7 @@ class FileUploader {
     selector: 'lab-req-file-upload-label',
     template: `<ng-content></ng-content>`
 })
-export class FileUploadLabelComponent {}
+export class FileUploadLabelComponent { }
 
 
 
@@ -108,10 +108,10 @@ export class FileUploadLabelComponent {}
 export class FileUploadComponent implements ControlValueAccessor {
     readonly _formGroup = new FormGroup({
         fileHandle: new FormControl<string | null>(null),
-        progress: new FormControl<boolean>(false, {nonNullable: true})
+        progress: new FormControl<boolean>(false, { nonNullable: true })
     });
 
-    @Input({required: true})
+    @Input({ required: true })
     uploadHandler: FileUploadHandler;
 
     @Input()
@@ -120,19 +120,20 @@ export class FileUploadComponent implements ControlValueAccessor {
     }
     set accept(value: string | readonly string[]) {
         this._accept = typeof value === 'string'
-                ? value.split(',')
-                : value;
+            ? value.split(',')
+            : value;
     }
 
     _accept: readonly string[];
 
     _fileInputChange(event: Event) {
-        const file = (event.target as HTMLInputElement).files![0];
+        const file = (event.target as HTMLInputElement).files![ 0 ];
         if (!file) {
             this._onChange(null);
         }
-        this.uploadHandler.upload(file).subscribe((evt: HttpUploadProgressEvent | HttpDon) => {
-        })
+        throw new Error('Not implemented');
+        // this.uploadHandler.uploadTo(file).subscribe((evt: HttpUploadProgressEvent | HttpDon) => {
+        // })
     }
 
     get isUploadInProgress() {
@@ -148,11 +149,11 @@ export class FileUploadComponent implements ControlValueAccessor {
             progress: false
         });
     }
-    _onChange = (value: string | null) => {};
+    _onChange = (value: string | null) => { };
     registerOnChange(fn: any): void {
         this._onChange = fn;
     }
-    _onTouched = () => {}
+    _onTouched = () => { }
     registerOnTouched(fn: any): void {
         this._onTouched = fn;
     }

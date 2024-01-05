@@ -1,16 +1,17 @@
-import { Model, ModelLookup, ModelMeta, ModelParams, ModelPatch, modelParamsFromJsonObject} from "src/app/common/model/model";
+import { Model, ModelLookup, ModelMeta, ModelParams, ModelPatch, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { Discipline, disciplineFromJson } from "src/app/uni/discipline/discipline";
 import { FundingModel, fundingModelFromJson } from "src/app/uni/research/funding/funding-model";
-import { Inject, Injectable, inject } from "@angular/core";
+import { Injectable, inject } from "@angular/core";
 import { HttpParams } from "@angular/common/http";
 import { min as minDate, max as maxDate, parseISO } from "date-fns";
 import { RestfulService, modelProviders } from "src/app/common/model/model-service";
 import { ModelCollection, injectModelUpdate } from "src/app/common/model/model-collection";
-import { Observable, defer } from "rxjs";
+import { defer } from "rxjs";
 import { Campus, campusFromJson, CampusCode, isCampusCode } from "src/app/uni/campus/common/campus";
 import { WorkUnit, WorkUnitCreate, workUnitFromJson } from "../../work-unit/common/work-unit";
 import { ModelContext } from "src/app/common/model/context";
 import { getFullFiscalYear } from "src/app/utils/date";
+import { isJsonObject } from "src/app/utils/is-json-object";
 
 export interface ExperimentalPlanParams extends ModelParams {
     researcher: string;
@@ -20,7 +21,7 @@ export interface ExperimentalPlanParams extends ModelParams {
     title: string;
     fundingModel: FundingModel;
 
-    supervisor: string | null; 
+    supervisor: string | null;
     processSummary: string;
 
     workUnits: WorkUnit[];
@@ -70,7 +71,7 @@ export class ExperimentalPlan extends Model {
         return maxDate(endDates as Date[]);
     }
 
-    get projectFiscalYearRange(): Readonly<{start: number; end: number;}> | null {
+    get projectFiscalYearRange(): Readonly<{ start: number; end: number; }> | null {
         if (this.startDate == null || this.endDate == null) {
             return null;
         }
@@ -79,46 +80,54 @@ export class ExperimentalPlan extends Model {
             : this.endDate.getFullYear();
 
         return {
-            start: getFullFiscalYear(this.startDate), 
+            start: getFullFiscalYear(this.startDate),
             end: getFullFiscalYear(this.endDate)
         };
     }
 }
 
-function experimentalPlanParamsFromJson(json: {[k: string]: unknown}): ExperimentalPlanParams {
+function experimentalPlanParamsFromJson(json: unknown): ExperimentalPlanParams {
+    if (!isJsonObject(json)) {
+        throw new Error('Expected a json object');
+    }
+
     const baseParams = modelParamsFromJsonObject(json);
 
-    if (typeof json['title'] !== 'string') {
+    if (typeof json[ 'title' ] !== 'string') {
         throw new Error('Expected a \'title\'')
     }
-    if (typeof json['researcher'] !== 'string') {
+    if (typeof json[ 'researcher' ] !== 'string') {
         throw new Error('Expected a \'researcher\'')
     }
-    if (json['supervisor'] !== null && typeof json['supervisor'] !== 'string') {
+    if (json[ 'supervisor' ] !== null && typeof json[ 'supervisor' ] !== 'string') {
         throw new Error('Expecteda a supervisor')
     }
-    if (typeof json['processSummary'] !== 'string') {
+    if (typeof json[ 'processSummary' ] !== 'string') {
         throw new Error('Expected a \'projectSummary\'')
     }
 
-    if (!Array.isArray(json['workUnits'])) {
+    if (!Array.isArray(json[ 'workUnits' ])) {
         throw new Error('Expected an array of work units')
     }
 
     return {
         ...baseParams,
-        title: json['title'],
-        researcher: json['researcher'],
-        researcherDiscipline: disciplineFromJson(json['researcherDiscipline']),
-        researcherBaseCampus: campusFromJson(json['researcherBaseCampus']),
+        title: json[ 'title' ],
+        researcher: json[ 'researcher' ],
+        researcherDiscipline: disciplineFromJson(json[ 'researcherDiscipline' ]),
+        researcherBaseCampus: campusFromJson(json[ 'researcherBaseCampus' ]),
 
-        fundingModel: fundingModelFromJson(json['fundingModel']),
-        supervisor: json['supervisor'],
+        fundingModel: fundingModelFromJson(json[ 'fundingModel' ]),
+        supervisor: json[ 'supervisor' ],
 
-        processSummary: json['processSummary'],
+        processSummary: json[ 'processSummary' ],
 
-        workUnits: Array.from(json['workUnits']).map(workUnit => workUnitFromJson(workUnit))
+        workUnits: Array.from(json[ 'workUnits' ]).map(workUnit => workUnitFromJson(workUnit))
     };
+}
+
+export function experimentalPlanFromJson(json: unknown): ExperimentalPlan {
+    return new ExperimentalPlan(experimentalPlanParamsFromJson(json))
 }
 
 export interface ExperimentalPlanPatch extends ModelPatch<ExperimentalPlan> {
@@ -134,7 +143,7 @@ export interface ExperimentalPlanPatch extends ModelPatch<ExperimentalPlan> {
     addWorkUnits?: WorkUnitCreate[];
 }
 
-export function experimentalPlanPatchToJson(patch: ExperimentalPlanPatch): {[k: string]: unknown} {
+export function experimentalPlanPatchToJson(patch: ExperimentalPlanPatch): { [ k: string ]: unknown } {
     let researcherBaseCampus: string;
     if (patch.researcherBaseCampus instanceof Campus) {
         researcherBaseCampus = patch.researcherBaseCampus.id;
@@ -166,10 +175,10 @@ export function experimentalPlanLookupToHttpParams(lookup: Partial<ExperimentalP
     return new HttpParams();
 }
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class ExperimentalPlanMeta extends ModelMeta<
-    ExperimentalPlan, 
-    ExperimentalPlanPatch, 
+    ExperimentalPlan,
+    ExperimentalPlanPatch,
     ExperimentalPlanLookup
 > {
     override readonly model = ExperimentalPlan;
@@ -178,13 +187,13 @@ export class ExperimentalPlanMeta extends ModelMeta<
     override readonly lookupToHttpParams = experimentalPlanLookupToHttpParams;
 }
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class ExperimentalPlanService extends RestfulService<ExperimentalPlan, ExperimentalPlanPatch, ExperimentalPlanLookup> {
     override readonly path = '/lab/experimental-plans'
     override readonly metadata = inject(ExperimentalPlanMeta);
 }
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class ExperimentalPlanCollection extends ModelCollection<ExperimentalPlan, ExperimentalPlanPatch, ExperimentalPlanLookup> {
     override readonly service = inject(ExperimentalPlanService);
 }

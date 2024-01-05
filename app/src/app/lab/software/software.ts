@@ -1,39 +1,46 @@
 import { FormControl, FormGroup } from "@angular/forms";
 import { ResourceFileAttachment, resourceFileAttachmentFromJson } from "../work-unit/resource/file-attachment/file-attachment";
 import { ResourceParams, Resource } from "../work-unit/resource/resource";
-import { Injectable, inject } from "@angular/core";
-import { Lookup, ModelService } from "src/app/utils/models/model-service";
+import { Injectable, Type, inject } from "@angular/core";
 import { HttpParams } from "@angular/common/http";
-import { Context } from "src/app/utils/models/model-context";
 import { Observable } from "rxjs";
+import { Model, ModelLookup, ModelMeta, ModelParams, modelParamsFromJsonObject } from "src/app/common/model/model";
+import { ModelService, RestfulService } from "src/app/common/model/model-service";
+import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
+import { ModelContext } from "src/app/common/model/context";
 
-export interface SoftwareParams {
+export interface SoftwareParams extends ModelParams {
     readonly id: string;
 
     name: string;
 }
 
-export class Software {
-    readonly type = 'software';
+function softwareParamsFromJson(json: JsonObject) {
+    const baseParams = modelParamsFromJsonObject(json);
 
-    readonly id: string;
+    if (typeof json[ 'name' ] !== 'string') {
+        throw new Error('Expected a string \'name\'');
+    }
+
+    return {
+        ...baseParams,
+        name: json[ 'name' ],
+    };
+}
+
+export class Software extends Model {
+    readonly type = 'software';
 
     name: string;
 
     constructor(params: SoftwareParams) {
-        this.id = params.id;
+        super(params);
         this.name = params.name;
     }
 }
 
-export function softwareFromJson(json: {[k: string]: any}): Software {
-    const attachments = (json['attachments'] || [])
-        .map(resourceFileAttachmentFromJson)
-
-    return new Software({
-        id: json['id'],
-        name: json['name'],
-    });
+export function softwareFromJson(json: JsonObject): Software {
+    return new Software(softwareParamsFromJson(json));
 }
 
 export interface SoftwarePatch {
@@ -59,12 +66,12 @@ export function isNewSoftwareRequest(obj: any): obj is NewSoftwareRequest {
 
 export function newSoftwareRequestForm() {
     return new FormGroup({
-        name: new FormControl('', {nonNullable: true}),
-        description: new FormControl('', {nonNullable: true})
+        name: new FormControl('', { nonNullable: true }),
+        description: new FormControl('', { nonNullable: true })
     });
 }
 
-export interface SoftwareLookup extends Lookup<Software> {
+export interface SoftwareLookup extends ModelLookup<Software> {
     readonly searchText: string;
 }
 
@@ -76,26 +83,37 @@ export function softwareLookupToHttpParams(lookup: Partial<SoftwareLookup>) {
     return params;
 }
 
-@Injectable()
-export class SoftwareModelService extends ModelService<Software, SoftwarePatch> {
-    override readonly resourcePath: string = '/lab/softwares';
-    override readonly modelFromJson = softwareFromJson;
-    override readonly patchToJson = softwarePatchToJson;
-    override readonly createToJson = softwarePatchToJson;
+@Injectable({ providedIn: 'root' })
+export class SoftwareMeta extends ModelMeta<Software, SoftwarePatch, SoftwareLookup> {
+    override model: Type<Software>;
+    override modelParamsFromJson(json: unknown): ModelParams {
+        if (!isJsonObject(json)) {
+            throw new Error('Expected a json object')
+        }
+        return softwareParamsFromJson(json);
+    }
+    override modelPatchToJson(patch: SoftwarePatch): { [ k: string ]: any; } {
+        throw new Error("Method not implemented.");
+    }
+    override lookupToHttpParams(lookup: Partial<SoftwareLookup>): HttpParams {
+        throw new Error("Method not implemented.");
+    }
+
+}
+
+@Injectable({ providedIn: 'root' })
+export class SoftwareModelService extends RestfulService<Software, SoftwarePatch, SoftwareLookup> {
+    override readonly metadata = inject(SoftwareMeta);
+
+    override readonly path: string = '/lab/softwares';
     override readonly lookupToHttpParams = softwareLookupToHttpParams;
 }
 
 @Injectable()
-export class SoftwareContext extends Context<Software, SoftwarePatch> {
-    override readonly models: SoftwareModelService = inject(SoftwareModelService);
-
+export class SoftwareContext extends ModelContext<Software, SoftwarePatch> {
     readonly software$ = this.committed$;
 
-    override _doCreate(request: SoftwarePatch): Observable<Software> {
-        return this.models.create(request);
-    }
-
-    override _doCommit(identifier: string, patch: SoftwarePatch): Observable<Software> {
-        return this.models.update(identifier, patch); 
+    override _doUpdate(identifier: string, patch: SoftwarePatch): Promise<Software> {
+        throw new Error('Not implemented')
     }
 }

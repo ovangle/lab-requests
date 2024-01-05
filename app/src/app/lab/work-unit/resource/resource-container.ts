@@ -10,10 +10,10 @@ import { Task, TaskParams, taskFromJson, taskToJson } from "../resources/task/ta
 
 import type { Resource } from './resource';
 import { Model, ModelParams, ModelPatch, modelParamsFromJsonObject } from "src/app/common/model/model";
-import { ModelContext } from "src/app/common/model/context";
 import { ExperimentalPlan } from "../../experimental-plan/common/experimental-plan";
 
 export interface ResourceContainerParams extends ModelParams {
+    name: string;
     equipments: EquipmentLease[];
     tasks: Task[];
     softwares: Software[];
@@ -23,6 +23,8 @@ export interface ResourceContainerParams extends ModelParams {
 }
 
 export abstract class ResourceContainer extends Model {
+    name: string;
+
     equipments: EquipmentLease[];
     tasks: Task[];
     softwares: Software[];

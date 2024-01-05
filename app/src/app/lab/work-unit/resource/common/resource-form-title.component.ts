@@ -3,7 +3,8 @@ import { CommonModule } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 
-import { ResourceType, ResourceTypePipe } from "../resource-type";
+import type { ResourceType } from "../resource-type";
+import { ResourceTypePipe } from "../resource-type.pipe";
 import { WorkUnitFormTitleComponent } from "../../common/work-unit-form-title.component";
 import { WorkUnit } from "../../common/work-unit";
 
@@ -26,17 +27,17 @@ import { WorkUnit } from "../../common/work-unit";
         {{ resourceType | resourceType }}
     </lab-work-unit-form-title>
    `,
-   styles: [`
+    styles: [ `
    lab-work-unit-form-title {
         width: 100%;
    }
    `]
 })
 export class ResourceFormTitleComponent {
-    @Input({required: true})
+    @Input({ required: true })
     containerName: string;
 
-    @Input({required: true})
+    @Input({ required: true })
     resourceType: ResourceType;
 
     @Input()
@@ -52,7 +53,7 @@ export class ResourceFormTitleComponent {
 
     @Output()
     requestSave = new EventEmitter<void>();
-    
+
     @Output()
     requestClose = new EventEmitter<void>();
 }

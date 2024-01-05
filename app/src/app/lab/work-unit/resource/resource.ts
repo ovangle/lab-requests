@@ -1,10 +1,9 @@
-import { Injectable, inject } from "@angular/core";
-import { FormControl, FormGroup } from "@angular/forms";
+import { Injectable, InjectionToken, forwardRef, inject } from "@angular/core";
 import { Observable, ReplaySubject, Subscription, combineLatest, defer, filter, map, shareReplay } from "rxjs";
-import { ResourceContainer, ResourceContainerContext } from "./resource-container";
 import { ResourceType, isResourceType } from "./resource-type";
 import { ResourceFileAttachment } from "./file-attachment/file-attachment";
-import { ExperimentalPlan } from "../../experimental-plan/common/experimental-plan";
+import type { ExperimentalPlan } from "../../experimental-plan/common/experimental-plan";
+import type { ResourceContainer, ResourceContainerContext } from "./resource-container";
 
 export interface ResourceParams {
     id: string | null;
@@ -34,35 +33,38 @@ export class Resource<T extends ResourceParams = ResourceParams> {
         this.attachments = params.attachments || [];
     }
 }
-export type ResourceTypeIndex = [ResourceType, number | 'create'];
+export type ResourceTypeIndex = [ ResourceType, number | 'create' ];
 
 export function isResourceTypeIndex(obj: any): obj is ResourceTypeIndex {
     return Array.isArray(obj)
         && obj.length == 2
-        && isResourceType(obj[0])
-        && (typeof obj[1] === 'number' || obj[1] === 'create');
+        && isResourceType(obj[ 0 ])
+        && (typeof obj[ 1 ] === 'number' || obj[ 1 ] === 'create');
 }
+
+export const RESOURCE_CONTAINER_CONTEXT = new InjectionToken<ResourceContainerContext<any, any>>('RESOURCE_CONTAINER_CONTEXT');
 
 @Injectable()
 export class ResourceContext<T extends Resource> {
-    readonly _containerContext = inject(ResourceContainerContext);
+    readonly _containerContext = inject(RESOURCE_CONTAINER_CONTEXT);
     readonly plan$: Observable<ExperimentalPlan> = this._containerContext.plan$;
-    readonly container$ = this._containerContext.committed$;
+    readonly container$: Observable<ResourceContainer> = this._containerContext.committed$;
+
     readonly containerName$ = this._containerContext.containerName$;
-    readonly _committedTypeIndexSubject = new ReplaySubject<[ResourceType, number | 'create']>(1);
+    readonly _committedTypeIndexSubject = new ReplaySubject<[ ResourceType, number | 'create' ]>(1);
     readonly committedTypeIndex$ = this._committedTypeIndexSubject.asObservable();
 
-    readonly resourceType$ = defer(() => this.committedTypeIndex$.pipe(map(([type, _]) => type)));
+    readonly resourceType$ = defer(() => this.committedTypeIndex$.pipe(map(([ type, _ ]) => type)));
     readonly isCreate$ = defer(
-        () => this.committedTypeIndex$.pipe(map(([_, index]) => index === 'create'))
+        () => this.committedTypeIndex$.pipe(map(([ _, index ]) => index === 'create'))
     );
 
     readonly committed$: Observable<T | null> = combineLatest([
         this.container$,
         this.committedTypeIndex$
     ]).pipe(
-        map(([container, typeIndex]: [ResourceContainer, ResourceTypeIndex]) => {
-            const [resourceType, index] = typeIndex;
+        map(([ container, typeIndex ]: [ ResourceContainer, ResourceTypeIndex ]) => {
+            const [ resourceType, index ] = typeIndex;
 
             return index === 'create' ? null : container.getResourceAt<T>(resourceType, index);
         }),
