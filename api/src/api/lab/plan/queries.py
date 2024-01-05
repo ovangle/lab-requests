@@ -5,6 +5,7 @@ from sqlalchemy import Select, distinct, select
 from .models import ExperimentalPlan_
 from api.lab.work_unit.models import WorkUnit_
 
+
 def query_experimental_plans(
     researcher_email: str | None = None,
     supervisor_email: str | None = None,
@@ -25,5 +26,3 @@ def query_experimental_plans(
         queries.append(ExperimentalPlan_.id.in_(subquery))
 
     return select(ExperimentalPlan_).where(*queries)
-
-    

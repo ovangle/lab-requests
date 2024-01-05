@@ -9,7 +9,8 @@ class utcnow(expression.FunctionElement):
     type = DateTime()
     inherit_cache = True
 
-@compiler.compiles(utcnow, 'postgresql')
+
+@compiler.compiles(utcnow, "postgresql")
 def pg_utcnow(element, compiler, **kw):
     return "TIMEZONE('utc', CURRENT_TIMESTAMP)"
 
@@ -17,6 +18,7 @@ def pg_utcnow(element, compiler, **kw):
 class gen_random_uuid(expression.FunctionElement):
     type = pg_dialect.UUID()
 
-@compiler.compiles(gen_random_uuid, 'postgresql')
+
+@compiler.compiles(gen_random_uuid, "postgresql")
 def pg_gen_random_uuid(element, compiler, **kw):
-    return 'gen_random_uuid()'
+    return "gen_random_uuid()"

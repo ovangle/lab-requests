@@ -106,51 +106,65 @@ class ResourceContainer(BaseModel):
                 return resource
             return resource.model_dump()
 
-        self.equipments = [EquipmentLease(**resource_json(item)) for item in model.equipments]
-        self.input_materials = [InputMaterial(**resource_json(item)) for item in model.input_materials]
-        self.output_materials = [OutputMaterial(**resource_json(item)) for item in model.output_materials]
+        self.equipments = [
+            EquipmentLease(**resource_json(item)) for item in model.equipments
+        ]
+        self.input_materials = [
+            InputMaterial(**resource_json(item)) for item in model.input_materials
+        ]
+        self.output_materials = [
+            OutputMaterial(**resource_json(item)) for item in model.output_materials
+        ]
         self.softwares = [Software(**resource_json(item)) for item in model.softwares]
         self.tasks = [Task(**resource_json(item)) for item in model.tasks]
 
-TResourceParams = TypeVar('TResourceParams', bound=ResourceParams)
+
+TResourceParams = TypeVar("TResourceParams", bound=ResourceParams)
+
 
 class Slice(BaseModel, Generic[TResource, TResourceParams]):
-    start: int | Literal['append']
+    start: int | Literal["append"]
     end: int | None = None
     items: list[TResourceParams]
 
     def _create_or_update_resource(
-        self, 
+        self,
         container_id: UUID,
         resource_type: type[TResource],
         model_resources: list[TResource],
         offset: int,
         params: TResourceParams,
     ):
-        if self.start == 'append':
+        if self.start == "append":
             if self.end is not None:
-                raise IndexError('Invalid index. An append slice cannot have a terminal index')
+                raise IndexError(
+                    "Invalid index. An append slice cannot have a terminal index"
+                )
             at_index = len(model_resources)
         elif self.start < 0:
-            raise IndexError('Invalid slice. Negative indices not supported')
+            raise IndexError("Invalid slice. Negative indices not supported")
         else:
             at_index = self.start + offset
-        
+
         if at_index >= len(model_resources):
             return resource_type.create(container_id, at_index, params)
         else:
             resource = model_resources[at_index]
             return resource.apply(params)
 
-
-    def update_model_resources(self, container_id: UUID, resource_type: type[TResource], model_resources: list[TResource]):
+    def update_model_resources(
+        self,
+        container_id: UUID,
+        resource_type: type[TResource],
+        model_resources: list[TResource],
+    ):
         create_or_update_resource = functools.partial(
             self._create_or_update_resource,
             container_id,
             resource_type,
-            model_resources
+            model_resources,
         )
-        if self.start == 'append':
+        if self.start == "append":
             model_resources += [
                 create_or_update_resource(i, params)
                 for (i, params) in enumerate(self.items)
@@ -165,11 +179,13 @@ class Slice(BaseModel, Generic[TResource, TResourceParams]):
                 for i, item in enumerate(model_resources[self.end :]):
                     item.index = self.end + i
 
+
 EquipmentLeaseSlice = Slice[EquipmentLease, EquipmentLeaseParams]
 InputMaterialSlice = Slice[InputMaterial, InputMaterialParams]
 OutputMaterialSlice = Slice[OutputMaterial, OutputMaterialParams]
 TaskSlice = Slice[Task, TaskParams]
 SoftwareSlice = Slice[Software, SoftwareParams]
+
 
 class ResourceContainerPatch(BaseModel):
     equipments: list[EquipmentLeaseSlice] = Field(default_factory=list)
@@ -192,11 +208,15 @@ class ResourceContainerPatch(BaseModel):
         resource_type: Type[TResource],
         container: models.ResourceContainer_,
     ):
-        slices: list[Slice[TResource, Any]] = getattr(self, resource_name(resource_type))
+        slices: list[Slice[TResource, Any]] = getattr(
+            self, resource_name(resource_type)
+        )
         container_resources = self._get_resources(resource_type, container)[:]
 
         for slice in slices:
-            slice.update_model_resources(container.id, resource_type, container_resources)
+            slice.update_model_resources(
+                container.id, resource_type, container_resources
+            )
 
         if slices:
             setattr(

@@ -9,11 +9,13 @@ from db import LocalSession
 
 from . import models
 
+
 class FundingModelBase(BaseModel):
-    name: str 
+    name: str
     description: str = Field(max_length=128)
     requires_supervisor: bool = True
     captured_resources: list[str]
+
 
 class FundingModel(FundingModelBase, ApiModel[models.FundingModel_]):
     id: UUID
@@ -27,13 +29,13 @@ class FundingModel(FundingModelBase, ApiModel[models.FundingModel_]):
             requires_supervisor=model.requires_supervisor,
             captured_resources=model.captured_resources,
             created_at=model.created_at,
-            updated_at=model.updated_at
+            updated_at=model.updated_at,
         )
 
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID):
         return await cls.from_model(await models.FundingModel_.get_for_id(db, id))
-    
+
     @classmethod
     async def get_for_name(cls, db: LocalSession, name: str):
         return await cls.from_model(await models.FundingModel_.get_for_name(db, name))
@@ -41,25 +43,32 @@ class FundingModel(FundingModelBase, ApiModel[models.FundingModel_]):
     def to_model(self, db: LocalSession):
         return models.FundingModel_.get_for_id(db, self.id)
 
-class FundingModelPatch(FundingModelBase, ModelPatch[FundingModel, models.FundingModel_]):
+
+class FundingModelPatch(
+    FundingModelBase, ModelPatch[FundingModel, models.FundingModel_]
+):
     __api_model__ = FundingModel
 
-    async def do_update(self, db: LocalSession, model: models.FundingModel_) -> models.FundingModel_:
+    async def do_update(
+        self, db: LocalSession, model: models.FundingModel_
+    ) -> models.FundingModel_:
         if self.description != model.description:
             model.description = self.description
-            db.add(model) 
-        
+            db.add(model)
+
         if self.requires_supervisor != model.requires_supervisor:
             model.requires_supervisor = self.requires_supervisor
             db.add(model)
 
         if self.captured_resources != model.captured_resources:
             self.captured_resources = model.captured_resources
-        
+
         return model
 
 
-class FundingModelCreate(FundingModelBase, ModelCreate[FundingModel, models.FundingModel_]):
+class FundingModelCreate(
+    FundingModelBase, ModelCreate[FundingModel, models.FundingModel_]
+):
     __api_model__ = FundingModel
 
     async def do_create(self, db: LocalSession) -> models.FundingModel_:

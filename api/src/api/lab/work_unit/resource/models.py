@@ -17,7 +17,8 @@ from .common.resource_type import ResourceType
 if TYPE_CHECKING:
     from .common.schemas import ResourceBase
 
-TContainer = TypeVar('TContainer', bound='ResourceContainer_')
+TContainer = TypeVar("TContainer", bound="ResourceContainer_")
+
 
 class ResourceContainer_(Base):
     __abstract__ = True
@@ -25,8 +26,12 @@ class ResourceContainer_(Base):
     id: Mapped[uuid_pk]
 
     equipments: Mapped[List[dict[str, Any]]] = mapped_column(JSONB, server_default="[]")
-    input_materials: Mapped[List[dict[str, Any]]] = mapped_column(JSONB, server_default="[]")
-    output_materials: Mapped[List[dict[str, Any]]] = mapped_column(JSONB, server_default="[]")
+    input_materials: Mapped[List[dict[str, Any]]] = mapped_column(
+        JSONB, server_default="[]"
+    )
+    output_materials: Mapped[List[dict[str, Any]]] = mapped_column(
+        JSONB, server_default="[]"
+    )
     tasks: Mapped[List[dict[str, Any]]] = mapped_column(JSONB, server_default="[]")
     softwares: Mapped[List[dict[str, Any]]] = mapped_column(JSONB, server_default="[]")
 
@@ -34,21 +39,28 @@ class ResourceContainer_(Base):
         return getattr(self, resource_type.container_attr_name)
 
     @abstractmethod
-    def get_file_attachments(self, resource_type: ResourceType, resource_id: UUID) -> Awaitable[list[ResourceContainerFileAttachment_]]:
+    def get_file_attachments(
+        self, resource_type: ResourceType, resource_id: UUID
+    ) -> Awaitable[list[ResourceContainerFileAttachment_]]:
         ...
-    
-    async def _sync_resource_file_attachments(self, resource_type: ResourceType, container: ResourceContainer_) -> list[ResourceBase]:
+
+    async def _sync_resource_file_attachments(
+        self, resource_type: ResourceType, container: ResourceContainer_
+    ) -> list[ResourceBase]:
         resources: list[ResourceBase] = getattr(self, resource_type.container_attr_name)
         synced_resources: list[Awaitable[ResourceBase]] = [
-            r.sync_file_attachments(container)
-            for r in resources
+            r.sync_file_attachments(container) for r in resources
         ]
 
         return await asyncio.gather(*synced_resources)
 
-    async def sync_file_attachments(self: TContainer, container: ResourceContainer_) -> TContainer:
-        for resource_type in ResourceType: 
-            resources = await self._sync_resource_file_attachments(resource_type, container)
+    async def sync_file_attachments(
+        self: TContainer, container: ResourceContainer_
+    ) -> TContainer:
+        for resource_type in ResourceType:
+            resources = await self._sync_resource_file_attachments(
+                resource_type, container
+            )
             setattr(self, resource_type.container_attr_name, resources)
         return self
 

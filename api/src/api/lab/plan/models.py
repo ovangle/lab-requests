@@ -26,16 +26,19 @@ if TYPE_CHECKING:
 
 from api.lab.work_unit.resource.models import ResourceContainer_
 
+
 class ExperimentalPlan_(Base):
-    __tablename__ = 'experimental_plans'
+    __tablename__ = "experimental_plans"
 
     id: Mapped[uuid_pk] = mapped_column()
     title: Mapped[str] = mapped_column(VARCHAR(128))
 
-    funding_model_id: Mapped[UUID] = mapped_column(ForeignKey('uni_research_funding_model.id'))
+    funding_model_id: Mapped[UUID] = mapped_column(
+        ForeignKey("uni_research_funding_model.id")
+    )
     funding_model: Mapped[FundingModel_] = relationship()
 
-    researcher_base_campus_id: Mapped[UUID] = mapped_column(ForeignKey('campuses.id'))
+    researcher_base_campus_id: Mapped[UUID] = mapped_column(ForeignKey("campuses.id"))
     researcher_base_campus: Mapped[Campus] = relationship()
 
     researcher_discipline: Mapped[Discipline] = mapped_column(ENUM(Discipline))
@@ -45,14 +48,9 @@ class ExperimentalPlan_(Base):
     # The supervisor associated with the plan, or None if the researcher is an academic
     supervisor_email: Mapped[email_str | None]
 
-    process_summary: Mapped[str] = mapped_column(
-        TEXT,
-        server_default=''
-    )
+    process_summary: Mapped[str] = mapped_column(TEXT, server_default="")
 
-    work_units: Mapped[list[WorkUnit_]] = relationship(
-        back_populates='plan'
-    )
+    work_units: Mapped[list[WorkUnit_]] = relationship(back_populates="plan")
 
     @staticmethod
     async def get_by_id(db: AsyncSession, id: UUID) -> ExperimentalPlan_:

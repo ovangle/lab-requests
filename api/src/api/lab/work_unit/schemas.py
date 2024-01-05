@@ -18,14 +18,15 @@ from api.lab.types import LabType
 from .resource.schemas import ResourceContainer, ResourceContainerPatch
 from . import models
 
+
 class WorkUnitBase(BaseModel):
-    campus: Campus | CampusCode | UUID;
+    campus: Campus | CampusCode | UUID
 
     name: str
     lab_type: LabType
-    technician: str 
+    technician: str
 
-    process_summary: str = ''
+    process_summary: str = ""
 
     start_date: Optional[date] = None
     end_date: Optional[date] = None
@@ -62,7 +63,7 @@ class WorkUnit(WorkUnitBase, ResourceContainer, ApiModel[models.WorkUnit_]):
             start_date=model.start_date,
             end_date=model.end_date,
             created_at=model.created_at,
-            updated_at=model.updated_at
+            updated_at=model.updated_at,
         )
         instance._set_resource_container_fields_from_model(model)
         return instance
@@ -75,20 +76,23 @@ class WorkUnit(WorkUnitBase, ResourceContainer, ApiModel[models.WorkUnit_]):
         return await cls.from_model(await models.WorkUnit_.get_for_id(db, id))
 
     @classmethod
-    async def get_for_plan_and_index(cls, db: LocalSession, plan: UUID, index: int) -> WorkUnit:
-        return await cls.from_model(await models.WorkUnit_.get_for_plan_and_index(db, plan, index))
+    async def get_for_plan_and_index(
+        cls, db: LocalSession, plan: UUID, index: int
+    ) -> WorkUnit:
+        return await cls.from_model(
+            await models.WorkUnit_.get_for_plan_and_index(db, plan, index)
+        )
 
 
-class WorkUnitPatch(WorkUnitBase, ResourceContainerPatch, ModelPatch[WorkUnit, models.WorkUnit_]):
+class WorkUnitPatch(
+    WorkUnitBase, ResourceContainerPatch, ModelPatch[WorkUnit, models.WorkUnit_]
+):
     __api_model__ = WorkUnit
 
-    async def do_update(self, db: LocalSession, model: models.WorkUnit_) -> models.WorkUnit_:
-        for attr in ('name', 
-                     'lab_type', 
-                     'process_summary', 
-                     'start_date', 
-                     'end_date'
-        ):
+    async def do_update(
+        self, db: LocalSession, model: models.WorkUnit_
+    ) -> models.WorkUnit_:
+        for attr in ("name", "lab_type", "process_summary", "start_date", "end_date"):
             s_attr = getattr(self, attr)
             if getattr(model, attr) != s_attr:
                 setattr(model, attr, getattr(self, attr))
@@ -116,15 +120,16 @@ class WorkUnitCreate(WorkUnitBase, ModelCreate[WorkUnit, models.WorkUnit_]):
             case UUID():
                 return self.campus
             case _:
-                raise TypeError(f'Unexpected value for campus: {type(self.campus)}')
-
+                raise TypeError(f"Unexpected value for campus: {type(self.campus)}")
 
     async def next_plan_index(self, db: LocalSession) -> int:
-        return (await db.scalars(
-            select(func.count(models.WorkUnit_.id))
-            .select_from(models.WorkUnit_)
-            .where(models.WorkUnit_.plan_id == self.plan_id)
-        )).one() 
+        return (
+            await db.scalars(
+                select(func.count(models.WorkUnit_.id))
+                .select_from(models.WorkUnit_)
+                .where(models.WorkUnit_.plan_id == self.plan_id)
+            )
+        ).one()
 
     async def do_create(self, db: LocalSession) -> models.WorkUnit_:
         plan = await models.ExperimentalPlan_.get_by_id(db, self.plan_id)
@@ -133,7 +138,6 @@ class WorkUnitCreate(WorkUnitBase, ModelCreate[WorkUnit, models.WorkUnit_]):
             plan_id=plan.id,
             index=await self.next_plan_index(db),
             name=self.name,
-            
             campus_id=await self._resolve_campus_id(db),
             lab_type=self.lab_type,
             technician_email=self.technician,
@@ -149,4 +153,3 @@ class WorkUnitFileAttachment(StoredFile):
     id: UUID
 
     work_unit_id: UUID
-

@@ -16,7 +16,7 @@ from .errors import EquipmentDoesNotExist, EquipmentTagDoesNotExist
 
 
 class EquipmentTag(Base):
-    __tablename__ = 'equipment_tags'
+    __tablename__ = "equipment_tags"
 
     id: Mapped[uuid_pk]
     name: Mapped[str] = mapped_column(VARCHAR(128), unique=True)
@@ -54,38 +54,38 @@ class EquipmentTag(Base):
             await db.commit()
             return tag
 
+
 class Equipment(Base):
-    __tablename__ = 'equipments'
+    __tablename__ = "equipments"
 
     id: Mapped[uuid_pk]
 
     name: Mapped[str] = mapped_column(VARCHAR(128), unique=True)
-    description: Mapped[str] = mapped_column(TEXT, server_default='')
+    description: Mapped[str] = mapped_column(TEXT, server_default="")
 
-    tags: Mapped[list[str]] = mapped_column(ARRAY(VARCHAR(128)), server_default='{}')
+    tags: Mapped[list[str]] = mapped_column(ARRAY(VARCHAR(128)), server_default="{}")
     available_in_lab_types: Mapped[list[LabType]] = mapped_column(
-        ARRAY(pg_dialect.ENUM(LabType)), 
-        server_default="{}"
+        ARRAY(pg_dialect.ENUM(LabType)), server_default="{}"
     )
 
-    training_descriptions: Mapped[list[str]] = mapped_column(ARRAY(TEXT), server_default="{}")
+    training_descriptions: Mapped[list[str]] = mapped_column(
+        ARRAY(TEXT), server_default="{}"
+    )
 
     @staticmethod
     async def get_for_id(db: AsyncSession, id: UUID) -> Equipment:
-        result = (await db.execute(
-            select(Equipment).where(Equipment.id == id)
-        )).first()
+        result = (await db.execute(select(Equipment).where(Equipment.id == id))).first()
         if not result:
             raise EquipmentDoesNotExist.for_id(id)
         return result[0]
 
     def __init__(
-        self, 
-        *, 
-        name: str, 
-        description: str = '',
+        self,
+        *,
+        name: str,
+        description: str = "",
         tags: Iterable[str] | None = None,
-        training_descriptions: Iterable[str] | None = None
+        training_descriptions: Iterable[str] | None = None,
     ):
         self.name = name
         self.description = description

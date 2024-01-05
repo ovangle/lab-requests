@@ -10,7 +10,8 @@ from .schemas import WorkUnit
 from .resource.schemas import Resource, ResourceFileAttachment
 from . import models
 
-workunit_filestore = FileStore('lab/work-units')
+workunit_filestore = FileStore("lab/work-units")
+
 
 async def upload_resource_attachment(
     db: LocalSession,
@@ -18,15 +19,15 @@ async def upload_resource_attachment(
     upload_file: UploadFile,
 ) -> ResourceFileAttachment:
     resource_name = resource.type.container_attr_name
-    path = Path(f'{resource.container_id!s}/{resource_name}/{resource.id!s}')
+    path = Path(f"{resource.container_id!s}/{resource_name}/{resource.id!s}")
 
     stored_file_meta = await workunit_filestore.store(upload_file, save_to=path)
-    
+
     attachment = models.WorkUnitFileAttachment_(
         work_unit_id=resource.container_id,
         resource_type=resource.type,
         resource_id=resource.id,
-        **stored_file_meta
+        **stored_file_meta,
     )
 
     db.add(attachment)

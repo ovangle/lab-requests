@@ -12,8 +12,9 @@ from api.uni.research.errors import FundingModelDoesNotExist
 from db import LocalSession
 from db.orm import uuid_pk
 
+
 class FundingModel_(Base):
-    __tablename__ = 'uni_research_funding_model'
+    __tablename__ = "uni_research_funding_model"
     id: Mapped[uuid_pk]
 
     name: Mapped[str] = mapped_column(VARCHAR(32), unique=True)
@@ -21,9 +22,17 @@ class FundingModel_(Base):
     requires_supervisor: Mapped[bool] = mapped_column()
 
     # The resource types which are required to be captured in the work unit
-    captured_resources: Mapped[list[str]] = mapped_column(pg_dialect.ARRAY(VARCHAR(256)), server_default='{}')
+    captured_resources: Mapped[list[str]] = mapped_column(
+        pg_dialect.ARRAY(VARCHAR(256)), server_default="{}"
+    )
 
-    def __init__(self, name: str, description: str = '', requires_supervisor: bool = True, captured_resources: list[str] | None = None):
+    def __init__(
+        self,
+        name: str,
+        description: str = "",
+        requires_supervisor: bool = True,
+        captured_resources: list[str] | None = None,
+    ):
         super().__init__()
         self.name = name
         self.description = description
@@ -49,16 +58,21 @@ class FundingModel_(Base):
 
 async def seed_funding_models(db: LocalSession):
     builtin_funding_models = [
-        FundingModel_('Grant', requires_supervisor=True),
-        FundingModel_('General Research', requires_supervisor=True),
-        FundingModel_('Student project', requires_supervisor=True),
+        FundingModel_("Grant", requires_supervisor=True),
+        FundingModel_("General Research", requires_supervisor=True),
+        FundingModel_("Student project", requires_supervisor=True),
     ]
     builtin_descriptions = [builtin.description for builtin in builtin_funding_models]
 
     existing_descriptions = await db.scalars(
-        select(FundingModel_.description)
-            .where(FundingModel_.description.in_(builtin_descriptions))
+        select(FundingModel_.description).where(
+            FundingModel_.description.in_(builtin_descriptions)
+        )
     )
 
-    db.add_all(builtin for builtin in builtin_funding_models if builtin.description not in existing_descriptions)
+    db.add_all(
+        builtin
+        for builtin in builtin_funding_models
+        if builtin.description not in existing_descriptions
+    )
     await db.commit()

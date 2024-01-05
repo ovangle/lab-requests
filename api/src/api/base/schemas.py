@@ -7,7 +7,19 @@ import dataclasses
 from datetime import datetime
 import functools
 from pathlib import Path
-from typing import Any, Awaitable, Callable, ClassVar, Generic, Iterable, Optional, Type, TypeVar, cast, dataclass_transform
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    ClassVar,
+    Generic,
+    Iterable,
+    Optional,
+    Type,
+    TypeVar,
+    cast,
+    dataclass_transform,
+)
 from uuid import UUID
 from fastapi import UploadFile
 from pydantic import BaseModel, ConfigDict, Field
@@ -16,12 +28,13 @@ from sqlalchemy import Select, func, select
 from api.base.files.schemas import StoredFile
 from db import LocalSession
 
-from . import models 
+from . import models
 from .schema_config import SCHEMA_CONFIG
 
 
-TModel = TypeVar('TModel', bound=models.Base)
-TApiModel = TypeVar('TApiModel', bound='ApiModel')
+TModel = TypeVar("TModel", bound=models.Base)
+TApiModel = TypeVar("TApiModel", bound="ApiModel")
+
 
 class ApiModel(BaseModel, Generic[TModel], ABC):
     model_config = SCHEMA_CONFIG
@@ -38,14 +51,14 @@ class ApiModel(BaseModel, Generic[TModel], ABC):
 
     @classmethod
     async def create(
-        cls: Type[TApiModel], 
-        db: LocalSession,
-        patch: ModelCreate[TApiModel, TModel]
+        cls: Type[TApiModel], db: LocalSession, patch: ModelCreate[TApiModel, TModel]
     ):
         return patch(db)
 
     @classmethod
-    async def gather_models(cls: Type[TApiModel], models: Iterable[TModel | TApiModel]) -> list[TApiModel]:
+    async def gather_models(
+        cls: Type[TApiModel], models: Iterable[TModel | TApiModel]
+    ) -> list[TApiModel]:
         return await asyncio.gather(*(cls.from_model(m) for m in models))
 
     @classmethod
@@ -57,10 +70,14 @@ class ApiModel(BaseModel, Generic[TModel], ABC):
     async def to_model(self, db: LocalSession) -> TModel:
         ...
 
-    async def apply_patch(self: TApiModel, db: LocalSession, model: TModel, patch: ModelPatch[TApiModel, TModel]):
+    async def apply_patch(
+        self: TApiModel,
+        db: LocalSession,
+        model: TModel,
+        patch: ModelPatch[TApiModel, TModel],
+    ):
         return await patch(db, model)
 
-    
 
 class ModelPatch(BaseModel, Generic[TApiModel, TModel], ABC):
     __api_model__: ClassVar[Type[ApiModel]]
@@ -78,7 +95,9 @@ class ModelPatch(BaseModel, Generic[TApiModel, TModel], ABC):
     async def do_update(self, db: LocalSession, model: TModel) -> TModel:
         raise NotImplementedError
 
-    async def __call__(self, db: LocalSession, model_or_schema: TApiModel | TModel) -> TApiModel:
+    async def __call__(
+        self, db: LocalSession, model_or_schema: TApiModel | TModel
+    ) -> TApiModel:
         model: TModel
         if isinstance(model_or_schema, ApiModel):
             model = await model_or_schema.to_model(db)
@@ -87,7 +106,7 @@ class ModelPatch(BaseModel, Generic[TApiModel, TModel], ABC):
 
         updated_model = await self.do_update(db, cast(TModel, model))
         await db.commit()
-        await db.refresh(updated_model, ['updated_at'])
+        await db.refresh(updated_model, ["updated_at"])
         return await self._api_model.from_model(updated_model)
 
 
@@ -109,7 +128,7 @@ class ModelCreate(BaseModel, Generic[TApiModel, TModel], ABC):
         return await self._api_model.from_model(created)
 
 
-TItem = TypeVar('TItem', bound='ApiModel[Any]')
+TItem = TypeVar("TItem", bound="ApiModel[Any]")
 
 
 @dataclasses.dataclass(kw_only=True)
@@ -129,29 +148,25 @@ class PagedResultList(BaseModel, Generic[TItem]):
     page_index: int = 0
 
     @classmethod
-    async def from_selection(cls, item_type: Type[TItem], db: LocalSession, selection: Select[tuple[TModel]]):
+    async def from_selection(
+        cls, item_type: Type[TItem], db: LocalSession, selection: Select[tuple[TModel]]
+    ):
         total_item_count = await db.scalar(
-            selection.with_only_columns(func.count(), maintain_column_froms=True).order_by(None)
+            selection.with_only_columns(
+                func.count(), maintain_column_froms=True
+            ).order_by(None)
         )
         results = await item_type.gather_models(await db.scalars(selection))
 
-        return cls(
-            items=results,
-            total_item_count=total_item_count or 0,
-            page_index=0
-        )
+        return cls(items=results, total_item_count=total_item_count or 0, page_index=0)
 
     @classmethod
-    def from_list(
-        cls,
-        items: list[TItem]
-    ):
+    def from_list(cls, items: list[TItem]):
         return cls(items=items, total_item_count=len(items), page_index=0)
-        
+
 
 class CursorResultList(BaseModel, Generic[TItem]):
     items: list[TItem]
 
     cursor: str
     total_item_count: int
-

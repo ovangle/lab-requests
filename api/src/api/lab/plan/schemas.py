@@ -23,6 +23,7 @@ from db import LocalSession
 from api.lab.work_unit.schemas import WorkUnit, WorkUnitPatch, WorkUnitCreate
 from . import models
 
+
 class ExperimentalPlanBase(BaseModel):
     title: str
 
@@ -47,7 +48,7 @@ class ExperimentalPlanBase(BaseModel):
                 raise ValidationError(str(e))
             self.funding_model = funding_model
 
-    def _set_model_fields(self, instance: models.ExperimentalPlan_) -> bool: 
+    def _set_model_fields(self, instance: models.ExperimentalPlan_) -> bool:
         is_modified = False
 
         if self.title != instance.title:
@@ -58,15 +59,15 @@ class ExperimentalPlanBase(BaseModel):
             instance.process_summary = self.process_summary
             is_modified = True
 
-        if self.researcher != instance.researcher_email: 
+        if self.researcher != instance.researcher_email:
             instance.researcher_email = self.researcher
             is_modified = True
-        
-        print('researcher_base_campus: {0}'.format(self.researcher_base_campus))
+
+        print("researcher_base_campus: {0}".format(self.researcher_base_campus))
         if isinstance(self.researcher_base_campus, (UUID, Campus)):
             campus_id = (
-                self.researcher_base_campus.id 
-                if isinstance(self.researcher_base_campus, Campus) 
+                self.researcher_base_campus.id
+                if isinstance(self.researcher_base_campus, Campus)
                 else self.researcher_base_campus
             )
             if campus_id != instance.researcher_base_campus_id:
@@ -74,7 +75,7 @@ class ExperimentalPlanBase(BaseModel):
                 is_modified = True
 
         elif isinstance(self.researcher_base_campus, CampusCode):
-            raise Exception('Must Prepare fields before create/commit')
+            raise Exception("Must Prepare fields before create/commit")
 
         if self.researcher_discipline != instance.researcher_discipline:
             instance.researcher_discipline = self.researcher_discipline
@@ -84,22 +85,22 @@ class ExperimentalPlanBase(BaseModel):
             instance.supervisor_email = self.supervisor
             is_modified = True
 
-        print('funding model: {0}'.format(self.funding_model))
+        print("funding model: {0}".format(self.funding_model))
         if isinstance(self.funding_model, (UUID, FundingModel)):
             funding_model_id = (
-                self.funding_model 
+                self.funding_model
                 if isinstance(self.funding_model, UUID)
                 else self.funding_model.id
             )
             if funding_model_id != instance.funding_model_id:
                 instance.funding_model_id = funding_model_id
                 is_modified = True
-            
+
         elif isinstance(self.funding_model, FundingModelCreate):
-            raise Exception('Did not prepare instance')
-        
+            raise Exception("Did not prepare instance")
+
         else:
-            raise ValueError('Unrecognised funding model')
+            raise ValueError("Unrecognised funding model")
 
         return is_modified
 
@@ -117,7 +118,9 @@ class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan_])
     work_units: list[WorkUnit]
 
     @classmethod
-    async def from_model(cls, model: ExperimentalPlan | models.ExperimentalPlan_) -> ExperimentalPlan:
+    async def from_model(
+        cls, model: ExperimentalPlan | models.ExperimentalPlan_
+    ) -> ExperimentalPlan:
         if isinstance(model, ExperimentalPlan):
             return cls(**model.model_dump())
 
@@ -140,14 +143,12 @@ class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan_])
             funding_model=funding_model,
             researcher=model.researcher_email,
             supervisor=model.supervisor_email,
-
             researcher_base_campus=researcher_base_campus,
             researcher_discipline=model.researcher_discipline,
             work_units=work_units,
-
             process_summary=model.process_summary,
             created_at=model.created_at,
-            updated_at=model.updated_at
+            updated_at=model.updated_at,
         )
 
     async def to_model(self, db: LocalSession) -> models.ExperimentalPlan_:
@@ -158,10 +159,14 @@ class ExperimentalPlan(ExperimentalPlanBase, ApiModel[models.ExperimentalPlan_])
         return await cls.from_model(await models.ExperimentalPlan_.get_by_id(db, id))
 
 
-class ExperimentalPlanPatch(ExperimentalPlanBase, ModelPatch[ExperimentalPlan, models.ExperimentalPlan_]):
+class ExperimentalPlanPatch(
+    ExperimentalPlanBase, ModelPatch[ExperimentalPlan, models.ExperimentalPlan_]
+):
     __api_model__ = ExperimentalPlan
 
-    async def do_update(self, db: LocalSession, instance: models.ExperimentalPlan_) -> models.ExperimentalPlan_:
+    async def do_update(
+        self, db: LocalSession, instance: models.ExperimentalPlan_
+    ) -> models.ExperimentalPlan_:
         await self.prepare_fields(db)
 
         self._set_model_fields(instance)
@@ -169,7 +174,10 @@ class ExperimentalPlanPatch(ExperimentalPlanBase, ModelPatch[ExperimentalPlan, m
 
         return instance
 
-class ExperimentalPlanCreate(ExperimentalPlanBase, ModelCreate[ExperimentalPlan, models.ExperimentalPlan_]):
+
+class ExperimentalPlanCreate(
+    ExperimentalPlanBase, ModelCreate[ExperimentalPlan, models.ExperimentalPlan_]
+):
     __api_model__ = ExperimentalPlan
 
     create_default_work_unit_for_researcher: bool = field(default=True)

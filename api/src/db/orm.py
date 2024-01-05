@@ -8,7 +8,10 @@ from sqlalchemy.dialects import postgresql as pg_dialect
 from .func import gen_random_uuid
 
 
-uuid_pk = Annotated[UUID, mapped_column(pg_dialect.UUID, primary_key=True, server_default=gen_random_uuid())]
+uuid_pk = Annotated[
+    UUID,
+    mapped_column(pg_dialect.UUID, primary_key=True, server_default=gen_random_uuid()),
+]
 
 
 _POSTGRES_EMAIL_RE = (
@@ -20,9 +23,7 @@ _POSTGRES_EMAIL_RE = (
 )
 
 EMAIL_DOMAIN = pg_dialect.DOMAIN(
-    'email',
-    pg_dialect.CITEXT(),
-    check=rf"value ~ '{_POSTGRES_EMAIL_RE}'"
-) 
+    "email", pg_dialect.CITEXT(), check=rf"value ~ '{_POSTGRES_EMAIL_RE}'"
+)
 
 email_str = Annotated[str, mapped_column(EMAIL_DOMAIN)]

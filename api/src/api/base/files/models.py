@@ -12,6 +12,7 @@ from db.orm import uuid_pk
 from filestore.store import FileStore, StoredFileMeta
 from ..models import Base
 
+
 class StoredFile_(Base):
     __abstract__ = True
 
@@ -26,9 +27,9 @@ class StoredFile_(Base):
     @property
     def stored_file_meta(self) -> StoredFileMeta:
         return {
-            'path': self.path,
-            'content_type': self.content_type,
-            'filename': self.filename,
-            'orig_filename': self.orig_filename,
-            'size': self.size
+            "path": self.path,
+            "content_type": self.content_type,
+            "filename": self.filename,
+            "orig_filename": self.orig_filename,
+            "size": self.size,
         }

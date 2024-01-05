@@ -15,14 +15,15 @@ from db.orm import uuid_pk
 from .types import CampusCode, campus_code
 from .errors import CampusDoesNotExist
 
+
 class Campus(Base):
-    __tablename__ = 'campuses'
+    __tablename__ = "campuses"
 
     id: Mapped[uuid_pk]
     code: Mapped[campus_code]
     name: Mapped[str] = mapped_column(VARCHAR(64))
 
-    def __init__(self, code: CampusCode, name: str = ''):
+    def __init__(self, code: CampusCode, name: str = ""):
         super().__init__()
         self.code = code
         self.name = name
@@ -33,9 +34,11 @@ class Campus(Base):
         if not campus:
             raise CampusDoesNotExist.for_id(id)
         return campus
-        
+
     @classmethod
-    async def get_for_campus_code(cls, db: LocalSession, code: str | CampusCode) -> Campus:
+    async def get_for_campus_code(
+        cls, db: LocalSession, code: str | CampusCode
+    ) -> Campus:
         code = CampusCode(code)
         result = await db.scalar(select(Campus).where(Campus.code == code))
         if not result:
@@ -43,31 +46,35 @@ class Campus(Base):
         return result
 
     @classmethod
-    async def get_all_for_campus_codes(cls, db: LocalSession, codes: Iterable[str | CampusCode]) -> list[Campus]:
-        return list(await db.scalars(
-            select(Campus).where(Campus.code.in_(map(CampusCode, codes)))
-        ))
-        
+    async def get_all_for_campus_codes(
+        cls, db: LocalSession, codes: Iterable[str | CampusCode]
+    ) -> list[Campus]:
+        return list(
+            await db.scalars(
+                select(Campus).where(Campus.code.in_(map(CampusCode, codes)))
+            )
+        )
 
 
 async def seed_campuses(db: LocalSession):
     all_known_campuses = [
-        Campus(code=CampusCode('BNG'), name='Bundaberg'),
-        Campus(code=CampusCode('CNS'), name='Cairns'),
-        Campus(code=CampusCode('GLD'), name='Gold Coast'),
-        Campus(code=CampusCode('MEL'), name='Melbourne'),
-        Campus(code=CampusCode('MKY'), name='Mackay'),
-        Campus(code=CampusCode('PTH'), name='Perth'),
-        Campus(code=CampusCode('ROK'), name='Rockhampton'),
-        Campus(code=CampusCode('SYD'), name='Sydney')
+        Campus(code=CampusCode("BNG"), name="Bundaberg"),
+        Campus(code=CampusCode("CNS"), name="Cairns"),
+        Campus(code=CampusCode("GLD"), name="Gold Coast"),
+        Campus(code=CampusCode("MEL"), name="Melbourne"),
+        Campus(code=CampusCode("MKY"), name="Mackay"),
+        Campus(code=CampusCode("PTH"), name="Perth"),
+        Campus(code=CampusCode("ROK"), name="Rockhampton"),
+        Campus(code=CampusCode("SYD"), name="Sydney"),
     ]
-    existing_campuses = await Campus.get_all_for_campus_codes(db, (c.code for c in all_known_campuses))
-    existing_campus_codes = {
-        campus.code: campus 
-        for campus in existing_campuses
-    }
-    db.add_all(campus for campus in all_known_campuses if campus.code not in existing_campus_codes)
+    existing_campuses = await Campus.get_all_for_campus_codes(
+        db, (c.code for c in all_known_campuses)
+    )
+    existing_campus_codes = {campus.code: campus for campus in existing_campuses}
+    db.add_all(
+        campus
+        for campus in all_known_campuses
+        if campus.code not in existing_campus_codes
+    )
 
     await db.commit()
-    
-

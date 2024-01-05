@@ -23,25 +23,25 @@ from filestore.store import FileStore
 from .errors import WorkUnitDoesNotExist
 from .resource.models import ResourceContainer_, ResourceContainerFileAttachment_
 from .resource.common.resource_type import ResourceType
-    
+
+
 class WorkUnit_(ResourceContainer_, Base):
-    __tablename__ = 'work_units'
+    __tablename__ = "work_units"
     __table_args__ = (
-        UniqueConstraint('plan_id', 'name', name='unique-plan-name'),
-        UniqueConstraint('plan_id', 'index', name='unique-plan-index')
+        UniqueConstraint("plan_id", "name", name="unique-plan-name"),
+        UniqueConstraint("plan_id", "index", name="unique-plan-index"),
     )
 
     id: Mapped[uuid_pk]
 
-    plan_id: Mapped[UUID] = mapped_column(ForeignKey('experimental_plans.id'))
-    plan: Mapped[ExperimentalPlan_] = relationship(back_populates='work_units')
+    plan_id: Mapped[UUID] = mapped_column(ForeignKey("experimental_plans.id"))
+    plan: Mapped[ExperimentalPlan_] = relationship(back_populates="work_units")
 
     name: Mapped[str] = mapped_column(VARCHAR(256))
     index: Mapped[int] = mapped_column()
 
-    campus_id: Mapped[UUID] = mapped_column(ForeignKey('campuses.id'))
+    campus_id: Mapped[UUID] = mapped_column(ForeignKey("campuses.id"))
     campus: Mapped[Campus] = relationship()
-
 
     lab_type: Mapped[LabType] = mapped_column(pg_dialect.ENUM(LabType))
     technician_email: Mapped[email_str]
@@ -51,18 +51,22 @@ class WorkUnit_(ResourceContainer_, Base):
     start_date: Mapped[Optional[date]] = mapped_column(DATE)
     end_date: Mapped[Optional[date]] = mapped_column(DATE)
 
-    file_attachments: Mapped[set[WorkUnitFileAttachment_]] = relationship(back_populates="work_unit")
+    file_attachments: Mapped[set[WorkUnitFileAttachment_]] = relationship(
+        back_populates="work_unit"
+    )
 
-    def __init__(self, 
-                 plan_id: UUID, 
-                 index: int, *, 
-                 name: str,
-                 campus_id: UUID,
-                 lab_type: LabType, 
-                 technician_email: str, 
-                 process_summary: str, 
-                 start_date: date | None, 
-                 end_date: date | None
+    def __init__(
+        self,
+        plan_id: UUID,
+        index: int,
+        *,
+        name: str,
+        campus_id: UUID,
+        lab_type: LabType,
+        technician_email: str,
+        process_summary: str,
+        start_date: date | None,
+        end_date: date | None,
     ):
         super().__init__()
         self.plan_id = plan_id
@@ -83,60 +87,78 @@ class WorkUnit_(ResourceContainer_, Base):
         return instance
 
     @staticmethod
-    async def get_for_plan_and_index(db: LocalSession, plan_id: UUID, index: int) -> WorkUnit_:
+    async def get_for_plan_and_index(
+        db: LocalSession, plan_id: UUID, index: int
+    ) -> WorkUnit_:
         instance = await db.scalar(
-            select(WorkUnit_).where(WorkUnit_.plan_id == plan_id, WorkUnit_.index == index)
+            select(WorkUnit_).where(
+                WorkUnit_.plan_id == plan_id, WorkUnit_.index == index
+            )
         )
         if not instance:
             raise WorkUnitDoesNotExist.for_plan_id_and_index(plan_id, index)
         return instance
 
     @staticmethod
-    async def get_for_plan_and_name(db: LocalSession, plan_id: UUID, name: str) -> WorkUnit_:
+    async def get_for_plan_and_name(
+        db: LocalSession, plan_id: UUID, name: str
+    ) -> WorkUnit_:
         instance = await db.scalar(
-            select(WorkUnit_).where(WorkUnit_.plan_id == plan_id, WorkUnit_.name == name)
+            select(WorkUnit_).where(
+                WorkUnit_.plan_id == plan_id, WorkUnit_.name == name
+            )
         )
         if not instance:
             raise WorkUnitDoesNotExist.for_plan_id_and_name(plan_id, name)
         return instance
 
     @staticmethod
-    def list_for_experimental_plan(db: LocalSession, plan_id: UUID) -> Select[tuple[WorkUnit_]]:
+    def list_for_experimental_plan(
+        db: LocalSession, plan_id: UUID
+    ) -> Select[tuple[WorkUnit_]]:
         return (
             select(WorkUnit_)
-                .where(WorkUnit_.plan_id == plan_id)
-                .order_by(WorkUnit_.index)
+            .where(WorkUnit_.plan_id == plan_id)
+            .order_by(WorkUnit_.index)
         )
-    
+
     @staticmethod
-    def list_for_technician(db: LocalSession, technician_email: str) -> Select[tuple[WorkUnit_]]:
+    def list_for_technician(
+        db: LocalSession, technician_email: str
+    ) -> Select[tuple[WorkUnit_]]:
         return select(WorkUnit_).where(WorkUnit_.technician_email == technician_email)
 
-    def get_file_attachments(self, resource_type: ResourceType, resource_id: UUID) -> Awaitable[list[ResourceContainerFileAttachment_]]:
+    def get_file_attachments(
+        self, resource_type: ResourceType, resource_id: UUID
+    ) -> Awaitable[list[ResourceContainerFileAttachment_]]:
         async def _get_file_attachments():
             try:
                 file_attachments = await self.awaitable_attrs.file_attachments
             except IOError:
-                raise IOError('Cannot access unresolved awaitable attribute \'file_attachments\'')
+                raise IOError(
+                    "Cannot access unresolved awaitable attribute 'file_attachments'"
+                )
             return [
                 attachment
                 for attachment in file_attachments
-                if attachment.resource_type == resource_type and attachment.resource_id == resource_id
+                if attachment.resource_type == resource_type
+                and attachment.resource_id == resource_id
             ]
+
         return _get_file_attachments()
 
 
 class WorkUnitFileAttachment_(ResourceContainerFileAttachment_, StoredFile_):
-    __tablename__ = 'work_unit_file_attachments'
+    __tablename__ = "work_unit_file_attachments"
 
     id: Mapped[uuid_pk]
 
-    work_unit_id: Mapped[UUID] = mapped_column(ForeignKey('work_units.id'))
+    work_unit_id: Mapped[UUID] = mapped_column(ForeignKey("work_units.id"))
     work_unit: Mapped[WorkUnit_] = relationship(back_populates="file_attachments")
 
     @property
     def path(self):
-        return Path(f'{self.work_unit_id!s}/{self.resource_type}/{self.filename}')
+        return Path(f"{self.work_unit_id!s}/{self.resource_type}/{self.filename}")
 
     def get_container_id(self):
         return self.work_unit_id

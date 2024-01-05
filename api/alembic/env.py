@@ -5,7 +5,7 @@ from typing import Any, cast
 from sqlalchemy import MetaData, pool, engine_from_config
 from sqlalchemy.ext.asyncio import async_engine_from_config, AsyncConnection
 
-from alembic import context # type: ignore
+from alembic import context  # type: ignore
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -16,22 +16,26 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+
 def import_db_module():
     """
     Ensures that the db module is available on the system path
-    before importing and returning it. 
+    before importing and returning it.
 
-    Also as a side-effect imports main, ensuring that all models 
+    Also as a side-effect imports main, ensuring that all models
     are loaded into the target metadata.
     """
     try:
         import db, main
     except ImportError:
         import sys, pathlib
+
         project_root = pathlib.Path(__file__).parent.parent
-        sys.path.append(str(project_root / 'src'))
+        sys.path.append(str(project_root / "src"))
         import db, main
     return db
+
+
 db = import_db_module()
 
 # add your model's MetaData object here
@@ -68,6 +72,7 @@ def run_migrations_offline() -> None:
     with context.begin_transaction():
         context.run_migrations()
 
+
 async def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
@@ -75,6 +80,7 @@ async def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+
     def do_run_migrations(connection):
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
@@ -84,12 +90,12 @@ async def run_migrations_online() -> None:
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
-        url=db.db_url
+        url=db.db_url,
     )
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
-        
+
 
 if context.is_offline_mode():
     run_migrations_offline()
@@ -102,7 +108,9 @@ else:
 
     if loop and loop.is_running():
         task = loop.create_task(run_migrations_online())
-        task.add_done_callback(lambda t: f'Migrations complete with result {t.result()}')
+        task.add_done_callback(
+            lambda t: f"Migrations complete with result {t.result()}"
+        )
 
     else:
         asyncio.run(run_migrations_online())
