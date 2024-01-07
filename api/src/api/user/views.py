@@ -5,13 +5,12 @@ from fastapi import APIRouter, Depends, security
 from db import get_db
 
 from .schemas import AlterPasswordRequest, User, UserLoginRequest
-from . import model_fns
 
 users = APIRouter(prefix="/users", tags=["users"])
 
 
 @users.get("/me")
-async def get_current_active_user(
+async def me(
     user=Depends(model_fns.get_current_active_user),
 ) -> User:
     return user

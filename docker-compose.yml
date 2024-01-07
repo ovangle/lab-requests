@@ -20,16 +20,10 @@ services:
       API_DEBUG: ${API_DEBUG}
       DB_HOST: postgres
       DB_PASSWORD: ${POSTGRES_PASSWORD}
+      FILESTORE_PROVIDER: 'local'
+      FILESTORE_KEY: /srv/files
     volumes:
       - 'lab_work_attachments:/srv/files/lab/work-units:rw'
-
-  filesrv:
-    image: nginx:1.25
-    volumes:
-      - './filesrv/nginx.conf:/etc/nginx/nginx.conf:ro'
-      - 'lab_work_attachments:/srv/files/lab/work-units:ro'
-    ports:
-      - "6767:80"
 
   postgres:
     build: './postgres'

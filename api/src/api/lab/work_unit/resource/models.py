@@ -9,7 +9,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from api.base.files.models import StoredFile_
 from db import LocalSession
-from db.orm import uuid_pk
+from db.models.base.fields import uuid_pk
 
 from api.base.models import Base
 from .common.resource_type import ResourceType

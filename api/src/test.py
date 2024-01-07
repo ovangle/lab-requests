@@ -3,7 +3,7 @@ import asyncio
 from sqlalchemy import delete, select
 from api.uni.models import Campus
 from api.lab.models import Lab_
-from db import local_sessionmaker
+from db import async_sessionmaker
 
 from api.lab.models import lab_supervisor
 from api.user.models import NativeUserCredentials_, User_
@@ -22,7 +22,7 @@ async def delete_all_users(db):
 
 
 async def main():
-    async with local_sessionmaker() as db:
+    async with async_sessionmaker() as db:
         await delete_all_users(db)
         # user = await User_.get_for_email(db, "t.stephenson@cqu.edu.au")
         # credentials = await user.awaitable_attrs.credentials

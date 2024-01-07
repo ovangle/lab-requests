@@ -1,0 +1,14 @@
+#! /usr/bin/env python
+
+import asyncio
+from pathlib import Path
+import sys
+
+PROJECT_ROOT = Path(__file__).parent.parent
+print("PROJECT_ROOT", PROJECT_ROOT)
+sys.path.append(str(PROJECT_ROOT / "src"))
+
+import db
+
+if __name__ == "__main__":
+    asyncio.run(db.init_db())

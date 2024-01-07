@@ -8,6 +8,8 @@ pydantic-settings>=2.1
 SQLAlchemy[asyncio]>=2.0
 sqlalchemy-utils>=0.41
 types-sqlalchemy-utils
+sqlalchemy-file>=0.6
+fasteners>=0.19
 psycopg[c]>=3.1
 alembic>=1.12
 uvicorn[standard]>=0.23

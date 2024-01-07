@@ -9,10 +9,11 @@ from pydantic import SecretStr
 from api.base.schema_config import SCHEMA_CONFIG
 from api.base.schemas import BaseModel, ApiModel
 from api.user.errors import AlterPasswordConflictError, NotANativeUserError
+
 from db import LocalSession
+from db.models import User
 
 from .types import UserDomain, UserRole
-from . import models
 
 if TYPE_CHECKING:
     from api.lab.schemas import Lab
