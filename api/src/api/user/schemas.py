@@ -1,101 +1,85 @@
 from __future__ import annotations
 import asyncio
 
-from typing import TYPE_CHECKING, Any, Coroutine, Type, Union
+from typing import TYPE_CHECKING, Any, Coroutine, Self, Type, Union
 from typing_extensions import override
 from uuid import UUID
 
-from pydantic import SecretStr
-from api.base.schema_config import SCHEMA_CONFIG
-from api.base.schemas import BaseModel, ApiModel
-from api.user.errors import AlterPasswordConflictError, NotANativeUserError
+from pydantic.types import SecretStr
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import async_object_session
+
+from api.base.schemas import BaseModel
 
 from db import LocalSession
-from db.models import User
-
-from .types import UserDomain, UserRole
-
-if TYPE_CHECKING:
-    from api.lab.schemas import Lab
+from db.models.user import NativeUserCredentials, User, UserDomain
+from db.models.lab import Lab
+from db.models.research import ResearchPlan
 
 
-class User(ApiModel[models.User_]):
+from ..base.schemas import (
+    ModelResponse,
+    ModelUpdateRequest,
+    PagedModelResponse,
+    ModelResponsePage,
+)
+
+
+class UserResponse(ModelResponse[User]):
+    id: UUID
     domain: UserDomain
-    name: str
     email: str
+    name: str
+
     disabled: bool
-
-    roles: set[UserRole]
-
-    labs: list
+    roles: set[str]
 
     @classmethod
-    async def get_for_id(cls, db: LocalSession, id: UUID):
-        user = await models.User_.get_for_id(db, id)
-        return await cls.from_model(user)
-
-    @classmethod
-    async def get_for_email(cls, db: LocalSession, email: str):
-        user = await models.User_.get_for_email(db, email)
-        return await cls.from_model(user)
-
-    @classmethod
-    async def from_model(cls, model: models.User_ | User):
-        from api.lab.schemas import Lab
-
-        if isinstance(model, User):
-            labs = list(model.labs)
-        else:
-            lab_models = await model.get_supervised_labs()
-            labs = await asyncio.gather(*(Lab.from_model(l) for l in lab_models))
-
+    async def from_model(cls, model: User, **kwargs):
         return cls(
-            domain=model.domain,
             id=model.id,
-            name=model.name,
+            domain=model.domain,
             email=model.email,
+            name=model.name,
             disabled=model.disabled,
-            roles={UserRole(r) for r in model.roles},
-            labs=labs,
+            roles=set(model.roles),
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
 
-    @override
-    async def to_model(self, db: LocalSession):
-        return await models.User_.get_for_email(db, self.email)
+
+class CurrentUserResponse(UserResponse):
+    """
+    Includes extra attributes relevant only to the current user
+    """
+
+    labs: ModelResponsePage[Lab]
+    plans: ModelResponsePage[ResearchPlan]
+
+    @classmethod
+    async def from_model(
+        cls: type[CurrentUserResponse], model: User, **kwargs
+    ) -> CurrentUserResponse:
+        from api.lab.schemas import LabResponse
+        from api.research.schemas import ResearchPlanResponse
+
+        db = async_object_session(model)
+        if db is None:
+            raise RuntimeError("Model detached from session")
+
+        supervised_labs = select(Lab).where(Lab.supervisors.contains(model))
+        lab_pages = PagedModelResponse(db, LabResponse, supervised_labs)
+        labs = await lab_pages.load_page(0)
+
+        coordinated_plans = select(ResearchPlan).where(
+            ResearchPlan.coordinator == model
+        )
+        plan_pages = PagedModelResponse(db, ResearchPlanResponse, coordinated_plans)
+        plans = await plan_pages.load_page(0)
+
+        return await super().from_model(model, labs=labs, plans=plans)
 
 
-class NativeUserLoginRequest(BaseModel):
-    email: str
-    password: SecretStr
-
-
-class ExternalUserLoginRequest(BaseModel):
-    email: str
-    token_url: str
-    auth_code: SecretStr
-
-
-UserLoginRequest = NativeUserLoginRequest | ExternalUserLoginRequest
-
-
-class AlterPasswordRequest(BaseModel):
-    model_config = SCHEMA_CONFIG
-
+class AlterPasswordRequest(ModelUpdateRequest[User]):
     current_value: str
     new_value: str
-
-    async def __call__(self, db: LocalSession, user: User):
-        if user.domain == "native":
-            model_user = await user.to_model(db)
-            credentials = await model_user.awaitable_attrs.credentials
-            assert isinstance(credentials, models.NativeUserCredentials_)
-            if not credentials.verify_password(self.current_value):
-                raise AlterPasswordConflictError(user)
-
-            credentials.set_password(self.new_value)
-            db.add(model_user)
-            return user
-        else:
-            raise NotANativeUserError(user)

@@ -1,44 +1,53 @@
 from datetime import datetime, timedelta, tzinfo
 from typing import Annotated, Optional
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from pydantic import BaseModel
 
-from jose import jwt
+from jose import JWTError, jwt
 
-from api.user.schemas import User
 from db import LocalSession, get_db
-from .constants import ACCESS_TOKEN_EXPIRES, SECRET_KEY, ALGORITHM
+from db.models.user import NativeUserCredentials, User, UserDomain
+from ..settings import api_settings
+
 from .errors import InvalidCredentials
+
+SECRET_KEY = api_settings.api_auth_secret_key
+DEFAULT_ACCESS_TOKEN_EXPIRES_IN: timedelta = timedelta(
+    minutes=api_settings.api_auth_access_token_expire_minutes
+)
+
+
+def parse_user_email_from_token(access_token: str):
+    try:
+        payload = jwt.decode(access_token, SECRET_KEY)
+        email = payload.get("sub")
+        if email is None:
+            raise InvalidCredentials.malformed_token(access_token)
+        return email
+    except JWTError as e:
+        raise InvalidCredentials.malformed_token(access_token, "jwt decode error", e)
 
 
 class Token(BaseModel):
-    token_type: str
+    token_type: str = "Bearer"
     access_token: str
     expires_in: int
     refresh_token: str | None = None
 
+    @classmethod
+    def create(
+        cls,
+        user: User,
+        *,
+        expires_in: timedelta | None = None,
+        refreshable=False,
+    ):
+        expires_in = expires_in or DEFAULT_ACCESS_TOKEN_EXPIRES_IN
+        expires_at = datetime.utcnow() + expires_in
 
-def create_access_token(
-    user: User, expires_in: Optional[timedelta] = None, refreshable: bool = False
-) -> Token:
-    expires_in = expires_in or ACCESS_TOKEN_EXPIRES
-    expires_at = datetime.utcnow() + expires_in
+        token_data = {"sub": user.email, "exp": expires_at}
+        if refreshable:
+            raise NotImplementedError("refreshable tokens")
+        encoded_jwt = jwt.encode(token_data, SECRET_KEY)
 
-    token_data = {"sub": user.email, "exp": expires_at}
-
-    if refreshable:
-        raise NotImplementedError("Refreshable tokens")
-
-    return Token(
-        token_type="Bearer",
-        access_token=jwt.encode(token_data, SECRET_KEY, ALGORITHM),
-        expires_in=int(expires_in.total_seconds()),
-    )
-
-
-def parse_user_email_from_token(access_token: str):
-    payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
-    email = payload.get("sub")
-    if email is None:
-        raise InvalidCredentials.malformed_token(access_token)
-    return email
+        return cls(access_token=encoded_jwt, expires_in=int(expires_in.total_seconds()))

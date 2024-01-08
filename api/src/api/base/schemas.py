@@ -9,22 +9,15 @@ import functools
 from pathlib import Path
 from typing import (
     Any,
-    Awaitable,
-    Callable,
     ClassVar,
     Generic,
-    Iterable,
-    Optional,
-    Type,
+    Self,
     TypeVar,
-    cast,
-    dataclass_transform,
 )
 from uuid import UUID
 
-from fastapi import UploadFile
 from humps import camelize
-from pydantic import BaseModel as _BaseModel, Field, ConfigDict
+from pydantic import BaseModel as _BaseModel, ConfigDict
 from sqlalchemy import ScalarResult, Select, func
 
 from api.settings import api_settings
@@ -42,78 +35,83 @@ class BaseModel(_BaseModel):
     )
 
 
+# FIXME: mypy doesn't support PEP 695 yet.
 TModel = TypeVar("TModel", bound=Base)
-TModelResponse = TypeVar("TApiModel", bound="ModelResponse")
 
 
-class ModelResponse(BaseModel, Generic[TModel], ABC):
+class ModelResponse(BaseModel, Generic[TModel]):
+    id: UUID
     created_at: datetime
     updated_at: datetime
 
     @classmethod
     @abstractmethod
-    async def from_model(cls: type[TModelResponse], model: TModel) -> TModelResponse:
-        ...
+    async def from_model(cls: type[Self], model: TModel, **kwargs) -> Self:
+        return cls(
+            created_at=model.created_at,
+            updated_at=model.updated_at,
+            **kwargs,
+        )
 
 
 class ModelCreateRequest(BaseModel, Generic[TModel]):
-    pass
+    @abstractmethod
+    def do_create(self, db: LocalSession): TModel:
+        ...
 
 
 class ModelUpdateRequest(BaseModel, Generic[TModel]):
-    pass
+    @abstractmethod
+    def do_update(self, model: TModel) -> TModel:
+        ...
 
 
-class PagedModelResponse(BaseModel, Generic[TModel]):
-    item_type: ClassVar[type[ModelResponse]]
+TModelResponse = TypeVar("TModelResponse", bound=ModelResponse)
 
-    @classmethod
-    def __init_subclass__(cls):
-        if not (
-            isinstance(cls.item_type, type) and issubclass(cls.item_type, ModelResponse)
-        ):
-            raise TypeError(
-                f"PagedModelResponse subclass {cls.__name__} must declare an 'item_type'"
-            )
-        return super().__init_subclass__()
 
+class ModelResponsePage(BaseModel, Generic[TModel]):
+    items: list[ModelResponse[TModel]]
     total_item_count: int
     total_page_count: int
     page_index: int
     page_size: int
 
-    items: list[ModelResponse[TModel]]
 
-    @classmethod
-    async def _gather_items(cls, selected_items: ScalarResult[tuple[TModel]]):
-        item_responses = [cls.item_type.from_model(item) for item in selected_items]
-        return await asyncio.gather(*item_responses)
-
-    @classmethod
-    async def from_select(
-        cls,
+class PagedModelResponse(Generic[TModel]):
+    def __init__(
+        self,
         db: LocalSession,
+        item_type: type[ModelResponse[TModel]],
         selection: Select[tuple[TModel]],
-        *,
-        page_index: int = 0,
         page_size: int | None = None,
     ):
-        page_size = page_size or api_settings.api_page_size_default
+        self.db = db
+        self.item_type = item_type
+        self.selection = selection
+        self.page_size = page_size or api_settings.api_page_size_default
+
+    async def _gather_items(self, selected_items: ScalarResult[TModel]):
+        item_responses = [self.item_type.from_model(item) for item in selected_items]
+        return await asyncio.gather(*item_responses)
+
+    async def load_page(self, page_index: int):
         total_item_count = (
-            await db.scalar(
-                selection.order_by(None).with_only_columns(func.count()),
+            await self.db.scalar(
+                self.selection.order_by(None).with_only_columns(func.count()),
                 maintain_column_froms=True,
             )
             or 0
         )
-        total_page_count = total_item_count // page_size
+        total_page_count = total_item_count // self.page_size
 
-        selection = selection.offset(page_index * page_size).limit(page_size)
-        items = await cls._gather_items(await db.scalars(selection))
-        return cls(
+        selection = self.selection.offset(page_index * self.page_size).limit(
+            self.page_size
+        )
+        items = await self._gather_items(await self.db.scalars(selection))
+        return ModelResponsePage(
             items=items,
             total_item_count=total_item_count,
             total_page_count=total_page_count,
             page_index=page_index,
-            page_size=page_size,
+            page_size=self.page_size,
         )
