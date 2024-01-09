@@ -1,11 +1,10 @@
 from sqlalchemy import select, Select, or_
 
-from api.uni.types import CampusCode
-from .models import Campus
+from db.models.uni import Campus
 
 
 def query_campuses(
-    code_eq: CampusCode | None = None, text_like: str | None = None
+    code_eq: str | None = None, text_like: str | None = None
 ) -> Select[tuple[Campus]]:
     clauses = []
 

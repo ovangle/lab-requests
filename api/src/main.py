@@ -57,7 +57,7 @@ def api_router():
     from api.auth.views import oauth
     from api.user.views import users
     from api.uni.views import uni_campuses
-    from api.uni.research.views import uni_research_funding
+    from api.research.views import uni_research_funding
     from api.lab.views import lab
 
     api_router = APIRouter(prefix="/api", tags=["api"])

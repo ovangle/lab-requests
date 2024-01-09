@@ -1,11 +1,9 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 
 from db import get_db
-from db.models.user import User, UserDoesNotExist
 
-from .errors import InvalidCredentials
 from .schemas import Token
 from .context import login_native_user
 

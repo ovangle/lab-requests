@@ -1,21 +1,43 @@
 from __future__ import annotations
+import asyncio
+from datetime import date
 
-from typing import Any, Coroutine, Optional
-from uuid import UUID
-from pydantic import BaseModel, Field
+from typing import TYPE_CHECKING, Any, Coroutine, Optional
+from uuid import UUID, uuid4
 
-from api.base.schemas import ModelResponse, ModelCreateRequest, ModelUpdateRequest
+from pydantic import Field
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from db import LocalSession
-from db.models.research import ResearchFunding, ResearchPlan
+from db.models.uni import Discipline
+from db.models.user import User
+from db.models.research import (
+    ResearchFunding,
+    ResearchPlan,
+    ResearchPlanTask,
+    ResearchPlanAttachment,
+)
+
+from ..base.schemas import (
+    ModelView,
+    ModelCreateRequest,
+    ModelUpdateRequest,
+    ModelLookup,
+)
+from ..uni.schemas import CampusView
+from ..user.schemas import UserLookup, UserView, lookup_user
+
+if TYPE_CHECKING:
+    from ..lab.schemas import LabLookup
 
 
-class ResearchFundingResponse(ModelResponse[ResearchFunding]):
+class ResearchFundingView(ModelView[ResearchFunding]):
     id: UUID
     name: str
     description: str
 
     @classmethod
-    async def from_model(cls, model: ResearchFunding):
+    async def from_model(cls, model: ResearchFunding, **kwargs):
         return cls(
             id=model.id,
             name=model.name,
@@ -25,200 +47,204 @@ class ResearchFundingResponse(ModelResponse[ResearchFunding]):
         )
 
 
-class FundingModelUpdateRequest(ModelUpdateRequest[ResearchFunding]):
+class ResearchFundingLookup(ModelLookup[ResearchFunding]):
+    id: Optional[UUID] = None
+    name: Optional[str] = None
+
+    async def get(self, db: LocalSession):
+        if self.id:
+            return await ResearchFunding.get_for_id(db, self.id)
+        if self.name:
+            return await ResearchFunding.get_for_name(db, self.name)
+        raise ValueError("Either id or name must be provided")
+
+
+class ResearchFundingUpdateRequest(ModelUpdateRequest[ResearchFunding]):
     description: str
 
-    async def do_update(
-        self, db: LocalSession, model: ResearchFunding
-    ) -> ResearchFunding:
+    async def do_update(self, model: ResearchFunding) -> ResearchFunding:
         if self.description != model.description:
             model.description = self.description
-            db.add(model)
 
         return model
 
 
-class FundingModelCreate(ModelCreateRequest[ResearchFunding]):
+class ResearchFundingCreateRequest(ModelCreateRequest[ResearchFunding]):
+    name: str
+    description: str
+
     async def do_create(self, db: LocalSession) -> ResearchFunding:
-        raise NotImplementedError()
+        model = ResearchFunding(
+            id=uuid4(), name=self.name, description=self.description
+        )
+        db.add(model)
+        return model
 
 
-class ExperimentalPlanBase(BaseModel):
-    title: str
-
-    process_summary: str
-    funding_model: FundingModel | UUID | str
-
-    researcher: str
-    researcher_base_campus: Campus | CampusCode | UUID
-    researcher_discipline: Discipline
-
-    supervisor: Optional[str] = None
-
-    async def prepare_fields(self, db):
-        if isinstance(self.researcher_base_campus, CampusCode):
-            campus = await Campus.get_for_campus_code(db, self.researcher_base_campus)
-            self.researcher_base_campus = campus
-
-        if isinstance(self.funding_model, str):
-            try:
-                funding_model = await FundingModel.get_for_name(db, self.funding_model)
-            except FundingModelDoesNotExist as e:
-                raise ValidationError(str(e))
-            self.funding_model = funding_model
-
-    def _set_model_fields(self, instance: models.ExperimentalPlan_) -> bool:
-        is_modified = False
-
-        if self.title != instance.title:
-            instance.title = self.title
-            is_modified = True
-
-        if self.process_summary != instance.process_summary:
-            instance.process_summary = self.process_summary
-            is_modified = True
-
-        if self.researcher != instance.researcher_email:
-            instance.researcher_email = self.researcher
-            is_modified = True
-
-        print("researcher_base_campus: {0}".format(self.researcher_base_campus))
-        if isinstance(self.researcher_base_campus, (UUID, Campus)):
-            campus_id = (
-                self.researcher_base_campus.id
-                if isinstance(self.researcher_base_campus, Campus)
-                else self.researcher_base_campus
-            )
-            if campus_id != instance.researcher_base_campus_id:
-                instance.researcher_base_campus_id = campus_id
-                is_modified = True
-
-        elif isinstance(self.researcher_base_campus, CampusCode):
-            raise Exception("Must Prepare fields before create/commit")
-
-        if self.researcher_discipline != instance.researcher_discipline:
-            instance.researcher_discipline = self.researcher_discipline
-            is_modified = True
-
-        if self.supervisor != instance.supervisor_email:
-            instance.supervisor_email = self.supervisor
-            is_modified = True
-
-        print("funding model: {0}".format(self.funding_model))
-        if isinstance(self.funding_model, (UUID, FundingModel)):
-            funding_model_id = (
-                self.funding_model
-                if isinstance(self.funding_model, UUID)
-                else self.funding_model.id
-            )
-            if funding_model_id != instance.funding_model_id:
-                instance.funding_model_id = funding_model_id
-                is_modified = True
-
-        elif isinstance(self.funding_model, FundingModelCreate):
-            raise Exception("Did not prepare instance")
-
-        else:
-            raise ValueError("Unrecognised funding model")
-
-        return is_modified
+ResearchFundingRef = ResearchFundingCreateRequest | ResearchFundingLookup | UUID
 
 
-class ResearchPlanResponse(ModelResponse[ResearchPlan]):
+async def lookup_or_create_research_funding(db: LocalSession, ref: ResearchFundingRef):
+    if isinstance(ref, ResearchFundingCreateRequest):
+        return await ref.do_create(db)
+    if isinstance(ref, UUID):
+        ref = ResearchFundingLookup(id=ref)
+    return await ref.get(db)
+
+
+class ResearchPlanTaskView(ModelView[ResearchPlanTask]):
     id: UUID
-    title: str = Field(max_length=256)
+    index: int
 
-    funding_model_id: UUID
-    funding_model: FundingModelResponse
+    start_date: date | None
+    end_date: date | None
 
-    researcher_base_campus: Campus
-    researcher_discipline: Discipline
-
-    work_units: list[WorkUnit]
+    lab_id: UUID | None
+    supervisor_id: UUID | None
 
     @classmethod
-    async def from_model(
-        cls, model: ResearchPlanResponse | models.ExperimentalPlan_
-    ) -> ResearchPlanResponse:
-        if isinstance(model, ResearchPlanResponse):
-            return cls(**model.model_dump())
-
-        funding_model = await FundingModel.from_model(
-            await model.awaitable_attrs.funding_model
+    async def from_model(cls, model: ResearchPlanTask, **kwargs):
+        return cls(
+            id=model.id,
+            index=model.index,
+            start_date=model.start_date,
+            end_date=model.end_date,
+            lab_id=model.lab_id,
+            supervisor_id=model.supervisor_id,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
         )
 
-        researcher_base_campus = await Campus.from_model(
-            await model.awaitable_attrs.researcher_base_campus
+
+class ResearchPlanTaskAppendRequest(ModelCreateRequest[ResearchPlanTask]):
+    """
+    Creates a task as the last task in the current tasks for a plan
+    """
+
+    description: str
+    start_date: date | None = None
+    end_date: date | None = None
+
+    lab: LabLookup | UUID
+
+    async def do_create(self, db: LocalSession, *, plan: ResearchPlan | None = None):
+        from ..lab.schemas import lookup_lab
+
+        if plan is None:
+            raise ValueError("Plan must be provided")
+
+        next_index = len(await plan.awaitable_attrs.tasks)
+
+        task = ResearchPlanTask(
+            id=uuid4(),
+            plan_id=plan.id,
+            index=next_index,
+            lab=await lookup_lab(self.lab),
+            description=self.description,
+            start_date=self.start_date,
+            end_date=self.end_date,
+        )
+        db.add(task)
+        return task
+
+
+class ResearchPlanAttachmentView(ModelView[ResearchPlanAttachment]):
+    id: UUID
+    path: str
+
+    @classmethod
+    async def from_model(cls, model: ResearchPlanAttachment):
+        return cls(
+            id=model.id,
+            path=str(model.file),
+            created_at=model.created_at,
+            updated_at=model.updated_at,
         )
 
-        work_units = await WorkUnit.gather_models(
-            await model.awaitable_attrs.work_units
+
+class ResearchPlanView(ModelView[ResearchPlan]):
+    id: UUID
+    title: str = Field(max_length=256)
+    description: str
+
+    funding: ResearchFundingView
+
+    researcher: UserView
+    coordinator: UserView
+
+    tasks: list[ResearchPlanTaskView]
+    attachments: list[ResearchPlanAttachmentView]
+
+    # work_units: list[WorkUnit]
+
+    @classmethod
+    async def from_model(cls, model: ResearchPlan) -> ResearchPlanView:
+        funding = await ResearchFundingView.from_model(model.funding)
+        researcher = await UserView.from_model(await model.awaitable_attrs.researcher)
+        coordinator = await UserView.from_model(await model.awaitable_attrs.coordinator)
+
+        task_models = await model.awaitable_attrs.tasks
+        tasks = await asyncio.gather(
+            *[ResearchPlanTaskView.from_model(t) for t in task_models]
+        )
+
+        attachment_models = await model.awaitable_attrs.attachments
+        attachments = await asyncio.gather(
+            *[ResearchPlanAttachmentView.from_model(a) for a in attachment_models]
         )
 
         return cls(
             id=model.id,
             title=model.title,
-            funding_model_id=funding_model.id,
-            funding_model=funding_model,
-            researcher=model.researcher_email,
-            supervisor=model.supervisor_email,
-            researcher_base_campus=researcher_base_campus,
-            researcher_discipline=model.researcher_discipline,
-            work_units=work_units,
-            process_summary=model.process_summary,
+            description=model.description,
+            funding=funding,
+            researcher=researcher,
+            coordinator=coordinator,
+            tasks=tasks,
+            attachments=attachments,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
 
-    async def to_model(self, db: LocalSession) -> models.ExperimentalPlan_:
-        return await models.ExperimentalPlan_.get_by_id(db, self.id)
 
-    @classmethod
-    async def get_for_id(cls, db: LocalSession, id: UUID):
-        return await cls.from_model(await models.ExperimentalPlan_.get_by_id(db, id))
+class ResearchPlanCreateRequest(ModelCreateRequest[ResearchPlan]):
+    id: UUID | None = None
+    title: str
+    description: str | None = None
+
+    funding: ResearchFundingCreateRequest | ResearchFundingLookup | UUID
+    researcher: UserLookup | UUID
+    coordinator: UserLookup | UUID
+
+    tasks: list[ResearchPlanTaskAppendRequest]
+
+    async def _get_or_create_funding(self, db: LocalSession):
+        match self.funding:
+            case ResearchFundingCreateRequest():
+                return await self.funding.do_create(db)
+            case ResearchFundingLookup():
+                return await self.funding.get(db)
+            case UUID():
+                return await ResearchFunding.get_for_id(db, self.funding)
+            case _:
+                raise TypeError("Expected a UUID or ResearchFundingCreateRequest")
+
+    async def do_create(self, db: LocalSession) -> ResearchPlan:
+        plan = ResearchPlan(
+            id=self.id or uuid4(),
+            title=self.title,
+            funding=await self._get_or_create_funding(db),
+            researcher=await lookup_user(db, self.researcher),
+            coordinator=await lookup_user(db, self.coordinator),
+        )
+        db.add(plan)
+
+        for task in self.tasks:
+            await task.do_create(db, plan=plan)
+
+        return plan
 
 
-class ExperimentalPlanPatch(
-    ExperimentalPlanBase, ModelPatch[ResearchPlanResponse, models.ExperimentalPlan_]
-):
-    __api_model__ = ResearchPlanResponse
-
-    async def do_update(
-        self, db: LocalSession, instance: models.ExperimentalPlan_
-    ) -> models.ExperimentalPlan_:
-        await self.prepare_fields(db)
-
-        self._set_model_fields(instance)
-        db.add(instance)
-
-        return instance
-
-
-class ExperimentalPlanCreate(
-    ExperimentalPlanBase, ModelCreate[ResearchPlanResponse, models.ExperimentalPlan_]
-):
-    __api_model__ = ResearchPlanResponse
-
-    create_default_work_unit_for_researcher: bool = field(default=True)
-    default_work_unit_technician: str | None = field(default=None)
-    add_work_units: list[WorkUnitPatch] = field(default_factory=list)
-
-    async def do_create(self, db: LocalSession) -> models.ExperimentalPlan_:
-        await self.prepare_fields(db)
-
-        instance = models.ExperimentalPlan_()
-        instance.id = uuid4()
-        self._set_model_fields(instance)
-
-        db.add(instance)
-
-        add_work_units = [
-            WorkUnitCreate(**patch.model_dump(), plan_id=instance.id)
-            for patch in self.add_work_units
-        ]
-        new_work_units = []
-        for work_unit_create in add_work_units:
-            new_work_units.append(await work_unit_create(db))
-
-        db.add(instance)
-        return instance
+class ResearchPlanUpdateRequest(ModelUpdateRequest[ResearchPlan]):
+    async def do_update(self, model: ResearchPlan):
+        raise NotImplementedError

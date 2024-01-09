@@ -1,10 +1,16 @@
 {
   "mypy-type-checker.importStrategy": "fromEnvironment",
-  "mypy-type-checker.args": ["--config-file", "./api/mypy.ini"],
+  "mypy-type-checker.args": [
+    "--config-file",
+    "./api/mypy.ini"
+  ],
   "python.analysis.typeCheckingMode": "basic",
   "angular.forceStrictTemplates": true,
   "python.analysis.autoSearchPaths": false,
-  "python.analysis.extraPaths": ["api/src/"],
+  "python.analysis.extraPaths": [
+    "api/src/"
+  ],
+  "python.analysis.diagnosticMode": "workspace",
   "editor.formatOnSave": true,
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter",

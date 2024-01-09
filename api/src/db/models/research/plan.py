@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 from sqlalchemy import Column, ForeignKey, Table, UniqueConstraint
@@ -43,10 +43,8 @@ class ResearchPlanTask(Base):
     index: Mapped[int] = mapped_column(postgresql.INTEGER)
     description: Mapped[str] = mapped_column(postgresql.TEXT)
 
-    start_date: Mapped[datetime | None] = mapped_column(
-        postgresql.DATE(), nullable=True
-    )
-    end_date: Mapped[datetime | None] = mapped_column(postgresql.DATE(), nullable=True)
+    start_date: Mapped[date | None] = mapped_column(postgresql.DATE(), nullable=True)
+    end_date: Mapped[date | None] = mapped_column(postgresql.DATE(), nullable=True)
 
     allocated: Mapped[bool] = mapped_column(postgresql.BOOLEAN)
 
@@ -81,6 +79,9 @@ class ResearchPlan(Base):
     __tablename__ = "research_plan"
 
     id: Mapped[uuid_pk]
+
+    title: Mapped[str] = mapped_column(postgresql.VARCHAR(256))
+    description: Mapped[str] = mapped_column(postgresql.TEXT(), default="{}")
 
     # The principal researcher.
     researcher_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))

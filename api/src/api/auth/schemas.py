@@ -9,12 +9,18 @@ from db import LocalSession, get_db
 from db.models.user import NativeUserCredentials, User, UserDomain
 from ..settings import api_settings
 
-from .errors import InvalidCredentials
-
 SECRET_KEY = api_settings.api_auth_secret_key
 DEFAULT_ACCESS_TOKEN_EXPIRES_IN: timedelta = timedelta(
     minutes=api_settings.api_auth_access_token_expire_minutes
 )
+
+
+def invalid_credentials_error():
+    return HTTPException(
+        401,
+        detail="Incorrect username or password",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 def parse_user_email_from_token(access_token: str):
@@ -22,10 +28,10 @@ def parse_user_email_from_token(access_token: str):
         payload = jwt.decode(access_token, SECRET_KEY)
         email = payload.get("sub")
         if email is None:
-            raise InvalidCredentials.malformed_token(access_token)
+            raise invalid_credentials_error()
         return email
     except JWTError as e:
-        raise InvalidCredentials.malformed_token(access_token, "jwt decode error", e)
+        raise invalid_credentials_error()
 
 
 class Token(BaseModel):

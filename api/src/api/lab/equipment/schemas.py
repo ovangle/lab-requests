@@ -9,59 +9,9 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 
 from db import LocalSession
-from api.base.schemas import ApiModel, ModelCreate, ModelPatch
-
-from ..types import LabType
-from . import models
-
-
-class EquipmentTagBase(BaseModel):
-    id: UUID | None
-    name: str
-
-
-class EquipmentTag(EquipmentTagBase, ApiModel[models.EquipmentTag]):
-    id: UUID
-
-    @override
-    @classmethod
-    async def from_model(cls, equipment: EquipmentTag | models.EquipmentTag):
-        return cls(
-            id=equipment.id,
-            name=equipment.name,
-            created_at=equipment.created_at,
-            updated_at=equipment.updated_at,
-        )
-
-    @override
-    @classmethod
-    async def get_for_id(cls, db: LocalSession, id: UUID):
-        tag = await models.EquipmentTag.fetch_for_id(db, id)
-        return await cls.from_model(tag)
-
-    @override
-    async def to_model(self, db: LocalSession):
-        return await models.EquipmentTag.fetch_for_id(db, self.id)
-
-
-class EquipmentTagPatch(
-    EquipmentTagBase, ModelPatch[EquipmentTag, models.EquipmentTag]
-):
-    async def do_update(self, db: LocalSession, tag: models.EquipmentTag):
-        if self.id and self.id != tag.id:
-            raise HTTPException(409, "Mismatched tags")
-        if tag.name != self.name:
-            tag.name = self.name
-            db.add(tag)
-
-
-class EquipmentTagCreate(
-    EquipmentTagBase, ModelCreate[EquipmentTag, models.EquipmentTag]
-):
-    async def do_create(self, db: LocalSession):
-        instance = models.EquipmentTag(id=self.id, name=self.name)
-        db.add(instance)
-        return instance
+from db.models.uni import Discipline
+from db.models.lab import LabEquipment
+from api.base.schemas import ModelView, ModelLookup, ModelCreateRequest
 
 
 class EquipmentBase(BaseModel):
@@ -72,7 +22,7 @@ class EquipmentBase(BaseModel):
     tags: set[str]
 
 
-class Equipment(EquipmentBase, ApiModel[models.Equipment]):
+class LabEquipmentView(ModelView[LabEquipment]):
     id: UUID
 
     @classmethod
