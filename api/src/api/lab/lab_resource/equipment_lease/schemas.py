@@ -6,8 +6,7 @@ from uuid import UUID, uuid4
 from fastapi import HTTPException
 from pydantic import Field
 
-from api.lab.equipment.schemas import EquipmentRequest
-from api.lab.work_unit.resource.models import ResourceContainer_
+from ...lab_equipment.schemas import LabEquipmentCreateRequest
 from ..common.schemas import (
     ResourceBase,
     ResourceCostEstimate,
@@ -19,7 +18,7 @@ from ..common.schemas import (
 class EquipmentLease(ResourceBase):
     __resource_type__ = ResourceType.EQUIPMENT
 
-    equipment: UUID | EquipmentRequest
+    equipment: UUID | LabEquipmentCreateRequest
 
     # Have any required inductions been
     # previously completed?
@@ -40,7 +39,7 @@ class EquipmentLease(ResourceBase):
     @classmethod
     def create(
         cls,
-        container: UUID | ResourceContainer_,
+        container: UUID,
         index: int,
         params: ResourceParams,
     ):
@@ -48,11 +47,10 @@ class EquipmentLease(ResourceBase):
             raise TypeError("Expected EquipmentLeaseParams")
 
         return cls(
-            container_id=container if isinstance(container, UUID) else container.id,
+            container_id=container,
             id=params.id or uuid4(),
             index=index,
             equipment=params.equipment,
-            equipment_training_completed=set(params.equipment_training_completed),
             requires_assistance=params.requires_assistance,
             usage_cost_estimate=params.usage_cost_estimate,
             setup_instructions=params.setup_instructions,
@@ -67,7 +65,7 @@ class EquipmentLease(ResourceBase):
             case UUID():
                 if params.equipment != self.equipment:
                     raise HTTPException(409, "cannot update equipment")
-            case EquipmentRequest():
+            case LabEquipmentCreateRequest():
                 if isinstance(params.equipment, UUID):
                     self.equipment = params.equipment
                 elif params.equipment != self.equipment:
@@ -80,8 +78,7 @@ class EquipmentLease(ResourceBase):
 
 
 class EquipmentLeaseParams(ResourceParams):
-    equipment: UUID | EquipmentRequest
-    equipment_training_completed: set[str] = Field(default_factory=set)
+    equipment: UUID | LabEquipmentCreateRequest
     requires_assistance: bool = False
     setup_instructions: str = ""
 

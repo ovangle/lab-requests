@@ -4,7 +4,6 @@ from uuid import UUID, uuid4
 
 from fastapi import HTTPException
 
-from api.lab.work_unit.resource.models import ResourceContainer_
 from ..common.schemas import (
     ResourceCostEstimate,
     ResourceParams,
@@ -23,14 +22,12 @@ class Software(ResourceBase):
     estimated_cost: ResourceCostEstimate | None
 
     @classmethod
-    def create(
-        cls, container: ResourceContainer_ | UUID, index: int, params: ResourceParams
-    ):
+    def create(cls, container: UUID, index: int, params: ResourceParams):
         if not isinstance(params, SoftwareParams):
             raise TypeError("Expected software params")
 
         return cls(
-            container_id=container if isinstance(container, UUID) else container.id,
+            container_id=container,
             id=params.id or uuid4(),
             index=index,
             name=params.name,

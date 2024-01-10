@@ -21,10 +21,6 @@ from uuid import UUID
 from humps import decamelize
 from pydantic import BaseModel, Field, ValidationError
 
-from api.base.models import Base
-from api.base.schemas import ApiModel, ModelPatch
-from api.lab.work_unit.resource.common.schemas import ResourceType
-from api.lab.work_unit.resource.models import ResourceContainerFileAttachment_
 from db import LocalSession
 
 from .common.schemas import (
@@ -41,9 +37,6 @@ from .software.schemas import Software, SoftwareParams
 from .task.schemas import Task, TaskParams
 from .input_material.schemas import InputMaterial, InputMaterialParams
 from .output_material.schemas import OutputMaterial, OutputMaterialParams
-
-if TYPE_CHECKING:
-    from . import models
 
 __all__ = (
     "Resource",
@@ -99,7 +92,7 @@ class ResourceContainer(BaseModel):
         return self.get_resources(resource_type)[index]
 
     def _set_resource_container_fields_from_model(
-        self, model: ResourceContainer | models.ResourceContainer_
+        self, model: ResourceContainer | UUID
     ):
         def resource_json(resource: Resource | dict[str, Any]) -> dict[str, Any]:
             if isinstance(resource, dict):
@@ -107,16 +100,20 @@ class ResourceContainer(BaseModel):
             return resource.model_dump()
 
         self.equipments = [
-            EquipmentLease(**resource_json(item)) for item in model.equipments
+            #            EquipmentLease(**resource_json(item)) for item in model.equipments
         ]
         self.input_materials = [
-            InputMaterial(**resource_json(item)) for item in model.input_materials
+            #            InputMaterial(**resource_json(item)) for item in model.input_materials
         ]
         self.output_materials = [
-            OutputMaterial(**resource_json(item)) for item in model.output_materials
+            #            OutputMaterial(**resource_json(item)) for item in model.output_materials
         ]
-        self.softwares = [Software(**resource_json(item)) for item in model.softwares]
-        self.tasks = [Task(**resource_json(item)) for item in model.tasks]
+        self.softwares = [
+            # Software(**resource_json(item)) for item in model.softwares]
+        ]
+        self.tasks = [
+            # Task(**resource_json(item)) for item in model.tasks
+        ]
 
 
 TResourceParams = TypeVar("TResourceParams", bound=ResourceParams)
@@ -165,15 +162,12 @@ class Slice(BaseModel, Generic[TResource, TResourceParams]):
             model_resources,
         )
         if self.start == "append":
-            model_resources += [
-                create_or_update_resource(i, params)
-                for (i, params) in enumerate(self.items)
-            ]
+            model_resources += []
         else:
-            model_resources[self.start : self.end] = [
-                create_or_update_resource(i, params)
-                for (i, params) in enumerate(self.items)
-            ]
+            model_resources[self.start : self.end] = []
+            #     create_or_update_resource(i, params)
+            #     for (i, params) in enumerate(self.items)
+            # ]
 
             if self.end is not None and self.start - self.end != len(self.items):
                 for i, item in enumerate(model_resources[self.end :]):
@@ -195,7 +189,9 @@ class ResourceContainerPatch(BaseModel):
     softwares: list[SoftwareSlice] = Field(default_factory=list)
 
     def _get_resources(
-        self, resource_type: Type[TResource], model: models.ResourceContainer_
+        self,
+        resource_type: Type[TResource],
+        model: UUID,
     ) -> list[TResource]:
         jsonb_resources: list[dict] = getattr(model, resource_name(resource_type))
         return cast(
@@ -203,10 +199,7 @@ class ResourceContainerPatch(BaseModel):
         )
 
     def _apply_slices(
-        self,
-        db: LocalSession,
-        resource_type: Type[TResource],
-        container: models.ResourceContainer_,
+        self, db: LocalSession, resource_type: Type[TResource], container: UUID
     ):
         slices: list[Slice[TResource, Any]] = getattr(
             self, resource_name(resource_type)
@@ -214,9 +207,7 @@ class ResourceContainerPatch(BaseModel):
         container_resources = self._get_resources(resource_type, container)[:]
 
         for slice in slices:
-            slice.update_model_resources(
-                container.id, resource_type, container_resources
-            )
+            slice.update_model_resources(container, resource_type, container_resources)
 
         if slices:
             setattr(
@@ -226,8 +217,6 @@ class ResourceContainerPatch(BaseModel):
             )
             db.add(container)
 
-    async def update_model_resources(
-        self, db: LocalSession, model: models.ResourceContainer_
-    ):
+    async def update_model_resources(self, db: LocalSession, model: UUID):
         for resource_type in RESOURCE_TYPES:
             self._apply_slices(db, resource_type, model)

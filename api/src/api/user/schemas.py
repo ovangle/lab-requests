@@ -78,15 +78,15 @@ class CurrentUserResponse(UserView):
     Includes extra attributes relevant only to the current user
     """
 
-    labs: ModelResponsePage[Lab]
-    plans: ModelResponsePage[ResearchPlan]
+    labs: LabIndexPage
+    plans: ResearchPlanIndexPage
 
     @classmethod
     async def from_model(
         cls: type[CurrentUserResponse], model: User, **kwargs
     ) -> CurrentUserResponse:
-        from api.lab.schemas import LabView
-        from api.research.schemas import ResearchPlanResponse
+        from api.lab.schemas import LabView, LabIndex
+        from api.research.schemas import ResearchPlanView
 
         db = async_object_session(model)
         if db is None:

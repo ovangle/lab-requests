@@ -8,7 +8,7 @@ from db import LocalSession
 from db.models.uni import Discipline
 from db.models.lab import Lab
 
-from ..base.schemas import ModelLookup, ModelView
+from ..base.schemas import ModelLookup, ModelResponsePage, ModelView, PagedModelResponse
 
 if TYPE_CHECKING:
     from api.uni.schemas import CampusView
@@ -46,3 +46,11 @@ async def lookup_lab(db: LocalSession, ref: LabLookup | UUID):
     if isinstance(ref, UUID):
         ref = LabLookup(id=ref)
     return await ref.get(db)
+
+
+class LabIndex(PagedModelResponse[Lab]):
+    __item_view__ = LabView
+
+
+# TODO: PEP 695 type
+LabIndexPage = ModelResponsePage[Lab]

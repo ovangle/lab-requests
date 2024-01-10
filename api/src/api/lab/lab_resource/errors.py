@@ -1,7 +1,7 @@
 from uuid import UUID
 from fastapi import HTTPException
 
-from api.lab.work_unit.resource.common.schemas import ResourceType
+from api.lab.lab_resource.common.schemas import ResourceType
 
 
 class ResourceDoesNotExist(HTTPException):

@@ -2,28 +2,34 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
 from sqlalchemy import func, select
-from api.base.files.schemas import StoredFile
-from api.lab.work_unit.resource.models import ResourceContainerFileAttachment_
+
+# from api.base.files.schemas import StoredFile
+# from api.lab.work_unit.resource.models import ResourceContainerFileAttachment_
 
 from db import LocalSession
-from api.base.schemas import ApiModel, ModelPatch, ModelCreate
-from api.uni.schemas import Campus, CampusCode
-from api.lab.types import LabType
+from db.models.uni import Discipline, Campus
 
-from .resource.schemas import ResourceContainer, ResourceContainerPatch
-from . import models
+from ...base.schemas import ModelResponsePage, ModelView, PagedModelResponse
+from ...uni.schemas import CampusLookup, lookup_campus, CampusView
+
+# from api.base.schemas import ApiModel, ModelPatch, ModelCreate
+# from api.uni.schemas import Campus, CampusCode
+# from api.lab.types import LabType
+
+# from .resource.schemas import ResourceContainer, ResourceContainerPatch
+# from . import models
 
 
 class WorkUnitBase(BaseModel):
-    campus: Campus | CampusCode | UUID
+    campus: CampusLookup | UUID
 
     name: str
-    lab_type: LabType
+    lab_type: Discipline
     technician: str
 
     process_summary: str = ""
@@ -32,17 +38,18 @@ class WorkUnitBase(BaseModel):
     end_date: Optional[date] = None
 
 
-class WorkUnit(WorkUnitBase, ResourceContainer, ApiModel[models.WorkUnit_]):
-    plan_id: UUID
+class WorkUnitView(ModelView):
     id: UUID
+    plan_id: UUID
 
     # The index of the work unit in the parent plan
     index: int
-    campus: Campus
+    campus: CampusView
 
     @classmethod
-    async def from_model(cls, model: WorkUnit | models.WorkUnit_) -> WorkUnit:
-        if isinstance(model, models.WorkUnit_):
+    async def from_model(cls, model: Any):
+        raise NotImplementedError
+        if False:
             m_campus = await model.awaitable_attrs.campus
             campus = await Campus.from_model(m_campus)
 
@@ -68,88 +75,16 @@ class WorkUnit(WorkUnitBase, ResourceContainer, ApiModel[models.WorkUnit_]):
         instance._set_resource_container_fields_from_model(model)
         return instance
 
-    def to_model(self, db: LocalSession):
-        return models.WorkUnit_.get_for_id(db, self.id)
 
-    @classmethod
-    async def get_for_id(cls, db: LocalSession, id: UUID) -> WorkUnit:
-        return await cls.from_model(await models.WorkUnit_.get_for_id(db, id))
-
-    @classmethod
-    async def get_for_plan_and_index(
-        cls, db: LocalSession, plan: UUID, index: int
-    ) -> WorkUnit:
-        return await cls.from_model(
-            await models.WorkUnit_.get_for_plan_and_index(db, plan, index)
-        )
+class WorkUnitIndex(PagedModelResponse[Any]):
+    __item_view__ = WorkUnitView
 
 
-class WorkUnitPatch(
-    WorkUnitBase, ResourceContainerPatch, ModelPatch[WorkUnit, models.WorkUnit_]
-):
-    __api_model__ = WorkUnit
-
-    async def do_update(
-        self, db: LocalSession, model: models.WorkUnit_
-    ) -> models.WorkUnit_:
-        for attr in ("name", "lab_type", "process_summary", "start_date", "end_date"):
-            s_attr = getattr(self, attr)
-            if getattr(model, attr) != s_attr:
-                setattr(model, attr, getattr(self, attr))
-                db.add(model)
-
-        if model.technician_email != self.technician:
-            model.technician_email = self.technician
-            db.add(model)
-
-        await self.update_model_resources(db, model)
-
-        return model
+# TODO: PEP 695
+WorkUnitIndexPage = ModelResponsePage[Any]
 
 
-class WorkUnitCreate(WorkUnitBase, ModelCreate[WorkUnit, models.WorkUnit_]):
-    __api_model__ = WorkUnit
-    plan_id: UUID
+# class WorkUnitFileAttachment(StoredFile):
+#     id: UUID
 
-    async def _resolve_campus_id(self, db: LocalSession) -> UUID:
-        match self.campus:
-            case Campus():
-                return self.campus.id
-            case CampusCode():
-                return (await Campus.get_for_campus_code(db, self.campus)).id
-            case UUID():
-                return self.campus
-            case _:
-                raise TypeError(f"Unexpected value for campus: {type(self.campus)}")
-
-    async def next_plan_index(self, db: LocalSession) -> int:
-        return (
-            await db.scalars(
-                select(func.count(models.WorkUnit_.id))
-                .select_from(models.WorkUnit_)
-                .where(models.WorkUnit_.plan_id == self.plan_id)
-            )
-        ).one()
-
-    async def do_create(self, db: LocalSession) -> models.WorkUnit_:
-        plan = await models.ExperimentalPlan_.get_by_id(db, self.plan_id)
-
-        work_unit = models.WorkUnit_(
-            plan_id=plan.id,
-            index=await self.next_plan_index(db),
-            name=self.name,
-            campus_id=await self._resolve_campus_id(db),
-            lab_type=self.lab_type,
-            technician_email=self.technician,
-            process_summary=self.process_summary,
-            start_date=self.start_date,
-            end_date=self.end_date,
-        )
-        db.add(work_unit)
-        return work_unit
-
-
-class WorkUnitFileAttachment(StoredFile):
-    id: UUID
-
-    work_unit_id: UUID
+#     work_unit_id: UUID

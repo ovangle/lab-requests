@@ -7,6 +7,7 @@ from sqlalchemy import Column, ForeignKey, Table, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects import postgresql
 from sqlalchemy_file import FileField, File
+from db import LocalSession
 
 from db.models.base.fields import uuid_pk
 import filestore
@@ -106,3 +107,10 @@ class ResearchPlan(Base):
     attachments: Mapped[list[ResearchPlanAttachment]] = relationship(
         back_populates="plan"
     )
+
+    @classmethod
+    async def get_for_id(cls, db: LocalSession, id: UUID):
+        plan = await db.get(ResearchPlan, id)
+        if plan is None:
+            raise ResearchPlanDoesNotExist(for_id=id)
+        return plan

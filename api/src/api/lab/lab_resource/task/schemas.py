@@ -2,8 +2,6 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from api.lab.work_unit.resource.models import ResourceContainer_
-
 from ..common.schemas import (
     ResourceCostEstimate,
     ResourceParams,
@@ -23,14 +21,14 @@ class Task(ResourceBase):
     @classmethod
     def create(
         cls,
-        container: ResourceContainer_ | UUID,
+        container: UUID,
         index: int,
         params: ResourceParams,
     ) -> Task:
         if not isinstance(params, TaskParams):
             raise ValueError("Expected task params")
         return cls(
-            container_id=container if isinstance(container, UUID) else container.id,
+            container_id=container,
             index=index,
             id=params.id or uuid4(),
             description=params.description,

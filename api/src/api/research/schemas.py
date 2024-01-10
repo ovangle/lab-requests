@@ -19,10 +19,12 @@ from db.models.research import (
 )
 
 from ..base.schemas import (
+    ModelResponsePage,
     ModelView,
     ModelCreateRequest,
     ModelUpdateRequest,
     ModelLookup,
+    PagedModelResponse,
 )
 from ..uni.schemas import CampusView
 from ..user.schemas import UserLookup, UserView, lookup_user
@@ -57,6 +59,14 @@ class ResearchFundingLookup(ModelLookup[ResearchFunding]):
         if self.name:
             return await ResearchFunding.get_for_name(db, self.name)
         raise ValueError("Either id or name must be provided")
+
+
+class ResearchFundingIndex(PagedModelResponse[ResearchFunding]):
+    __item_view__ = ResearchFundingView
+
+
+# TODO: PEP 695
+ResearchFundingIndexPage = ModelResponsePage[ResearchFunding]
 
 
 class ResearchFundingUpdateRequest(ModelUpdateRequest[ResearchFunding]):
@@ -139,7 +149,7 @@ class ResearchPlanTaskAppendRequest(ModelCreateRequest[ResearchPlanTask]):
             id=uuid4(),
             plan_id=plan.id,
             index=next_index,
-            lab=await lookup_lab(self.lab),
+            lab=await lookup_lab(db, self.lab),
             description=self.description,
             start_date=self.start_date,
             end_date=self.end_date,
@@ -207,6 +217,28 @@ class ResearchPlanView(ModelView[ResearchPlan]):
         )
 
 
+class ResearchPlanLookup(ModelLookup[ResearchPlan]):
+    id: UUID | None = None
+
+    async def get(self, db: LocalSession):
+        if self.id:
+            return await ResearchPlan.get_for_id(db, self.id)
+        raise
+
+
+async def lookup_research_plan(db: LocalSession, lookup: ResearchPlanLookup | UUID):
+    if isinstance(lookup, UUID):
+        lookup = ResearchPlanLookup(id=lookup)
+
+
+class ResearchPlanIndex(PagedModelResponse[ResearchPlan]):
+    __item_view__ = ResearchPlanView
+
+
+# TODO: PEP 695
+ResearchPlanIndexPage = ModelResponsePage[ResearchPlan]
+
+
 class ResearchPlanCreateRequest(ModelCreateRequest[ResearchPlan]):
     id: UUID | None = None
     title: str
@@ -248,3 +280,8 @@ class ResearchPlanCreateRequest(ModelCreateRequest[ResearchPlan]):
 class ResearchPlanUpdateRequest(ModelUpdateRequest[ResearchPlan]):
     async def do_update(self, model: ResearchPlan):
         raise NotImplementedError
+
+
+class ResearchPlanTaskLookup(ModelLookup[ResearchPlanTask]):
+    id: UUID | None = None
+    plan_index: tuple[UUID | ResearchPlanLookup, UUID]

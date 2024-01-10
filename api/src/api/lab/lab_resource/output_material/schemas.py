@@ -5,8 +5,6 @@ from uuid import UUID, uuid4
 from fastapi import HTTPException
 from pydantic.dataclasses import dataclass
 
-from api.lab.work_unit.resource.models import ResourceContainer_
-
 from ..common.schemas import (
     ResourceBase,
     ResourceParams,
@@ -25,14 +23,12 @@ class OutputMaterial(ResourceBase):
     disposal: ResourceDisposal | None
 
     @classmethod
-    def create(
-        cls, container: ResourceContainer_ | UUID, index: int, params: ResourceParams
-    ):
+    def create(cls, container: UUID, index: int, params: ResourceParams):
         if not isinstance(params, OutputMaterialParams):
             raise TypeError("Expected OutputMaterialParams instance")
 
         return cls(
-            container_id=container if isinstance(container, UUID) else container.id,
+            container_id=container,
             index=index,
             id=params.id or uuid4(),
             base_unit=params.base_unit,

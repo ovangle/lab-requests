@@ -1,19 +1,16 @@
 from typing import Annotated
 from uuid import UUID
 from fastapi import APIRouter, Depends, File, Form, UploadFile
-from api.lab.work_unit.resource.common.schemas import (
+from api.lab.lab_resource.common.schemas import (
     ResourceFileAttachment,
     ResourceType,
 )
-from api.lab.work_unit.resource.errors import ResourceDoesNotExist
-
 from db import LocalSession, get_db
-from api.base.schemas import PagedResultList
-from api.lab.plan.schemas import ExperimentalPlan
 
-from .resource.schemas import Resource
-from .schemas import WorkUnit, WorkUnitCreate, WorkUnitPatch
-from .files import upload_resource_attachment
+from ...user.schemas import lookup_user, UserLookup
+from ..lab_resource.schemas import Resource
+from .queries import query_work_units
+from .schemas import WorkUnitView, WorkUnitIndexPage
 
 lab_work_units = APIRouter(prefix="/lab/work-units", tags=["work units"])
 
@@ -21,12 +18,23 @@ lab_work_units = APIRouter(prefix="/lab/work-units", tags=["work units"])
 @lab_work_units.get("/")
 async def index_work_units(
     plan_id: UUID | None = None,
+    researcher_id: UUID | None = None,
     researcher_email: str | None = None,
+    supervisor_id: UUID | None = None,
     supervisor_email: str | None = None,
-    technician_email: str | None = None,
     db: LocalSession = Depends(get_db),
-) -> PagedResultList[WorkUnit]:
-    from .queries import query_work_units
+) -> WorkUnitIndexPage:
+    if researcher_id or researcher_email:
+        researcher_lookup = UserLookup(id=researcher_id, email=researcher_email)
+        researcher = await lookup_user(db, researcher_lookup)
+    else:
+        researcher = None
+
+    if supervisor_id or supervisor_email:
+        supervisor_lookup = UserLookup(id=supervisor_id, email=supervisor_email)
+        supervisor = await lookup_user(db, supervisor_lookup)
+    else:
+        supervisor = None
 
     query = query_work_units(
         plan_id=plan_id,
