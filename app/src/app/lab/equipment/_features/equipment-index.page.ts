@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
-import { map } from 'rxjs';
+import { BehaviorSubject, defer, map, shareReplay, switchMap } from 'rxjs';
 import { EquipmentCollection } from '../common/equipment';
+import { HttpParams } from '@angular/common/http';
 
 @Component({
   selector: 'lab-equipment-index-page',
@@ -34,5 +35,14 @@ import { EquipmentCollection } from '../common/equipment';
 export class EquipmentIndexPage {
   readonly equipmentCollection = inject(EquipmentCollection);
 
-  readonly equipments$ = this.equipmentCollection.pageItems$;
+  readonly query = new BehaviorSubject<{ [k: string]: any[] }>({});
+  readonly page$ = this.query.pipe(
+    switchMap((params) =>
+      this.equipmentCollection.queryPage(
+        new HttpParams({ fromObject: params }),
+      ),
+    ),
+    shareReplay(1),
+  );
+  readonly equipments$ = defer(() => this.page$.pipe(map((p) => p.items)));
 }

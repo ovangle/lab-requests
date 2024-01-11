@@ -1,21 +1,18 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, Type, inject } from '@angular/core';
 import {
   Model,
-  ModelLookup,
-  ModelMeta,
   ModelParams,
-  ModelPatch,
-  ModelResponsePage,
-  modelLookupToHttpParams,
+  ModelIndexPage,
   modelParamsFromJsonObject,
 } from 'src/app/common/model/model';
-import {
-  ModelService,
-  RestfulService,
-  modelProviders,
-} from 'src/app/common/model/model-service';
+import { RestfulService } from 'src/app/common/model/model-service';
 import { HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { JsonObject } from 'src/app/utils/is-json-object';
+import {
+  ModelCollection,
+  injectModelService,
+} from 'src/app/common/model/model-collection';
 
 export type CampusCode = string;
 export function isCampusCode(obj: any): obj is CampusCode {
@@ -30,7 +27,7 @@ export interface CampusParams extends ModelParams {
   readonly name: string;
 }
 
-export function campusParamsFromJson(json: unknown) {
+export function campusFromJsonObject(json: JsonObject): Campus {
   if (typeof json !== 'object' || json == null) {
     throw new Error('Expected a campus');
   }
@@ -42,15 +39,11 @@ export function campusParamsFromJson(json: unknown) {
     throw new Error('Expected a campus code');
   }
 
-  return {
+  return new Campus({
     ...baseParams,
     code: obj['code'],
     name: obj['name'] as string,
-  };
-}
-
-export function campusFromJson(json: unknown) {
-  return new Campus(campusParamsFromJson(json));
+  });
 }
 
 export class Campus extends Model implements CampusParams {
@@ -83,23 +76,21 @@ export function formatCampus(
   }
 }
 
-export interface CampusPatch extends ModelPatch<Campus> {}
+export interface CampusPatch {}
 
-export function campusPatchToJson(patch: CampusPatch): {
-  [k: string]: unknown;
-} {
-  throw new Error('Not implemented');
+export function campusPatchToJsonObject(patch: CampusPatch): JsonObject {
+  return {};
 }
 
-export interface CampusLookup extends ModelLookup<Campus> {
+export interface CampusQuery {
   code?: CampusCode;
   textLike?: string;
 }
 
 export function campusLookupToHttpParams(
-  lookup: Partial<CampusLookup>,
+  lookup: Partial<CampusQuery>,
 ): HttpParams {
-  let params = modelLookupToHttpParams(lookup);
+  let params = new HttpParams();
   if (lookup.code) {
     params = params.set('code_eq', lookup.code);
   }
@@ -109,27 +100,32 @@ export function campusLookupToHttpParams(
   return params;
 }
 
-export class CampusMeta extends ModelMeta<Campus, CampusPatch, CampusLookup> {
-  readonly model = Campus;
-  readonly modelParamsFromJson = campusParamsFromJson;
-  readonly modelPatchToJson = campusPatchToJson;
-  readonly lookupToHttpParams = campusLookupToHttpParams;
-}
+@Injectable({ providedIn: 'root' })
+export class CampusService extends RestfulService<Campus> {
+  override model = Campus;
+  override modelFromJsonObject = campusFromJsonObject;
+  override modelPatchToJsonObject = campusPatchToJsonObject;
+  override path = '/uni/campuses';
 
-@Injectable()
-export class CampusService extends RestfulService<
-  Campus,
-  CampusPatch,
-  CampusLookup
-> {
-  override readonly metadata = inject(CampusMeta);
-  override readonly path = '/uni/campuses';
-
-  getForCode(code: CampusCode) {
-    return this.queryOne({ code: code });
+  getForCode(code: CampusCode): Observable<Campus | null> {
+    return this.queryOne({ code });
   }
 }
 
-export function uniCampusModelProviders() {
-  return modelProviders(CampusMeta, CampusService);
+@Injectable({ providedIn: 'root' })
+export class CampusCollection
+  extends ModelCollection<Campus, CampusService>
+  implements CampusService
+{
+  constructor(service: CampusService) {
+    super(service);
+  }
+
+  getForCode(code: CampusCode) {
+    return this.queryOne({ code });
+  }
+}
+
+export function injectCampusService() {
+  return injectModelService(CampusService, CampusCollection);
 }

@@ -19,7 +19,6 @@ import {
 } from './oauth/_root/auth-interceptor';
 import { MatButtonModule } from '@angular/material/button';
 import { BodyScrollbarHidingService } from './utils/body-scrollbar-hiding.service';
-import { uniModelServiceProviders } from './uni/uni';
 import { FileUploadService } from './common/file/file-upload.service';
 import { API_BASE_URL } from './common/model/model-service';
 import { OauthRootModule } from './oauth/_root/oauth.root-module';
@@ -86,7 +85,6 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
     provideAppOauthProviderParams(),
 
     FileUploadService,
-    ...uniModelServiceProviders(),
 
     provideSidenavMenuRootGroupControl(LabSidenavMenuGroupControl),
   ],

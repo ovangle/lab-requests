@@ -14,7 +14,7 @@ import {
   costEstimateForm,
   costEstimatesFromForm,
   setCostEstimateFormValue,
-} from 'src/app/uni/research/funding/cost-estimate/cost-estimate-form.component';
+} from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { EquipmentRequest } from './equipment-request';
 import { Q } from '@angular/cdk/keycodes';
 

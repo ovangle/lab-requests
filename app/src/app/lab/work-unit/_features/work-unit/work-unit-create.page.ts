@@ -59,8 +59,6 @@ export class WorkUnitCreatePage {
       ...workUnitCreateFixture,
       addEquipments: [],
       replaceEquipments: {},
-      addTasks: [],
-      replaceTasks: {},
       addSoftwares: [],
       replaceSoftwares: {},
       addInputMaterials: [],

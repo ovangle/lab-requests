@@ -5,17 +5,17 @@ import { Campus } from 'src/app/uni/campus/common/campus';
 import { Discipline } from 'src/app/uni/discipline/discipline';
 import { collectFieldErrors } from 'src/app/utils/forms/validators';
 import { LabType } from '../../type/lab-type';
-import {
-  ResourceContainerForm,
-  ResourceContainerFormControls,
-  ResourceContainerFormErrors,
-  resourceContainerFormControls,
-  resourceContainerPatchFromForm,
-} from '../resource/resource-container-form.service';
+
 import { WorkUnitCollection, WorkUnitPatch } from './work-unit';
 import { inject } from '@angular/core';
 import { format } from 'date-fns';
 import { campusForm } from 'src/app/uni/campus/campus-form.component';
+import {
+  ResourceContainerFormControls,
+  resourceContainerPatchFromForm,
+  ResourceContainerFormErrors,
+  resourceContainerFormControls,
+} from '../../lab-resource/resource-container-form.service';
 
 export type WorkUnitForm = FormGroup<
   {

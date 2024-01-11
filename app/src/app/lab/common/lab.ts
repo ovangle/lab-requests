@@ -1,4 +1,4 @@
-import { Campus, campusFromJson } from 'src/app/uni/campus/common/campus';
+import { Campus, campusFromJsonObject } from 'src/app/uni/campus/common/campus';
 import { LabType, isLabType } from '../type/lab-type';
 import {
   Model,
@@ -47,7 +47,12 @@ function labParamsFromJson(json: unknown): LabParams {
   }
 
   const supervisorEmails = Array.from(json['supervisorEmails']);
-  const campus = campusFromJson(json['campus']);
+
+  if (!isJsonObject(json['campus'])) {
+    throw new Error("Expected a json object 'campus'");
+  }
+
+  const campus = campusFromJsonObject(json['campus']);
 
   return {
     ...base,

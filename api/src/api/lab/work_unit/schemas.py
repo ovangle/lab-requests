@@ -9,12 +9,12 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 
 # from api.base.files.schemas import StoredFile
-# from api.lab.work_unit.resource.models import ResourceContainerFileAttachment_
+from db.models.lab import LabWorkUnit
 
 from db import LocalSession
 from db.models.uni import Discipline, Campus
 
-from ...base.schemas import ModelResponsePage, ModelView, PagedModelResponse
+from ...base.schemas import ModelIndexPage, ModelView, ModelIndex
 from ...uni.schemas import CampusLookup, lookup_campus, CampusView
 
 # from api.base.schemas import ApiModel, ModelPatch, ModelCreate
@@ -25,20 +25,7 @@ from ...uni.schemas import CampusLookup, lookup_campus, CampusView
 # from . import models
 
 
-class WorkUnitBase(BaseModel):
-    campus: CampusLookup | UUID
-
-    name: str
-    lab_type: Discipline
-    technician: str
-
-    process_summary: str = ""
-
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-
-
-class WorkUnitView(ModelView):
+class WorkUnitView(ModelView[LabWorkUnit]):
     id: UUID
     plan_id: UUID
 
@@ -47,7 +34,7 @@ class WorkUnitView(ModelView):
     campus: CampusView
 
     @classmethod
-    async def from_model(cls, model: Any):
+    async def from_model(cls, model: LabWorkUnit):
         raise NotImplementedError
         if False:
             m_campus = await model.awaitable_attrs.campus
@@ -76,12 +63,12 @@ class WorkUnitView(ModelView):
         return instance
 
 
-class WorkUnitIndex(PagedModelResponse[Any]):
+class WorkUnitIndex(ModelIndex[LabWorkUnit]):
     __item_view__ = WorkUnitView
 
 
 # TODO: PEP 695
-WorkUnitIndexPage = ModelResponsePage[Any]
+WorkUnitIndexPage = ModelIndexPage[LabWorkUnit]
 
 
 # class WorkUnitFileAttachment(StoredFile):

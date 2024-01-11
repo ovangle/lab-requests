@@ -20,7 +20,7 @@ import { LabListComponent } from 'src/app/lab/common/lab-list.component';
       <h1>Plans</h1>
 
       @if (plans$ | async; as plans) {
-        <lab-experimental-plan-list [plans]="plans" />
+        <research-plan-list [plans]="plans" />
       }
     </div>
   `,
@@ -33,7 +33,7 @@ export class UserHomePage {
     shareReplay(1),
   );
 
-  readonly labs$ = this.user$.pipe(map((user) => user.labs));
-
-  readonly plans$ = this.user$.pipe(map((user) => user.activePlans));
+  // TODO: CurrentUser
+  readonly labs$ = this.user$.pipe(map((user) => /* user.labs */ []));
+  readonly plans$ = this.user$.pipe(map((user) => /* user.activePlans */ []));
 }

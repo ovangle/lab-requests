@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpParams } from '@angular/common/http';
 import { Component, inject } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { ActivatedRoute } from '@angular/router';
@@ -12,36 +13,30 @@ import {
   withLatestFrom,
 } from 'rxjs';
 import { WorkUnitBaseInfoComponent } from '../../base-info/work-unit-base-info.component';
-import { ALL_RESOURCE_TYPES, ResourceType } from '../../resource/resource-type';
-import { Resource } from '../../resource/resource';
-import { ExperimentalPlanFormPaneControlService } from 'src/app/lab/experimental-plan/experimental-plan-form-pane-control.service';
 import {
   WorkUnit,
+  WorkUnitCollection,
   WorkUnitContext,
   WorkUnitResourceContainerContext,
   WorkUnitService,
+  injectWorkUnitService,
 } from '../../common/work-unit';
+import { injectModelService } from 'src/app/common/model/model-collection';
+import { ResourceContainerContext } from 'src/app/lab/lab-resource/resource-container';
+import { Resource } from 'src/app/lab/lab-resource/resource';
 import {
-  ExperimentalPlan,
-  ExperimentalPlanContext,
-} from 'src/app/lab/experimental-plan/common/experimental-plan';
-import { ExperimentalPlanWorkUnitService } from 'src/app/lab/experimental-plan/work-units/work-units';
-import { HttpParams } from '@angular/common/http';
-import { ResourceContainerContext } from '../../resource/resource-container';
+  ALL_RESOURCE_TYPES,
+  ResourceType,
+} from 'src/app/lab/lab-resource/resource-type';
+import { ResearchPlanFormPaneControl } from 'src/app/research/plan/common/research-plan-form-pane-control';
 
 class WorkUnitContextError extends Error {}
 
 function workUnitFromDetailRoute(): Observable<WorkUnit> {
-  const workUnitService = inject(WorkUnitService);
-  const workUnitPlanService = inject(ExperimentalPlanWorkUnitService, {
-    optional: true,
-  });
+  const workUnitService = injectWorkUnitService();
 
   function readByPlanAndIndex(index: string | number) {
-    if (workUnitPlanService == null) {
-      throw new Error('Requires an experimental plan context');
-    }
-    return workUnitPlanService.fetch(index);
+    return workUnitService.fetch(`${index}`);
   }
 
   const models = inject(WorkUnitService);
@@ -117,7 +112,7 @@ export class WorkUnitDetailPage {
   readonly _workUnitContextConnection: Subscription;
   readonly workUnit$ = this._workUnitContext.workUnit$;
 
-  readonly _formPane = inject(ExperimentalPlanFormPaneControlService);
+  readonly _formPane = inject(ResearchPlanFormPaneControl);
 
   constructor() {
     this._workUnitContextConnection = this._workUnitContext.sendCommitted(

@@ -1,25 +1,20 @@
 import {
   Model,
-  ModelLookup,
-  ModelMeta,
   ModelParams,
   ModelPatch,
-  modelLookupToHttpParams,
   modelParamsFromJsonObject,
 } from 'src/app/common/model/model';
 import { LabType } from '../../type/lab-type';
-import { Injectable, Provider, inject } from '@angular/core';
-import {
-  RestfulService,
-  modelProviders,
-} from 'src/app/common/model/model-service';
+import { Injectable, Provider, Type, inject } from '@angular/core';
+import { RestfulService } from 'src/app/common/model/model-service';
 import { HttpParams } from '@angular/common/http';
 import { ModelContext } from 'src/app/common/model/context';
 import {
   ModelCollection,
-  injectModelUpdate,
+  injectModelService,
 } from 'src/app/common/model/model-collection';
-import { defer } from 'rxjs';
+import { defer, firstValueFrom } from 'rxjs';
+import { JsonObject } from 'src/app/utils/is-json-object';
 
 export class Equipment extends Model {
   name: string;
@@ -45,25 +40,35 @@ export interface EquipmentParams extends ModelParams {
   trainingDescriptions: string[];
 }
 
-export function equipmentParamsFromJson(json: unknown): EquipmentParams {
-  if (typeof json !== 'object' || json == null) {
-    throw new Error('Expected an object');
-  }
-  const obj: { [k: string]: unknown } = json as any;
+export function equipmentFromJsonObject(json: JsonObject): Equipment {
+  const baseParams = modelParamsFromJsonObject(json);
 
-  const baseParams = modelParamsFromJsonObject(obj);
-
-  if (typeof obj['name'] !== 'string') {
+  if (typeof json['name'] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
+  if (typeof json['description'] !== 'string') {
+    throw new Error("Expected a string 'description'");
+  }
+  if (
+    !Array.isArray(json['tags']) ||
+    !json['tags'].every((t) => typeof t === 'string')
+  ) {
+    throw new Error("Expected an array of strings 'tags'");
+  }
+  if (
+    !Array.isArray(json['trainingDescriptions']) ||
+    !json['trainingDescriptions'].every((t) => typeof t === 'string')
+  ) {
+    throw new Error("Expected an array of strings 'trainingDescriptions");
+  }
 
-  return {
+  return new Equipment({
     ...baseParams,
-    name: obj['name'],
-    description: obj['description'] as string,
-    tags: Array.from(obj['tags'] as any[]),
-    trainingDescriptions: Array.from(obj['trainingDescriptions'] as any[]),
-  };
+    name: json['name'],
+    description: json['description'],
+    tags: json['tags'],
+    trainingDescriptions: json['trainingDescriptions'],
+  });
 }
 
 export interface EquipmentPatch extends ModelPatch<Equipment> {
@@ -80,54 +85,49 @@ export function equipmentPatchToJson(patch: EquipmentPatch): {
   return { ...patch };
 }
 
-export interface EquipmentLookup extends ModelLookup<Equipment> {
+export interface EquipmentQuery {
   name?: string;
   searchText?: string;
 }
 
-export function equipmentLookupToHttpParams(lookup: Partial<EquipmentLookup>) {
-  let params = modelLookupToHttpParams(lookup);
-  if (lookup.name) {
-    params = params.set('name', lookup.name);
+export function equipmentQueryToHttpParams(query: Partial<EquipmentQuery>) {
+  let params = new HttpParams();
+  if (query.name) {
+    params = params.set('name', query.name);
   }
-  if (lookup.searchText) {
-    params = params.set('search', lookup.searchText);
+  if (query.searchText) {
+    params = params.set('search', query.searchText);
   }
   return params;
 }
 
 @Injectable({ providedIn: 'root' })
-export class EquipmentMeta extends ModelMeta<
-  Equipment,
-  EquipmentPatch,
-  EquipmentLookup
-> {
-  override readonly model = Equipment;
-  override readonly modelParamsFromJson = equipmentParamsFromJson;
-  override readonly modelPatchToJson = equipmentPatchToJson;
-  override readonly lookupToHttpParams = equipmentLookupToHttpParams;
+export class EquipmentService extends RestfulService<Equipment> {
+  override model = Equipment;
+  override modelFromJsonObject = equipmentFromJsonObject;
+  override modelPatchToJsonObject = equipmentPatchToJson;
+  override path = '/lab/equipments';
 }
 
-@Injectable({ providedIn: 'root' })
-export class EquipmentService extends RestfulService<
-  Equipment,
-  EquipmentPatch,
-  EquipmentLookup
-> {
-  override readonly path = '/lab/equipments';
-  override readonly metadata = inject(EquipmentMeta);
-}
-
-@Injectable({ providedIn: 'root' })
-export class EquipmentCollection extends ModelCollection<Equipment> {
-  override readonly service = inject(EquipmentService);
+@Injectable()
+export class EquipmentCollection
+  extends ModelCollection<Equipment>
+  implements EquipmentService
+{
+  constructor(service: EquipmentService) {
+    super(service);
+  }
 }
 
 @Injectable()
 export class EquipmentContext extends ModelContext<Equipment, EquipmentPatch> {
-  override readonly _doUpdate = injectModelUpdate(
-    EquipmentService,
-    EquipmentCollection,
-  );
+  readonly service = injectEquipmentService();
+  override _doUpdate(id: string, patch: EquipmentPatch): Promise<Equipment> {
+    return firstValueFrom(this.service.update(id, patch));
+  }
   readonly equipment$ = defer(() => this.committed$);
+}
+
+export function injectEquipmentService() {
+  return injectModelService(EquipmentService, EquipmentCollection);
 }

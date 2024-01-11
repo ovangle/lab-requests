@@ -1,13 +1,9 @@
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import {
   Model,
-  ModelLookup,
-  ModelMeta,
   ModelParams,
   ModelPatch,
-  modelLookupToHttpParams,
   modelParamsFromJsonObject,
-  modelPatchToJson,
 } from '../../common/model/model';
 import { Role, roleFromJson } from './role';
 import {
@@ -17,7 +13,10 @@ import {
 } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { RestfulService } from '../../common/model/model-service';
-import { ModelCollection } from '../../common/model/model-collection';
+import {
+  ModelCollection,
+  injectModelService,
+} from '../../common/model/model-collection';
 import {
   NEVER,
   Observable,
@@ -32,42 +31,35 @@ import {
 } from 'rxjs';
 import { Actor } from '../actor';
 import { Lab, labFromJson } from 'src/app/lab/common/lab';
-import {
-  ExperimentalPlan,
-  experimentalPlanFromJson,
-} from 'src/app/lab/experimental-plan/common/experimental-plan';
-import { RIGHT_ARROW } from '@angular/cdk/keycodes';
+import { Campus, campusFromJsonObject } from 'src/app/uni/campus/common/campus';
+import { Discipline, isDiscipline } from 'src/app/uni/discipline/discipline';
 
 export interface UserParams extends ModelParams {
   name: string;
   email: string;
+  baseCampus: Campus;
+  discipline: Discipline;
 
   roles: ReadonlySet<Role>;
-  labs: ReadonlyArray<Lab>;
-
-  activePlans: ReadonlyArray<ExperimentalPlan>;
 }
 
 export class User extends Model implements UserParams {
   readonly email: string;
   readonly name: string;
+
+  readonly baseCampus: Campus;
+  readonly discipline: Discipline;
   readonly roles: ReadonlySet<Role>;
 
   /**
    * The labs that the current user supervises
    */
-  readonly labs: readonly Lab[];
-
-  readonly activePlans: readonly ExperimentalPlan[];
-
   constructor(params: UserParams) {
     super(params);
     this.email = params.email;
     this.name = params.name;
 
     this.roles = params.roles;
-    this.labs = params.labs;
-    this.activePlans = params.activePlans;
   }
 
   canActAs(actor: Actor) {
@@ -75,10 +67,7 @@ export class User extends Model implements UserParams {
   }
 }
 
-function userParamsFromJson(json: unknown): UserParams {
-  if (!isJsonObject(json)) {
-    throw new Error('Not a json object');
-  }
+export function userFromJsonObject(json: JsonObject): User {
   const baseParams = modelParamsFromJsonObject(json);
   if (typeof json['email'] !== 'string') {
     throw new Error("Expected a string 'email'");
@@ -88,42 +77,35 @@ function userParamsFromJson(json: unknown): UserParams {
     throw new Error("Expected a string 'name'");
   }
 
+  if (!isJsonObject(json['baseCampus'])) {
+    throw new Error("Expected a json object 'baseCampus'");
+  }
+  const baseCampus = campusFromJsonObject(json['baseCampus']);
+
+  if (!isDiscipline(json['discipline'])) {
+    throw new Error('Expected a valid discipline');
+  }
+
   let roles: ReadonlySet<Role> = new Set();
   if (Array.isArray(json['roles'])) {
     roles = new Set(json['roles'].map(roleFromJson));
   }
-  let labs: ReadonlyArray<Lab> = [];
-  if (Array.isArray(json['labs'])) {
-    labs = json['labs'].map(labFromJson);
-  }
-  let activePlans: ReadonlyArray<ExperimentalPlan> = [];
-  if (Array.isArray(json['activePlans'])) {
-    activePlans = json['activePlans'].map(experimentalPlanFromJson);
-  }
-  return {
+
+  return new User({
     ...baseParams,
     name: json['name'],
     email: json['email'],
-    roles,
-    labs,
-    activePlans,
-  };
-}
+    baseCampus,
+    discipline: json['discipline'],
 
-export function userFromJson(json: unknown) {
-  return new User(userParamsFromJson(json));
+    roles,
+  });
 }
 
 export interface UserPatch extends ModelPatch<User> {}
 
 function userPatchToJson(patch: UserPatch) {
-  return modelPatchToJson(patch);
-}
-
-export interface UserLookup extends ModelLookup<User> {}
-
-function userLookupToHttpParams(lookup: Partial<UserLookup>): HttpParams {
-  return modelLookupToHttpParams(lookup);
+  return {};
 }
 
 export interface AlterPassword {
@@ -134,22 +116,17 @@ export interface AlterPassword {
 export class AlterPasswordError extends Error {}
 
 @Injectable({ providedIn: 'root' })
-export class UserMeta extends ModelMeta<User, UserPatch, UserLookup> {
-  readonly model = User;
-  readonly modelParamsFromJson = userParamsFromJson;
-  readonly modelPatchToJson = userPatchToJson;
-  readonly lookupToHttpParams = userLookupToHttpParams;
-}
+export class UserService extends RestfulService<User> {
+  override readonly model = User;
+  override readonly path: string = '/users';
 
-@Injectable({ providedIn: 'root' })
-export class UserService extends RestfulService<User, UserPatch, UserLookup> {
-  override readonly metadata = inject(UserMeta);
-  override readonly path = '/users';
+  override readonly modelFromJsonObject = userFromJsonObject;
+  override readonly modelPatchToJsonObject = userPatchToJson;
 
   me(): Observable<User> {
     return this._httpClient
       .get<JsonObject>(this.indexMethodUrl('me'))
-      .pipe(map((result) => this.modelFromJson(result)));
+      .pipe(map((result) => this.modelFromJsonObject(result)));
   }
 
   alterPassword(alterPasswordRequest: AlterPassword): Observable<User> {
@@ -159,7 +136,7 @@ export class UserService extends RestfulService<User, UserPatch, UserLookup> {
         alterPasswordRequest,
       )
       .pipe(
-        map((result) => this.modelFromJson(result)),
+        map((result) => this.modelFromJsonObject(result)),
         catchError((err) => {
           if (
             err instanceof HttpErrorResponse &&
@@ -174,24 +151,33 @@ export class UserService extends RestfulService<User, UserPatch, UserLookup> {
 }
 
 @Injectable({ providedIn: 'root' })
-export class UserCollection extends ModelCollection<User, UserPatch> {
+export class UserCollection extends ModelCollection<User> {
   private _activeUserId: string | null = null;
 
   constructor(service: UserService) {
     super(service);
   }
+  get _userService() {
+    return this.service as UserService;
+  }
 
-  async me(fetch = false): Promise<User> {
-    if (fetch && this._activeUserId != null) {
-      const me = await this.get(this._activeUserId);
+  alterPassword(alterPasswordRequest: AlterPassword): Observable<User> {
+    return this._userService.alterPassword(alterPasswordRequest);
+  }
+
+  me(): Observable<User> {
+    if (this._activeUserId != null) {
+      return this.fetch(this._activeUserId);
     }
-    return firstValueFrom(
-      (this.service as UserService).me().pipe(
-        this._cacheResult,
-        tap((result) => {
-          this._activeUserId = result.id;
-        }),
-      ),
+    return (this.service as UserService).me().pipe(
+      this._cacheResult,
+      tap((result) => {
+        this._activeUserId = result.id;
+      }),
     );
   }
+}
+
+export function injectUserService(): UserService {
+  return injectModelService(UserService, UserCollection);
 }

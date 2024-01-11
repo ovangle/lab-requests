@@ -14,11 +14,11 @@ import {
   workUnitPatchFromWorkUnit,
 } from '../../common/work-unit';
 import { workUnitForm } from '../../common/work-unit-form';
+import { ResourceContainerContext } from 'src/app/lab/lab-resource/resource-container';
 import {
-  ResourceContainerForm,
   ResourceContainerFormService,
-} from '../../resource/resource-container-form.service';
-import { ResourceContainerContext } from '../../resource/resource-container';
+  ResourceContainerForm,
+} from 'src/app/lab/lab-resource/resource-container-form.service';
 
 @Injectable()
 class WorkUnitResourceContainerFormService extends ResourceContainerFormService {

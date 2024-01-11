@@ -13,6 +13,12 @@ __all__ = (
     "LabSoftwareInstallation",
     "LabSoftwareProvision",
     "LabSoftwareProvisioningError",
+    "LabWorkUnit",
+    "LabWorkUnitTask",
+    "LabResourceType",
+    "LabResource",
+    "LabResourceDoesNotExist",
+    "LabResourceConsumer",
 )
 
 from .lab import Lab, LabDoesNotExist
@@ -32,8 +38,15 @@ from .lab_software import (
     LabSoftwareProvisioningError,
 )
 from .lab_resource import (
+    LabResourceType,
     LabResource,
     LabResourceDoesNotExist,
+)
+from .lab_resource_consumer import LabResourceConsumer
+
+from .lab_work_unit import (
+    LabWorkUnit,
+    LabWorkUnitTask,
 )
 
 from . import resources

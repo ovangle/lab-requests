@@ -4,7 +4,6 @@ import {
   workUnitPatchFromForm,
 } from '../../common/work-unit-form';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ExperimentalPlanFormPaneControlService } from 'src/app/lab/experimental-plan/experimental-plan-form-pane-control.service';
 import { BodyScrollbarHidingService } from 'src/app/utils/body-scrollbar-hiding.service';
 import {
   WorkUnitContext,
@@ -13,6 +12,7 @@ import {
   formatWorkUnit,
 } from '../../common/work-unit';
 import { defer, map } from 'rxjs';
+import { ResearchPlanFormPaneControl } from 'src/app/research/plan/common/research-plan-form-pane-control';
 
 /**
  * Updates the basic info of a work unit.
@@ -40,7 +40,7 @@ export class WorkUnitUpdateFormPage {
   readonly _workUnitContext = inject(WorkUnitContext);
   readonly workUnit$ = this._workUnitContext.workUnit$;
 
-  readonly _formPane = inject(ExperimentalPlanFormPaneControlService);
+  readonly _formPane = inject(ResearchPlanFormPaneControl);
 
   readonly form = workUnitForm();
 

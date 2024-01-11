@@ -2,6 +2,8 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import select, Select
+from db.models.lab.lab_work_unit import LabWorkUnit
+from db.models.research.plan import ResearchPlan
 
 from db.models.user import User
 
@@ -11,21 +13,16 @@ from .schemas import WorkUnitView
 
 def query_work_units(
     plan_id: UUID | None = None,
+    coordinator: User | None = None,
     researcher: User | None = None,
     supervisor: User | None = None,
-) -> Select[tuple[WorkUnit]]:
-    queries = []
+) -> Select[tuple[LabWorkUnit]]:
+    clauses = []
     if plan_id:
-        queries.append(models.WorkUnit_.plan_id == plan_id)
-    if researcher_email or supervisor_email:
-        subquery = query_research_plans(
-            researcher_email=researcher_email, supervisor_email=supervisor_email
-        )
-        queries.append(
-            models.WorkUnit_.plan_id.in_(
-                subquery.select(plan_models.ExperimentalPlan_.id)
-            )
-        )
-    if technician_email:
-        queries.append(models.WorkUnit_.technician_email == technician_email)
-    return select(models.WorkUnit_).where(*queries)
+        clauses.append(LabWorkUnit.plan_id == plan_id)
+    if researcher or coordinator:
+        subquery = query_research_plans(researcher=researcher, coordinator=coordinator)
+        clauses.append(LabWorkUnit.plan_id.in_(subquery.select(ResearchPlan.id)))
+    if supervisor:
+        clauses.append(LabWorkUnit.supervisor_id == supervisor.id)
+    return select(LabWorkUnit).where(*clauses)

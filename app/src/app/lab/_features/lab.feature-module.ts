@@ -26,13 +26,6 @@ const LAB_ROUTES: Routes = [
           ),
       },
       {
-        path: 'experimental-plans',
-        loadChildren: () =>
-          import(
-            '../experimental-plan/_features/experimental-plan.feature-module'
-          ).then((module) => module.ExperimentalPlanFeatureModule),
-      },
-      {
         path: ':lab_id',
         component: LabProfilePage,
       },

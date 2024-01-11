@@ -1,12 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { combineLatest, map } from 'rxjs';
-import { ExperimentalPlanContext } from 'src/app/lab/experimental-plan/common/experimental-plan';
 import { WorkUnitContext } from '../../common/work-unit';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ResearchPlanContext } from 'src/app/research/plan/common/research-plan';
 
 function workUnitContextFromFormHostRoute() {
-  const planContext = inject(ExperimentalPlanContext);
+  const planContext = inject(ResearchPlanContext);
   const activatedRoute = inject(ActivatedRoute);
 
   const workUnitIndex$ = activatedRoute.paramMap.pipe(
@@ -19,13 +19,10 @@ function workUnitContextFromFormHostRoute() {
     }),
   );
 
-  return combineLatest([planContext.plan$, workUnitIndex$]).pipe(
+  return combineLatest([planContext.committed$, workUnitIndex$]).pipe(
     takeUntilDestroyed(),
     map(([plan, workUnitIndex]) => {
-      if (workUnitIndex < 0 || workUnitIndex >= plan.workUnits.length) {
-        throw new Error(':work_unit_index param out of range');
-      }
-      return plan.workUnits[workUnitIndex];
+      throw new Error('not implemented');
     }),
   );
 }

@@ -15,6 +15,7 @@ import {
   Equipment,
   EquipmentService,
 } from './common/equipment';
+import { HttpParams } from '@angular/common/http';
 
 export type EquipmentForm = FormGroup<{
   name: FormControl<string>;
@@ -55,8 +56,9 @@ export function equipmentForm(): EquipmentForm {
     control: FormControl<string>,
   ): Observable<{ notUnique: string } | null> {
     const name = control.value;
+
     return equipments
-      .query({ name: name })
+      .query(new HttpParams({ fromObject: { name: name } }))
       .pipe(
         map((names) =>
           names.length > 0 ? { notUnique: 'Name is not unique' } : null,

@@ -29,11 +29,7 @@ function equipmentContextFromDetailRoute(): Observable<Equipment> {
       if (!equipmentId) {
         throw new Error('No equipment in route');
       }
-      if (equipments) {
-        return equipments.get(equipmentId);
-      } else {
-        return equipmentService.fetch(equipmentId);
-      }
+      return equipmentService.fetch(equipmentId);
     }),
   );
 }

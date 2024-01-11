@@ -9,8 +9,8 @@ import { BooleanInput } from '@angular/cdk/coercion';
 import { equipmentRequestForm } from './equipment-request-form';
 import { EquipmentRequest } from './equipment-request';
 import { ResizeTextareaOnInputDirective } from 'src/app/common/forms/resize-textarea-on-input.directive';
-import { CostEstimateFormComponent } from 'src/app/uni/research/funding/cost-estimate/cost-estimate-form.component';
-import { FundingModel } from 'src/app/uni/research/funding/funding-model';
+import { CostEstimateFormComponent } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
+import { ResearchFunding } from 'src/app/research/funding/funding-model';
 
 @Component({
   selector: 'lab-equipment-request-form',
@@ -50,7 +50,7 @@ export class EquipmentRequestFormComponent {
   readonly form = equipmentRequestForm();
 
   @Input({ required: true })
-  purchaseFundingModel: FundingModel;
+  purchaseFundingModel: ResearchFunding;
 
   @Output()
   equipmentRequestChange = new EventEmitter<EquipmentRequest>();

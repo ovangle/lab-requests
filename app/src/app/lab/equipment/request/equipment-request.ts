@@ -2,7 +2,7 @@ import {
   CostEstimate,
   costEstimateFromJson,
   costEstimateToJson,
-} from 'src/app/uni/research/funding/cost-estimate/cost-estimate';
+} from 'src/app/research/funding/cost-estimate/cost-estimate';
 
 /**
  * An equipment request

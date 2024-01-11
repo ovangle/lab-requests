@@ -7,7 +7,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from ..lab_resource import LabResource, lab_resource_pk
+from ..lab_resource import LabResource, LabResourceType, lab_resource_pk
 
 if TYPE_CHECKING:
     from ..lab_software import LabSoftware, LabSoftwareProvision
@@ -21,7 +21,7 @@ class SoftwareLease(LabResource):
 
     __tablename__ = "lab_resource__software_lease"
     __mapper_args__ = {
-        "polymorphic_identity": "software_lease",
+        "polymorphic_identity": LabResourceType.SOFTWARE_LEASE,
     }
     id: Mapped[lab_resource_pk]
 

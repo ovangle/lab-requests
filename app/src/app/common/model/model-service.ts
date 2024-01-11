@@ -1,4 +1,8 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpParams,
+  HttpParamsOptions,
+} from '@angular/common/http';
 import {
   Inject,
   Injectable,
@@ -10,11 +14,9 @@ import {
 import {
   Model,
   ModelParams,
-  ModelLookup,
-  ModelResponsePage,
-  modelResponsePageFromJson,
+  ModelIndexPage,
+  modelIndexPageFromJsonObject,
   ModelPatch,
-  ModelMeta,
 } from './model';
 import urlJoin from 'url-join';
 import { Observable, Subject, map, tap } from 'rxjs';
@@ -23,37 +25,19 @@ import { JsonObject } from 'src/app/utils/is-json-object';
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL');
 
 @Injectable()
-export abstract class ModelService<
-  T extends Model,
-  TPatch extends ModelPatch<T> = ModelPatch<T>,
-  TLookup extends ModelLookup<T> = ModelLookup<T>,
-> {
+export abstract class ModelService<T extends Model> {
   readonly _httpClient = inject(HttpClient);
   readonly _apiBaseUrl = inject(API_BASE_URL);
 
-  readonly _events = new Subject();
-  readonly events = this._events.asObservable();
+  abstract readonly model: Type<T>;
+  abstract modelFromJsonObject(json: JsonObject): T;
+  abstract modelPatchToJsonObject(patch: ModelPatch<T>): JsonObject;
 
-  abstract readonly metadata: ModelMeta<T, TPatch, TLookup>;
-
-  get model(): Type<T> {
-    return this.metadata.model;
-  }
-
-  modelFromJson(json: JsonObject) {
-    return this.metadata.modelFromJson(json);
-  }
-  modelPatchToJson(patch: TPatch) {
-    return this.metadata.modelPatchToJson(patch);
-  }
-  lookupToHttpParams(lookup: Partial<TLookup>) {
-    return this.metadata.lookupToHttpParams(lookup);
-  }
-
-  responsePageFromJson(
-    lookup: Partial<TLookup>,
-  ): (json: unknown) => ModelResponsePage<T, TLookup> {
-    return (json) => modelResponsePageFromJson(this.metadata, lookup, json);
+  modelIndexPageFromJsonObject(json: JsonObject): ModelIndexPage<T> {
+    return modelIndexPageFromJsonObject(
+      (o) => this.modelFromJsonObject(o),
+      json,
+    );
   }
 
   abstract fetch(id: string): Observable<T>;
@@ -62,27 +46,29 @@ export abstract class ModelService<
    * @param lookup
    * @returns
    */
-  query(lookup: Partial<TLookup>): Observable<T[]> {
-    return this.queryPage(lookup).pipe(map((page) => page.items));
+  query(
+    params: HttpParams | { [k: string]: number | string | string[] },
+  ): Observable<T[]> {
+    return this.queryPage(params).pipe(map((page) => page.items));
   }
-  queryCount(lookup: Partial<TLookup>): Observable<number> {
-    return this.queryPage(lookup).pipe(map((page) => page.totalItemCount));
-  }
-  queryOne(lookup: Partial<TLookup>): Observable<T> {
-    return this.queryPage(lookup).pipe(
-      map((page) => {
-        if (page.totalItemCount !== 1) {
-          throw new Error('Expected a response with a single item');
+  queryOne(
+    params: HttpParams | { [k: string]: number | string | string[] },
+  ): Observable<T | null> {
+    return this.query(params).pipe(
+      map((items) => {
+        if (items.length > 1) {
+          throw new Error('Server returned multiple results');
         }
-        return page.items[0];
+        return items[0] || null;
       }),
     );
   }
   abstract queryPage(
-    lookup: Partial<TLookup>,
-  ): Observable<ModelResponsePage<T, TLookup>>;
-  abstract create(patch: TPatch): Observable<T>;
-  abstract update(id: string, params: TPatch): Observable<T>;
+    params: HttpParams | { [k: string]: number | string | string[] },
+  ): Observable<ModelIndexPage<T>>;
+
+  abstract create(request: ModelPatch<T>): Observable<T>;
+  abstract update(model: T | string, request: ModelPatch<T>): Observable<T>;
 }
 
 /**
@@ -90,11 +76,7 @@ export abstract class ModelService<
  * path from root.
  */
 @Injectable()
-export abstract class RestfulService<
-  T extends Model,
-  TPatch extends ModelPatch<T> = ModelPatch<T>,
-  TLookup extends ModelLookup<T> = ModelLookup<T>,
-> extends ModelService<T, TPatch, TLookup> {
+export abstract class RestfulService<T extends Model> extends ModelService<T> {
   abstract readonly path: string;
 
   get indexUrl(): string {
@@ -132,66 +114,39 @@ export abstract class RestfulService<
       .get<{ [k: string]: unknown }>(this.resourceUrl(id), {
         params: options?.params,
       })
-      .pipe(map((result) => this.modelFromJson(result)));
+      .pipe(map((result) => this.modelFromJsonObject(result)));
   }
 
   override queryPage(
-    lookup: Partial<TLookup>,
-  ): Observable<ModelResponsePage<T, TLookup>> {
-    const params = this.metadata.lookupToHttpParams(lookup);
+    params: HttpParams | { [k: string]: string | number | string[] },
+  ): Observable<ModelIndexPage<T>> {
     return this._httpClient
-      .get(this.indexUrl, { params: params })
-      .pipe(
-        map((response) =>
-          modelResponsePageFromJson(this.metadata, lookup, response),
-        ),
-      );
+      .get<JsonObject>(this.indexUrl, { params: params })
+      .pipe(map((json) => this.modelIndexPageFromJsonObject(json)));
   }
 
-  override create(patch: TPatch): Observable<T> {
+  override create(createRequest: ModelPatch<T>): Observable<T> {
     return this._httpClient
-      .post<{ [k: string]: unknown }>(
+      .post<JsonObject>(
         this.indexUrl + '/',
-        this.modelPatchToJson(patch),
+        this.modelPatchToJsonObject(createRequest),
       )
-      .pipe(map((result) => this.modelFromJson(result)));
+      .pipe(map((result) => this.modelFromJsonObject(result)));
   }
 
-  override update(id: string, patch: TPatch): Observable<T> {
+  override update(
+    model: T | string,
+    updateRequest: ModelPatch<T>,
+  ): Observable<T> {
+    if (typeof model !== 'string') {
+      model = model.id;
+    }
+
     return this._httpClient
-      .put<{ [k: string]: unknown }>(
-        this.resourceUrl(id),
-        this.modelPatchToJson(patch),
+      .put<JsonObject>(
+        this.resourceUrl(model),
+        this.modelPatchToJsonObject(updateRequest),
       )
-      .pipe(map((result) => this.modelFromJson(result)));
+      .pipe(map((result) => this.modelFromJsonObject(result)));
   }
-}
-
-export function modelProviders<T extends Model>(
-  metaType: Type<ModelMeta<T>>,
-  serviceType: Type<RestfulService<T, any, any>>,
-): Provider[] {
-  return [
-    { provide: metaType, useClass: metaType },
-    { provide: ModelMeta, multi: true, useExisting: metaType },
-    { provide: serviceType, useClass: serviceType },
-    { provide: ModelService, multi: true, useExisting: serviceType },
-  ];
-}
-
-export function findModelService<T extends Model>(
-  services: ModelService<any>[],
-  model: Type<T>,
-): ModelService<T> {
-  const firstIndex = services.findIndex((item) => item.model === model);
-  const nextIndex = services.findIndex(
-    (item, i) => i > firstIndex && item.model === model,
-  );
-  if (firstIndex < 0) {
-    throw new Error(`No restful service for ${model} provided`);
-  }
-  if (nextIndex >= 0) {
-    throw new Error(`Multiple services were provided for model ${model}`);
-  }
-  return services[firstIndex] as ModelService<T>;
 }

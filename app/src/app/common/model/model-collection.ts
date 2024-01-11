@@ -2,192 +2,128 @@ import { DestroyRef, Injectable, Type, inject } from '@angular/core';
 import {
   Observable,
   ReplaySubject,
+  Subject,
   debounceTime,
   defer,
   filter,
   firstValueFrom,
   map,
+  of,
   shareReplay,
   skipWhile,
   switchMap,
   tap,
 } from 'rxjs';
+import { Model, ModelIndexPage, ModelParams, ModelPatch } from './model';
+import { API_BASE_URL, ModelService, RestfulService } from './model-service';
 import {
-  Model,
-  ModelLookup,
-  ModelMeta,
-  ModelPatch,
-  ModelResponsePage,
-} from './model';
-import { ModelService } from './model-service';
+  HttpClient,
+  HttpParams,
+  HttpParamsOptions,
+} from '@angular/common/http';
+import { JsonObject } from 'src/app/utils/is-json-object';
+import { requiresAuthorizationGuard } from 'src/app/utils/router-utils';
 
-export interface ModelQuery<
-  T extends Model,
-  TLookup extends ModelLookup<T> = ModelLookup<T>,
-> {
-  readonly model: Type<T>;
-
-  setLookup(lookup: Partial<TLookup>): Promise<ModelResponsePage<T, TLookup>>;
-  loadNextPage(): Promise<ModelResponsePage<T, TLookup>>;
-
-  readonly page$: Observable<ModelResponsePage<T>>;
-  readonly pageItems$: Observable<T[]>;
-  readonly totalItemCount$: Observable<number>;
-}
-
-@Injectable()
 export class ModelCollection<
   T extends Model,
-  TPatch extends ModelPatch<T> = ModelPatch<T>,
-  TLookup extends ModelLookup<T> = ModelLookup<T>,
-> implements ModelQuery<T, TLookup>
+  TService extends RestfulService<T> = RestfulService<T>,
+> implements RestfulService<T>
 {
-  get metadata(): ModelMeta<T, TPatch, TLookup> {
-    return this.service.metadata;
-  }
-
   get model() {
     return this.service.model;
   }
 
-  readonly lookupSubject = new ReplaySubject<Partial<TLookup>>(1);
-
   readonly _cache = new Map<string, T>();
   protected _cacheResult = tap((value: T) => this._cache.set(value.id, value));
-  protected _cacheResultPage = tap((page: ModelResponsePage<T, TLookup>) => {
+  protected _maybeCacheResult = tap((value: T | null) => {
+    if (value != null) {
+      this._cache.set(value.id, value);
+    }
+  });
+  protected _cacheManyResults = tap((values: T[]) => {
+    values.forEach((item) => this._cache.set(item.id, item));
+  });
+  protected _cacheResultPage = tap((page: ModelIndexPage<T>) => {
     page.items.forEach((item) => this._cache.set(item.id, item));
   });
+  readonly path: string;
+  readonly indexUrl: string;
 
-  readonly page$: Observable<ModelResponsePage<T, TLookup>> =
-    this.lookupSubject.pipe(
-      debounceTime(300),
-      switchMap((lookup) => this.service.queryPage(lookup)),
-      this._cacheResultPage,
-      shareReplay(1),
-    );
-
-  readonly pageItems$ = defer(() => this.page$.pipe(map((page) => page.items)));
-  readonly totalItemCount$ = defer(() =>
-    this.page$.pipe(map((page) => page.totalItemCount)),
-  );
-
-  constructor(readonly service: ModelService<T, TPatch, TLookup>) {
+  constructor(readonly service: TService) {
+    this.path = service.path;
+    this.indexUrl = service.indexUrl;
     const destroyRef = inject(DestroyRef, { optional: true });
-    const keepalivePage = this.page$.subscribe();
 
     if (destroyRef) {
       destroyRef.onDestroy(() => {
-        this.lookupSubject.complete();
         this._cache.clear();
-        keepalivePage.unsubscribe();
       });
     }
   }
+  _httpClient: HttpClient = inject(HttpClient);
+  _apiBaseUrl: string = inject(API_BASE_URL);
 
-  setLookup(lookup: Partial<TLookup>): Promise<ModelResponsePage<T, TLookup>> {
-    this.lookupSubject.next(lookup);
-    return firstValueFrom(this.page$.pipe(filter((p) => p.lookup === lookup)));
+  modelFromJsonObject(json: JsonObject): T {
+    return this.service.modelFromJsonObject(json);
   }
 
-  async loadNextPage() {
-    const page = await firstValueFrom(this.page$);
-    const nextPageId = page.next ? Number.parseInt(page.next) : 1;
-    this.lookupSubject.next({
-      ...page.lookup,
-      pageId: nextPageId,
-    });
-    return firstValueFrom(
-      this.page$.pipe(
-        skipWhile((currPage) => currPage.lookup.pageId !== nextPageId),
-      ),
-    );
+  modelPatchToJsonObject(patch: ModelPatch<T>): JsonObject {
+    return this.service.modelPatchToJsonObject(patch);
   }
 
-  get(id: string): Promise<T> {
+  modelIndexPageFromJsonObject(json: JsonObject): ModelIndexPage<T> {
+    return this.service.modelIndexPageFromJsonObject(json);
+  }
+  query(
+    params: HttpParams | { [k: string]: string | number | string[] },
+  ): Observable<T[]> {
+    return this.service.query(params).pipe(this._cacheManyResults);
+  }
+  queryOne(params: HttpParams | { [k: string]: string | number | string[] }) {
+    return this.service.queryOne(params).pipe(this._maybeCacheResult);
+  }
+  queryPage(
+    params: HttpParams | { [k: string]: string | number | string[] },
+  ): Observable<ModelIndexPage<T>> {
+    return this.service.queryPage(params).pipe(this._cacheResultPage);
+  }
+
+  fetch(id: string): Observable<T> {
     if (this._cache.has(id)) {
-      return Promise.resolve(this._cache.get(id)!);
+      return of(this._cache.get(id)!);
     }
-    return firstValueFrom(this.service.fetch(id).pipe(this._cacheResult));
+    return this.service.fetch(id).pipe(this._cacheResult);
   }
 
-  add(patch: TPatch): Promise<T> {
-    return firstValueFrom(this.service.create(patch).pipe(this._cacheResult));
+  create(patch: ModelPatch<T>): Observable<T> {
+    return this.service.create(patch).pipe(this._cacheResult);
   }
 
-  update(id: string, patch: TPatch) {
-    return firstValueFrom(
-      this.service.update(id, patch).pipe(this._cacheResult),
-    );
+  update(model: T | string, request: ModelPatch<T>) {
+    return this.service.update(model, request).pipe(this._cacheResult);
+  }
+
+  indexMethodUrl(name: string): string {
+    return this.service.indexMethodUrl(name);
+  }
+  resourceUrl(id: string): string {
+    return this.service.resourceUrl(id);
+  }
+  resourceMethodUrl(id: string, name: string): string {
+    return this.service.resourceMethodUrl(id, name);
   }
 }
 
-export function injectModelQuery<
+export function injectModelService<
   T extends Model,
-  TLookup extends ModelLookup<T> = ModelLookup<T>,
+  TService extends ModelService<T> = ModelService<T>,
 >(
-  serviceType: Type<ModelService<T, any, TLookup>>,
-  collectionType: Type<ModelCollection<T, any, TLookup>>,
-): ModelQuery<T, TLookup> {
-  const service = inject(serviceType);
-  const collection = inject(collectionType, { optional: true });
-
-  if (collection) {
-    return collection;
-  } else {
-    return new ModelCollection(service);
+  serviceType: Type<TService>,
+  collectionType: Type<ModelCollection<T> & TService>,
+): TService {
+  const maybeCollection = inject(collectionType, { optional: true });
+  if (maybeCollection) {
+    return maybeCollection;
   }
-}
-
-export function injectModelAdd<
-  T extends Model,
-  TPatch extends ModelPatch<T> = ModelPatch<T>,
->(
-  serviceType: Type<ModelService<T, TPatch>>,
-  collectionType: Type<ModelCollection<T, TPatch>>,
-): (patch: TPatch) => Promise<T> {
-  const service = inject(serviceType);
-  const collection = inject(collectionType, { optional: true });
-
-  return (patch: TPatch) => {
-    if (collection) {
-      return collection.add(patch);
-    } else {
-      return firstValueFrom(service.create(patch));
-    }
-  };
-}
-
-export function injectModelUpdate<
-  T extends Model,
-  TPatch extends ModelPatch<T> = ModelPatch<T>,
->(
-  serviceType: Type<ModelService<T, TPatch>>,
-  collectionType: Type<ModelCollection<T, TPatch>>,
-) {
-  const service = inject(serviceType);
-  const collection = inject(collectionType, { optional: true });
-
-  return (id: string, patch: TPatch) => {
-    if (collection) {
-      return collection.update(id, patch);
-    } else {
-      return firstValueFrom(service.update(id, patch));
-    }
-  };
-}
-
-export function injectCachedModelFetch<T extends Model>(
-  serviceType: Type<ModelService<T>>,
-  collectionType: Type<ModelCollection<T>>,
-): (id: string) => Promise<T> {
-  const service = inject(serviceType);
-  const collection = inject(collectionType);
-
-  return (id: string) => {
-    if (collection) {
-      return collection.get(id);
-    } else {
-      return firstValueFrom(service.fetch(id));
-    }
-  };
+  return inject(serviceType);
 }

@@ -45,7 +45,8 @@ export function campusForm(): CampusForm {
   });
 
   function validateCodeUnique(control: FormControl<CampusCode>) {
-    return service.queryCount({ code: control.value }).pipe(
+    return service.queryPage({ code: control.value }).pipe(
+      map((page) => page.totalItemCount),
       map((count) => {
         if (count > 0) {
           return { notUnique: 'Code is not unique amongst campuses' };

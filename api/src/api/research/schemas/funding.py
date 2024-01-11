@@ -9,8 +9,8 @@ from ...base.schemas import (
     ModelUpdateRequest,
     ModelView,
     ModelLookup,
-    ModelResponsePage,
-    PagedModelResponse,
+    ModelIndexPage,
+    ModelIndex,
 )
 
 
@@ -42,12 +42,12 @@ class ResearchFundingLookup(ModelLookup[ResearchFunding]):
         raise ValueError("Either id or name must be provided")
 
 
-class ResearchFundingIndex(PagedModelResponse[ResearchFunding]):
+class ResearchFundingIndex(ModelIndex[ResearchFunding]):
     __item_view__ = ResearchFundingView
 
 
 # TODO: PEP 695
-ResearchFundingIndexPage = ModelResponsePage[ResearchFunding]
+ResearchFundingIndexPage = ModelIndexPage[ResearchFunding]
 
 
 class ResearchFundingUpdateRequest(ModelUpdateRequest[ResearchFunding]):
@@ -79,3 +79,13 @@ async def lookup_research_funding(db: LocalSession, ref: ResearchFundingRef):
     if isinstance(ref, UUID):
         ref = ResearchFundingLookup(id=ref)
     return await ref.get(db)
+
+
+async def lookup_or_create_research_funding(
+    db: LocalSession, ref_or_create: ResearchFundingRef | ResearchFundingCreateRequest
+):
+    match ref_or_create:
+        case ResearchFundingCreateRequest():
+            return await ref_or_create.do_create(db)
+        case _:
+            return lookup_research_funding(db, ref_or_create)

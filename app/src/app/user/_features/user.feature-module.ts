@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { AlterPasswordPage } from './alter-password.page';
 import { AlterPasswordFormComponent } from '../common/alter-password-form.component';
 import { LabListComponent } from 'src/app/lab/common/lab-list.component';
-import { ExperimentalPlanListComponent } from 'src/app/lab/experimental-plan/common/experimental-plan-list';
+import { ResearchPlanListComponent } from 'src/app/research/plan/common/research-plan-list.component';
 
 const USER_ROUTES: Routes = [
   {
@@ -33,7 +33,7 @@ const USER_ROUTES: Routes = [
 
     AlterPasswordFormComponent,
     LabListComponent,
-    ExperimentalPlanListComponent,
+    ResearchPlanListComponent,
   ],
   declarations: [UserHomePage, AlterPasswordPage],
 })

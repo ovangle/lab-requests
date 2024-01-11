@@ -8,7 +8,6 @@ export abstract class Model {
 
   readonly createdAt: Date;
   readonly updatedAt: Date;
-
   constructor(params: ModelParams) {
     this.id = params.id;
     this.createdAt = params.createdAt;
@@ -17,7 +16,7 @@ export abstract class Model {
 }
 
 export interface ModelParams {
-  id: string;
+  readonly id: string;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -40,84 +39,46 @@ export function modelParamsFromJsonObject(json: JsonObject): ModelParams {
   return { id, createdAt, updatedAt };
 }
 
-export interface ModelPatch<T extends Model = Model> {}
-
-export function modelPatchToJson(patch: ModelPatch): { [k: string]: unknown } {
-  return {};
-}
-
-export interface ModelLookup<T extends Model = Model> {
-  id?: string;
-  pageId?: number;
-}
-
-export function modelLookupToHttpParams(lookup: ModelLookup<any>): HttpParams {
-  const params = new HttpParams();
-  if (lookup.id) {
-    params.set('id', lookup.id);
-  }
-  if (lookup.pageId) {
-    params.set('page', lookup.pageId);
-  }
-  return params;
-}
-
-export interface ModelResponsePage<
-  T extends Model,
-  TLookup extends ModelLookup<T> = ModelLookup<T>,
-> {
-  readonly lookup: Partial<TLookup>;
+export interface ModelIndexPage<T extends Model> {
   readonly items: T[];
-  readonly next?: string;
+
   readonly totalItemCount: number;
+  readonly totalPageCount: number;
+  readonly pageIndex: number;
+  readonly pageSize: number;
 }
 
-export function modelResponsePageFromJson<
-  T extends Model,
-  TLookup extends ModelLookup<T> = ModelLookup<T>,
->(
-  metadata: ModelMeta<T>,
-  lookup: Partial<TLookup>,
-  json: unknown,
-): ModelResponsePage<T, TLookup> {
-  if (typeof json !== 'object' || json == null) {
-    throw new Error('Expected an object at document root');
+export function modelIndexPageFromJsonObject<T extends Model>(
+  modelFromJsonObject: (obj: JsonObject) => T,
+  json: JsonObject,
+): ModelIndexPage<T> {
+  if (typeof json['totalItemCount'] !== 'number') {
+    throw new Error("ModelIndexPage: 'totalItemCount' must be a number");
   }
-  const obj: { [k: string]: any } = json;
+  if (typeof json['totalPageCount'] !== 'number') {
+    throw new Error("ModelIndexPage: 'totalPageCount' must be a number");
+  }
+  if (typeof json['pageIndex'] !== 'number') {
+    throw new Error("ModelIndexPage: 'pageIndex' must be a number");
+  }
+  if (typeof json['pageSize'] !== 'number') {
+    throw new Error("ModelIndexPage: 'pageSize' must be a number");
+  }
+  if (!Array.isArray(json['items']) || !json['items'].every(isJsonObject)) {
+    throw new Error("ModelIndexPage: 'items' must be an array of json objects");
+  }
 
-  const items = Array.from(obj['items']).map((itemJson) => {
-    if (!isJsonObject(itemJson)) {
-      throw new Error('Page items must be a list of json objects');
-    }
-    return metadata.modelFromJson(itemJson);
-  });
+  const items = Array.from(json['items']).map((itemJson) =>
+    modelFromJsonObject(itemJson),
+  );
 
   return {
-    lookup,
     items,
-    next: obj['next'],
-    totalItemCount: +obj['totalItemCount'],
+    totalItemCount: json['totalItemCount'],
+    totalPageCount: json['totalPageCount'],
+    pageIndex: json['pageIndex'],
+    pageSize: json['pageSize'],
   };
 }
 
-export abstract class ModelMeta<
-  T extends Model,
-  TPatch extends ModelPatch<T> = ModelPatch<T>,
-  TLookup extends ModelLookup<T> = ModelLookup<T>,
-> {
-  abstract readonly model: Type<T>;
-
-  abstract modelParamsFromJson(json: JsonObject): ModelParams;
-  abstract modelPatchToJson(patch: TPatch): { [k: string]: any };
-  abstract lookupToHttpParams(lookup: Partial<TLookup>): HttpParams;
-
-  modelFromJson(json: JsonObject): T {
-    return new this.model(this.modelParamsFromJson(json));
-  }
-
-  isEqualLookups(a: Partial<TLookup>, b: Partial<TLookup>) {
-    return Object.entries(a).every(
-      ([k, v]) => b.hasOwnProperty(k) && b[k as keyof TLookup] === v,
-    );
-  }
-}
+export interface ModelPatch<T extends Model> {}

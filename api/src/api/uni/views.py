@@ -5,7 +5,7 @@ from api.uni.queries import query_campuses
 
 from db import get_db
 from db.models.uni import Campus
-from api.base.schemas import ModelResponsePage
+from api.base.schemas import ModelIndexPage
 
 from .schemas import CampusView, CampusIndex, CampusLookup, lookup_campus
 
@@ -24,6 +24,6 @@ async def index_campuses(
     text_like: Optional[str] = None,
     page_index: int = 0,
     db=Depends(get_db),
-) -> ModelResponsePage[Campus]:
+) -> ModelIndexPage[Campus]:
     query = query_campuses(code_eq=code_eq, text_like=text_like)
     return await CampusIndex(query).load_page(db, page_index)

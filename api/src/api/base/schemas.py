@@ -71,7 +71,7 @@ class ModelUpdateRequest(BaseModel, Generic[TModel]):
 TModelResponse = TypeVar("TModelResponse", bound=ModelView)
 
 
-class ModelResponsePage(BaseModel, Generic[TModel]):
+class ModelIndexPage(BaseModel, Generic[TModel]):
     items: list[ModelView[TModel]]
     total_item_count: int
     total_page_count: int
@@ -79,7 +79,7 @@ class ModelResponsePage(BaseModel, Generic[TModel]):
     page_size: int
 
 
-class PagedModelResponse(Generic[TModel]):
+class ModelIndex(Generic[TModel]):
     __item_view__: ClassVar[type[ModelView]]
 
     @classmethod
@@ -117,7 +117,7 @@ class PagedModelResponse(Generic[TModel]):
             self.page_size
         )
         items = await self._gather_items(await db.scalars(selection))
-        return ModelResponsePage(
+        return ModelIndexPage(
             items=items,
             total_item_count=total_item_count,
             total_page_count=total_page_count,

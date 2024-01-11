@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { WorkUnitResourceFormHostPage } from './work-unit-resource-form-host.page';
-import { ResourceContainerContext } from '../../resource/resource-container';
 import { WorkUnitUpdateFormPage } from './work-unit-update-form.page';
 import { WorkUnitFormTitleComponent } from '../../common/work-unit-form-title.component';
 import {
@@ -11,6 +10,7 @@ import {
 } from '../../common/work-unit';
 import { WorkUnitFormComponent } from '../../common/work-unit-form.component';
 import { WorkUnitContextHostPage } from './work-unit-context-host.page';
+import { ResourceContainerContext } from 'src/app/lab/lab-resource/resource-container';
 
 @NgModule({
   imports: [
@@ -29,7 +29,7 @@ import { WorkUnitContextHostPage } from './work-unit-context-host.page';
             component: WorkUnitResourceFormHostPage,
             loadChildren: () =>
               import(
-                '../../resource/_features/resource-forms/resource-form.feature-module'
+                '../../../lab-resources/_features/resource-forms/resource-form.feature-module'
               ).then((module) => module.WorkUnitResourceFormsFeatureModule),
           },
         ],

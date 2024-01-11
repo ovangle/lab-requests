@@ -24,6 +24,7 @@ import {
   filter,
   map,
   of,
+  shareReplay,
   startWith,
   switchMap,
   withLatestFrom,
@@ -34,7 +35,10 @@ import {
   Equipment,
   EquipmentCollection,
   EquipmentContext,
-  EquipmentLookup,
+  EquipmentQuery,
+  EquipmentService,
+  equipmentQueryToHttpParams,
+  injectEquipmentService,
 } from './common/equipment';
 import {
   EquipmentRequest,
@@ -42,7 +46,7 @@ import {
 } from './request/equipment-request';
 import { EquipmentLike } from './equipment-like';
 import { isUUID } from 'src/app/utils/is-uuid';
-import { FundingModel } from 'src/app/uni/research/funding/funding-model';
+import { ResearchFunding } from 'src/app/research/funding/funding-model';
 
 const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
 
@@ -125,12 +129,11 @@ const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
 export class EquipmentSearchComponent implements ControlValueAccessor {
   readonly _NEW_EQUIPMENT_ = _NEW_EQUIPMENT_;
 
-  readonly equipments = inject(EquipmentCollection);
+  readonly equipments = injectEquipmentService();
   readonly searchControl = new FormControl<Equipment | string>('', {
     nonNullable: true,
   });
 
-  readonly searchOptions$ = defer(() => this.equipments.pageItems$);
   readonly isNewEquipment$ = this.searchControl.valueChanges.pipe(
     map((value) => value === this._NEW_EQUIPMENT_),
   );
@@ -140,8 +143,15 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
     cost: null,
   });
 
+  readonly searchOptions$ = this._equipmentRequest.pipe(
+    switchMap((request) =>
+      this.equipments.query(equipmentQueryToHttpParams(request)),
+    ),
+    shareReplay(1),
+  );
+
   @Input({ required: true })
-  purchaseRequestFundingModel: FundingModel;
+  purchaseRequestFundingModel: ResearchFunding;
 
   readonly value$: Observable<Equipment | EquipmentRequest | null> = defer(
     () => {
@@ -159,10 +169,11 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
       );
     },
   );
+
   constructor() {
     this.searchControl.valueChanges.pipe(
       takeUntilDestroyed(),
-      map((searchText) => ({ searchText }) as EquipmentLookup),
+      map((searchText) => ({ searchText }) as EquipmentQuery),
     );
 
     // Prefil the value of the equipment request with the value of the search input
@@ -180,7 +191,7 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
         }),
         switchMap((value) => {
           if (validateIsUUID(value)) {
-            return this.equipments.get(value);
+            return this.equipments.fetch(value);
           }
           return value;
         }),
@@ -211,8 +222,8 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
   writeValue(obj: EquipmentLike | null): void {
     if (isUUID(obj)) {
       this.equipments
-        .get(obj)
-        .then((equipment) => this.searchControl.setValue(equipment));
+        .fetch(obj)
+        .subscribe((equipment) => this.searchControl.setValue(equipment));
     }
     if (typeof obj === 'string' || obj == null) {
       this.searchControl.setValue(obj || '');

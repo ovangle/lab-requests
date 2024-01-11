@@ -14,7 +14,7 @@ from ..base.schemas import (
     ModelLookup,
     ModelView,
     ModelUpdateRequest,
-    PagedModelResponse,
+    ModelIndex,
 )
 
 
@@ -53,7 +53,7 @@ async def lookup_campus(db: LocalSession, ref: CampusLookup | UUID):
     return await ref.get(db)
 
 
-class CampusIndex(PagedModelResponse[Campus]):
+class CampusIndex(ModelIndex[Campus]):
     __item_type__ = CampusView
 
 

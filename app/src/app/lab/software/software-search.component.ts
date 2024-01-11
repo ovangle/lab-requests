@@ -13,26 +13,31 @@ import { LabSoftwareRequestFormComponent } from './software-request-form.compone
 import {
   NewSoftwareRequest,
   Software,
-  SoftwareModelService,
+  SoftwareService,
+  injectSoftwareService,
   isNewSoftwareRequest,
+  softwareQueryToHttpParams,
 } from './software';
 import {
   BehaviorSubject,
   Observable,
   defer,
+  filter,
   map,
   of,
+  shareReplay,
   startWith,
   switchMap,
 } from 'rxjs';
 import { isThisQuarter } from 'date-fns';
 import { disabledStateToggler } from 'src/app/utils/forms/disable-state-toggler';
-import { ModelCollection } from 'src/app/common/model/model-collection';
+import {
+  ModelCollection,
+  injectModelService,
+} from 'src/app/common/model/model-collection';
 
 @Injectable()
-export class SoftwareModelCollection extends ModelCollection<Software> {
-  readonly models = inject(SoftwareModelService);
-}
+export class SoftwareCollection extends ModelCollection<Software> {}
 
 const _NEW_SOFTWARE_ = '_NEW_SOFTWARE_';
 
@@ -90,12 +95,9 @@ const _NEW_SOFTWARE_ = '_NEW_SOFTWARE_';
 export class SoftwareSearchComponent implements ControlValueAccessor {
   readonly _NEW_SOFTWARE_ = _NEW_SOFTWARE_;
 
-  readonly softwares = inject(SoftwareModelCollection);
+  readonly softwares = injectSoftwareService();
   readonly searchControl = new FormControl<Software | string>('');
 
-  readonly searchOptions$ = defer(() =>
-    this.softwares.page$.pipe(map((page) => page.items)),
-  );
   readonly isNewSoftware$ = this.searchControl.valueChanges.pipe(
     map((value) => value === _NEW_SOFTWARE_),
   );
@@ -104,6 +106,16 @@ export class SoftwareSearchComponent implements ControlValueAccessor {
     name: '',
     description: '',
   });
+
+  readonly searchOptions$ = this.searchControl.valueChanges.pipe(
+    filter(
+      (value): value is string =>
+        typeof value === 'string' && value != _NEW_SOFTWARE_,
+    ),
+    switchMap((value) => this.softwares.queryPage({ searchText: value })),
+    map((page) => page.items),
+    shareReplay(1),
+  );
 
   readonly value$: Observable<Software | NewSoftwareRequest | null> = defer(
     () =>

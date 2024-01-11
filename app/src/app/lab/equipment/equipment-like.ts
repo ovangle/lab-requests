@@ -4,7 +4,8 @@ import {
   equipmentRequestFromJson,
   isEquipmentRequest,
 } from './request/equipment-request';
-import { Equipment, equipmentParamsFromJson } from './common/equipment';
+import { Equipment, equipmentFromJsonObject } from './common/equipment';
+import { isJsonObject } from 'src/app/utils/is-json-object';
 
 export type EquipmentLike = Equipment | EquipmentRequest | string;
 
@@ -14,14 +15,14 @@ export function equipmentLikeFromJson(obj: unknown): EquipmentLike {
       throw new Error('Expected a UUID');
     }
     return obj;
-  } else if (typeof obj === 'object') {
+  } else if (isJsonObject(obj)) {
     try {
-      return equipmentParamsFromJson(obj);
+      return equipmentFromJsonObject(obj);
     } catch {
       return equipmentRequestFromJson(obj);
     }
   } else {
-    throw new Error('Expected a json object');
+    throw new Error('Expected a json object or uuid');
   }
 }
 

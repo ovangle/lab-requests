@@ -12,12 +12,12 @@ from db import LocalSession
 from db.models.uni import Discipline
 from db.models.lab import LabEquipment
 from api.base.schemas import (
-    ModelResponsePage,
+    ModelIndexPage,
     ModelUpdateRequest,
     ModelView,
     ModelLookup,
     ModelCreateRequest,
-    PagedModelResponse,
+    ModelIndex,
 )
 
 
@@ -42,12 +42,12 @@ class LabEquipmentView(ModelView[LabEquipment]):
         )
 
 
-class LabEquipmentIndex(PagedModelResponse[LabEquipment]):
+class LabEquipmentIndex(ModelIndex[LabEquipment]):
     __item_view__ = LabEquipmentView
 
 
 # TODO: type PEP 695
-LabEquipmentIndexPage = ModelResponsePage[LabEquipment]
+LabEquipmentIndexPage = ModelIndexPage[LabEquipment]
 
 
 class LabEquipmentLookup(ModelLookup[LabEquipment]):

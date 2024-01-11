@@ -57,7 +57,7 @@ def api_router():
     from api.auth.views import oauth
     from api.user.views import users
     from api.uni.views import uni_campuses
-    from api.research.views import uni_research_funding
+    from api.research.views import research
     from api.lab.views import lab
 
     api_router = APIRouter(prefix="/api", tags=["api"])
@@ -76,7 +76,7 @@ def api_router():
     # api_router.include_router(lab_work_units)
 
     api_router.include_router(uni_campuses)
-    api_router.include_router(uni_research_funding)
+    api_router.include_router(research)
 
     return api_router
 
@@ -102,4 +102,4 @@ if __name__ == "__main__":
         debugpy.listen(("0.0.0.0", 8765))
         # debugpy.wait_for_client()
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app="main:app", host="0.0.0.0", port=8000, reload=True)

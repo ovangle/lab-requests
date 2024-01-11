@@ -21,9 +21,13 @@ from ..base.schemas import (
     ModelLookup,
     ModelView,
     ModelUpdateRequest,
-    PagedModelResponse,
-    ModelResponsePage,
+    ModelIndex,
+    ModelIndexPage,
 )
+
+if TYPE_CHECKING:
+    from ..lab.schemas import LabIndexPage
+    from ..research.schemas import ResearchPlanIndexPage
 
 
 class UserView(ModelView[User]):
@@ -64,6 +68,7 @@ class UserLookup(ModelLookup[User]):
         raise ValueError("At least one of id, email, username must be provided")
 
 
+# TODO: PEP 695
 UserRef = UserLookup | UUID
 
 
@@ -71,6 +76,14 @@ async def lookup_user(db: LocalSession, ref: UserRef):
     if isinstance(ref, UUID):
         ref = UserLookup(id=ref)
     return await ref.get(db)
+
+
+class UserIndex(ModelIndex[User]):
+    __item_view__ = UserView
+
+
+# TODO: PEP 695
+UserIndexPage = ModelIndexPage[User]
 
 
 class CurrentUserResponse(UserView):
@@ -86,21 +99,22 @@ class CurrentUserResponse(UserView):
         cls: type[CurrentUserResponse], model: User, **kwargs
     ) -> CurrentUserResponse:
         from api.lab.schemas import LabView, LabIndex
-        from api.research.schemas import ResearchPlanView
+        from api.research.schemas import ResearchPlanIndex
 
         db = async_object_session(model)
-        if db is None:
+        if not isinstance(db, LocalSession):
             raise RuntimeError("Model detached from session")
 
-        supervised_labs = select(Lab).where(Lab.supervisors.contains(model))
-        lab_pages = PagedModelResponse(db, LabView, supervised_labs)
-        labs = await lab_pages.load_page(0)
+        lab_pages = LabIndex(select(Lab).where(Lab.supervisors.contains(model)))
+        labs = await lab_pages.load_page(db, 0)
 
         coordinated_plans = select(ResearchPlan).where(
             ResearchPlan.coordinator == model
         )
-        plan_pages = PagedModelResponse(db, ResearchPlanResponse, coordinated_plans)
-        plans = await plan_pages.load_page(0)
+        plan_pages = ResearchPlanIndex(
+            select(ResearchPlan).where(ResearchPlan.coordinator == model)
+        )
+        plans = await plan_pages.load_page(db, 0)
 
         return await super().from_model(model, labs=labs, plans=plans)
 

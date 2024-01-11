@@ -9,7 +9,6 @@ import {
   inject,
 } from '@angular/core';
 import { Model, ModelParams, ModelPatch } from './model';
-import { ModelCollection } from './model-collection';
 import {
   Connectable,
   Observable,
@@ -23,12 +22,12 @@ import { ModelService } from './model-service';
 @Injectable()
 export abstract class ModelContext<
   T extends Model,
-  TPatch extends ModelPatch<T> = ModelPatch<T>,
+  TUpdate extends ModelPatch<T> = ModelPatch<T>,
 > {
   readonly committedSubject = new ReplaySubject<T>(1);
   readonly committed$: Observable<T> = this.committedSubject.asObservable();
 
-  abstract _doUpdate(id: string, patch: TPatch): Promise<T>;
+  abstract _doUpdate(id: string, patch: TUpdate): Promise<T>;
 
   sendCommitted(source: Observable<T>): Subscription {
     return source.subscribe((committed) => {
@@ -37,10 +36,10 @@ export abstract class ModelContext<
     });
   }
 
-  async commit(patch: TPatch): Promise<T> {
+  async commit(updateRequest: TUpdate): Promise<T> {
     const current = await firstValueFrom(this.committed$);
 
-    const committed = await this._doUpdate(current.id, patch);
+    const committed = await this._doUpdate(current.id, updateRequest);
     this.committedSubject.next(committed);
     return committed;
   }

@@ -1,6 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { ModelContext } from '../common/model/context';
-import { User, UserPatch, UserService, UserCollection } from './common/user';
+import {
+  User,
+  UserPatch,
+  UserService,
+  UserCollection,
+  injectUserService,
+} from './common/user';
 import {
   BehaviorSubject,
   filter,
@@ -10,15 +16,17 @@ import {
   switchMap,
   tap,
 } from 'rxjs';
-import { injectModelUpdate } from '../common/model/model-collection';
 import { LoginContext } from '../oauth/login-context';
 import { Role } from './common/role';
 
 @Injectable({ providedIn: 'root' })
 export class UserContext extends ModelContext<User, UserPatch> {
-  readonly userService = inject(UserService);
+  readonly userService = injectUserService();
   readonly loginContext = inject(LoginContext);
-  override readonly _doUpdate = injectModelUpdate(UserService, UserCollection);
+
+  override _doUpdate(id: string, patch: UserPatch): Promise<User> {
+    return firstValueFrom(this.userService.update(id, patch));
+  }
 
   readonly user = new BehaviorSubject<User | null>(null);
 
