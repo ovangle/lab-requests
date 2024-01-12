@@ -37,20 +37,20 @@ export class AuthRedirectPage {
   readonly _loginService = inject(LoginContext);
   readonly activatedRoute = inject(ActivatedRoute);
 
-  error: string | null;
-  errorDescription: string | null;
+  error: string | null = null;
+  errorDescription: string | null = null;
 
   ngOnInit() {
     this.activatedRoute.queryParams.subscribe(async (params) => {
       if (Object.keys(params).includes('error')) {
-        this.error = params['error'];
-        this.errorDescription = params['error_description'];
-        console.log('Oauth returned error:', params['error']);
-        console.log('Description\n\n', params['error_description']);
+        this.error = params[ 'error' ];
+        this.errorDescription = params[ 'error_description' ];
+        console.log('Oauth returned error:', params[ 'error' ]);
+        console.log('Description\n\n', params[ 'error_description' ]);
         return;
       }
-      const authCode = params['code'];
-      const stateToken = params['state'];
+      const authCode = params[ 'code' ];
+      const stateToken = params[ 'state' ];
 
       try {
         await this._loginService.handleExternalAuthorizationRedirect({

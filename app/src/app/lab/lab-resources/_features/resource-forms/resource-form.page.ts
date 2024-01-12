@@ -1,11 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, Subscription, combineLatest, defer, map } from 'rxjs';
-import { Block } from '@angular/compiler';
-import { BodyScrollbarHidingService } from 'src/app/utils/body-scrollbar-hiding.service';
-import { ExperimentalPlanFormPaneControlService } from 'src/app/research/plan/experimental-plan-form-pane-control.service';
 
-import { ResearchFunding } from 'src/app/research/funding/funding-model';
+import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import {
   ResourceType,
   isResourceType,
@@ -13,15 +10,16 @@ import {
 import { ResourceContext } from 'src/app/lab/lab-resource/resource';
 import { ResourceContainer } from 'src/app/lab/lab-resource/resource-container';
 import { ResourceFormService } from 'src/app/lab/lab-resource/resource-form.service';
+import { ResearchPlanFormPaneControl } from 'src/app/research/plan/common/research-plan-form-pane-control';
 
 export function typeIndexFromDetailRoute$(): Observable<
-  [ResourceType, number | 'create']
+  [ ResourceType, number | 'create' ]
 > {
   const activatedRoute = inject(ActivatedRoute);
 
-  return combineLatest([activatedRoute.paramMap, activatedRoute.data]).pipe(
-    map(([paramMap, data]) => {
-      const resourceType = data['resourceType'];
+  return combineLatest([ activatedRoute.paramMap, activatedRoute.data ]).pipe(
+    map(([ paramMap, data ]) => {
+      const resourceType = data[ 'resourceType' ];
       if (!isResourceType(resourceType)) {
         throw new Error('No resource type in route data');
       }
@@ -31,7 +29,7 @@ export function typeIndexFromDetailRoute$(): Observable<
       if (Number.isNaN(index)) {
         index = 'create';
       }
-      return [resourceType, index];
+      return [ resourceType, index ];
     }),
   );
 }
@@ -78,7 +76,7 @@ export function typeIndexFromDetailRoute$(): Observable<
       }
     }
   `,
-  providers: [ResourceContext, ResourceFormService],
+  providers: [ ResourceContext, ResourceFormService ],
 })
 export class WorkUnitResourceFormPage {
   readonly _context = inject(ResourceContext);
@@ -87,7 +85,7 @@ export class WorkUnitResourceFormPage {
   readonly _formService = inject(ResourceFormService);
   readonly _formConnection: Subscription;
 
-  readonly _formPane = inject(ExperimentalPlanFormPaneControlService);
+  readonly _formPane = inject(ResearchPlanFormPaneControl);
 
   readonly typeIndex$ = defer(() => this._context.committedTypeIndex$);
   readonly resourceType$ = defer(() => this._context.resourceType$);
@@ -96,7 +94,7 @@ export class WorkUnitResourceFormPage {
     map((container: ResourceContainer) => container.id),
   );
   readonly containerName$: Observable<string> = this._context.container$.pipe(
-    map((container: ResourceContainer) => container.name),
+    map((container: ResourceContainer) => '<container name>'),
   );
 
   readonly fundingModel$: Observable<ResearchFunding> =

@@ -40,7 +40,7 @@ import { CurrencyInputComponent } from 'src/app/common/currency/currency-input.c
         <mat-label>Cost</mat-label>
         <div class="input-text-suffix">
           per
-          <span [innerHTML]="unitOfMeasurement | commonMeasurementUnit"></span>
+          <span [innerHTML]="unitOfMeasurement! | commonMeasurementUnit"></span>
         </div>
       </common-currency-input>
     </ng-container>
@@ -70,10 +70,10 @@ export class CostEstimateInputComponent implements ControlValueAccessor {
   _form: CostEstimateForm = costEstimateForm();
 
   @Input({ required: true })
-  fundingModel: ResearchFunding;
+  fundingModel: ResearchFunding | undefined;
 
   @Input({ required: true })
-  unitOfMeasurement: UnitOfMeasurement;
+  unitOfMeasurement: UnitOfMeasurement | undefined;
 
   @Input()
   get perUnitCost() {
@@ -116,11 +116,11 @@ export class CostEstimateInputComponent implements ControlValueAccessor {
     }
     return this._form.setValue(obj);
   }
-  _onChange = (value: CostEstimate | null) => {};
+  _onChange = (value: CostEstimate | null) => { };
   registerOnChange(fn: any): void {
     this._onChange = fn;
   }
-  _onTouched = () => {};
+  _onTouched = () => { };
   registerOnTouched(fn: any): void {
     this._onTouched = fn;
   }
@@ -131,10 +131,10 @@ export class CostEstimateInputComponent implements ControlValueAccessor {
     if (!isDisabled && !this._form.disabled) {
       this._form.enable();
       if (this._isFixedPerUnitCost) {
-        this._form.controls['perUnitCost'].disable();
+        this._form.controls[ 'perUnitCost' ].disable();
       }
       if (this._isFixedQuantityRequired) {
-        this._form.controls['quantityRequired'].disable();
+        this._form.controls[ 'quantityRequired' ].disable();
       }
     }
   }

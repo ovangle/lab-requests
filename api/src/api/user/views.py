@@ -6,7 +6,8 @@ from db import get_db
 from db.models.user import NativeUserCredentials, User, UserDoesNotExist, UserDomain
 
 from api.auth.context import get_current_authenticated_user
-from .schemas import CurrentUserResponse, AlterPasswordRequest, UserView
+from .schemas.user import AlterPasswordRequest, UserView
+from .schemas.current_user import CurrentUserView
 
 users = APIRouter(prefix="/users", tags=["users"])
 
@@ -14,8 +15,8 @@ users = APIRouter(prefix="/users", tags=["users"])
 @users.get("/me")
 async def me(
     user: Annotated[User, Depends(get_current_authenticated_user)],
-) -> CurrentUserResponse:
-    return await CurrentUserResponse.from_model(user)
+) -> CurrentUserView:
+    return await CurrentUserView.from_model(user)
 
 
 @users.get("/{id}")

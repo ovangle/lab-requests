@@ -77,10 +77,9 @@ import { MatIconModule } from '@angular/material/icon';
   ],
 })
 export class EquipmentTrainingAcknowlegementComponent
-  implements ControlValueAccessor
-{
+  implements ControlValueAccessor {
   @Input({ required: true })
-  trainingDescriptions: string[];
+  trainingDescriptions: string[] = [];
 
   readonly selectedControl = new FormControl<string[]>([], {
     nonNullable: true,
@@ -101,7 +100,7 @@ export class EquipmentTrainingAcknowlegementComponent
       .subscribe((v) => this._onChange(v));
   }
 
-  _isDisabled: boolean;
+  _isDisabled: boolean = false;
 
   _subscriptions: Subscription[] = [];
 
@@ -112,11 +111,11 @@ export class EquipmentTrainingAcknowlegementComponent
   writeValue(value: string[]): void {
     this.selectedControl.setValue(value);
   }
-  _onChange = (value: string[]) => {};
+  _onChange = (value: string[]) => { };
   registerOnChange(fn: any): void {
     this._onChange = fn;
   }
-  _onTouched = () => {};
+  _onTouched = () => { };
   registerOnTouched(fn: any): void {
     this._onTouched = fn;
   }

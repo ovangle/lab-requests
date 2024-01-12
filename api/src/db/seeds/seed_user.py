@@ -74,6 +74,10 @@ async def seed_users(db: LocalSession):
             )
             db.add(lab_tech)
 
+        if len(await lab_tech.awaitable_attrs.credentials) < 1:
+            credentials = NativeUserCredentials(user=lab_tech, password="password")
+            db.add(credentials)
+
         if lab_tech.campus_id != campus.id:
             lab_tech.campus_id = campus.id
             db.add(lab_tech)
@@ -86,7 +90,7 @@ async def seed_users(db: LocalSession):
             "lab-tech",
             *[f"lab-tech-{d.value}" for d in disciplines],
         }
-        if lab_tech.roles - roles:
+        if set(lab_tech.roles) - roles:
             lab_tech.roles = lab_tech.roles | roles
             db.add(lab_tech)
 
@@ -105,3 +109,4 @@ async def seed_users(db: LocalSession):
         await create_or_update_lab_tech(
             email, name=str(row.get("Name")), campus=campus, disciplines=disciplines
         )
+    await db.commit()

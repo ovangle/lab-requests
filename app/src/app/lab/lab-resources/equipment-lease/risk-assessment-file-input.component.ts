@@ -36,10 +36,7 @@ import { CommonFileInputComponent } from 'src/app/common/file/file-input.compone
   ],
 })
 export class EquipmentRiskAssessmentFileInputComponent
-  implements ControlValueAccessor
-{
-  @Input({ required: true })
-  containerId: string;
+  implements ControlValueAccessor {
 
   _control = new FormControl<any | null>(null);
 

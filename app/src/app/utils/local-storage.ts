@@ -3,8 +3,8 @@ import { Injectable, Inject, Provider } from '@angular/core';
 
 @Injectable()
 export abstract class LocalStorage implements Storage {
-  [name: string]: any;
-  length: number;
+  [ name: string ]: any;
+  length: number = 0;
   abstract clear(): void;
   abstract getItem(key: string): string | null;
   abstract key(index: number): string | null;
@@ -24,7 +24,7 @@ export function provideLocalStorage(): Provider[] {
     {
       provide: LocalStorage,
       useFactory: localStorageFactory,
-      deps: [DOCUMENT],
+      deps: [ DOCUMENT ],
     },
   ];
 }

@@ -17,7 +17,7 @@ from .base import Base, DoesNotExist
 from .base.fields import uuid_pk
 
 if TYPE_CHECKING:
-    from db.models.uni import Campus
+    from db.models.uni import Campus, Discipline
 
 
 class UserDoesNotExist(DoesNotExist):
@@ -59,8 +59,8 @@ class User(Base):
     )
 
     @declared_attr
-    def credentials(self) -> Mapped[UserCredentials]:
-        return relationship("UserCredentials")
+    def credentials(self) -> Mapped[list[UserCredentials]]:
+        return relationship("UserCredentials", back_populates="user")
 
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID):
@@ -91,7 +91,9 @@ class UserCredentials(AbstractConcreteBase, Base):
                 "UserCredentials subclass '{cls.__name__}' must be a concrete mapping"
             )
         polymorphic_id = mapper_args["polymorphic_identity"]
-        if not isinstance(polymorphic_id, UserDomain):
+        try:
+            cls.__user_domain__ = UserDomain(polymorphic_id)
+        except ValueError:
             raise TypeError(
                 f"UserCredentials subclass '{cls.__name__}' must have a UserDomain polymorphic_identity"
             )
@@ -119,7 +121,7 @@ class UserCredentials(AbstractConcreteBase, Base):
 class NativeUserCredentials(UserCredentials):
     __tablename__ = "native_user_credentials"
     __mapper_args__ = {
-        "polymorphic_identity": UserDomain.NATIVE,
+        "polymorphic_identity": UserDomain.NATIVE.value,
         "concrete": True,
     }
 
@@ -141,7 +143,7 @@ class NativeUserCredentials(UserCredentials):
 class ExternalUserCredentials(UserCredentials):
     __tablename__ = "external_user_credentials"
     __mapper_args__ = {
-        "polymorphic_identity": UserDomain.EXTERNAL,
+        "polymorphic_identity": UserDomain.EXTERNAL.value,
         "concrete": True,
     }
 

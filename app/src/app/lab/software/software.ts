@@ -12,8 +12,7 @@ import {
 } from 'src/app/common/model/model-service';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { ModelContext } from 'src/app/common/model/context';
-import { injectModelService } from 'src/app/common/model/model-collection';
-import { SoftwareCollection } from './software-search.component';
+import { ModelCollection, injectModelService } from 'src/app/common/model/model-collection';
 
 export interface SoftwareParams extends ModelParams {
   readonly id: string;
@@ -21,17 +20,17 @@ export interface SoftwareParams extends ModelParams {
   name: string;
 }
 
-function softwareParamsFromJson(json: JsonObject) {
+export function softwareFromJsonObject(json: JsonObject) {
   const baseParams = modelParamsFromJsonObject(json);
 
-  if (typeof json['name'] !== 'string') {
+  if (typeof json[ 'name' ] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
 
-  return {
+  return new Software({
     ...baseParams,
-    name: json['name'],
-  };
+    name: json[ 'name' ],
+  });
 }
 
 export class Software extends Model {
@@ -43,10 +42,6 @@ export class Software extends Model {
     super(params);
     this.name = params.name;
   }
-}
-
-export function softwareFromJson(json: JsonObject): Software {
-  return new Software(softwareParamsFromJson(json));
 }
 
 export interface SoftwarePatch {
@@ -92,12 +87,17 @@ export function softwareQueryToHttpParams(lookup: Partial<SoftwareQuery>) {
 @Injectable({ providedIn: 'root' })
 export class SoftwareService extends RestfulService<Software> {
   override model = Software;
-  override modelParamsFromJsonObject(json: JsonObject): ModelParams {
-    return softwareParamsFromJson(json);
-  }
+  override modelFromJsonObject = softwareFromJsonObject;
   override modelPatchToJsonObject = softwarePatchToJsonObject;
 
-  override readonly path: string = '/lab/softwares';
+  override path: string = '/lab/softwares';
+}
+
+@Injectable()
+export class SoftwareCollection extends ModelCollection<Software, SoftwareService> implements SoftwareService {
+  constructor(service: SoftwareService) {
+    super(service);
+  }
 }
 
 @Injectable()

@@ -9,14 +9,10 @@ import {
 import {
   BehaviorSubject,
   Connectable,
-  ConnectableObservable,
   Observable,
-  ObservableInput,
   ReplaySubject,
-  Subject,
   Subscription,
   combineLatest,
-  connect,
   connectable,
   defer,
   map,
@@ -31,7 +27,7 @@ export class SidenavMenuLink {
     readonly title: string,
     readonly routerLink: any[],
     readonly icon?: string,
-  ) {}
+  ) { }
 }
 
 export function formatSidenavMenuLink(
@@ -74,7 +70,7 @@ export function sidenavMenuNodeChildren(node: SidenavMenuNode) {
   if (node.type === 'link') {
     return [];
   } else {
-    return [...node.subgroups, ...node.links];
+    return [ ...node.subgroups, ...node.links ];
   }
 }
 
@@ -89,22 +85,22 @@ export class SidenavMenuGroupControl {
   _setParent(parent: SidenavMenuGroupControl) {
     this._parent = parent;
   }
-  _parent: SidenavMenuGroupControl | null;
+  _parent: SidenavMenuGroupControl | null = null;
 
   readonly id: string;
   readonly _stateSubject: BehaviorSubject<SidenavMenuGroupState>;
 
-  protected _subgroupControls: { [id: string]: SidenavMenuGroupControl } = {};
+  protected _subgroupControls: { [ id: string ]: SidenavMenuGroupControl } = {};
   readonly _enabledSubgroupIdsSubject = new BehaviorSubject<string[]>([]);
 
   connectSubgroup(control: SidenavMenuGroupControl): Subscription {
-    if (this._subgroupControls[control.id] !== undefined) {
+    if (this._subgroupControls[ control.id ] !== undefined) {
       throw new Error(`Subgroup ${control.id} is already connected`);
     }
-    this._subgroupControls[control.id] = control;
+    this._subgroupControls[ control.id ] = control;
 
     const enabledSubgroupIds = this._enabledSubgroupIdsSubject.value;
-    this._enabledSubgroupIdsSubject.next([...enabledSubgroupIds, control.id]);
+    this._enabledSubgroupIdsSubject.next([ ...enabledSubgroupIds, control.id ]);
 
     control._setParent(this);
     return control.value$.connect();
@@ -114,7 +110,7 @@ export class SidenavMenuGroupControl {
     this._enabledSubgroupIdsSubject.pipe(
       switchMap((enabledIds) => {
         const enabledGroupControls = enabledIds.map(
-          (id) => this._subgroupControls[id],
+          (id) => this._subgroupControls[ id ],
         );
         return combineLatest(enabledGroupControls.map((c) => c.value$));
       }),
@@ -128,9 +124,9 @@ export class SidenavMenuGroupControl {
 
   readonly value$: Connectable<SidenavMenuGroup> = connectable(
     defer(() =>
-      combineLatest([this._stateSubject, this.subgroups$]).pipe(
+      combineLatest([ this._stateSubject, this.subgroups$ ]).pipe(
         map(
-          ([state, subgroups]): SidenavMenuGroup => ({
+          ([ state, subgroups ]): SidenavMenuGroup => ({
             type: 'group',
             id: this.id,
             ...state,
@@ -152,21 +148,21 @@ export class SidenavMenuGroupControl {
 
   protected setState<K extends keyof SidenavMenuGroupState>(
     key: K,
-    value: SidenavMenuGroupState[K],
+    value: SidenavMenuGroupState[ K ],
   ) {
     const state = this._stateSubject.value;
     this._stateSubject.next({
       ...state,
-      [key]: value,
+      [ key ]: value,
     });
   }
 
   pushLink(link: SidenavMenuLink) {
     const links = this._stateSubject.value.links;
-    this.setState('links', [...links, link]);
+    this.setState('links', [ ...links, link ]);
   }
   spliceLinks(index: number, deleteCount: number, ...items: SidenavMenuLink[]) {
-    const links = [...this._stateSubject.value.links];
+    const links = [ ...this._stateSubject.value.links ];
     links.splice(index, deleteCount, ...items);
     this.setState('links', links);
   }
@@ -175,12 +171,12 @@ export class SidenavMenuGroupControl {
     path: string | string[],
   ): SidenavMenuGroupControl | undefined {
     if (typeof path === 'string') {
-      path = [path];
+      path = [ path ];
     } else if (path.length === 0) {
       return this;
     }
     const subgroupId = path.shift();
-    const subgroupControl = this._subgroupControls[subgroupId || ''];
+    const subgroupControl = this._subgroupControls[ subgroupId || '' ];
     return subgroupControl && subgroupControl.getSubgroupControl(path);
   }
 }

@@ -1,16 +1,14 @@
 from __future__ import annotations
 from enum import Enum
 
-from typing import TYPE_CHECKING, Optional
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, TypeAdapter
-from pydantic.dataclasses import dataclass
 
 from db import LocalSession
 from db.models.uni import Campus
 
 from ..base.schemas import (
     ModelCreateRequest,
+    ModelIndexPage,
     ModelLookup,
     ModelView,
     ModelUpdateRequest,
@@ -53,8 +51,11 @@ async def lookup_campus(db: LocalSession, ref: CampusLookup | UUID):
     return await ref.get(db)
 
 
-class CampusIndex(ModelIndex[Campus]):
-    __item_type__ = CampusView
+class CampusIndex(ModelIndex[CampusView, Campus]):
+    __item_view__ = CampusView
+
+
+CampusIndexPage = ModelIndexPage[CampusView, Campus]
 
 
 class CampusUpdateRequest(ModelUpdateRequest[Campus]):

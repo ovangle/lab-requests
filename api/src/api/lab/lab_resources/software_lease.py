@@ -1,3 +1,4 @@
+from sqlalchemy import Select
 from db.models.lab.resources import SoftwareLease
 
 from ...base.schemas import ModelIndexPage
@@ -8,5 +9,5 @@ class LabSoftwareLeaseView(LabResourceView[SoftwareLease]):
     pass
 
 
-class LabSoftwareLeaseIndex(LabResourceIndex[SoftwareLease]):
+class LabSoftwareLeaseIndex(LabResourceIndex[LabSoftwareLeaseView, SoftwareLease]):
     __item_view__ = LabSoftwareLeaseView

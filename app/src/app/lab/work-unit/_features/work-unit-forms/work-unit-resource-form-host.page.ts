@@ -11,7 +11,6 @@ import { BodyScrollbarHidingService } from 'src/app/utils/body-scrollbar-hiding.
 import {
   WorkUnitContext,
   WorkUnitResourceContainerContext,
-  workUnitPatchFromWorkUnit,
 } from '../../common/work-unit';
 import { workUnitForm } from '../../common/work-unit-form';
 import { ResourceContainerContext } from 'src/app/lab/lab-resource/resource-container';
@@ -35,7 +34,7 @@ class WorkUnitResourceContainerFormService extends ResourceContainerFormService 
   host: {
     class: 'mat-elevation-z8',
   },
-  styleUrls: ['./work-unit-form.css'],
+  styleUrls: [ './work-unit-form.css' ],
   providers: [
     {
       provide: ResourceContainerContext,
@@ -50,16 +49,13 @@ class WorkUnitResourceContainerFormService extends ResourceContainerFormService 
 export class WorkUnitResourceFormHostPage {
   _workUnitContext = inject(WorkUnitContext);
 
-  _activatedRoute: ActivatedRoute;
-
   readonly form = workUnitForm();
   readonly appScaffold = inject(BodyScrollbarHidingService);
 
   constructor() {
     this._workUnitContext.workUnit$
-      .pipe(map(workUnitPatchFromWorkUnit))
-      .subscribe((patch) => {
-        this.form.patchValue(patch);
+      .subscribe((workUnit) => {
+        this.form.patchValue(workUnit);
       });
   }
 }

@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 @Component({
   selector: 'lab-resource-storage',
   standalone: true,
-  imports: [CommonModule],
+  imports: [ CommonModule ],
   template: `
     <div>
       <h4>Storage</h4>
@@ -20,5 +20,5 @@ import { CommonModule } from '@angular/common';
 })
 export class ResourceStorageDetailsComponent {
   @Input()
-  storage: ResourceStorage | null;
+  storage: ResourceStorage | null = null;
 }

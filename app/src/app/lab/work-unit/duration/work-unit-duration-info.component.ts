@@ -68,7 +68,7 @@ import { WorkUnit } from '../common/work-unit';
 })
 export class WorkUnitDurationInfoComponent {
   @Input({ required: true })
-  workUnit: WorkUnit;
+  workUnit: WorkUnit | undefined;
 
   @Input()
   get calendarVisible(): boolean {
@@ -80,11 +80,11 @@ export class WorkUnitDurationInfoComponent {
   _calendarVisible: boolean = false;
 
   get startDate(): Date | null {
-    return this.workUnit.startDate;
+    return this.workUnit!.startDate;
   }
 
   get endDate(): Date | null {
-    return this.workUnit.endDate;
+    return this.workUnit!.endDate;
   }
 
   get dateRangeText() {

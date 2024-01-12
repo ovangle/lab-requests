@@ -6,10 +6,10 @@ import { CostEstimatePipe } from './cost-estimate.pipe';
 @Component({
   selector: 'uni-research-funding-cost-estimate',
   standalone: true,
-  imports: [CommonModule, CostEstimatePipe],
+  imports: [ CommonModule, CostEstimatePipe ],
   template: ` <span [innerHTML]="cost | uniCostEstimate: 'full'"></span> `,
 })
 export class ResearchFundingCostEstimateComponent {
   @Input()
-  cost: CostEstimate | null;
+  cost: CostEstimate | null = null;
 }

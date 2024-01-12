@@ -125,7 +125,7 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
       }
     `,
   ],
-  providers: [ResearchPlanFormPaneControl],
+  providers: [ ResearchPlanFormPaneControl ],
 })
 export class ResearchPlanDetailPage {
   readonly isEditingForm = true;
@@ -135,7 +135,7 @@ export class ResearchPlanDetailPage {
 
   readonly _formPaneService = inject(ResearchPlanFormPaneControl);
   @ViewChild(ElementRef, { static: true })
-  readonly formPane: ElementRef<any>;
+  readonly formPane: ElementRef<any> | undefined;
 
   readonly appScaffold = inject(BodyScrollbarHidingService);
 

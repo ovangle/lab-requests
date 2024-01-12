@@ -14,7 +14,7 @@ import { formatCampus } from 'src/app/uni/campus/common/campus';
 @Component({
   selector: 'lab-work-unit-form-title',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule],
+  imports: [ CommonModule, MatButtonModule, MatIconModule ],
   template: `
     <h2>
       Update {{ workUnitName }} <br />
@@ -52,13 +52,13 @@ import { formatCampus } from 'src/app/uni/campus/common/campus';
 })
 export class WorkUnitFormTitleComponent {
   @Input({ required: true })
-  workUnitName: string;
+  workUnitName: string | undefined;
 
   @Input()
   subtitle: string | undefined;
 
   @Input()
-  saveDisabled: boolean;
+  saveDisabled: boolean = false;
 
   @Output()
   requestSave = new EventEmitter<void>();

@@ -47,8 +47,10 @@ class LabResource(Base):
     @classmethod
     def __init_subclass__(cls):
         r_type = cls.__mapper_args__["polymorphic_identity"]
-        if not isinstance(r_type, str) or len(r_type) > 16:
-            raise TypeError("LabResource subclass has no declared type")
+        if not isinstance(r_type, LabResourceType):
+            raise TypeError(
+                "LabResource subclass must have a LabResourceType polymorphic_identity"
+            )
         setattr(cls, "__lab_resource_type__", r_type)
 
         return super().__init_subclass__()
@@ -67,39 +69,3 @@ class LabResource(Base):
 lab_resource_pk = Annotated[
     UUID, mapped_column(ForeignKey("lab_resource.id"), primary_key=True)
 ]
-
-
-class LabResourceConsumer(Base):
-    __abstract__ = True
-
-    @abstractmethod
-    def select_resources(
-        self, resource_type: LabResourceType
-    ) -> Select[tuple[list[LabResource]]]:
-        ...
-
-    def __get_session(self):
-        session = async_object_session(self)
-        if not isinstance(session, LocalSession):
-            raise RuntimeError("Instance detached from session")
-        return session
-
-    def _get_resources(self, resource_type: LabResourceType):
-        session = self.__get_session()
-        return session.execute(self.select_resources(resource_type))
-
-    @property
-    async def equipment_leases(self):
-        return await self._get_resources(LabResourceType.EQUIPMENT_LEASE)
-
-    @property
-    async def software_leases(self):
-        return await self._get_resources(LabResourceType.SOFTWARE_LEASE)
-
-    @property
-    async def input_materials(self):
-        return await self._get_resources(LabResourceType.INPUT_MATERIAL)
-
-    @property
-    async def output_materials(self):
-        return await self._get_resources(LabResourceType.OUTPUT_MATERIAL)

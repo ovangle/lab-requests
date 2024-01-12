@@ -46,7 +46,7 @@ import {
 } from './request/equipment-request';
 import { EquipmentLike } from './equipment-like';
 import { isUUID } from 'src/app/utils/is-uuid';
-import { ResearchFunding } from 'src/app/research/funding/funding-model';
+import { ResearchFunding } from 'src/app/research/funding/research-funding';
 
 const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
 
@@ -107,7 +107,7 @@ const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
           <lab-equipment-request-form
             [name]="_equipmentRequest.value.name"
             [disabled]="_disabled"
-            [purchaseFundingModel]="purchaseRequestFundingModel"
+            [purchaseFundingModel]="purchaseRequestFundingModel!"
             (equipmentRequestChange)="_equipmentRequest.next($event)"
           >
           </lab-equipment-request-form>
@@ -151,7 +151,7 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
   );
 
   @Input({ required: true })
-  purchaseRequestFundingModel: ResearchFunding;
+  purchaseRequestFundingModel: ResearchFunding | undefined = undefined;
 
   readonly value$: Observable<Equipment | EquipmentRequest | null> = defer(
     () => {
@@ -196,7 +196,7 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
           return value;
         }),
         withLatestFrom(this._equipmentRequest),
-        map(([searchInput, request]) => ({
+        map(([ searchInput, request ]) => ({
           name: searchInput as string,
           reason: request.reason,
           cost: request.cost,
@@ -236,17 +236,17 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
     }
   }
 
-  _onChange = (value: any) => {};
+  _onChange = (value: any) => { };
   registerOnChange(fn: any): void {
     this._onChange = fn;
   }
-  _onTouched = () => {};
+  _onTouched = () => { };
   registerOnTouched(fn: any): void {
     this._onTouched = fn;
   }
 
   protected _searchDisabled = disabledStateToggler(this.searchControl);
-  _disabled: boolean;
+  _disabled: boolean = false;
   setDisabledState(isDisabled: boolean): void {
     this._searchDisabled(isDisabled);
     this._disabled = isDisabled;

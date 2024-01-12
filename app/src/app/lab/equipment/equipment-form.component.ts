@@ -47,7 +47,7 @@ export const equipmentFixtures: Equipment[] = [];
     EquipmentTrainingDescriptionsInputComponent,
   ],
   template: `
-    <form [formGroup]="form" (ngSubmit)="commitForm($event)">
+    <form [formGroup]="form!" (ngSubmit)="commitForm($event)">
       <mat-form-field>
         <mat-label>Name</mat-label>
         <input matInput id="equipment-name" formControlName="name" />
@@ -79,7 +79,7 @@ export const equipmentFixtures: Equipment[] = [];
           mat-raised-button
           type="submit"
           color="primary"
-          [disabled]="form.invalid"
+          [disabled]="form!.invalid"
         >
           <mat-icon>save</mat-icon> save
         </button>
@@ -104,7 +104,7 @@ export class LabEquipmentFormComponent {
   }
 
   @Input({ required: true })
-  form: EquipmentForm;
+  form: EquipmentForm | undefined;
 
   @Output()
   requestCommit = new EventEmitter<EquipmentPatch>();
@@ -113,10 +113,10 @@ export class LabEquipmentFormComponent {
   requestReset = new EventEmitter<void>();
 
   @ViewChild('formActionControls', { static: true })
-  formActionControls: TemplateRef<any>;
+  formActionControls: TemplateRef<any> | undefined;
 
   get nameErrors(): ValidationErrors | null {
-    return this.form.controls.name.errors;
+    return this.form!.controls.name.errors;
   }
 
   get committedTrainingDescriptions(): string[] {
@@ -124,11 +124,11 @@ export class LabEquipmentFormComponent {
   }
 
   get trainingDescripionsFormArr(): FormControl<string[]> {
-    return this.form.controls.trainingDescriptions;
+    return this.form!.controls.trainingDescriptions;
   }
 
   commitForm(evt: Event) {
-    const patch = equipmentPatchFromForm(this.form);
+    const patch = equipmentPatchFromForm(this.form!);
     this.requestCommit.emit(patch);
     evt.preventDefault();
   }

@@ -27,9 +27,12 @@ async def login_native_user(
     if user.domain != UserDomain.NATIVE:
         raise invalid_credentials_error()
 
-    credentials: NativeUserCredentials = await user.awaitable_attrs.credentials
-
-    if not credentials.verify_password(password):
+    is_valid_password = any(
+        credentials.verify_password(password)
+        for credentials in await user.awaitable_attrs.credentials
+        if isinstance(credentials, NativeUserCredentials)
+    )
+    if not is_valid_password:
         raise invalid_credentials_error()
 
     return Token.create(user, expires_in=expires_in)

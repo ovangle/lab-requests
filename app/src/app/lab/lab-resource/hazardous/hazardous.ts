@@ -37,7 +37,7 @@ export const HAZARDOUS_MATERIAL_CLASSES: HazardClassGroup[] = [
   {
     id: 3,
     name: 'Flammable liquids',
-    classes: [{ id: 0, description: 'Flammable liquid' }].map((v) => ({
+    classes: [ { id: 0, description: 'Flammable liquid' } ].map((v) => ({
       groupId: 3,
       ...v,
     })),
@@ -74,7 +74,7 @@ export const HAZARDOUS_MATERIAL_CLASSES: HazardClassGroup[] = [
   {
     id: 7,
     name: 'Radioactive materials',
-    classes: [{ id: 0, description: 'Radioactive material' }].map((v) => ({
+    classes: [ { id: 0, description: 'Radioactive material' } ].map((v) => ({
       groupId: 7,
       ...v,
     })),
@@ -82,7 +82,7 @@ export const HAZARDOUS_MATERIAL_CLASSES: HazardClassGroup[] = [
   {
     id: 8,
     name: 'Corrosive substances',
-    classes: [{ id: 0, description: 'Corrosive substance' }].map((v) => ({
+    classes: [ { id: 0, description: 'Corrosive substance' } ].map((v) => ({
       groupId: 8,
       ...v,
     })),
@@ -90,14 +90,14 @@ export const HAZARDOUS_MATERIAL_CLASSES: HazardClassGroup[] = [
   {
     id: 9,
     name: 'Miscelaneous dangerous substances',
-    classes: [{ id: 0, description: 'Miscelaneous dangerous substance' }].map(
+    classes: [ { id: 0, description: 'Miscelaneous dangerous substance' } ].map(
       (v) => ({ groupId: 9, ...v }),
     ),
   },
 ];
 
 export function hazardClassGroup(cls: HazardClass): HazardClassGroup {
-  const maybeGroup = HAZARDOUS_MATERIAL_CLASSES[cls.groupId - 1];
+  const maybeGroup = HAZARDOUS_MATERIAL_CLASSES[ cls.groupId - 1 ];
   if (maybeGroup?.id !== cls.groupId) {
     throw new Error(
       `Could not find group for hazard class '${cls.description}'`,
@@ -110,11 +110,11 @@ export function hazardClassDivision(cls: HazardClass): string {
   return cls.id !== 0 ? `${cls.groupId}.${cls.id}` : `${cls.groupId}`;
 }
 
-function divisionIds(division: string): [number, number] {
+function divisionIds(division: string): [ number, number ] {
   const re = /(\d+)(\.(\d+))?/;
   const m = division.match(re);
   if (m) {
-    return [m[1], m[3] || '0'].map((x) => Number.parseInt(x)) as [
+    return [ m[ 1 ], m[ 3 ] || '0' ].map((x) => Number.parseInt(x)) as [
       number,
       number,
     ];
@@ -123,19 +123,19 @@ function divisionIds(division: string): [number, number] {
 }
 
 export function hazardClassFromDivision(division: string): HazardClass {
-  const [groupId, divisionId] = divisionIds(division);
-  const group = HAZARDOUS_MATERIAL_CLASSES[groupId - 1];
+  const [ groupId, divisionId ] = divisionIds(division);
+  const group = HAZARDOUS_MATERIAL_CLASSES[ groupId - 1 ];
   if (group === undefined) {
     throw new Error(`No group with group id ${groupId}`);
   }
-  const cls = group.classes[divisionId];
+  const cls = group.classes[ divisionId ];
   if (cls === undefined) {
     throw new Error(`Class ${divisionId} does not exist in group ${groupId}`);
   }
   return cls;
 }
 
-export function hazardClassesFromJson(json: any[]): HazardClass[] {
+export function hazardClassesFromJson(json: string[]): HazardClass[] {
   return json.map(hazardClassFromDivision);
 }
 

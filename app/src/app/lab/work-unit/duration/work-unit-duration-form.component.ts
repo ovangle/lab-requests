@@ -10,13 +10,13 @@ interface DurationControls {
 }
 
 export type DurationForm<T extends DurationControls> = FormGroup<
-  T & { [k in keyof T]: AbstractControl<any, any> }
+  T & { [ k in keyof T ]: AbstractControl<any, any> }
 >;
 
 @Component({
   selector: 'lab-work-unit-duration-form',
   standalone: true,
-  imports: [CommonModule, MatDatepickerModule, MatFormFieldModule],
+  imports: [ CommonModule, MatDatepickerModule, MatFormFieldModule ],
   template: `
     <mat-form-field>
       <mat-label>Duration</mat-label>
@@ -35,5 +35,5 @@ export type DurationForm<T extends DurationControls> = FormGroup<
 })
 export class WorkUnitDurationFormComponent<T extends DurationControls> {
   @Input({ required: true })
-  form: DurationForm<T>;
+  form: DurationForm<T> | undefined;
 }

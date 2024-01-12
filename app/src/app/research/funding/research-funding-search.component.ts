@@ -16,7 +16,6 @@ import {
 } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatError, MatFormFieldModule } from '@angular/material/form-field';
-import { FundingModelInfoComponent } from './funding-model-info.component';
 import { ResearchFunding, ResearchFundingService } from './research-funding';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, map, of, startWith, switchMap } from 'rxjs';
@@ -25,9 +24,10 @@ import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { ResearchFundingInfoComponent } from './research-funding-info.component';
 
 @Component({
-  selector: 'uni-research-funding-model-search',
+  selector: 'uni-research-funding-search',
   standalone: true,
   imports: [
     CommonModule,
@@ -39,7 +39,7 @@ import { MatIconModule } from '@angular/material/icon';
     MatIconModule,
     MatInputModule,
 
-    FundingModelInfoComponent,
+    ResearchFundingInfoComponent
   ],
   template: `
     <mat-form-field>
@@ -73,8 +73,7 @@ import { MatIconModule } from '@angular/material/icon';
         *ngFor="let fundingModel of searchResults$ | async"
         [value]="fundingModel"
       >
-        <uni-research-funding-model-info [fundingModel]="fundingModel" nameonly>
-        </uni-research-funding-model-info>
+        <research-funding-info [fundingModel]="fundingModel" nameonly />
       </mat-option>
     </mat-autocomplete>
   `,
@@ -89,15 +88,15 @@ import { MatIconModule } from '@angular/material/icon';
     {
       provide: NG_VALUE_ACCESSOR,
       multi: true,
-      useExisting: FundingModelSearchComponent,
+      useExisting: ResearchFundingSearchComponent,
     },
   ],
 })
-export class FundingModelSearchComponent implements ControlValueAccessor {
+export class ResearchFundingSearchComponent implements ControlValueAccessor {
   readonly fundingModelService = inject(ResearchFundingService);
 
   @ContentChildren('.error')
-  _viewErrors: QueryList<ElementRef>;
+  _viewErrors: QueryList<ElementRef> | undefined;
 
   readonly searchControl = new FormControl<ResearchFunding | string>('', {
     nonNullable: true,
@@ -116,14 +115,14 @@ export class FundingModelSearchComponent implements ControlValueAccessor {
   set required(value: BooleanInput) {
     this._required = coerceBooleanProperty(value);
   }
-  _required: boolean;
+  _required: boolean = false;
 
   readonly searchResults$ = this.searchControl.valueChanges.pipe(
     takeUntilDestroyed(),
     startWith(''),
     switchMap((nameOrFundingModel) => {
       if (nameOrFundingModel instanceof ResearchFunding) {
-        return of([nameOrFundingModel]);
+        return of([ nameOrFundingModel ]);
       } else {
         return this.fundingModelService.search(nameOrFundingModel);
       }
@@ -140,7 +139,7 @@ export class FundingModelSearchComponent implements ControlValueAccessor {
   }
 
   ngAfterViewInit() {
-    this._viewErrors.changes.subscribe((change) =>
+    this._viewErrors!.changes.subscribe((change) =>
       this.searchControl.markAsTouched(),
     );
   }
@@ -155,11 +154,11 @@ export class FundingModelSearchComponent implements ControlValueAccessor {
   writeValue(obj: ResearchFunding | string | null): void {
     this.searchControl.setValue(obj || '');
   }
-  _onChange = (value: ResearchFunding | string | null) => {};
+  _onChange = (value: ResearchFunding | string | null) => { };
   registerOnChange(fn: any): void {
     this._onChange = fn;
   }
-  _onTouched = () => {};
+  _onTouched = () => { };
   registerOnTouched(fn: any): void {
     this._onTouched = fn;
   }

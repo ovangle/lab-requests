@@ -24,7 +24,7 @@ import {
     CampusSearchComponent,
   ],
   template: `
-    <ng-container [formGroup]="form">
+    <ng-container [formGroup]="form!">
       <mat-form-field>
         <mat-label>Researcher</mat-label>
         <input matInput id="researcher-email" formControlName="researcher" />
@@ -70,29 +70,29 @@ import {
 })
 export class ResearchPlanResearcherFormComponent {
   @Input()
-  form: ExperimentalPlanForm;
+  form: ExperimentalPlanForm | undefined;
 
-  get researcherErrors(): ExperimentalPlanFormErrors['researcher'] | null {
-    const nameControl = this.form.controls.researcher;
+  get researcherErrors(): ExperimentalPlanFormErrors[ 'researcher' ] | null {
+    const nameControl = this.form!.controls.researcher;
     return (nameControl.errors || null) as any;
   }
 
   get disciplineErrors():
-    | ExperimentalPlanFormErrors['researcherDiscipline']
+    | ExperimentalPlanFormErrors[ 'researcherDiscipline' ]
     | null {
-    const disciplineControl = this.form.controls.researcherDiscipline;
+    const disciplineControl = this.form!.controls.researcherDiscipline;
     return (disciplineControl.errors || null) as any;
   }
 
   get baseCampusErrors():
-    | ExperimentalPlanFormErrors['researcherBaseCampus']
+    | ExperimentalPlanFormErrors[ 'researcherBaseCampus' ]
     | null {
-    const disciplineControl = this.form.controls.researcherBaseCampus;
+    const disciplineControl = this.form!.controls.researcherBaseCampus;
     return (disciplineControl.errors || null) as any;
   }
 
-  get supervisorErrors(): ExperimentalPlanFormErrors['supervisor'] {
-    const supervisorControl = this.form.controls.supervisor;
+  get supervisorErrors(): ExperimentalPlanFormErrors[ 'supervisor' ] {
+    const supervisorControl = this.form!.controls.supervisor;
     return (supervisorControl.errors || null) as any;
   }
 }

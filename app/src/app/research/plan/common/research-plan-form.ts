@@ -28,10 +28,7 @@ import {
   startWith,
 } from 'rxjs';
 import { Discipline } from 'src/app/uni/discipline/discipline';
-import {
-  ResearchFunding,
-  ResearchFundingService,
-} from 'src/app/research/funding/funding-model';
+
 import {
   WorkUnitForm,
   WorkUnitFormErrors,
@@ -41,6 +38,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { collectFieldErrors } from 'src/app/utils/forms/validators';
 import { Campus, CampusService } from 'src/app/uni/campus/common/campus';
 import { ResearchPlanPatch } from './research-plan';
+import { ResearchFunding, ResearchFundingService } from '../../funding/research-funding';
 
 export type ExperimentalPlanControls = {
   title: FormControl<string>;
@@ -148,31 +146,31 @@ export function experimentalPlanForm(): ExperimentalPlanForm {
     {
       title: new FormControl<string>('', {
         nonNullable: true,
-        validators: [Validators.required],
+        validators: [ Validators.required ],
       }),
       researcher: new FormControl<string>('', {
         nonNullable: true,
-        validators: [Validators.required, Validators.email],
+        validators: [ Validators.required, Validators.email ],
       }),
       researcherBaseCampus: new FormControl<Campus | string | null>(null, {
-        validators: [Validators.required],
-        asyncValidators: [isCampusOrCampusCodeValidator()],
+        validators: [ Validators.required ],
+        asyncValidators: [ isCampusOrCampusCodeValidator() ],
       }),
       researcherDiscipline: new FormControl<Discipline | null>(null, {
-        validators: [Validators.required],
+        validators: [ Validators.required ],
       }),
       fundingModel: new FormControl<ResearchFunding | string | null>(null, {
-        validators: [Validators.required],
-        asyncValidators: [isFundingModelOrNameValidator()],
+        validators: [ Validators.required ],
+        asyncValidators: [ isFundingModelOrNameValidator() ],
       }),
       supervisor: new FormControl<string | null>(null, {
-        validators: [Validators.email],
+        validators: [ Validators.email ],
       }),
       processSummary: new FormControl('', { nonNullable: true }),
       addWorkUnits: new FormArray<WorkUnitForm>([]),
     },
     {
-      asyncValidators: [(c) => collectFieldErrors(c as ExperimentalPlanForm)],
+      asyncValidators: [ (c) => collectFieldErrors(c as ExperimentalPlanForm) ],
     },
   );
 }

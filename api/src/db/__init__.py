@@ -5,7 +5,13 @@ from alembic import command
 from alembic.config import Config
 from fastapi.encoders import jsonable_encoder
 
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import (
+    create_async_engine,
+    async_sessionmaker,
+    AsyncSession,
+    async_object_session,
+)
+
 
 from .settings import DbSettings
 
@@ -25,6 +31,13 @@ class LocalSession(AsyncSession):
 local_sessionmaker = async_sessionmaker(
     engine, class_=LocalSession, expire_on_commit=False
 )
+
+
+def local_object_session(obj) -> LocalSession:
+    session = async_object_session(obj)
+    if not isinstance(session, LocalSession):
+        raise RuntimeError("Object detached from session")
+    return session
 
 
 async def get_db():

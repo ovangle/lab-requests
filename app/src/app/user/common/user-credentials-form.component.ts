@@ -30,15 +30,15 @@ export interface LoginError {
 type LoginResult = LoginSuccess | LoginError;
 
 function isSuccessResult(result: LoginResult): result is LoginSuccess {
-  return isJsonObject(result) && typeof result['accessToken'] === 'string';
+  return isJsonObject(result) && typeof result[ 'accessToken' ] === 'string';
 }
 
 function isLoginError(obj: unknown): obj is LoginError {
   return (
     typeof obj === 'object' &&
     obj != null &&
-    (typeof (obj as any)['invalidCredentials'] === 'string' ||
-      (obj as any)['invalidCredentials'] === null)
+    (typeof (obj as any)[ 'invalidCredentials' ] === 'string' ||
+      (obj as any)[ 'invalidCredentials' ] === null)
   );
 }
 
@@ -51,8 +51,8 @@ export class LoginRequest {
     return this._result;
   }
 
-  setResultSuccess: (result: LoginSuccess) => void;
-  setResultError: (result: LoginError) => void;
+  setResultSuccess: (result: LoginSuccess) => void = () => { };
+  setResultError: (result: LoginError) => void = () => { };
 
   constructor(email: string, password: string) {
     this.email = email;
@@ -107,7 +107,7 @@ export class LoginRequest {
   `,
 })
 export class UserCredentialsFormComponent {
-  _loginErrors: LoginError | null;
+  _loginErrors: LoginError | null = null;
 
   @Output()
   readonly loginRequest = new EventEmitter<LoginRequest>();
@@ -125,17 +125,17 @@ export class UserCredentialsFormComponent {
 
   get emailErrors(): { required: string | null } | null {
     return this.form.errors
-      ? (this.form.controls['email'].errors as {
-          required: string | null;
-        } | null)
+      ? (this.form.controls[ 'email' ].errors as {
+        required: string | null;
+      } | null)
       : null;
   }
 
   get passwordErrors(): { required: string | null } | null {
     return this.form.errors
-      ? (this.form.controls['password'].errors as {
-          required: string | null;
-        } | null)
+      ? (this.form.controls[ 'password' ].errors as {
+        required: string | null;
+      } | null)
       : null;
   }
 

@@ -49,6 +49,8 @@ class EquipmentLease(LabResource):
     )
     require_supervision: Mapped[bool] = mapped_column(postgresql.BOOLEAN)
 
+    setup_instructions: Mapped[str] = mapped_column(postgresql.TEXT)
+
     def __init__(self, *, equipment: LabEquipment | LabEquipmentProvision, **kwargs):
         from ..lab_equipment import LabEquipment, LabEquipmentProvision
 

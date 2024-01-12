@@ -36,8 +36,7 @@ import {
   injectModelService,
 } from 'src/app/common/model/model-collection';
 
-@Injectable()
-export class SoftwareCollection extends ModelCollection<Software> {}
+
 
 const _NEW_SOFTWARE_ = '_NEW_SOFTWARE_';
 
@@ -149,12 +148,12 @@ export class SoftwareSearchComponent implements ControlValueAccessor {
     }
   }
 
-  _onChange = (value: any) => {};
+  _onChange = (value: any) => { };
   registerOnChange(fn: any) {
     this._onChange = fn;
   }
 
-  _onTouched = () => {};
+  _onTouched = () => { };
   registerOnTouched(fn: any) {
     this._onTouched = fn;
   }

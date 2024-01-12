@@ -8,7 +8,7 @@ import { Campus } from 'src/app/uni/campus/common/campus';
 @Component({
   selector: 'research-plan-researcher-info',
   standalone: true,
-  imports: [CommonModule, CampusInfoComponent],
+  imports: [ CommonModule, CampusInfoComponent ],
   template: `
     <h4>{{ email }}</h4>
     <dl>
@@ -20,17 +20,17 @@ import { Campus } from 'src/app/uni/campus/common/campus';
   `,
 })
 export class ResearchPlanResearcherInfoComponent {
-  @Input() plan: ResearchPlan;
+  @Input({ required: true }) plan: ResearchPlan | undefined;
 
   get email(): string {
-    return this.plan.researcher.email;
+    return this.plan!.researcher.email;
   }
 
   get baseCampus(): Campus {
-    return this.plan.researcher.baseCampus;
+    return this.plan!.researcher.baseCampus;
   }
 
   get discipline(): Discipline | null {
-    return this.plan.researcher.discipline;
+    return this.plan!.researcher.discipline;
   }
 }

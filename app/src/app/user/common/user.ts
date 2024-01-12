@@ -1,8 +1,10 @@
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import {
   Model,
+  ModelIndexPage,
   ModelParams,
   ModelPatch,
+  modelIndexPageFromJsonObject,
   modelParamsFromJsonObject,
 } from '../../common/model/model';
 import { Role, roleFromJson } from './role';
@@ -33,12 +35,13 @@ import { Actor } from '../actor';
 import { Lab, labFromJson } from 'src/app/lab/common/lab';
 import { Campus, campusFromJsonObject } from 'src/app/uni/campus/common/campus';
 import { Discipline, isDiscipline } from 'src/app/uni/discipline/discipline';
+import { ResearchPlan, researchPlanFromJsonObject } from 'src/app/research/plan/common/research-plan';
 
 export interface UserParams extends ModelParams {
   name: string;
   email: string;
   baseCampus: Campus;
-  discipline: Discipline;
+  // discipline: Discipline;
 
   roles: ReadonlySet<Role>;
 }
@@ -48,7 +51,7 @@ export class User extends Model implements UserParams {
   readonly name: string;
 
   readonly baseCampus: Campus;
-  readonly discipline: Discipline;
+  // readonly discipline: Discipline;
   readonly roles: ReadonlySet<Role>;
 
   /**
@@ -56,6 +59,8 @@ export class User extends Model implements UserParams {
    */
   constructor(params: UserParams) {
     super(params);
+    this.baseCampus = params.baseCampus;
+    // this.discipline = params.discipline;
     this.email = params.email;
     this.name = params.name;
 
@@ -67,42 +72,82 @@ export class User extends Model implements UserParams {
   }
 }
 
-export function userFromJsonObject(json: JsonObject): User {
+function userParamsFromJsonObject(json: JsonObject): UserParams {
   const baseParams = modelParamsFromJsonObject(json);
-  if (typeof json['email'] !== 'string') {
+  if (typeof json[ 'email' ] !== 'string') {
     throw new Error("Expected a string 'email'");
   }
 
-  if (typeof json['name'] !== 'string') {
+  if (typeof json[ 'name' ] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
 
-  if (!isJsonObject(json['baseCampus'])) {
+  if (!isJsonObject(json[ 'baseCampus' ])) {
     throw new Error("Expected a json object 'baseCampus'");
   }
-  const baseCampus = campusFromJsonObject(json['baseCampus']);
+  const baseCampus = campusFromJsonObject(json[ 'baseCampus' ]);
 
-  if (!isDiscipline(json['discipline'])) {
-    throw new Error('Expected a valid discipline');
-  }
+  // if (!isDiscipline(json[ 'discipline' ])) {
+  //   throw new Error('Expected a valid discipline');
+  // }
 
   let roles: ReadonlySet<Role> = new Set();
-  if (Array.isArray(json['roles'])) {
-    roles = new Set(json['roles'].map(roleFromJson));
+  if (Array.isArray(json[ 'roles' ])) {
+    roles = new Set(json[ 'roles' ].map(roleFromJson));
   }
 
-  return new User({
+  return {
     ...baseParams,
-    name: json['name'],
-    email: json['email'],
+    name: json[ 'name' ],
+    email: json[ 'email' ],
     baseCampus,
-    discipline: json['discipline'],
+    // discipline: json[ 'discipline' ],
 
     roles,
+  };
+}
+
+export function userFromJsonObject(json: JsonObject): User {
+  return new User(userParamsFromJsonObject(json));
+}
+
+interface CurrentUserParams extends UserParams {
+  readonly labs: ModelIndexPage<Lab>;
+  readonly plans: ModelIndexPage<ResearchPlan>;
+}
+
+export class CurrentUser extends User implements CurrentUserParams {
+  readonly labs: ModelIndexPage<Lab>;
+  readonly plans: ModelIndexPage<ResearchPlan>;
+
+  constructor(params: CurrentUserParams) {
+    super(params);
+    this.labs = params.labs;
+    this.plans = params.plans;
+  }
+}
+
+function currentUserFromJsonObject(json: JsonObject): CurrentUser {
+  const userParams = userParamsFromJsonObject(json);
+
+  if (!isJsonObject(json[ 'labs' ])) {
+    throw new Error("Expected a json object 'labs'")
+  }
+  const labs = modelIndexPageFromJsonObject(labFromJson, json[ 'labs' ]);
+
+  if (!isJsonObject(json[ 'plans' ])) {
+    throw new Error("Expected a json object 'plans'");
+  }
+  const plans = modelIndexPageFromJsonObject(researchPlanFromJsonObject, json[ 'plans' ]);
+
+  return new CurrentUser({
+    ...userParams,
+    labs,
+    plans
   });
 }
 
-export interface UserPatch extends ModelPatch<User> {}
+export interface UserPatch extends ModelPatch<User> { }
 
 function userPatchToJson(patch: UserPatch) {
   return {};
@@ -113,7 +158,7 @@ export interface AlterPassword {
   newValue: string;
 }
 
-export class AlterPasswordError extends Error {}
+export class AlterPasswordError extends Error { }
 
 @Injectable({ providedIn: 'root' })
 export class UserService extends RestfulService<User> {
@@ -123,10 +168,10 @@ export class UserService extends RestfulService<User> {
   override readonly modelFromJsonObject = userFromJsonObject;
   override readonly modelPatchToJsonObject = userPatchToJson;
 
-  me(): Observable<User> {
+  me(): Observable<CurrentUser> {
     return this._httpClient
       .get<JsonObject>(this.indexMethodUrl('me'))
-      .pipe(map((result) => this.modelFromJsonObject(result)));
+      .pipe(map((result) => currentUserFromJsonObject(result)));
   }
 
   alterPassword(alterPasswordRequest: AlterPassword): Observable<User> {
@@ -151,8 +196,13 @@ export class UserService extends RestfulService<User> {
 }
 
 @Injectable({ providedIn: 'root' })
-export class UserCollection extends ModelCollection<User> {
-  private _activeUserId: string | null = null;
+export class UserCollection extends ModelCollection<User, UserService> implements UserService {
+  private _currentUserId: string | null = null;
+
+  protected _cacheCurrentUser(user: CurrentUser) {
+    this._currentUserId = user.id;
+    this._cache.set(user.id, user);
+  }
 
   constructor(service: UserService) {
     super(service);
@@ -165,14 +215,13 @@ export class UserCollection extends ModelCollection<User> {
     return this._userService.alterPassword(alterPasswordRequest);
   }
 
-  me(): Observable<User> {
-    if (this._activeUserId != null) {
-      return this.fetch(this._activeUserId);
+  me(): Observable<CurrentUser> {
+    if (this._currentUserId != null) {
+      return this.fetch(this._currentUserId) as Observable<CurrentUser>;
     }
     return (this.service as UserService).me().pipe(
-      this._cacheResult,
       tap((result) => {
-        this._activeUserId = result.id;
+        this._cacheCurrentUser(result)
       }),
     );
   }

@@ -4,7 +4,7 @@ import { ResourceType } from './resource-type';
 import { MatCardModule } from '@angular/material/card';
 import { CommonModule } from '@angular/common';
 import { EquipmentLeaseTableComponent } from '../lab-resources/equipment-lease/equipment-lease-table.component';
-import { SoftwareResourceTableComponent } from '../lab-resources/software-lease/software-resource-table.component';
+import { SoftwareLeaseTableComponent } from '../lab-resources/software-lease/software-resource-table.component';
 import { InputMaterialTableComponent } from '../lab-resources/input-material/input-material-resource-table.component';
 import { OutputMaterialResourceTableComponent } from '../lab-resources/output-material/output-material-resource-table.component';
 
@@ -16,7 +16,7 @@ import { OutputMaterialResourceTableComponent } from '../lab-resources/output-ma
     MatCardModule,
 
     EquipmentLeaseTableComponent,
-    SoftwareResourceTableComponent,
+    SoftwareLeaseTableComponent,
     InputMaterialTableComponent,
     OutputMaterialResourceTableComponent,
   ],
@@ -26,21 +26,21 @@ import { OutputMaterialResourceTableComponent } from '../lab-resources/output-ma
         <lab-equipment-lease-table />
       }
       @case ('software-lease') {
-        <lab-software-resource-table />
+        <lab-software-lease-table />
       }
       @case ('input-material') {
-        <lab-input-material-resource-table />
+        <lab-input-material-table />
       }
       @case ('output-material') {
-        <lab-output-material-resource-table />
+        <lab-output-material-table />
       }
     }
   `,
 })
-export class WorkUnitResourceInfo<T extends Resource> {
+export class LabResourceCardComponent<T extends Resource> {
   @Input({ required: true })
-  resourceType: ResourceType;
+  resourceType: ResourceType | undefined = undefined;
 
   @Input()
-  resources: readonly T[];
+  resources: readonly T[] = [];
 }

@@ -10,8 +10,7 @@ from db.models.lab import Lab
 
 from ..base.schemas import ModelLookup, ModelIndexPage, ModelView, ModelIndex
 
-if TYPE_CHECKING:
-    from api.uni.schemas import CampusView
+from ..uni.schemas import CampusView
 
 
 class LabView(ModelView[Lab]):
@@ -48,9 +47,9 @@ async def lookup_lab(db: LocalSession, ref: LabLookup | UUID):
     return await ref.get(db)
 
 
-class LabIndex(ModelIndex[Lab]):
+class LabIndex(ModelIndex[LabView, Lab]):
     __item_view__ = LabView
 
 
 # TODO: PEP 695 type
-LabIndexPage = ModelIndexPage[Lab]
+LabIndexPage = ModelIndexPage[LabView, Lab]

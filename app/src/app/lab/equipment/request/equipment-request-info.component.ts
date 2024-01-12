@@ -6,15 +6,15 @@ import { EquipmentRequest } from './equipment-request';
 @Component({
   selector: 'lab-equipment-request-info',
   standalone: true,
-  imports: [CommonModule],
+  imports: [ CommonModule ],
   template: `
-    <h1>(new) {{ equipment.name }}</h1>
+    <h1>(new) {{ equipment!.name }}</h1>
 
     <p>Reason</p>
-    <p>{{ equipment.reason }}</p>
+    <p>{{ equipment!.reason }}</p>
   `,
 })
 export class EquipmentRequestInfoComponent {
   @Input({ required: true })
-  equipment: EquipmentRequest;
+  equipment: EquipmentRequest | undefined = undefined;
 }

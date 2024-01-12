@@ -14,17 +14,17 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { CampusSearchComponent } from 'src/app/uni/campus/campus-search.component';
 import { DisciplineSelectComponent } from 'src/app/uni/discipline/discipline-select.component';
-import { ResearchFunding } from 'src/app/research/funding/funding-model';
 import { Equipment } from 'src/app/lab/equipment/common/equipment';
 
-import { FundingModelSearchComponent } from 'src/app/research/funding/funding-model-search.component';
 import { ResearchPlanPatch } from './research-plan';
 import {
   ExperimentalPlanForm,
   ExperimentalPlanFormErrors,
 } from './research-plan-form';
 import { ResearchPlanResearcherFormComponent } from '../researcher/researcher-form.component';
-import { ResearchFundingSelectComponent } from 'src/app/research/funding/funding-model-select.component';
+import { ResearchFunding } from '../../funding/research-funding';
+import { ResearchFundingSearchComponent } from '../../funding/research-funding-search.component';
+import { ResearchFundingSelectComponent } from '../../funding/research-funding-select.component';
 
 @Component({
   selector: 'lab-experimental-plan-form',
@@ -38,13 +38,13 @@ import { ResearchFundingSelectComponent } from 'src/app/research/funding/funding
     MatDatepickerModule,
 
     DisciplineSelectComponent,
-    FundingModelSearchComponent,
+    ResearchFundingSearchComponent,
     ResearchFundingSelectComponent,
     CampusSearchComponent,
     ResearchPlanResearcherFormComponent,
   ],
   template: `
-    <form [formGroup]="form">
+    <form [formGroup]="form!">
       <mat-form-field>
         <mat-label for="title">Project title</mat-label>
 
@@ -71,7 +71,7 @@ import { ResearchFundingSelectComponent } from 'src/app/research/funding/funding
         </textarea>
       </mat-form-field>
 
-      <research-plan-researcher-form [form]="form" />
+      <research-plan-researcher-form [form]="form!" />
 
       <uni-research-funding-model-select formControlName="fundingModel">
         <mat-label>Funding source</mat-label>
@@ -108,7 +108,7 @@ export class ResearchPlanFormComponent {
   committed: Equipment | null = null;
 
   @Input({ required: true })
-  form: ExperimentalPlanForm;
+  form: ExperimentalPlanForm | undefined;
 
   @Output()
   requestCommit = new EventEmitter<ResearchPlanPatch>();
@@ -120,16 +120,16 @@ export class ResearchPlanFormComponent {
     return this.committed === null;
   }
 
-  get titleErrors(): ExperimentalPlanFormErrors['title'] {
-    return this.form.controls['title'].errors || (null as any);
+  get titleErrors(): ExperimentalPlanFormErrors[ 'title' ] {
+    return this.form!.controls[ 'title' ].errors || (null as any);
   }
 
   get fundingModel(): ResearchFunding | string | null {
-    return this.form.controls.fundingModel.value;
+    return this.form!.controls.fundingModel.value;
   }
 
-  get fundingModelErrors(): ExperimentalPlanFormErrors['fundingModel'] {
-    return this.form.controls['fundingModel'].errors || (null as any);
+  get fundingModelErrors(): ExperimentalPlanFormErrors[ 'fundingModel' ] {
+    return this.form!.controls[ 'fundingModel' ].errors || (null as any);
   }
 
   @Input()
@@ -138,19 +138,19 @@ export class ResearchPlanFormComponent {
     committable: boolean;
     doCommit: () => void;
     doReset: () => void;
-  }>;
+  }> | undefined;
 
   @Input()
   get disabled(): boolean {
-    return this.form.disabled;
+    return this.form!.disabled;
   }
   set disabled(value: BooleanInput) {
     const isDisabled = coerceBooleanProperty(value);
-    if (isDisabled && !this.form.disabled) {
-      this.form.disable();
+    if (isDisabled && !this.form!.disabled) {
+      this.form!.disable();
     }
-    if (!isDisabled && this.form.disabled) {
-      this.form.enable();
+    if (!isDisabled && this.form!.disabled) {
+      this.form!.enable();
     }
   }
 }

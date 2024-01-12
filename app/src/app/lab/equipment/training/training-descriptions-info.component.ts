@@ -29,5 +29,5 @@ import { EquipmentTrainingDescriptionListComponent } from './training-descriptio
 })
 export class EquipmentTrainingDescriptionsInfoComponent {
   @Input({ required: true })
-  trainingDescriptions: string[];
+  trainingDescriptions: string[] = [];
 }

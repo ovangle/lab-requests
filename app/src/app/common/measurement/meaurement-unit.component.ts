@@ -5,12 +5,12 @@ import { MeasurementUnitPipe } from './common-measurement-unit.pipe';
 @Component({
   selector: 'common-measurement-unit',
   standalone: true,
-  imports: [CommonModule, MeasurementUnitPipe],
+  imports: [ CommonModule, MeasurementUnitPipe ],
   template: ``,
 })
 export class CommonMeasurementUnitComponent {
   @Input()
-  unit: string;
+  unit: string = 'kg';
 
   readonly _measure = inject(MeasurementUnitPipe);
 

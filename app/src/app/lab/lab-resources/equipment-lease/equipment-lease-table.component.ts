@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { CollectionViewer } from '@angular/cdk/collections';
 import { Observable, forkJoin, switchMap } from 'rxjs';
 import { EquipmentLeaseDetailComponent } from './equipment-lease-detail.component';
-import { EquipmentService } from 'src/app/lab/equipment/common/equipment';
+import { EquipmentService, injectEquipmentService } from 'src/app/lab/equipment/common/equipment';
 import { ResourceTableInfoHeaderComponent } from '../../lab-resource/common/resource-table-info-header.component';
 import {
   ResourceTableDataSource,
@@ -17,20 +17,7 @@ export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<Equip
   override readonly resourceType = 'equipment-lease';
   override readonly resourceTitle = 'Equipment';
 
-  readonly equipments = inject(EquipmentService);
-
-  override connect(
-    collectionViewer: CollectionViewer,
-  ): Observable<readonly EquipmentLease[]> {
-    return super.connect(collectionViewer).pipe(
-      switchMap((equipmentLeases) => {
-        const resolved = equipmentLeases.map((lease) =>
-          lease.resolveEquipment(this.equipments),
-        );
-        return forkJoin(resolved);
-      }),
-    );
-  }
+  readonly equipments = injectEquipmentService();
 }
 
 @Component({
@@ -109,4 +96,4 @@ export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<Equip
     },
   ],
 })
-export class EquipmentLeaseTableComponent {}
+export class EquipmentLeaseTableComponent { }

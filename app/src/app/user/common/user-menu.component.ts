@@ -9,7 +9,7 @@ import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
 @Component({
   selector: 'user-menu',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatButtonModule, MatMenuModule],
+  imports: [ CommonModule, RouterModule, MatButtonModule, MatMenuModule ],
   template: `
     @if (isLoggedIn) {
       <button mat-button [matMenuTriggerFor]="menu">{{ userFullName }}</button>
@@ -33,7 +33,7 @@ export class UserMenuComponent {
   set isLoggedIn(value: BooleanInput) {
     this._isLoggedIn = coerceBooleanProperty(value);
   }
-  _isLoggedIn: boolean;
+  _isLoggedIn: boolean = false;
 
   @Input()
   get loginDisabled() {
@@ -42,23 +42,23 @@ export class UserMenuComponent {
   set loginDisabled(input: BooleanInput) {
     this._loginDisabled = coerceBooleanProperty(input);
   }
-  _loginDisabled: boolean;
+  _loginDisabled: boolean = false;
 
   @Input({ required: true })
-  userFullName: string | null;
+  userFullName: string | null = null;
 
   @Input({ required: true })
-  userFeatureLink: string[];
+  userFeatureLink: string[] = [];
 
   get loginLink() {
-    return [...this.userFeatureLink, 'login'];
+    return [ ...this.userFeatureLink, 'login' ];
   }
 
   get logoutLink() {
-    return [...this.userFeatureLink, 'logout'];
+    return [ ...this.userFeatureLink, 'logout' ];
   }
 
   get alterPasswordLink() {
-    return [...this.userFeatureLink, 'alter-password'];
+    return [ ...this.userFeatureLink, 'alter-password' ];
   }
 }

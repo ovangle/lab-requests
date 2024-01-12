@@ -13,16 +13,18 @@ import {
   hazardClassesFromJson,
   hazardClassesToJson,
 } from '../../lab-resource/hazardous/hazardous';
-import { ResourceParams, Resource } from '../../lab-resource/resource';
+import { ResourceParams, Resource, resourceParamsFromJsonObject } from '../../lab-resource/resource';
 import {
   ResourceStorage,
   ResourceStorageParams,
   resourceStorageFromJson,
   resourceStorageParamsToJson,
 } from '../../lab-resource/storage/resource-storage';
+import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 
 export interface InputMaterialParams extends ResourceParams {
   name: string;
+  description: string;
   baseUnit: string;
 
   numUnitsRequired: number;
@@ -49,14 +51,8 @@ export class InputMaterial extends Resource<InputMaterialParams> {
   constructor(params: InputMaterialParams) {
     super(params);
 
-    if (!params.name) {
-      throw new Error('Invalid InputMaterial. Must provide name');
-    }
     this.name = params.name;
-
-    if (!params.baseUnit) {
-      throw new Error('Invalid InputMaterial. Must provide base units');
-    }
+    this.description = params.description;
     this.baseUnit = params.baseUnit;
 
     this.numUnitsRequired = params.numUnitsRequired || 0;
@@ -66,34 +62,52 @@ export class InputMaterial extends Resource<InputMaterialParams> {
   }
 }
 
-export function inputMaterialFromJson(json: {
-  [k: string]: any;
-}): InputMaterial {
-  const attachments: ResourceFileAttachment<any>[] = Array.from(
-    json['attachments'] || [],
-  ).map(resourceFileAttachmentFromJson);
+export function inputMaterialFromJson(json: JsonObject): InputMaterial {
+  const resourceParams = resourceParamsFromJsonObject(json);
+
+  if (typeof json[ 'name' ] !== 'string') {
+    throw new Error("Expected a string 'name'")
+  }
+  if (typeof json[ 'description' ] !== 'string') {
+    throw new Error("Expected a string 'description'");
+  }
+  if (typeof json[ 'baseUnit' ] !== 'string') {
+    throw new Error("Expected a string 'baseUnit'");
+  }
+  if (typeof json[ 'numUnitsRequired' ] !== 'number') {
+    throw new Error("Expected a number 'numUnitsRequired");
+  }
+  if (!isJsonObject(json[ 'perUnitCostEstimate' ]) && json[ 'perUnitCostEstimate' ] !== null) {
+    throw new Error("Expected a json object or null 'perUnitCostEstimate'");
+  }
+  const perUnitCostEstimate = json[ 'perUnitCostEstimate' ] && costEstimateFromJson(json[ 'perUnitCostEstimate' ]);
+
+  if (!isJsonObject(json[ 'storage' ])) {
+    throw new Error("Expected a json object 'storage'");
+  }
+  const storage = resourceStorageFromJson(json[ 'storage' ]);
+
+  if (!Array.isArray(json[ 'hazardClasses' ]) || !json[ 'hazardClasses' ].every(o => typeof o === 'string')) {
+    throw new Error("Expected an array of strings 'hazardClasses'");
+  }
+  const hazardClasses = hazardClassesFromJson(json[ 'hazardClasses' ]);
 
   return new InputMaterial({
-    containerId: json['containerId'],
-    id: json['id'],
-    index: json['index'],
-    name: json['name'],
-    baseUnit: json['baseUnit'],
-    numUnitsRequired: json['numUnitsRequired'],
-    perUnitCostEstimate: json['perUnitCostEstimate']
-      ? costEstimateFromJson(json['perUnitCostEstimate'])
-      : null,
-    storage: resourceStorageFromJson(json['storage']),
-    hazardClasses: hazardClassesFromJson(json['hazardClasses']),
-    attachments,
+    ...resourceParams,
+    name: json[ 'name' ],
+    description: json[ 'description' ],
+    baseUnit: json[ 'baseUnit' ],
+    numUnitsRequired: json[ 'numUnitsRequired' ],
+    perUnitCostEstimate,
+    storage,
+    hazardClasses,
   });
 }
 
 export function inputMaterialToJson(inputMaterial: InputMaterial): {
-  [k: string]: any;
+  [ k: string ]: any;
 } {
   return {
-    containerId: inputMaterial.containerId,
     id: inputMaterial.id,
     index: inputMaterial.index,
     name: inputMaterial.name,
@@ -104,6 +118,5 @@ export function inputMaterialToJson(inputMaterial: InputMaterial): {
       costEstimateToJson(inputMaterial.perUnitCostEstimate),
     storage: resourceStorageParamsToJson(inputMaterial.storage),
     hazardClasses: hazardClassesToJson(inputMaterial.hazardClasses),
-    attachments: inputMaterial.attachments.map(resourceFileAttachmentToJson),
   };
 }

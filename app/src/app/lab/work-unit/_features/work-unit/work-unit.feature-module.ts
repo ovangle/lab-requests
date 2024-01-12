@@ -13,7 +13,7 @@ import {
   WorkUnitResourceContainerContext,
 } from '../../common/work-unit';
 import { WorkUnitFormComponent } from '../../common/work-unit-form.component';
-import { WorkUnitResourceInfo } from 'src/app/lab/lab-resource/resource-card.component';
+import { LabResourceCardComponent } from 'src/app/lab/lab-resource/resource-card.component';
 
 const WORK_UNIT_FROM_PLAN_ROUTES: Routes = [
   {
@@ -44,8 +44,8 @@ const WORK_UNIT_FROM_PLAN_ROUTES: Routes = [
     WorkUnitDurationInfoComponent,
     WorkUnitFormComponent,
 
-    WorkUnitResourceInfo,
+    LabResourceCardComponent,
   ],
-  declarations: [WorkUnitCreatePage, WorkUnitDetailPage, WorkUnitIndexPage],
+  declarations: [ WorkUnitCreatePage, WorkUnitDetailPage, WorkUnitIndexPage ],
 })
-export class FromPlanWorkUnitModule {}
+export class FromPlanWorkUnitModule { }

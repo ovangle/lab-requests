@@ -6,11 +6,11 @@ import { ResearchPlanResearcherInfoComponent } from '../researcher/researcher-in
 @Component({
   selector: 'research-plan-info',
   standalone: true,
-  imports: [CommonModule, ResearchPlanResearcherInfoComponent],
+  imports: [ CommonModule, ResearchPlanResearcherInfoComponent ],
   template: `
-    <h1>{{ plan.title }} {{ plan.funding.description }}</h1>
+    <h1>{{ plan!.title }} {{ plan!.funding.description }}</h1>
 
-    <research-plan-researcher-info [plan]="plan" />
+    <research-plan-researcher-info [plan]="plan!" />
 
     <!--
     <div class="process-summary">
@@ -20,6 +20,6 @@ import { ResearchPlanResearcherInfoComponent } from '../researcher/researcher-in
   `,
 })
 export class ResearchPlanInfoComponent {
-  @Input()
-  plan: ResearchPlan;
+  @Input({ required: true })
+  plan: ResearchPlan | undefined;
 }

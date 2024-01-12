@@ -45,6 +45,7 @@ research_plan_resources = Table(
     Column("plan_id", ForeignKey("research_plan.id"), primary_key=True),
     Column("resource_id", ForeignKey("lab_resource.id"), primary_key=True),
     Column("resource_type", postgresql.VARCHAR(16)),
+    Column("resource_index", postgresql.INTEGER),
 )
 
 

@@ -7,22 +7,22 @@ import { WorkUnitDurationInfoComponent } from '../duration/work-unit-duration-in
 @Component({
   selector: 'lab-work-unit-info',
   standalone: true,
-  imports: [CommonModule, CampusInfoComponent, WorkUnitDurationInfoComponent],
+  imports: [ CommonModule, CampusInfoComponent, WorkUnitDurationInfoComponent ],
   template: `
     <dl class="basic-info">
       <dt>Name</dt>
-      <dd>{{ workUnit.name }}</dd>
+      <dd>{{ workUnit!.name }}</dd>
       <dt>Process summary</dt>
       <dd>
-        @if (workUnit.processSummary) {
-          <p>{{ workUnit.processSummary }}</p>
+        @if (workUnit!.processSummary) {
+          <p>{{ workUnit!.processSummary }}</p>
         } @else {
           <p><i>No process description provided</i></p>
         }
       </dd>
     </dl>
 
-    <lab-work-unit-duration-info [workUnit]="workUnit" />
+    <lab-work-unit-duration-info [workUnit]="workUnit!" />
   `,
   styles: [
     `
@@ -41,5 +41,5 @@ import { WorkUnitDurationInfoComponent } from '../duration/work-unit-duration-in
 })
 export class WorkUnitInfoComponent {
   @Input({ required: true })
-  workUnit: WorkUnit;
+  workUnit: WorkUnit | undefined;
 }

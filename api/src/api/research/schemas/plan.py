@@ -26,8 +26,7 @@ from ...base.schemas import (
     ModelLookup,
     ModelIndex,
 )
-from ...uni.schemas import CampusView
-from ...user.schemas import UserLookup, UserView, lookup_user
+from ...user.schemas.user import UserLookup, UserView, lookup_user
 from ...lab.schemas import LabLookup
 from ...lab.lab_resource_consumer import LabResourceConsumerView
 
@@ -63,12 +62,12 @@ class ResearchPlanTaskView(ModelView[ResearchPlanTask]):
         )
 
 
-class ResearchPlanTaskIndex(ModelIndex[ResearchPlanTask]):
+class ResearchPlanTaskIndex(ModelIndex[ResearchPlanTaskView, ResearchPlanTask]):
     __item_view__ = ResearchPlanTaskView
 
 
 # TODO: PEP 695
-ResearchPlanTaskIndexPage = ModelIndexPage[ResearchPlanTask]
+ResearchPlanTaskIndexPage = ModelIndexPage[ResearchPlanTaskView, ResearchPlanTask]
 
 
 class ResearchPlanTaskAppendRequest(ModelCreateRequest[ResearchPlanTask]):
@@ -178,12 +177,12 @@ async def lookup_research_plan(db: LocalSession, lookup: ResearchPlanLookup | UU
     return await lookup.get(db)
 
 
-class ResearchPlanIndex(ModelIndex[ResearchPlan]):
+class ResearchPlanIndex(ModelIndex[ResearchPlanView, ResearchPlan]):
     __item_view__ = ResearchPlanView
 
 
 # TODO: PEP 695
-ResearchPlanIndexPage = ModelIndexPage[ResearchPlan]
+ResearchPlanIndexPage = ModelIndexPage[ResearchPlanView, ResearchPlan]
 
 
 class ResearchPlanCreateRequest(ModelCreateRequest[ResearchPlan]):

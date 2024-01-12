@@ -7,7 +7,7 @@ import { EquipmentTag } from './equipment-tag';
 @Component({
   selector: 'lab-equipment-tag-chips',
   standalone: true,
-  imports: [CommonModule, MatChipsModule],
+  imports: [ CommonModule, MatChipsModule ],
   template: `
     <mat-chip-listbox>
       <mat-chip-option *ngFor="let tag of tags">
@@ -18,5 +18,5 @@ import { EquipmentTag } from './equipment-tag';
 })
 export class EquipmentTagChipsComponent {
   @Input()
-  tags: string[];
+  tags: string[] = [];
 }

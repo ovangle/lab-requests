@@ -8,7 +8,6 @@ import { BodyScrollbarHidingService } from 'src/app/utils/body-scrollbar-hiding.
 import {
   WorkUnitContext,
   WorkUnit,
-  workUnitPatchFromWorkUnit,
   formatWorkUnit,
 } from '../../common/work-unit';
 import { defer, map } from 'rxjs';
@@ -34,7 +33,7 @@ import { ResearchPlanFormPaneControl } from 'src/app/research/plan/common/resear
   host: {
     class: 'mat-elevation-z8',
   },
-  styleUrls: ['./work-unit-form.css'],
+  styleUrls: [ './work-unit-form.css' ],
 })
 export class WorkUnitUpdateFormPage {
   readonly _workUnitContext = inject(WorkUnitContext);
@@ -51,8 +50,8 @@ export class WorkUnitUpdateFormPage {
         if (!workUnit) {
           throw new Error('Update form page expects a work unit');
         }
-        const patch = workUnitPatchFromWorkUnit(workUnit);
-        this.form.patchValue(patch);
+        // const patch = workUnitPatchFromWorkUnit(workUnit);
+        this.form.patchValue(workUnit);
       });
   }
 

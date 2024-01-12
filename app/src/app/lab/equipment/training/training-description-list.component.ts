@@ -6,7 +6,7 @@ import { MatListModule } from '@angular/material/list';
 @Component({
   selector: 'lab-equipment-training-description-list',
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatListModule],
+  imports: [ CommonModule, MatIconModule, MatListModule ],
   template: `
     <mat-list>
       @for (description of trainingDescriptions; track description) {
@@ -33,7 +33,7 @@ import { MatListModule } from '@angular/material/list';
 })
 export class EquipmentTrainingDescriptionListComponent {
   @Input({ required: true })
-  trainingDescriptions: string[];
+  trainingDescriptions: string[] = [];
 
   @Input()
   itemSuffix?: TemplateRef<{ $implicit: string }>;

@@ -24,6 +24,7 @@ import {
   injectModelService,
 } from 'src/app/common/model/model-collection';
 import { ModelContext } from 'src/app/common/model/context';
+import { ResourceContainer, ResourceContainerParams, resourceContainerParamsFromJson } from 'src/app/lab/lab-resource/resource-container';
 
 export interface ResearchPlanTask extends ModelParams {
   readonly id: string;
@@ -39,32 +40,32 @@ export interface ResearchPlanTask extends ModelParams {
 export function researchPlanTaskFromJson(json: JsonObject): ResearchPlanTask {
   const baseParams = modelParamsFromJsonObject(json);
 
-  if (typeof json['index'] !== 'number') {
+  if (typeof json[ 'index' ] !== 'number') {
     throw new Error("ResearchPlanTask: 'index' must be an number");
   }
 
-  if (typeof json['startDate'] !== 'string' && json['startDate'] !== null) {
+  if (typeof json[ 'startDate' ] !== 'string' && json[ 'startDate' ] !== null) {
     throw new Error("ResearchPlanTask: 'startDate' must be a string or null");
   }
-  const startDate = json['startDate'] ? parseISO(json['startDate']) : null;
-  if (typeof json['endDate'] !== 'string' && json['endDate'] !== null) {
+  const startDate = json[ 'startDate' ] ? parseISO(json[ 'startDate' ]) : null;
+  if (typeof json[ 'endDate' ] !== 'string' && json[ 'endDate' ] !== null) {
     throw new Error("ResearchPlanTask: 'endDate' must be a string or null");
   }
-  const endDate = json['endDate'] ? parseISO(json['endDate']) : null;
+  const endDate = json[ 'endDate' ] ? parseISO(json[ 'endDate' ]) : null;
 
-  if (typeof json['labId'] !== 'string') {
+  if (typeof json[ 'labId' ] !== 'string') {
     throw new Error("ResearchPlanTask: 'labId' must be a string");
   }
-  if (typeof json['supervisorId'] !== 'string') {
+  if (typeof json[ 'supervisorId' ] !== 'string') {
     throw new Error("ResearchPlanTask: 'supervisorId' must be a string");
   }
   return {
     ...baseParams,
     startDate,
     endDate,
-    index: json['index'],
-    labId: json['labId'],
-    supervisorId: json['supervisorId'],
+    index: json[ 'index' ],
+    labId: json[ 'labId' ],
+    supervisorId: json[ 'supervisorId' ],
   };
 }
 
@@ -75,16 +76,16 @@ export interface ResearchPlanAttachment extends ModelParams {
 
 export function researchPlanAttachmentFromJsonObject(json: JsonObject) {
   const baseParams = modelParamsFromJsonObject(json);
-  if (typeof json['path'] !== 'string') {
+  if (typeof json[ 'path' ] !== 'string') {
     throw new Error("ResearchPlanAttachment: 'path' must be a string");
   }
   return {
     ...baseParams,
-    path: json['path'],
+    path: json[ 'path' ],
   };
 }
 
-export interface ResearchPlanParams extends ModelParams {
+export interface ResearchPlanParams extends ResourceContainerParams {
   readonly id: string;
   readonly title: string;
   readonly description: string;
@@ -99,52 +100,52 @@ export interface ResearchPlanParams extends ModelParams {
 }
 
 export function researchPlanFromJsonObject(json: JsonObject): ResearchPlan {
-  const baseParams = modelParamsFromJsonObject(json);
+  const baseParams = resourceContainerParamsFromJson(json);
 
-  if (typeof json['title'] !== 'string') {
+  if (typeof json[ 'title' ] !== 'string') {
     throw new Error("ResearchPlanParams: 'title' must be a string");
   }
-  if (typeof json['description'] !== 'string') {
+  if (typeof json[ 'description' ] !== 'string') {
     throw new Error("ResearchPlanParams: 'description' must be a string");
   }
-  if (!isJsonObject(json['funding'])) {
+  if (!isJsonObject(json[ 'funding' ])) {
     throw new Error("ResearchPlanParams: 'funding' must be a json object");
   }
-  const funding = researchFundingFromJsonObject(json['funding']);
+  const funding = researchFundingFromJsonObject(json[ 'funding' ]);
 
-  if (!isJsonObject(json['researcher'])) {
+  if (!isJsonObject(json[ 'researcher' ])) {
     throw new Error("ResearchPlanParams: 'researcher' must be a json object");
   }
-  const researcher = userFromJsonObject(json['researcher']);
+  const researcher = userFromJsonObject(json[ 'researcher' ]);
 
-  if (!isJsonObject(json['coordinator'])) {
+  if (!isJsonObject(json[ 'coordinator' ])) {
     throw new Error("ResearchPlanParams: 'coordinator' must be a json object");
   }
-  const coordinator = userFromJsonObject(json['coordinator']);
+  const coordinator = userFromJsonObject(json[ 'coordinator' ]);
 
-  if (!Array.isArray(json['tasks']) || !json['tasks'].every(isJsonObject)) {
+  if (!Array.isArray(json[ 'tasks' ]) || !json[ 'tasks' ].every(isJsonObject)) {
     throw new Error(
       "ResearchPlanParams: 'tasks' must be an array of json objects",
     );
   }
-  const tasks = json['tasks'].map((o) => researchPlanTaskFromJson(o));
+  const tasks = json[ 'tasks' ].map((o) => researchPlanTaskFromJson(o));
 
   if (
-    !Array.isArray(json['attachments']) ||
-    !json['attachments'].every(isJsonObject)
+    !Array.isArray(json[ 'attachments' ]) ||
+    !json[ 'attachments' ].every(isJsonObject)
   ) {
     throw new Error(
       "ResearchPlanParams: 'attachments' must be an array of json objects",
     );
   }
-  const attachments = json['attachments'].map((o) =>
+  const attachments = json[ 'attachments' ].map((o) =>
     researchPlanAttachmentFromJsonObject(o),
   );
 
   return new ResearchPlan({
     ...baseParams,
-    title: json['title'],
-    description: json['description'],
+    title: json[ 'title' ],
+    description: json[ 'description' ],
     funding,
     researcher,
     coordinator,
@@ -153,7 +154,7 @@ export function researchPlanFromJsonObject(json: JsonObject): ResearchPlan {
   });
 }
 
-export class ResearchPlan extends Model implements ResearchPlanParams {
+export class ResearchPlan extends ResourceContainer implements ResearchPlanParams {
   title: string;
   description: string;
   funding: ResearchFunding;
@@ -174,7 +175,7 @@ export class ResearchPlan extends Model implements ResearchPlanParams {
   }
 }
 
-export interface ResearchPlanPatch {}
+export interface ResearchPlanPatch { }
 
 export function researchPlanPatchToJsonObject(
   patch: ResearchPlanPatch,

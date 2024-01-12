@@ -22,13 +22,13 @@ import { EquipmentRiskAssessmentFileInputComponent } from './risk-assessment-fil
 import { EquipmentLike } from 'src/app/lab/equipment/equipment-like';
 import { Equipment } from 'src/app/lab/equipment/common/equipment';
 import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
-import { ResearchFunding } from 'src/app/research/funding/funding-model';
 import { ResourceFormService } from '../../lab-resource/resource-form.service';
+import { ResearchFunding } from 'src/app/research/funding/research-funding';
 
 export type EquipmentLeaseForm = FormGroup<{
   equipment: FormControl<EquipmentLike | null>;
   equipmentTrainingCompleted: FormControl<string[]>;
-  requiresAssistance: FormControl<boolean>;
+  requireSupervision: FormControl<boolean>;
 
   setupInstructions: FormControl<string>;
   usageCostEstimate: CostEstimateForm;
@@ -40,13 +40,13 @@ export function equipmentLeaseForm(
   return new FormGroup({
     equipment: new FormControl<EquipmentLike | null>(
       lease?.equipment || (null as any),
-      { validators: [Validators.required] },
+      { validators: [ Validators.required ] },
     ),
     equipmentTrainingCompleted: new FormControl<string[]>(
       lease?.equipmentTrainingCompleted || [],
       { nonNullable: true },
     ),
-    requiresAssistance: new FormControl<boolean>(!!lease?.requiresAssistance, {
+    requireSupervision: new FormControl<boolean>(!!lease?.requireSupervision, {
       nonNullable: true,
     }),
     setupInstructions: new FormControl<string>(lease?.setupInstructions || '', {
@@ -95,14 +95,13 @@ export type EquipmentLeaseFormErrors = ValidationErrors & {
       }
 
       @if (selectedEquipment$ | async; as equipment) {
-        <mat-checkbox formControlName="requiresAssistance">
+        <mat-checkbox formControlName="requireSupervision">
           I require additional assistance using this equipment
         </mat-checkbox>
       }
 
       <ng-container>
-        <lab-equipment-risk-assessment-file-input [containerId]="workUnitId">
-        </lab-equipment-risk-assessment-file-input>
+        <lab-equipment-risk-assessment-file-input />
       </ng-container>
     </form>
   `,
@@ -113,10 +112,10 @@ export class EquipmentLeaseFormComponent {
   );
 
   @Input({ required: true })
-  workUnitId: string;
+  workUnitId: string | undefined = undefined;
 
   @Input({ required: true })
-  fundingModel: ResearchFunding;
+  fundingModel: ResearchFunding | undefined = undefined;
 
   @Input()
   get isCreate() {
@@ -125,7 +124,7 @@ export class EquipmentLeaseFormComponent {
   set isCreate(isCreate: BooleanInput) {
     this._isCreate = coerceBooleanProperty(isCreate);
   }
-  _isCreate: boolean;
+  _isCreate: boolean = true;
 
   get form(): EquipmentLeaseForm {
     return this.formService.form;

@@ -14,7 +14,6 @@ __all__ = (
     "LabSoftwareProvision",
     "LabSoftwareProvisioningError",
     "LabWorkUnit",
-    "LabWorkUnitTask",
     "LabResourceType",
     "LabResource",
     "LabResourceDoesNotExist",
@@ -44,9 +43,6 @@ from .lab_resource import (
 )
 from .lab_resource_consumer import LabResourceConsumer
 
-from .lab_work_unit import (
-    LabWorkUnit,
-    LabWorkUnitTask,
-)
+from .lab_work_unit import LabWorkUnit
 
 from . import resources

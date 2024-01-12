@@ -1,4 +1,4 @@
-import { Software } from './software';
+import { SoftwareLease } from './software-lease';
 import { Component, Injectable, inject } from '@angular/core';
 import { MatTableModule } from '@angular/material/table';
 import { CommonModule } from '@angular/common';
@@ -9,13 +9,13 @@ import {
 import { ResourceTableInfoHeaderComponent } from '../../lab-resource/common/resource-table-info-header.component';
 
 @Injectable()
-export class SoftwareLeaseTableDataSource extends ResourceTableDataSource<Software> {
+export class SoftwareLeaseTableDataSource extends ResourceTableDataSource<SoftwareLease> {
   override readonly resourceType = 'software-lease';
   override readonly resourceTitle = 'Software';
 }
 
 @Component({
-  selector: 'lab-software-resource-table',
+  selector: 'lab-software-lease-table',
   standalone: true,
   imports: [
     CommonModule,
@@ -64,4 +64,4 @@ export class SoftwareLeaseTableDataSource extends ResourceTableDataSource<Softwa
     },
   ],
 })
-export class SoftwareResourceTableComponent {}
+export class SoftwareLeaseTableComponent { }

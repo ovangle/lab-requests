@@ -7,7 +7,7 @@ from db.models.research.plan import ResearchPlan
 
 from db.models.user import User
 
-from api.lab.plan.queries import query_research_plans
+from api.research.queries import query_research_plans
 from .schemas import WorkUnitView
 
 

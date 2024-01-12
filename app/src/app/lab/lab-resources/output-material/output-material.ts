@@ -1,3 +1,4 @@
+import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import {
   ResourceDisposal,
   ResourceDisposalParams,
@@ -10,7 +11,7 @@ import {
   hazardClassesFromJson,
   hazardClassesToJson,
 } from '../../lab-resource/hazardous/hazardous';
-import { ResourceParams, Resource } from '../../lab-resource/resource';
+import { ResourceParams, Resource, resourceParamsFromJsonObject } from '../../lab-resource/resource';
 import {
   ResourceStorage,
   ResourceStorageParams,
@@ -62,32 +63,47 @@ export class OutputMaterial extends Resource<OutputMaterialParams> {
   }
 }
 
-export function outputMaterialFromJson(json: {
-  [k: string]: any;
-}): OutputMaterial {
-  const attachments = Array.from(json['attachments'] || []).map(
-    resourceFileAttachmentFromJson,
-  );
+export function outputMaterialFromJson(json: JsonObject): OutputMaterial {
+  const resourceParams = resourceParamsFromJsonObject(json);
+
+  if (typeof json[ 'name' ] !== 'string') {
+    throw new Error("Expected a string 'name'");
+  }
+  if (typeof json[ 'baseUnit' ] !== 'string') {
+    throw new Error("Expected a string 'baseUnit'");
+  }
+  if (typeof json[ 'numUnitsProduced' ] !== 'number') {
+    throw new Error("Expected a number 'numUnitsProduced'");
+  }
+
+  if (!isJsonObject(json[ 'storage' ])) {
+    throw new Error("Expected a json object 'storage'");
+  }
+  const storage = resourceStorageFromJson(json[ 'storage' ]);
+  if (!isJsonObject(json[ 'disposal' ])) {
+    throw new Error("Expected a json object 'disposal'");
+  }
+  const disposal = resourceDisposalFromJson(json[ 'disposal' ]);
+  if (!Array.isArray(json[ 'hazardClasses' ]) || !json[ 'hazardClasses' ].every(o => typeof o === 'string')) {
+    throw new Error("Expected an array of strings 'hazardClasses'");
+  }
+  const hazardClasses = hazardClassesFromJson(json[ 'hazardClasses' ]);
 
   return new OutputMaterial({
-    containerId: json['containerId'],
-    id: json['id'],
-    index: json['index'],
-    name: json['name'],
-    baseUnit: json['baseUnit'],
-    numUnitsProduced: json['numUnitsProduced'],
-    storage: resourceStorageFromJson(json['storage']),
-    disposal: resourceDisposalFromJson(json['disposal']),
-    hazardClasses: hazardClassesFromJson(json['hazardClasses']),
-    attachments,
+    ...resourceParams,
+    name: json[ 'name' ],
+    baseUnit: json[ 'baseUnit' ],
+    numUnitsProduced: json[ 'numUnitsProduced' ],
+    storage,
+    disposal,
+    hazardClasses,
   });
 }
 
 export function outputMaterialParamsToJson(
   outputMaterial: OutputMaterialParams,
-): { [k: string]: any } {
+): { [ k: string ]: any } {
   return {
-    containerId: outputMaterial.containerId,
     id: outputMaterial.id,
     name: outputMaterial.name,
     baseUnit: outputMaterial.baseUnit,

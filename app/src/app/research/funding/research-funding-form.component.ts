@@ -46,12 +46,12 @@ export class FundingModelFormService {
     {
       description: new FormControl('', {
         nonNullable: true,
-        validators: [Validators.required],
+        validators: [ Validators.required ],
       }),
       supervisorRequired: new FormControl(false, { nonNullable: true }),
     },
     {
-      validators: [(c) => this._validateForm(c as FundingModelForm)],
+      validators: [ (c) => this._validateForm(c as FundingModelForm) ],
     },
   );
 
@@ -66,10 +66,10 @@ export class FundingModelFormService {
 
   _validateForm(form: FundingModelForm): FundingModelFormErrors | null {
     let errors: FundingModelFormErrors | null = null;
-    const descriptionControl = form.controls['description'];
+    const descriptionControl = form.controls[ 'description' ];
     if (descriptionControl.touched && descriptionControl.invalid) {
       errors = errors || {};
-      errors['description'] = descriptionControl.errors as any;
+      errors[ 'description' ] = descriptionControl.errors as any;
     }
     return errors;
   }
@@ -99,7 +99,7 @@ export class FundingModelFormService {
       </p>
     </ng-container>
   `,
-  providers: [FundingModelFormService],
+  providers: [ FundingModelFormService ],
 })
 export class FundingModelFormComponent {
   _formService = inject(FundingModelFormService);
@@ -112,5 +112,5 @@ export class FundingModelFormComponent {
   set disabled(value: BooleanInput) {
     this._disabled = coerceBooleanProperty(value);
   }
-  _disabled: boolean;
+  _disabled: boolean = false;
 }

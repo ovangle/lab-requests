@@ -10,7 +10,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 @Component({
   selector: 'lab-hazard-class-labels',
   standalone: true,
-  imports: [CommonModule, MatTooltipModule],
+  imports: [ CommonModule, MatTooltipModule ],
   template: `
     <img
       *ngFor="let hazardClass of hazardClasses"
@@ -36,7 +36,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 })
 export class HazardClassLabelsComponent {
   @Input()
-  hazardClasses: HazardClass[];
+  hazardClasses: HazardClass[] = [];
   readonly labelImage = hazardClassLabelImage;
 
   readonly tooltipContent = (cls: HazardClass) =>

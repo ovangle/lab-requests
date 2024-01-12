@@ -25,46 +25,40 @@ import {
   OutputMaterialParams,
   outputMaterialParamsToJson,
 } from '../lab-resources/output-material/output-material';
-import { softwareParamsToJson } from '../lab-resources/software-lease/software';
+import { SoftwareLease, softwareLeaseFromJsonObject, softwareParamsToJson } from '../lab-resources/software-lease/software-lease';
 import {
   Software,
-  softwareFromJson,
+  softwareFromJsonObject,
   SoftwareParams,
 } from '../software/software';
 import { ResearchPlan } from 'src/app/research/plan/common/research-plan';
+import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 
 export interface ResourceContainerParams extends ModelParams {
-  name: string;
-  equipments: EquipmentLease[];
-  softwares: Software[];
+  equipments: readonly EquipmentLease[];
+  softwares: readonly SoftwareLease[];
 
-  inputMaterials: InputMaterial[];
-  outputMaterials: OutputMaterial[];
+  inputMaterials: readonly InputMaterial[];
+  outputMaterials: readonly OutputMaterial[];
 }
 
 export abstract class ResourceContainer extends Model {
-  name: string;
+  equipments: readonly EquipmentLease[];
+  softwares: readonly SoftwareLease[];
 
-  equipments: EquipmentLease[];
-  softwares: Software[];
-
-  inputMaterials: InputMaterial[];
-  outputMaterials: OutputMaterial[];
+  inputMaterials: readonly InputMaterial[];
+  outputMaterials: readonly OutputMaterial[];
 
   constructor(params: ResourceContainerParams) {
     super(params);
-    this.equipments = params.equipments.map((e) => new EquipmentLease(e));
-    this.softwares = params.softwares.map((s) => new Software(s));
-    this.inputMaterials = params.inputMaterials.map(
-      (inputMaterial) => new InputMaterial(inputMaterial),
-    );
-    this.outputMaterials = params.outputMaterials.map(
-      (outputMaterial) => new OutputMaterial(outputMaterial),
-    );
+    this.equipments = params.equipments;
+    this.softwares = params.softwares;
+    this.inputMaterials = params.inputMaterials;
+    this.outputMaterials = params.outputMaterials;
   }
 
-  getResources<T extends Resource>(t: ResourceType & T['type']): readonly T[] {
-    return this[resourceContainerAttr(t)] as any[];
+  getResources<T extends Resource>(t: ResourceType & T[ 'type' ]): readonly T[] {
+    return this[ resourceContainerAttr(t) ] as any[];
   }
 
   countResources(t: ResourceType): number {
@@ -72,41 +66,63 @@ export abstract class ResourceContainer extends Model {
   }
 
   getResourceAt<T extends Resource>(
-    t: ResourceType & T['type'],
+    t: ResourceType & T[ 'type' ],
     index: number,
   ): T {
     const resources = this.getResources(t);
     if (index < 0 || index >= resources.length) {
       throw new Error(`No resource at ${index}`);
     }
-    return resources[index];
+    return resources[ index ];
   }
 }
 
 export function resourceContainerAttr(
   type: ResourceType,
-): keyof ResourceContainerPatch<any> {
-  return (type.replace(/-([a-z])/, (match) => match[1].toUpperCase()) +
-    's') as keyof ResourceContainerPatch<any>;
+): keyof ResourceContainerPatch {
+  switch (type) {
+    case 'equipment-lease':
+      return 'equipments';
+    case 'software-lease':
+      return 'softwares';
+    case 'input-material':
+      return 'inputMaterials';
+    case 'output-material':
+      return 'outputMaterials'
+  }
 }
 
-export function resourceContainerFieldsFromJson(json: { [k: string]: any }) {
+export function resourceContainerParamsFromJson(json: JsonObject): ResourceContainerParams {
   const baseParams = modelParamsFromJsonObject(json);
+
+  if (!Array.isArray(json[ 'equipments' ]) || !json[ 'equipments' ].every(isJsonObject)) {
+    throw new Error("Expected a list of json objects 'equipments'")
+  }
+  const equipments = json[ 'equipments' ].map(equipmentLeaseFromJson);
+
+  if (!Array.isArray(json[ 'softwares' ]) || !json[ 'softwares' ].every(isJsonObject)) {
+    throw new Error("Expected a list of json objects 'softwares'")
+  }
+  const softwares = json[ 'softwares' ].map(softwareLeaseFromJsonObject);
+
+  if (!Array.isArray(json[ 'inputMaterials' ]) || !json[ 'inputMaterials' ].every(isJsonObject)) {
+    throw new Error("Expected a list of json objects 'inputMaterials'")
+  }
+  const inputMaterials = json[ 'inputMaterials' ].map(inputMaterialFromJson);
+
+  if (!Array.isArray(json[ 'outputMaterials' ]) || !json[ 'outputMaterials' ].every(isJsonObject)) {
+    throw new Error("Expected a list of json objects 'outputMaterials'")
+  }
+  const outputMaterials = json[ 'outputMaterials' ].map(outputMaterialFromJson);
+
+
   return {
     ...baseParams,
-    equipments: Array.from<object>(json['equipments']).map((equip) =>
-      equipmentLeaseFromJson(equip),
-    ),
-    softwares: Array.from<object>(json['softwares']).map((software) =>
-      softwareFromJson(software as any),
-    ),
+    equipments,
+    softwares,
 
-    inputMaterials: Array.from<object>(json['inputMaterials']).map(
-      (inputMaterial) => inputMaterialFromJson(inputMaterial),
-    ),
-    outputMaterials: Array.from<object>(json['outputMaterials']).map(
-      (outputMaterial) => outputMaterialFromJson(outputMaterial),
-    ),
+    inputMaterials,
+    outputMaterials
   };
 }
 
@@ -116,7 +132,7 @@ interface ResourceSplice<T> {
   readonly items: T[];
 }
 
-export interface ResourceContainerPatch<T extends ResourceContainer> {
+export interface ResourceContainerPatch {
   equipments: ResourceSplice<EquipmentLease>[];
   softwares: ResourceSplice<SoftwareParams>[];
   inputMaterials: ResourceSplice<InputMaterialParams>[];
@@ -124,15 +140,15 @@ export interface ResourceContainerPatch<T extends ResourceContainer> {
 }
 
 export function resourceContainerPatchToJson(
-  patch: ResourceContainerPatch<any>,
-): { [k: string]: any } {
-  let json: { [k: string]: any } = {};
+  patch: ResourceContainerPatch,
+): JsonObject {
+  let json: JsonObject = {};
   for (const resourceType of ALL_RESOURCE_TYPES) {
     const resourceToJson = resourceSerializer(resourceType);
 
-    const slices = patch[resourceContainerAttr(resourceType)];
+    const slices = patch[ resourceContainerAttr(resourceType) ];
 
-    json[resourceContainerAttr(resourceType)] = slices.map((slice) => ({
+    json[ resourceContainerAttr(resourceType) ] = slices.map((slice) => ({
       ...slice,
       items: slice.items.map((item) => resourceToJson(item as any)),
     }));
@@ -154,11 +170,11 @@ export function resourceContainerPatchToJson(
 }
 
 function delResourcePatch<T extends Resource>(
-  resourceType: T['type'] & ResourceType,
+  resourceType: T[ 'type' ] & ResourceType,
   toDel: number[],
-): Partial<ResourceContainerPatch<any>> {
+): Partial<ResourceContainerPatch> {
   return {
-    [resourceContainerAttr(resourceType)]: toDel.map((toDel) => ({
+    [ resourceContainerAttr(resourceType) ]: toDel.map((toDel) => ({
       start: toDel,
       end: toDel + 1,
       items: [],
@@ -169,11 +185,11 @@ function delResourcePatch<T extends Resource>(
 @Injectable()
 export abstract class ResourceContainerContext<
   T extends ResourceContainer,
-  TPatch extends ResourceContainerPatch<T>,
+  TPatch extends ResourceContainerPatch,
 > {
   abstract commitContext(patch: TPatch): Promise<T>;
   abstract patchFromContainerPatch(
-    patch: ResourceContainerPatch<T>,
+    patch: ResourceContainerPatch,
   ): Promise<TPatch>;
   abstract getContainerPath(): Promise<string[]>;
 
@@ -211,7 +227,7 @@ export abstract class ResourceContainerContext<
       throw new Error('Cannot delete resources until container');
     }
     const patch = await this.patchFromContainerPatch(
-      delResourcePatch(resourceType, [index]) as TPatch,
+      delResourcePatch(resourceType, [ index ]) as TPatch,
     );
     return this.commitContext(patch);
   }

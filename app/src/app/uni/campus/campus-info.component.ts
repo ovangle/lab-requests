@@ -6,17 +6,17 @@ import { Campus } from './common/campus';
 @Component({
   selector: 'uni-campus-info',
   standalone: true,
-  imports: [CommonModule],
+  imports: [ CommonModule ],
   template: `
     @if (!nameOnly) {
-      <span class="campus-code">{{ campus.code }}</span> -
+      <span class="campus-code">{{ campus!.code }}</span> -
     }
-    {{ campus.name }}
+    {{ campus!.name }}
   `,
 })
 export class CampusInfoComponent {
-  @Input()
-  campus: Campus;
+  @Input({ required: true })
+  campus: Campus | undefined;
 
   @Input()
   get nameOnly(): boolean {

@@ -6,6 +6,7 @@ import {
   UserService,
   UserCollection,
   injectUserService,
+  CurrentUser,
 } from './common/user';
 import {
   BehaviorSubject,
@@ -28,7 +29,7 @@ export class UserContext extends ModelContext<User, UserPatch> {
     return firstValueFrom(this.userService.update(id, patch));
   }
 
-  readonly user = new BehaviorSubject<User | null>(null);
+  readonly user = new BehaviorSubject<CurrentUser | null>(null);
 
   constructor() {
     super();
@@ -61,7 +62,7 @@ export class UserContext extends ModelContext<User, UserPatch> {
       password: credentials.password,
     });
     return await firstValueFrom(
-      this.user.pipe(filter((user): user is User => user != null)),
+      this.user.pipe(filter((user): user is CurrentUser => user != null)),
     );
   }
 

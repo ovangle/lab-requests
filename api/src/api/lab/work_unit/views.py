@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile
 from db import LocalSession, get_db
 from db.models.lab import LabWorkUnit
 
-from ...user.schemas import lookup_user, UserLookup
+from ...user.schemas.user import lookup_user, UserLookup
 from .queries import query_work_units
 from .schemas import WorkUnitIndex, WorkUnitIndexPage, WorkUnitView
 

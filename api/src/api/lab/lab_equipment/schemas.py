@@ -7,8 +7,10 @@ from uuid import UUID
 from fastapi import HTTPException
 
 from pydantic import BaseModel
+from sqlalchemy import Select
 
 from db import LocalSession
+from db.models.lab.lab_equipment import LabEquipmentProvision
 from db.models.uni import Discipline
 from db.models.lab import LabEquipment
 from api.base.schemas import (
@@ -42,12 +44,12 @@ class LabEquipmentView(ModelView[LabEquipment]):
         )
 
 
-class LabEquipmentIndex(ModelIndex[LabEquipment]):
+class LabEquipmentIndex(ModelIndex[LabEquipmentView, LabEquipment]):
     __item_view__ = LabEquipmentView
 
 
 # TODO: type PEP 695
-LabEquipmentIndexPage = ModelIndexPage[LabEquipment]
+LabEquipmentIndexPage = ModelIndexPage[LabEquipmentView, LabEquipment]
 
 
 class LabEquipmentLookup(ModelLookup[LabEquipment]):
@@ -74,3 +76,9 @@ class LabEquipmentCreateRequest(ModelCreateRequest[LabEquipment]):
 class LabEquipmentUpdateRequest(ModelUpdateRequest[LabEquipment]):
     async def do_update(self, model: LabEquipment):
         raise NotImplementedError
+
+
+class LabEquipmentProvisionView(ModelView[LabEquipmentProvision]):
+    @classmethod
+    async def from_model(cls, model: LabEquipmentProvision):
+        raise NotImplementedError()

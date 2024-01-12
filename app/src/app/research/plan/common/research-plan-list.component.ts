@@ -6,10 +6,10 @@ import { ResearchPlan } from './research-plan';
 @Component({
   selector: 'research-plan-list',
   standalone: true,
-  imports: [CommonModule, MatListModule],
+  imports: [ CommonModule, MatListModule ],
   template: ``,
 })
 export class ResearchPlanListComponent {
   @Input({ required: true })
-  plans: readonly ResearchPlan[];
+  plans: readonly ResearchPlan[] = [];
 }

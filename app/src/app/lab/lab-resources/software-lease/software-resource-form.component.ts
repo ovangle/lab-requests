@@ -10,7 +10,7 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { Software } from './software';
+import { SoftwareLease } from './software-lease';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import {
   CostEstimateForm,
@@ -19,7 +19,7 @@ import {
 import { ProvisionFormComponent } from '../../lab-resource/provision/provision-form.component';
 import { ResourceFormService } from '../../lab-resource/resource-form.service';
 
-export type SoftwareForm = FormGroup<{
+export type SoftwareLeaseForm = FormGroup<{
   name: FormControl<string>;
   description: FormControl<string>;
   minVersion: FormControl<string>;
@@ -29,11 +29,11 @@ export type SoftwareForm = FormGroup<{
   estimatedCost: CostEstimateForm;
 }>;
 
-export function softwareForm(): SoftwareForm {
+export function softwareLeaseForm(): SoftwareLeaseForm {
   return new FormGroup({
     name: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required],
+      validators: [ Validators.required ],
     }),
     description: new FormControl('', { nonNullable: true }),
     minVersion: new FormControl('', { nonNullable: true }),
@@ -44,7 +44,7 @@ export function softwareForm(): SoftwareForm {
   });
 }
 
-export type SoftwareFormErrors = ValidationErrors & {
+export type SoftwareLeaseFormErrors = ValidationErrors & {
   name?: { required: string | null };
 };
 
@@ -113,10 +113,10 @@ export type SoftwareFormErrors = ValidationErrors & {
     `,
   ],
 })
-export class SoftwareResourceFormComponent {
-  readonly formService = inject(ResourceFormService<Software, SoftwareForm>);
+export class SoftwareLeaseFormComponent {
+  readonly formService = inject(ResourceFormService<SoftwareLease, SoftwareLeaseForm>);
 
-  get form(): SoftwareForm {
+  get form(): SoftwareLeaseForm {
     return this.formService.form;
   }
 

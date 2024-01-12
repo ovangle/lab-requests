@@ -11,6 +11,7 @@ from db.models.lab import LabResource
 from db.models.lab.lab_resource import LabResourceType
 from ..base.schemas import ModelLookup, ModelView, ModelIndex
 
+TModelView = TypeVar("TModelView", bound=ModelView)
 TResource = TypeVar("TResource", bound=LabResource)
 
 
@@ -23,8 +24,10 @@ class LabResourceView(ModelView[TResource], Generic[TResource]):
         return cls(type=model.type, lab_id=model.lab_id, **kwargs)
 
 
-class LabResourceIndex(ModelIndex[TResource], Generic[TResource]):
-    pass
+class LabResourceIndex(
+    ModelIndex[TModelView, TResource], Generic[TModelView, TResource]
+):
+    __abstract__ = True
 
 
 class LabResourceLookup(ModelLookup[TResource], Generic[TResource]):

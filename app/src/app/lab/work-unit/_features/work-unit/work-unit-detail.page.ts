@@ -30,7 +30,7 @@ import {
 } from 'src/app/lab/lab-resource/resource-type';
 import { ResearchPlanFormPaneControl } from 'src/app/research/plan/common/research-plan-form-pane-control';
 
-class WorkUnitContextError extends Error {}
+class WorkUnitContextError extends Error { }
 
 function workUnitFromDetailRoute(): Observable<WorkUnit> {
   const workUnitService = injectWorkUnitService();
@@ -75,11 +75,11 @@ function workUnitFromDetailRoute(): Observable<WorkUnit> {
 
     <div class="resources">
       @for (resourceType of RESOURCE_TYPES; track resourceType) {
-        <lab-work-unit-resource-card
+        <lab-resource-card
           [resourceType]="resourceType"
           [resources]="(getResources(resourceType) | async) || []"
         >
-        </lab-work-unit-resource-card>
+        </lab-resource-card>
       }
     </div>
   `,
@@ -141,7 +141,7 @@ export class WorkUnitDetailPage {
           }
           return this._formPane.open([
             'work-units',
-            `${workUnit.index}`,
+            `${workUnit.id}`,
             'update',
           ]);
         }),

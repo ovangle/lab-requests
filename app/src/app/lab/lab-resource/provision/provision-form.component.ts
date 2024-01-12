@@ -8,6 +8,7 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MeasurementUnitPipe } from 'src/app/common/measurement/common-measurement-unit.pipe';
 
 import { CampusInfoComponent } from 'src/app/uni/campus/campus-info.component';
+import { ResourceType } from '../resource-type';
 
 @Component({
   selector: 'lab-resource-provision-form',
@@ -23,7 +24,7 @@ import { CampusInfoComponent } from 'src/app/uni/campus/campus-info.component';
     MeasurementUnitPipe,
   ],
   template: `
-    <ng-container [formGroup]="form">
+    <ng-container [formGroup]="form!">
       @if (canResearcherSupply) {
         <div class="is-university-supplied">
           <div>This {{ resourceType }} is to be supplied:</div>
@@ -45,7 +46,7 @@ import { CampusInfoComponent } from 'src/app/uni/campus/campus-info.component';
           <div matTextPrefix>$</div>
           <div matTextSuffix>
             per
-            <span [innerHTML]="provisioningUnit | commonMeasurementUnit"></span>
+            <span [innerHTML]="provisioningUnit! | commonMeasurementUnit"></span>
           </div>
         </mat-form-field>
       }
@@ -58,19 +59,19 @@ import { CampusInfoComponent } from 'src/app/uni/campus/campus-info.component';
 })
 export class ProvisionFormComponent {
   @Input()
-  numAvailableUnits: number | null;
+  numAvailableUnits: number | null = null;
 
   @Input()
-  form: FormGroup<any>;
+  form: FormGroup<any> | undefined = undefined;
 
   @Input()
-  resourceType: string;
+  resourceType: ResourceType | undefined = undefined;
 
   @Input()
-  provisioningUnit: string;
+  provisioningUnit: string | undefined = undefined;
 
   @Input()
-  requestedUnits: number | null;
+  requestedUnits: number | null = null;
 
   @Input()
   get canResearcherSupply(): boolean {
@@ -86,7 +87,7 @@ export class ProvisionFormComponent {
     if (!this.canResearcherSupply) {
       return true;
     }
-    const isUniversitySuppliedControl = this.form.get('isUniversitySupplied');
+    const isUniversitySuppliedControl = this.form!.get('isUniversitySupplied');
     if (!isUniversitySuppliedControl) {
       throw new Error('Missing isUniversitySuppliedControl');
     }
@@ -95,7 +96,7 @@ export class ProvisionFormComponent {
 
   get totalCost() {
     if (this.provisioningUnit && this.requestedUnits) {
-      const estimatedCost = this.form.value['estimatedCost'] || 0;
+      const estimatedCost = this.form!.value[ 'estimatedCost' ] || 0;
       return estimatedCost * this.requestedUnits;
     }
     return 0;

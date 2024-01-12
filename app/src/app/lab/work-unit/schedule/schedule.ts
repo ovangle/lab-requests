@@ -1,15 +1,15 @@
 import { differenceInCalendarWeeks } from 'date-fns';
 
-export const ALL_SCHEDULE_DURATIONS = ['week', 'fortnight'] as const;
+export const ALL_SCHEDULE_DURATIONS = [ 'week', 'fortnight' ] as const;
 
-export type ScheduleDuration = (typeof ALL_SCHEDULE_DURATIONS)[number];
+export type ScheduleDuration = (typeof ALL_SCHEDULE_DURATIONS)[ number ];
 
 export class Schedule {
-  startDate: Date | null;
-  endDate: Date | null;
+  startDate: Date | null = null;
+  endDate: Date | null = null;
 
-  estimatedHoursPerUnitDuration: number;
-  duration: ScheduleDuration;
+  estimatedHoursPerUnitDuration: number = 1;
+  duration: ScheduleDuration | undefined;
 
   get totalHours(): number {
     if (this.startDate == null || this.endDate == null) {

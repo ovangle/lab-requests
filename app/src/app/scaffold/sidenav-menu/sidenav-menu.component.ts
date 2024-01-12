@@ -31,12 +31,12 @@ interface FlattenedMenuNode {
 @Component({
   selector: 'scaffold-sidenav-menu-link',
   standalone: true,
-  imports: [CommonModule, RouterModule],
-  template: ` <a [routerLink]="node.routerLink">{{ node.title }}</a> `,
+  imports: [ CommonModule, RouterModule ],
+  template: ` <a [routerLink]="node!.routerLink">{{ node!.title }}</a> `,
 })
 export class SidenavMenuLinkComponent {
   @Input({ required: true })
-  node: SidenavMenuLink;
+  node: SidenavMenuLink | undefined = undefined;
 }
 
 /**

@@ -33,7 +33,7 @@ import { coerceArray, coerceStringArray } from '@angular/cdk/coercion';
     WorkUnitDurationFormComponent,
   ],
   template: `
-    <form [formGroup]="form">
+    <form [formGroup]="form!">
       @if (isEditableField('name')) {
         <mat-form-field>
           <mat-label>Name</mat-label>
@@ -88,44 +88,44 @@ import { coerceArray, coerceStringArray } from '@angular/cdk/coercion';
         </mat-form-field>
       }
 
-      <lab-work-unit-duration-form [form]="form" />
+      <lab-work-unit-duration-form [form]="form!" />
     </form>
   `,
 })
 export class WorkUnitFormComponent {
   @Input({ required: true })
-  form: WorkUnitForm;
+  form: WorkUnitForm | undefined;
 
   @Input()
   fixedFields: string[] | undefined = undefined;
 
-  isEditableField(name: keyof WorkUnitForm['controls']): boolean {
+  isEditableField(name: keyof WorkUnitForm[ 'controls' ]): boolean {
     if (this.fixedFields === undefined) {
       return true;
     }
     return !this.fixedFields.includes(name);
   }
 
-  get nameErrors(): WorkUnitFormErrors['name'] {
-    return workUnitFormErrors(this.form, 'name');
+  get nameErrors(): WorkUnitFormErrors[ 'name' ] {
+    return workUnitFormErrors(this.form!, 'name');
   }
 
-  get campusErrors(): WorkUnitFormErrors['campus'] {
-    return workUnitFormErrors(this.form, 'campus');
+  get campusErrors(): WorkUnitFormErrors[ 'campus' ] {
+    return workUnitFormErrors(this.form!, 'campus');
   }
 
-  get labTypeErrors(): WorkUnitFormErrors['labType'] {
-    return workUnitFormErrors(this.form, 'labType');
+  get labTypeErrors(): WorkUnitFormErrors[ 'labType' ] {
+    return workUnitFormErrors(this.form!, 'labType');
   }
 
-  get technicianErrors(): WorkUnitFormErrors['technician'] {
-    return workUnitFormErrors(this.form, 'technician');
+  get technicianErrors(): WorkUnitFormErrors[ 'technician' ] {
+    return workUnitFormErrors(this.form!, 'technician');
   }
 
-  get startDateErrors(): WorkUnitFormErrors['startDate'] {
-    return workUnitFormErrors(this.form, 'startDate');
+  get startDateErrors(): WorkUnitFormErrors[ 'startDate' ] {
+    return workUnitFormErrors(this.form!, 'startDate');
   }
-  get endDateErrors(): WorkUnitFormErrors['endDate'] {
-    return workUnitFormErrors(this.form, 'endDate');
+  get endDateErrors(): WorkUnitFormErrors[ 'endDate' ] {
+    return workUnitFormErrors(this.form!, 'endDate');
   }
 }

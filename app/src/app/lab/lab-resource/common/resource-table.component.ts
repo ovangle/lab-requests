@@ -29,7 +29,7 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 
 import { ResourceContainerContext } from '../resource-container';
-import { ExperimentalPlanFormPaneControlService } from 'src/app/research/plan/experimental-plan-form-pane-control.service';
+import { ResearchPlanFormPaneControl } from 'src/app/research/plan/common/research-plan-form-pane-control';
 import type { ResourceType } from '../resource-type';
 import { ResourceTypePipe } from '../resource-type.pipe';
 import { Resource } from '../resource';
@@ -38,17 +38,17 @@ import { Resource } from '../resource';
 export abstract class ResourceTableDataSource<
   T extends Resource,
 > extends DataSource<T> {
-  readonly resourceType: ResourceType;
-  readonly resourceTitle: string;
+  abstract readonly resourceType: ResourceType;
+  abstract readonly resourceTitle: string;
 
   readonly _containerContext = inject(ResourceContainerContext);
   readonly resourceContainer$ = this._containerContext.committed$;
 
-  readonly _formPane = inject(ExperimentalPlanFormPaneControlService);
+  readonly _formPane = inject(ResearchPlanFormPaneControl);
 
   async openResourceCreateForm(): Promise<boolean> {
     const containerPath = await this._containerContext.getContainerPath();
-    return this._formPane.open([...containerPath, this.resourceType, 'create']);
+    return this._formPane.open([ ...containerPath, this.resourceType, 'create' ]);
   }
 
   async openResourceUpdateFormAt(index: number): Promise<boolean> {
@@ -89,7 +89,7 @@ export abstract class ResourceTableDataSource<
     ResourceTypePipe,
   ],
   templateUrl: './resource-table.component.html',
-  styleUrls: ['./resource-table.component.css'],
+  styleUrls: [ './resource-table.component.css' ],
   animations: [
     trigger('detailExpand', [
       state('collapsed', style({ height: '0px', minHeight: 0 })),
@@ -102,12 +102,11 @@ export abstract class ResourceTableDataSource<
   ],
 })
 export class ResourceTableComponent<T extends Resource>
-  implements AfterContentInit
-{
+  implements AfterContentInit {
   dataSource: ResourceTableDataSource<T> = inject(ResourceTableDataSource);
 
   route = inject(ActivatedRoute);
-  _formPane = inject(ExperimentalPlanFormPaneControlService);
+  _formPane = inject(ResearchPlanFormPaneControl);
 
   @Input()
   get displayedColumns(): string[] {
@@ -115,29 +114,29 @@ export class ResourceTableComponent<T extends Resource>
   }
   set displayedColumns(columns: string[]) {
     this._displayedColumns = columns;
-    this._displayedColumnsWithElementActions = [...columns, 'element-actions'];
+    this._displayedColumnsWithElementActions = [ ...columns, 'element-actions' ];
   }
 
-  private _displayedColumns: string[];
+  private _displayedColumns: string[] = [];
 
   get displayedColumnsWithElementActions(): string[] {
     return this._displayedColumnsWithElementActions;
   }
-  private _displayedColumnsWithElementActions: string[];
+  private _displayedColumnsWithElementActions: string[] = [];
 
   @Input()
-  detailTemplate: TemplateRef<{ $implicit: Resource; index: number }>;
+  detailTemplate: TemplateRef<{ $implicit: Resource; index: number }> | undefined = undefined;
 
   @ViewChild(MatTable, { static: true })
-  private table: MatTable<T>;
+  private table: MatTable<T> | undefined = undefined;
 
   @ContentChildren(MatColumnDef)
-  private childColumnDefs: QueryList<MatColumnDef>;
+  private childColumnDefs: QueryList<MatColumnDef> | undefined = undefined;
 
   expandedElement: T | null = null;
 
   ngAfterContentInit(): void {
-    this.childColumnDefs.forEach((defn) => this.table.addColumnDef(defn));
+    this.childColumnDefs!.forEach((defn) => this.table!.addColumnDef(defn));
   }
 
   expandElementDetail(element: T, event: Event) {

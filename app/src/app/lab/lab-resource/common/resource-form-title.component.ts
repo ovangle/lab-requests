@@ -16,17 +16,17 @@ import { WorkUnitFormTitleComponent } from '../../work-unit/common/work-unit-for
 @Component({
   selector: 'lab-resource-form-title',
   standalone: true,
-  imports: [CommonModule, ResourceTypePipe, WorkUnitFormTitleComponent],
+  imports: [ CommonModule, ResourceTypePipe, WorkUnitFormTitleComponent ],
   template: `
     <lab-work-unit-form-title
-      [workUnitName]="containerName"
+      [workUnitName]="containerName!"
       subtitle="{{ isCreate ? 'Add' : 'Update' }} {{ resourceType }}"
       [saveDisabled]="saveDisabled"
       (requestSave)="requestSave.emit($event)"
       (requestClose)="requestClose.emit($event)"
     >
       {{ resourceIndex === 'create' ? 'Add' : 'Update' }}
-      {{ resourceType | resourceType }}
+      {{ resourceType! | resourceType }}
     </lab-work-unit-form-title>
   `,
   styles: [
@@ -39,20 +39,20 @@ import { WorkUnitFormTitleComponent } from '../../work-unit/common/work-unit-for
 })
 export class ResourceFormTitleComponent {
   @Input({ required: true })
-  containerName: string;
+  containerName: string | undefined = undefined;
 
   @Input({ required: true })
-  resourceType: ResourceType;
+  resourceType: ResourceType | undefined = undefined;
 
   @Input()
-  resourceIndex: number | 'create';
+  resourceIndex: number | 'create' = 'create';
 
   get isCreate() {
     return this.resourceIndex === 'create';
   }
 
   @Input()
-  saveDisabled: boolean;
+  saveDisabled: boolean = false;
 
   @Output()
   requestSave = new EventEmitter<void>();

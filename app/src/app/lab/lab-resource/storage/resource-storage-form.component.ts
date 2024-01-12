@@ -33,7 +33,7 @@ import {
   costEstimatesFromForm,
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { differenceInCalendarWeeks } from 'date-fns';
-import { ResearchFunding } from 'src/app/research/funding/funding-model';
+import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { CostEstimateInputComponent } from 'src/app/research/funding/cost-estimate/cost-estimate-input.component';
 
 export type ResourceStorageForm = FormGroup<{
@@ -50,7 +50,7 @@ export function resourceStorageForm(): ResourceStorageForm {
     }),
     description: new FormControl<string>('', {
       nonNullable: true,
-      validators: [Validators.required],
+      validators: [ Validators.required ],
     }),
     hasCostEstimates: new FormControl(false, { nonNullable: true }),
     estimatedCost: costEstimateForm(),
@@ -108,7 +108,7 @@ export function patchResourceStorageFormValue(
   ],
   template: `
     <h3>Storage</h3>
-    <ng-container [formGroup]="form">
+    <ng-container [formGroup]="form!">
       <div class="d-flex">
         <mat-form-field>
           <mat-label>Storage type</mat-label>
@@ -135,7 +135,7 @@ export function patchResourceStorageFormValue(
 
       @if (funding) {
         <uni-research-funding-cost-estimate-form
-          [form]="form.controls.estimatedCost"
+          [form]="form!.controls.estimatedCost"
           [funding]="funding"
           name="storage costs"
           [perUnitCost]="perWeekStorageCost"
@@ -173,7 +173,7 @@ export class ResourceStorageFormComponent {
   readonly storageTypes = RESOURCE_STORAGE_TYPES;
 
   @Input({ required: true })
-  form: ResourceStorageForm;
+  form: ResourceStorageForm | undefined = undefined;
 
   @Input()
   funding: ResearchFunding | null = null;
@@ -185,12 +185,12 @@ export class ResourceStorageFormComponent {
   storageEndDate: Date | null = null;
 
   ngOnChanges(changes: SimpleChanges) {
-    const storageStartDate = changes['storageStartDate'];
-    const storageEndDate = changes['storageEndDate'];
+    const storageStartDate = changes[ 'storageStartDate' ];
+    const storageEndDate = changes[ 'storageEndDate' ];
     if (storageStartDate || storageEndDate) {
       const hasCostEstimates =
         storageStartDate.currentValue && storageEndDate.currentValue;
-      this.form.patchValue({ hasCostEstimates });
+      this.form!.patchValue({ hasCostEstimates });
       this._cdRef.detectChanges();
     }
   }
@@ -206,11 +206,11 @@ export class ResourceStorageFormComponent {
   }
 
   get isOtherTypeSelected() {
-    return this.form.value.type === 'other';
+    return this.form!.value.type === 'other';
   }
 
   get perWeekStorageCost() {
-    const t = this.form.value.type || 'other';
+    const t = this.form!.value.type || 'other';
     console.log('storage type', t, storageCostPerWeek(t));
     return storageCostPerWeek(t);
   }

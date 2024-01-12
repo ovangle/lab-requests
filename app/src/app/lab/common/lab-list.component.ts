@@ -7,7 +7,7 @@ import { RouterModule } from '@angular/router';
 @Component({
   selector: 'lab-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatListModule],
+  imports: [ CommonModule, RouterModule, MatListModule ],
   template: `
     <mat-nav-list>
       @for (lab of labs; track lab.id) {
@@ -20,5 +20,5 @@ import { RouterModule } from '@angular/router';
 })
 export class LabListComponent {
   @Input({ required: true })
-  labs: ReadonlyArray<Lab>;
+  labs: ReadonlyArray<Lab> = [];
 }

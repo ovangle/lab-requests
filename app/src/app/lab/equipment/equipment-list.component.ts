@@ -47,5 +47,5 @@ import { Equipment } from './common/equipment';
 })
 export class LabEquipmentListComponent {
   @Input({ required: true })
-  equipments: Equipment[];
+  equipments: Equipment[] = [];
 }

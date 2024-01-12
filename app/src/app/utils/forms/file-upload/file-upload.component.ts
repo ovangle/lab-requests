@@ -68,7 +68,7 @@ class FileUploader {
   readonly _errorSubject = new Subject<HttpErrorResponse>();
   readonly error$ = this._errorSubject.asObservable();
 
-  _resolveLoadEnd: () => void;
+  _resolveLoadEnd: () => void = () => { };
   readonly loadend = new Promise<void>((resolve) => {
     this._resolveLoadEnd = resolve;
   });
@@ -78,7 +78,7 @@ class FileUploader {
   selector: 'lab-req-file-upload-label',
   template: `<ng-content></ng-content>`,
 })
-export class FileUploadLabelComponent {}
+export class FileUploadLabelComponent { }
 
 @Component({
   selector: 'lab-req-file-upload',
@@ -125,7 +125,7 @@ export class FileUploadComponent implements ControlValueAccessor {
   });
 
   @Input({ required: true })
-  uploadHandler: FileUploadHandler;
+  uploadHandler: FileUploadHandler | undefined;
 
   @Input()
   get accept(): readonly string[] {
@@ -135,10 +135,10 @@ export class FileUploadComponent implements ControlValueAccessor {
     this._accept = typeof value === 'string' ? value.split(',') : value;
   }
 
-  _accept: readonly string[];
+  _accept: readonly string[] = [];
 
   _fileInputChange(event: Event) {
-    const file = (event.target as HTMLInputElement).files![0];
+    const file = (event.target as HTMLInputElement).files![ 0 ];
     if (!file) {
       this._onChange(null);
     }
@@ -160,11 +160,11 @@ export class FileUploadComponent implements ControlValueAccessor {
       progress: false,
     });
   }
-  _onChange = (value: string | null) => {};
+  _onChange = (value: string | null) => { };
   registerOnChange(fn: any): void {
     this._onChange = fn;
   }
-  _onTouched = () => {};
+  _onTouched = () => { };
   registerOnTouched(fn: any): void {
     this._onTouched = fn;
   }

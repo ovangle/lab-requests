@@ -109,8 +109,7 @@ import { EquipmentTrainingDescriptionListComponent } from './training-descriptio
   ],
 })
 export class EquipmentTrainingDescriptionsInputComponent
-  implements ControlValueAccessor
-{
+  implements ControlValueAccessor {
   readonly _descriptionTextControl = new FormControl<string>('', {
     nonNullable: true,
   });
@@ -146,7 +145,7 @@ export class EquipmentTrainingDescriptionsInputComponent
   }
 
   @ViewChild(MatInput, { static: false })
-  _descriptionInput: MatInput | null;
+  _descriptionInput: MatInput | null = null;
   _onInputFocus() {
     this._inputFocused = true;
     // Wait a tick so that _descriptionInput is available in dom
@@ -176,11 +175,11 @@ export class EquipmentTrainingDescriptionsInputComponent
     });
   }
 
-  _onChange = (value: string[]) => {};
+  _onChange = (value: string[]) => { };
   registerOnChange(fn: any): void {
     this._onChange = fn;
   }
-  _onTouched = () => {};
+  _onTouched = () => { };
   registerOnTouched(fn: any): void {
     this._onTouched = fn;
   }

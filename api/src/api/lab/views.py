@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 
 from db import get_db
 
-from .equipment.views import lab_equipments, lab_equipment_tags
+from .lab_equipment.views import lab_equipments, lab_equipment_tags
 from .work_unit.views import lab_work_units
 
 from .schemas import Lab

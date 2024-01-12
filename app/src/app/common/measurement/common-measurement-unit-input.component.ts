@@ -64,8 +64,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
   ],
 })
 export class CommonMeasurementUnitInputComponent
-  implements ControlValueAccessor
-{
+  implements ControlValueAccessor {
   readonly _control = new FormControl('', {
     nonNullable: true,
     validators: [
@@ -81,7 +80,7 @@ export class CommonMeasurementUnitInputComponent
   set required(input: BooleanInput) {
     this._required = coerceBooleanProperty(input);
   }
-  _required: boolean;
+  _required: boolean = false;
 
   ngOnInit() {
     this._control.valueChanges
@@ -92,7 +91,7 @@ export class CommonMeasurementUnitInputComponent
   writeValue(obj: any): void {
     this._control.setValue(obj);
   }
-  _onChange = (value: any) => {};
+  _onChange = (value: any) => { };
   registerOnChange(fn: any): void {
     this._onChange = fn;
   }

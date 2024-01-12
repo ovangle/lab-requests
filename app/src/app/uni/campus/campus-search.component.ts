@@ -84,7 +84,7 @@ export class CampusSearchComponent implements ControlValueAccessor {
         if (nameOrCampus == null) {
           return of([]);
         } else if (nameOrCampus instanceof Campus) {
-          return of([nameOrCampus]);
+          return of([ nameOrCampus ]);
         } else {
           return this.campusService.query({ code: nameOrCampus });
         }
@@ -113,7 +113,7 @@ export class CampusSearchComponent implements ControlValueAccessor {
   set required(value: BooleanInput) {
     this._required = coerceBooleanProperty(value);
   }
-  _required: boolean;
+  _required: boolean = false;
 
   reset() {
     this.searchControl.setValue('');
@@ -139,11 +139,11 @@ export class CampusSearchComponent implements ControlValueAccessor {
   writeValue(value: Campus | string | null): void {
     this.searchControl.setValue(value || '');
   }
-  _onChange = (value: any) => {};
+  _onChange = (value: any) => { };
   registerOnChange(fn: any): void {
     this._onChange = fn;
   }
-  _onTouched = () => {};
+  _onTouched = () => { };
   registerOnTouched(fn: any): void {
     this._onTouched = fn;
   }

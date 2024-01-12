@@ -58,8 +58,8 @@ function createCurrentPasswordValidator(
 
 export class AlterPasswordRequest implements AlterPassword {
   _result: Promise<User>;
-  setSuccess: (user: User) => void;
-  setFailure: (err: any) => void;
+  setSuccess: (user: User) => void = () => { };
+  setFailure: (err: any) => void = () => { };
 
   constructor(
     readonly currentValue: string,
@@ -160,12 +160,12 @@ export class AlterPasswordFormComponent {
   readonly form: AlterPasswordForm = new FormGroup({
     currentValue: new FormControl<string>('', {
       nonNullable: true,
-      validators: [Validators.required],
-      asyncValidators: [createCurrentPasswordValidator(this._resultFailure)],
+      validators: [ Validators.required ],
+      asyncValidators: [ createCurrentPasswordValidator(this._resultFailure) ],
     }),
     newValue: new FormControl<string>('', {
       nonNullable: true,
-      validators: [Validators.required],
+      validators: [ Validators.required ],
     }),
     newValueAgain: new FormControl<string>('', {
       nonNullable: true,
@@ -196,8 +196,8 @@ export class AlterPasswordFormComponent {
     const control = this.form.controls.currentValue;
     return (
       control.errors && {
-        required: control.errors['required'],
-        incorrectForCurrentUser: control.errors['incorrectForCurrentUser'],
+        required: control.errors[ 'required' ],
+        incorrectForCurrentUser: control.errors[ 'incorrectForCurrentUser' ],
       }
     );
   }
@@ -208,7 +208,7 @@ export class AlterPasswordFormComponent {
     const control = this.form.controls.newValue;
     return (
       control.errors && {
-        required: control.errors['required'],
+        required: control.errors[ 'required' ],
       }
     );
   }
@@ -220,8 +220,8 @@ export class AlterPasswordFormComponent {
     const control = this.form.controls.newValueAgain;
     return (
       control.errors && {
-        required: control.errors['required'],
-        sameNewValue: control.errors['sameNewValue'],
+        required: control.errors[ 'required' ],
+        sameNewValue: control.errors[ 'sameNewValue' ],
       }
     );
   }

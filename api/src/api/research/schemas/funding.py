@@ -42,12 +42,12 @@ class ResearchFundingLookup(ModelLookup[ResearchFunding]):
         raise ValueError("Either id or name must be provided")
 
 
-class ResearchFundingIndex(ModelIndex[ResearchFunding]):
+class ResearchFundingIndex(ModelIndex[ResearchFundingView, ResearchFunding]):
     __item_view__ = ResearchFundingView
 
 
 # TODO: PEP 695
-ResearchFundingIndexPage = ModelIndexPage[ResearchFunding]
+ResearchFundingIndexPage = ModelIndexPage[ResearchFundingView, ResearchFunding]
 
 
 class ResearchFundingUpdateRequest(ModelUpdateRequest[ResearchFunding]):

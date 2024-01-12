@@ -4,6 +4,7 @@ import {
   costEstimateFromJson,
   costEstimateToJson,
 } from 'src/app/research/funding/cost-estimate/cost-estimate';
+import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 
 export const RESOURCE_STORAGE_TYPES = [
   'general',
@@ -16,7 +17,7 @@ export const RESOURCE_STORAGE_TYPES = [
   'ult (-80 °C)',
   'other',
 ] as const;
-export type ResourceStorageType = (typeof RESOURCE_STORAGE_TYPES)[number];
+export type ResourceStorageType = (typeof RESOURCE_STORAGE_TYPES)[ number ];
 
 export function storageCostPerWeek(storageType: ResourceStorageType): number {
   return (
@@ -31,7 +32,7 @@ export function storageCostPerWeek(storageType: ResourceStorageType): number {
       'frozen (-18 °C)': 0,
       'ult (-80 °C)': 0,
       other: 1000,
-    }[storageType] || 0
+    }[ storageType ] || 0
   );
 }
 
@@ -80,21 +81,24 @@ export class ResourceStorage {
   }
 }
 
-export function resourceStorageFromJson(json: {
-  [k: string]: any;
-}): ResourceStorage {
-  const estimatedCost = json['estimatedCost']
-    ? costEstimateFromJson(json['estimatedCost'])
-    : null;
+export function resourceStorageFromJson(json: JsonObject): ResourceStorage {
+  if (!isJsonObject(json[ 'estimatedCost' ]) || json[ 'estimatedCost' ] !== null) {
+    throw new Error("Expected a json object or null 'estimatedCost'");
+  }
+  const estimatedCost = json[ 'estimatedCost' ] && costEstimateFromJson(json[ 'estimatedCost' ]);
+
+  if (typeof json[ 'description' ] !== 'string') {
+    throw new Error("Expected a string 'description'");
+  }
 
   return new ResourceStorage({
-    description: json['description'],
+    description: json[ 'description' ],
     estimatedCost,
   });
 }
 
 export function resourceStorageParamsToJson(storage: ResourceStorageParams): {
-  [k: string]: any;
+  [ k: string ]: any;
 } {
   return {
     description: storage.description,

@@ -1,4 +1,5 @@
 import { Injectable, InjectionToken, forwardRef, inject } from '@angular/core';
+import { validate as validateIsUUID } from 'uuid';
 import {
   Observable,
   ReplaySubject,
@@ -16,43 +17,57 @@ import type {
   ResourceContainerContext,
 } from './resource-container';
 import { ResearchPlan } from 'src/app/research/plan/common/research-plan';
+import { ModelParams, modelParamsFromJsonObject } from 'src/app/common/model/model';
+import { JsonObject } from 'src/app/utils/is-json-object';
 
-export interface ResourceParams {
-  id: string | null;
-  containerId: string;
+export interface ResourceParams extends ModelParams {
   index: number | 'create';
+  type: ResourceType;
 
-  attachments?: ResourceFileAttachment[];
+  labId: string;
+}
+
+export function resourceParamsFromJsonObject(json: JsonObject): ResourceParams {
+  const baseParams = modelParamsFromJsonObject(json);
+
+  if (typeof json[ 'index' ] !== 'number') {
+    throw new Error('Expected a number \'index\'');
+  }
+  if (!isResourceType(json[ 'type' ])) {
+    throw new Error("Expected a resource type 'resourceType'")
+  }
+  if (typeof json[ 'labId' ] !== 'string' || !validateIsUUID(json[ 'labId' ])) {
+    throw new Error("Expected a uuid 'labId'")
+  }
+  return {
+    ...baseParams,
+    type: json[ 'type' ],
+    index: json[ 'index' ],
+    labId: json[ 'labId' ]
+  }
 }
 
 export class Resource<T extends ResourceParams = ResourceParams> {
   readonly type: ResourceType;
 
-  readonly containerId: string;
-  readonly index: number | 'create';
   readonly id: string;
-
-  readonly attachments: ResourceFileAttachment<this>[];
+  readonly index: number | 'create';
 
   constructor(params: T) {
-    if (!params.id) {
-      throw new Error('No id in params');
-    }
     this.id = params.id;
+    this.type = params.type;
 
-    this.containerId = params.containerId;
     this.index = params.index;
-    this.attachments = params.attachments || [];
   }
 }
-export type ResourceTypeIndex = [ResourceType, number | 'create'];
+export type ResourceTypeIndex = [ ResourceType, number | 'create' ];
 
 export function isResourceTypeIndex(obj: any): obj is ResourceTypeIndex {
   return (
     Array.isArray(obj) &&
     obj.length == 2 &&
-    isResourceType(obj[0]) &&
-    (typeof obj[1] === 'number' || obj[1] === 'create')
+    isResourceType(obj[ 0 ]) &&
+    (typeof obj[ 1 ] === 'number' || obj[ 1 ] === 'create')
   );
 }
 
@@ -69,23 +84,23 @@ export class ResourceContext<T extends Resource> {
 
   readonly containerName$ = this._containerContext.containerName$;
   readonly _committedTypeIndexSubject = new ReplaySubject<
-    [ResourceType, number | 'create']
+    [ ResourceType, number | 'create' ]
   >(1);
   readonly committedTypeIndex$ = this._committedTypeIndexSubject.asObservable();
 
   readonly resourceType$ = defer(() =>
-    this.committedTypeIndex$.pipe(map(([type, _]) => type)),
+    this.committedTypeIndex$.pipe(map(([ type, _ ]) => type)),
   );
   readonly isCreate$ = defer(() =>
-    this.committedTypeIndex$.pipe(map(([_, index]) => index === 'create')),
+    this.committedTypeIndex$.pipe(map(([ _, index ]) => index === 'create')),
   );
 
   readonly committed$: Observable<T | null> = combineLatest([
     this.container$,
     this.committedTypeIndex$,
   ]).pipe(
-    map(([container, typeIndex]: [ResourceContainer, ResourceTypeIndex]) => {
-      const [resourceType, index] = typeIndex;
+    map(([ container, typeIndex ]: [ ResourceContainer, ResourceTypeIndex ]) => {
+      const [ resourceType, index ] = typeIndex;
 
       return index === 'create'
         ? null

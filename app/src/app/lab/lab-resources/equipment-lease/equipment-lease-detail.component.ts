@@ -34,10 +34,10 @@ export class EquipmentLeaseDetailComponent {
   equipments = inject(EquipmentService);
 
   @Input({ required: true })
-  lease: EquipmentLease;
+  lease: EquipmentLease | undefined = undefined;
 
   get equipment(): Observable<Equipment | null> {
-    const rawEquipment = this.lease.equipment;
+    const rawEquipment = this.lease!.equipment;
     if (typeof rawEquipment === 'string') {
       return this.equipments.fetch(rawEquipment);
     } else if (rawEquipment instanceof Equipment) {
@@ -48,11 +48,11 @@ export class EquipmentLeaseDetailComponent {
   }
   get equipmentRequest(): EquipmentRequest | null {
     if (
-      this.lease.equipment instanceof Equipment ||
-      typeof this.lease.equipment === 'string'
+      this.lease!.equipment instanceof Equipment ||
+      typeof this.lease!.equipment === 'string'
     ) {
       return null;
     }
-    return this.lease.equipment;
+    return this.lease!.equipment;
   }
 }

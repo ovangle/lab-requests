@@ -18,7 +18,7 @@ import {
   CostEstimateFormComponent,
   costEstimateForm,
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
-import { ResearchFunding } from 'src/app/research/funding/funding-model';
+import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { BehaviorSubject, Observable, map } from 'rxjs';
 import { HazardClassesSelectComponent } from '../../lab-resource/hazardous/hazard-classes-select.component';
 import { HazardClass } from '../../lab-resource/hazardous/hazardous';
@@ -49,12 +49,12 @@ export function inputMaterialForm(): InputMaterialForm {
   return new FormGroup({
     name: new FormControl<string>('', {
       nonNullable: true,
-      validators: [Validators.required],
+      validators: [ Validators.required ],
     }),
     description: new FormControl<string>('', { nonNullable: true }),
     baseUnit: new FormControl<string>('', {
       nonNullable: true,
-      validators: [Validators.required],
+      validators: [ Validators.required ],
     }),
     numUnitsRequired: new FormControl<number>(0, { nonNullable: true }),
     perUnitCostEstimate: costEstimateForm(),
@@ -154,7 +154,7 @@ export class InputMaterialResourceFormComponent {
 
   ngOnInit() {
     this.form.statusChanges.subscribe((status) => {
-      for (const [key, control] of Object.entries(this.form.controls)) {
+      for (const [ key, control ] of Object.entries(this.form.controls)) {
         console.log(key, control.valid, control.errors);
       }
       console.log('status', status);
@@ -183,9 +183,9 @@ export class InputMaterialResourceFormComponent {
     return this.form.value?.baseUnit || '';
   }
 
-  get nameErrors(): InputMaterialFormErrors['name'] | null {
+  get nameErrors(): InputMaterialFormErrors[ 'name' ] | null {
     const control = this.form.controls.name;
-    return control.errors as InputMaterialFormErrors['name'] | null;
+    return control.errors as InputMaterialFormErrors[ 'name' ] | null;
   }
 
   readonly _fundingModelSubject = new BehaviorSubject<ResearchFunding | null>(

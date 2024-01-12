@@ -7,7 +7,7 @@ import { ALL_RESOURCE_TYPES } from 'src/app/lab/lab-resource/resource-type';
 import { EquipmentLeaseFormComponent } from '../../equipment-lease/equipment-lease-form.component';
 import { InputMaterialResourceFormComponent } from '../../input-material/input-material-resource-form.component';
 import { OutputMaterialResourceFormComponent } from '../../output-material/output-material-resource-form.component';
-import { SoftwareResourceFormComponent } from '../../software-lease/software-resource-form.component';
+import { SoftwareLeaseFormComponent } from '../../software-lease/software-resource-form.component';
 
 const RESOURCE_FORM_ROUTES: Routes = ALL_RESOURCE_TYPES.flatMap(
   (resourceType) => [
@@ -27,11 +27,11 @@ const RESOURCE_FORM_ROUTES: Routes = ALL_RESOURCE_TYPES.flatMap(
     ResourceFormTitleComponent,
 
     EquipmentLeaseFormComponent,
-    SoftwareResourceFormComponent,
+    SoftwareLeaseFormComponent,
 
     InputMaterialResourceFormComponent,
     OutputMaterialResourceFormComponent,
   ],
-  declarations: [WorkUnitResourceFormPage],
+  declarations: [ WorkUnitResourceFormPage ],
 })
-export class WorkUnitResourceFormsFeatureModule {}
+export class WorkUnitResourceFormsFeatureModule { }

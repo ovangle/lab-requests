@@ -66,7 +66,7 @@ export function costEstimatesFromForm(
 }
 
 function costEstimatesFromFormValue(
-  value: CostEstimateForm['value'],
+  value: CostEstimateForm[ 'value' ],
   unit: UnitOfMeasurement | null,
 ): CostEstimate {
   return {
@@ -93,11 +93,11 @@ function costEstimatesFromFormValue(
     CostEstimatePipe,
   ],
   template: `
-    <form [formGroup]="form">
+    <form [formGroup]="form!">
       <h4><ng-content select=".title"></ng-content></h4>
 
       <mat-checkbox formControlName="isUniversitySupplied">
-        Include {{ name }} in {{ funding.name | lowercase }} budget
+        Include {{ name }} in {{ funding!.name | lowercase }} budget
       </mat-checkbox>
 
       @if (includeInProjectFunding) {
@@ -145,22 +145,22 @@ function costEstimatesFromFormValue(
 })
 export class CostEstimateFormComponent {
   @Input({ required: true })
-  form: CostEstimateForm;
+  form: CostEstimateForm | undefined;
 
   @Input()
-  name: string;
+  name: string | undefined;
 
   @Input()
-  funding: ResearchFunding;
+  funding: ResearchFunding | undefined;
 
   @Input()
   get quantityRequired(): number {
-    return this.form.value.quantityRequired!;
+    return this.form!.value.quantityRequired!;
   }
   set quantityRequired(quantityRequired: NumberInput) {
     this._isFixedQuantityRequired = true;
     quantityRequired = coerceNumberProperty(quantityRequired);
-    this.form.patchValue({ quantityRequired });
+    this.form!.patchValue({ quantityRequired });
   }
   _isFixedQuantityRequired = false;
   get isFixedQuantityRequired() {
@@ -169,12 +169,12 @@ export class CostEstimateFormComponent {
 
   @Input()
   get perUnitCost(): number {
-    return this.form.value.perUnitCost!;
+    return this.form!.value.perUnitCost!;
   }
   set perUnitCost(perUnitCost: NumberInput) {
     this._isFixedPerUnitCost = true;
     perUnitCost = coerceNumberProperty(perUnitCost);
-    this.form.patchValue({ perUnitCost });
+    this.form!.patchValue({ perUnitCost });
   }
 
   _isFixedPerUnitCost = false;
@@ -187,32 +187,32 @@ export class CostEstimateFormComponent {
   readonly _destroyRef = inject(DestroyRef);
 
   readonly totalCost$ = defer(() =>
-    this.form.valueChanges.pipe(
-      filter(() => this.form.valid),
-      startWith(this.form.value),
+    this.form!.valueChanges.pipe(
+      filter(() => this.form!.valid),
+      startWith(this.form!.value),
       map((value) => costEstimatesFromFormValue(value, this.unitOfMeasurement)),
     ),
   );
 
   get isSuppliedByUni() {
-    return this.form.controls.isUniversitySupplied.value;
+    return this.form!.controls.isUniversitySupplied.value;
   }
 
   get includeInProjectFunding(): boolean {
-    return !!this.form.value.isUniversitySupplied;
+    return !!this.form!.value.isUniversitySupplied;
   }
 
-  _totalCost: CostEstimate;
+  _totalCost: CostEstimate | undefined;
   get totalCost(): CostEstimate {
-    return this._totalCost;
+    return this._totalCost!;
   }
 
   ngOnInit() {
     if (this.isFixedPerUnitCost) {
-      this.form.controls['perUnitCost'].disable();
+      this.form!.controls[ 'perUnitCost' ].disable();
     }
     if (this.isFixedQuantityRequired) {
-      this.form.controls['quantityRequired'].disable();
+      this.form!.controls[ 'quantityRequired' ].disable();
     }
   }
 }

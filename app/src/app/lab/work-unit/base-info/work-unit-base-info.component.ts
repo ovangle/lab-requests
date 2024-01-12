@@ -6,15 +6,16 @@ import { WorkUnit } from '../common/work-unit';
 @Component({
   selector: 'lab-work-unit-base-info',
   standalone: true,
-  imports: [CommonModule, CampusInfoComponent],
+  imports: [ CommonModule, CampusInfoComponent ],
   template: `
     <dl>
       <dt>Technician</dt>
-      <dd>{{ workUnit.technician }}</dd>
+      <dd>{{ workUnit!.supervisorId }}</dd>
+
       <dt>Process Summary</dt>
       <dd>
-        @if (workUnit.processSummary) {
-          {{ workUnit.processSummary }}
+        @if (workUnit!.processSummary) {
+          {{ workUnit!.processSummary }}
         } @else {
           <p><i>No process description provided</i></p>
         }
@@ -24,5 +25,5 @@ import { WorkUnit } from '../common/work-unit';
 })
 export class WorkUnitBaseInfoComponent {
   @Input({ required: true })
-  workUnit: WorkUnit;
+  workUnit: WorkUnit | undefined = undefined;
 }
