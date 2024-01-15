@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM python:3.12
 
 RUN groupadd -g 1000 api && \
     useradd -u 1000 -g api -s /bin/bash -m api

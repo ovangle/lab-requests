@@ -15,7 +15,6 @@ const equipmentCreateFixture: EquipmentPatch = {
   description: 'My personal laptop',
   tags: ['laptop'],
   trainingDescriptions: [],
-  availableInLabTypes: [],
 };
 
 @Component({

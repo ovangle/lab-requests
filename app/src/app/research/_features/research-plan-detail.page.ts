@@ -15,7 +15,6 @@ import {
   shareReplay,
   switchMap,
 } from 'rxjs';
-import { ResearchPlanFormPaneControl } from '../plan/common/research-plan-form-pane-control';
 import { BodyScrollbarHidingService } from 'src/app/utils/body-scrollbar-hiding.service';
 import {
   ResearchPlan,
@@ -92,14 +91,7 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
         </mat-card-content>
       </mat-card>
     }
-    <div
-      class="resource-form-pane"
-      [class.resource-form-pane-isopen]="_formPaneService.isOpen$ | async"
-    >
-      <div class="sticky-top">
-        <router-outlet name="form"></router-outlet>
-      </div>
-    </div>
+    
   `,
   styles: [
     `
@@ -107,25 +99,8 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
         padding: 0;
       }
 
-      .resource-form-pane {
-        position: absolute;
-        top: 0;
-        right: 0;
-        height: 100%;
-        max-width: 40vw;
-        background-color: white;
-        z-index: 100;
-      }
-
-      .resource-form-pane .sticky-top {
-        width: 100%;
-        height: 100vh;
-        position: sticky;
-        top: 0;
-      }
     `,
   ],
-  providers: [ ResearchPlanFormPaneControl ],
 })
 export class ResearchPlanDetailPage {
   readonly isEditingForm = true;
@@ -133,12 +108,7 @@ export class ResearchPlanDetailPage {
   readonly _context = inject(ResearchPlanContext);
   _contextConnection: Subscription;
 
-  readonly _formPaneService = inject(ResearchPlanFormPaneControl);
-  @ViewChild(ElementRef, { static: true })
-  readonly formPane: ElementRef<any> | undefined;
-
   readonly appScaffold = inject(BodyScrollbarHidingService);
-
   readonly plan$ = this._context.committed$;
 
   constructor() {

@@ -28,6 +28,7 @@ const PLAN_ROUTES: Routes = [
   {
     path: ':plan_id',
     component: ResearchPlanDetailPage,
+    /*
     children: [
       {
         path: '',
@@ -50,6 +51,7 @@ const PLAN_ROUTES: Routes = [
           ).then((module) => module.WorkUnitFormsFeatureModule),
       },
     ],
+*/
   },
 ];
 
@@ -75,4 +77,4 @@ const PLAN_ROUTES: Routes = [
   providers: [ResearchPlanContext],
   exports: [RouterModule],
 })
-export class ExperimentalPlanFeatureModule {}
+export class ResearchPlanFeatureModule { }

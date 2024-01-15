@@ -6,7 +6,6 @@ import {
   requiresAuthorizationGuard,
 } from './utils/router-utils';
 import { PublicPageComponent } from './public-page/public-page.component';
-import { IotDeviceCreateFormComponent } from './iot/iot-device-create-form.component';
 import { OauthFeatureModule } from './oauth/_features/oauth.feature-module';
 
 const routes: Routes = [
@@ -15,20 +14,19 @@ const routes: Routes = [
     canActivate: [requiresAuthorizationGuard],
     children: [
       {
-        path: 'iot-device',
-        children: [
-          {
-            path: 'create',
-            component: IotDeviceCreateFormComponent,
-          },
-        ],
-      },
-      {
         path: 'lab',
         loadChildren: () =>
           import('./lab/_features/lab.feature-module').then(
             (module) => module.LabFeatureModule,
           ),
+      },
+      {
+        path: 'research',
+        loadChildren: () =>
+          import('./research/_features/research-plan.feature-module').then(
+            module => module.ResearchPlanFeatureModule
+          )
+
       },
       {
         path: 'user',
@@ -70,4 +68,4 @@ export class AppRoutes {
   imports: [RouterModule.forRoot(routes, { enableTracing: false })],
   exports: [RouterModule],
 })
-export class AppRoutingModule {}
+export class AppRoutingModule { }

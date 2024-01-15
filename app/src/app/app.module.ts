@@ -27,8 +27,6 @@ import {
   provideAppOauthProviderParams,
 } from './app-oauth-provider-params';
 import { ScaffoldLayoutComponent } from './scaffold/scaffold-layout.component';
-import { provideSidenavMenuRootGroupControl } from './scaffold/sidenav-menu/sidenav-menu-group-control';
-import { LabSidenavMenuGroupControl } from './lab/_root/lab-sidenav-menu-group-control';
 
 /**
  * This function is used internal to get a string instance of the `<base href="" />` value from `index.html`.
@@ -85,9 +83,7 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
     provideAppOauthProviderParams(),
 
     FileUploadService,
-
-    provideSidenavMenuRootGroupControl(LabSidenavMenuGroupControl),
   ],
   bootstrap: [AppComponent],
 })
-export class AppModule {}
+export class AppModule { }

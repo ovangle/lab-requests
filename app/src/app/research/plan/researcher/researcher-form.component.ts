@@ -6,7 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { CampusSearchComponent } from 'src/app/uni/campus/campus-search.component';
 import { DisciplineSelectComponent } from 'src/app/uni/discipline/discipline-select.component';
 import {
-  ExperimentalPlanForm,
+  ResearchPlanForm,
   ExperimentalPlanFormErrors,
 } from '../common/research-plan-form';
 
@@ -70,28 +70,28 @@ import {
 })
 export class ResearchPlanResearcherFormComponent {
   @Input()
-  form: ExperimentalPlanForm | undefined;
+  form: ResearchPlanForm | undefined;
 
-  get researcherErrors(): ExperimentalPlanFormErrors[ 'researcher' ] | null {
+  get researcherErrors(): ExperimentalPlanFormErrors['researcher'] | null {
     const nameControl = this.form!.controls.researcher;
     return (nameControl.errors || null) as any;
   }
 
   get disciplineErrors():
-    | ExperimentalPlanFormErrors[ 'researcherDiscipline' ]
+    | ExperimentalPlanFormErrors['researcherDiscipline']
     | null {
     const disciplineControl = this.form!.controls.researcherDiscipline;
     return (disciplineControl.errors || null) as any;
   }
 
   get baseCampusErrors():
-    | ExperimentalPlanFormErrors[ 'researcherBaseCampus' ]
+    | ExperimentalPlanFormErrors['researcherBaseCampus']
     | null {
     const disciplineControl = this.form!.controls.researcherBaseCampus;
     return (disciplineControl.errors || null) as any;
   }
 
-  get supervisorErrors(): ExperimentalPlanFormErrors[ 'supervisor' ] {
+  get supervisorErrors(): ExperimentalPlanFormErrors['supervisor'] {
     const supervisorControl = this.form!.controls.supervisor;
     return (supervisorControl.errors || null) as any;
   }

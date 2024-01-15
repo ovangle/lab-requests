@@ -10,7 +10,7 @@ const workUnitCreateFixture: Partial<WorkUnitPatch & { planId: string }> = {
   planId: 'e7a33211-1227-4d1d-994d-85a480c15ac0',
   name: 'work unit 1',
   campus: 'ROK',
-  labType: 'ICT',
+  discipline: 'ict',
   technician: 'hello@world.com',
   /*
     addSoftwares: [

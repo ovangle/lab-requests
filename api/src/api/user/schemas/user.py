@@ -1,5 +1,6 @@
 from __future__ import annotations
 import asyncio
+from typing import Set
 
 from typing_extensions import override
 from uuid import UUID
@@ -7,6 +8,7 @@ from uuid import UUID
 from pydantic.types import SecretStr
 
 from db import LocalSession
+from db.models.uni.discipline import Discipline
 from db.models.user import User, UserDomain
 
 
@@ -25,6 +27,7 @@ class UserView(ModelView[User]):
     domain: UserDomain
     email: str
     name: str
+    disciplines: set[Discipline]
     base_campus: CampusView
 
     disabled: bool
@@ -39,6 +42,7 @@ class UserView(ModelView[User]):
             email=model.email,
             name=model.name,
             base_campus=base_campus,
+            disciplines=model.disciplines,
             disabled=model.disabled,
             roles=set(model.roles),
             created_at=model.created_at,

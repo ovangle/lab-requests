@@ -18,6 +18,13 @@ def load_user_seeds() -> pandas.DataFrame:
     return pandas.read_excel(user_seeds_xlsx)
 
 
+def get_user_row(dataframe: pandas.DataFrame, email: str) -> pandas.Series:
+    user_rows = dataframe.query("Email == @email")
+    if user_rows.count() != 1:
+        raise ValueError(f"Multiple rows for user {email}")
+    return user_rows[0]
+
+
 def campus_code_from_user_seed_row(row: pandas.Series) -> str:
     location_str = str(row.get("Location"))
     m = re.search(r"\(([A-Z]+)\)", location_str)
@@ -60,7 +67,7 @@ async def seed_users(db: LocalSession):
     await seed_campuses(db)
 
     async def create_or_update_lab_tech(
-        email: str, name: str, campus: Campus, disciplines: set[Discipline]
+        email: str, name: str, campus: Campus, title: str, disciplines: set[Discipline]
     ):
         try:
             lab_tech = await User.get_for_email(db, email)
@@ -70,6 +77,8 @@ async def seed_users(db: LocalSession):
                 domain=UserDomain.NATIVE,
                 email=email,
                 name=name,
+                title=title,
+                disciplines=disciplines,
                 roles=set(),
             )
             db.add(lab_tech)
@@ -78,8 +87,16 @@ async def seed_users(db: LocalSession):
             credentials = NativeUserCredentials(user=lab_tech, password="password")
             db.add(credentials)
 
+        if lab_tech.title != title:
+            lab_tech.title = title
+            db.add(lab_tech)
+
         if lab_tech.campus_id != campus.id:
             lab_tech.campus_id = campus.id
+            db.add(lab_tech)
+
+        if set(lab_tech.disciplines) != disciplines:
+            lab_tech.disciplines = disciplines
             db.add(lab_tech)
 
         if lab_tech.name != name:
@@ -107,6 +124,10 @@ async def seed_users(db: LocalSession):
         disciplines = disciplines_from_user_seed_row(row)
 
         await create_or_update_lab_tech(
-            email, name=str(row.get("Name")), campus=campus, disciplines=disciplines
+            email,
+            name=str(row.get("Name")),
+            title=str(row.get("Title")).strip(),
+            campus=campus,
+            disciplines=disciplines,
         )
     await db.commit()

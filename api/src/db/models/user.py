@@ -16,8 +16,7 @@ from db import LocalSession
 from .base import Base, DoesNotExist
 from .base.fields import uuid_pk
 
-if TYPE_CHECKING:
-    from db.models.uni import Campus, Discipline
+from ..models.uni import Campus, Discipline
 
 
 class UserDoesNotExist(DoesNotExist):
@@ -51,8 +50,14 @@ class User(Base):
     name: Mapped[str] = mapped_column(postgresql.TEXT)
     disabled: Mapped[bool] = mapped_column(default=False)
 
+    title: Mapped[str] = mapped_column(postgresql.VARCHAR(256))
+
     campus_id: Mapped[UUID] = mapped_column(ForeignKey("uni_campus.id"))
     campus: Mapped[Campus] = relationship()
+
+    disciplines: Mapped[set[Discipline]] = mapped_column(
+        postgresql.ARRAY(postgresql.ENUM(Discipline)), server_default="{}"
+    )
 
     roles: Mapped[set[str]] = mapped_column(
         postgresql.ARRAY(postgresql.VARCHAR(64)), server_default="{}"

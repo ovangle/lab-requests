@@ -5,20 +5,14 @@ import {
   MatTreeFlattener,
   MatTreeModule,
 } from '@angular/material/tree';
-import {
-  SidenavMenuGroup,
-  SidenavMenuLink,
-  SidenavMenuNode,
-  SidenavMenuRootControl,
-  formatSidenavMenuGroup,
-  sidenavMenuNodeChildren,
-} from './sidenav-menu-group-control';
 import { FlatTreeControl } from '@angular/cdk/tree';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterModule } from '@angular/router';
 import { ScaffoldStateService } from '../scaffold-state.service';
 import { map } from 'rxjs';
+import { SidenavMenuRoot } from './sidenav-menu';
+import { SidenavMenuNode } from './model';
 
 interface FlattenedMenuNode {
   readonly title: string;
@@ -28,16 +22,6 @@ interface FlattenedMenuNode {
   readonly link?: any[];
 }
 
-@Component({
-  selector: 'scaffold-sidenav-menu-link',
-  standalone: true,
-  imports: [ CommonModule, RouterModule ],
-  template: ` <a [routerLink]="node!.routerLink">{{ node!.title }}</a> `,
-})
-export class SidenavMenuLinkComponent {
-  @Input({ required: true })
-  node: SidenavMenuLink | undefined = undefined;
-}
 
 /**
  * The context menu is global to all applications
@@ -52,11 +36,8 @@ export class SidenavMenuLinkComponent {
     MatButtonModule,
     MatIconModule,
     MatTreeModule,
-
-    SidenavMenuLinkComponent,
   ],
   template: `
-    @if (!(scaffoldState.isSidenavDisabled$ | async)) {
       <mat-tree [dataSource]="_dataSource" [treeControl]="_treeControl">
         <mat-tree-node
           *matTreeNodeDef="let node; when: isExpandable"
@@ -82,15 +63,13 @@ export class SidenavMenuLinkComponent {
           {{ node.title }}
         </mat-tree-node>
       </mat-tree>
-    }
   `,
   styles: `
   :host { display: block; min-width: 20em; }
   `,
 })
 export class SidenavMenuComponent implements OnInit {
-  readonly scaffoldState = inject(ScaffoldStateService);
-  readonly menuRoot = inject(SidenavMenuRootControl);
+  readonly menuRoot = inject(SidenavMenuRoot);
   readonly _destroyRef = inject(DestroyRef);
 
   readonly _treeControl = new FlatTreeControl<FlattenedMenuNode>(
@@ -109,7 +88,7 @@ export class SidenavMenuComponent implements OnInit {
     }),
     (node: FlattenedMenuNode) => node.level,
     (node: FlattenedMenuNode) => node.expandable,
-    (node: SidenavMenuNode) => sidenavMenuNodeChildren(node),
+    (node: SidenavMenuNode) => node.type === 'group' ? node.children : [],
   );
 
   readonly _dataSource = new MatTreeFlatDataSource<
@@ -121,15 +100,14 @@ export class SidenavMenuComponent implements OnInit {
     return node.expandable;
   }
 
-  ngOnInit() {
-    const menuSubscription = this.menuRoot.value$.subscribe((root) => {
-      console.log(formatSidenavMenuGroup(root));
-      this._dataSource.data = sidenavMenuNodeChildren(root);
-    });
-    this.menuRoot.value$.connect();
+  setNodes(nodes: SidenavMenuNode[]) {
+    this._dataSource.data = nodes;
+  }
 
+  ngOnInit() {
+    const menuConnection = this.menuRoot.connect(this);
     this._destroyRef.onDestroy(() => {
-      menuSubscription.unsubscribe();
-    });
+      menuConnection.unsubscribe();
+    })
   }
 }

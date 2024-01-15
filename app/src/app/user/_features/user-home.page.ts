@@ -3,7 +3,7 @@ import { UserContext } from '../user-context';
 import { filter, map, shareReplay } from 'rxjs';
 import { CurrentUser, User } from '../common/user';
 import { CommonModule } from '@angular/common';
-import { LabListComponent } from 'src/app/lab/common/lab-list.component';
+import { LabListComponent } from 'src/app/lab/lab-list.component';
 
 @Component({
   selector: 'user-home-page',

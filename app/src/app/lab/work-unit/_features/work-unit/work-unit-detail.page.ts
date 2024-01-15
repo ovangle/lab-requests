@@ -28,7 +28,7 @@ import {
   ALL_RESOURCE_TYPES,
   ResourceType,
 } from 'src/app/lab/lab-resource/resource-type';
-import { ResearchPlanFormPaneControl } from 'src/app/research/plan/common/research-plan-form-pane-control';
+import { ScaffoldFormPaneControl } from 'src/app/scaffold/form-pane/form-pane-control';
 
 class WorkUnitContextError extends Error { }
 
@@ -112,7 +112,7 @@ export class WorkUnitDetailPage {
   readonly _workUnitContextConnection: Subscription;
   readonly workUnit$ = this._workUnitContext.workUnit$;
 
-  readonly _formPane = inject(ResearchPlanFormPaneControl);
+  readonly _formPane = inject(ScaffoldFormPaneControl);
 
   constructor() {
     this._workUnitContextConnection = this._workUnitContext.sendCommitted(
@@ -143,7 +143,7 @@ export class WorkUnitDetailPage {
             'work-units',
             `${workUnit.id}`,
             'update',
-          ]);
+          ], {});
         }),
       )
       .subscribe();

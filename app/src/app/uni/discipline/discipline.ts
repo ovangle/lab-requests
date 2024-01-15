@@ -1,8 +1,8 @@
 export const DISCLIPLINES = [
-  'Electrical',
-  'Mechanical',
-  'Civil',
-  'ICT',
+  'electrical',
+  'mechanical',
+  'civil',
+  'ict',
 ] as const;
 
 export type Discipline = (typeof DISCLIPLINES)[number];
@@ -16,4 +16,23 @@ export function disciplineFromJson(json: unknown): Discipline {
     throw new Error(`Expected one of [${DISCLIPLINES.join(',')}]`);
   }
   return json;
+}
+
+export interface DisciplineFormatOptions {
+
+}
+
+export function formatDiscipline(discipline: Discipline, options: Partial<DisciplineFormatOptions> = {}) {
+  switch (discipline) {
+    case 'ict':
+      return 'ICT';
+    case 'civil':
+      return 'Civil';
+    case 'electrical':
+      return 'Electrical';
+    case 'mechanical':
+      return 'Mechanical';
+    default:
+      throw new Error(`Unexpected discipline '${discipline}'`);
+  }
 }

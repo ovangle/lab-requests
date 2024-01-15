@@ -5,16 +5,14 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { LabTypeSelectComponent } from '../../type/lab-type-select.component';
 import { CampusSearchComponent } from 'src/app/uni/campus/campus-search.component';
 import {
   WorkUnitForm,
   WorkUnitFormErrors,
-  workUnitForm,
   workUnitFormErrors,
 } from './work-unit-form';
 import { WorkUnitDurationFormComponent } from '../duration/work-unit-duration-form.component';
-import { coerceArray, coerceStringArray } from '@angular/cdk/coercion';
+import { DisciplineSelectComponent } from 'src/app/uni/discipline/discipline-select.component';
 
 @Component({
   selector: 'lab-work-unit-form',
@@ -29,7 +27,7 @@ import { coerceArray, coerceStringArray } from '@angular/cdk/coercion';
     MatInputModule,
 
     CampusSearchComponent,
-    LabTypeSelectComponent,
+    DisciplineSelectComponent,
     WorkUnitDurationFormComponent,
   ],
   template: `
@@ -58,7 +56,7 @@ import { coerceArray, coerceStringArray } from '@angular/cdk/coercion';
         </uni-campus-search>
       }
 
-      @if (isEditableField('labType')) {
+      @if (isEditableField('discipline')) {
         <lab-type-select formControlName="labType" required>
           <mat-label>Lab type</mat-label>
           @if (labTypeErrors?.required) {
@@ -99,33 +97,33 @@ export class WorkUnitFormComponent {
   @Input()
   fixedFields: string[] | undefined = undefined;
 
-  isEditableField(name: keyof WorkUnitForm[ 'controls' ]): boolean {
+  isEditableField(name: keyof WorkUnitForm['controls']): boolean {
     if (this.fixedFields === undefined) {
       return true;
     }
     return !this.fixedFields.includes(name);
   }
 
-  get nameErrors(): WorkUnitFormErrors[ 'name' ] {
+  get nameErrors(): WorkUnitFormErrors['name'] {
     return workUnitFormErrors(this.form!, 'name');
   }
 
-  get campusErrors(): WorkUnitFormErrors[ 'campus' ] {
+  get campusErrors(): WorkUnitFormErrors['campus'] {
     return workUnitFormErrors(this.form!, 'campus');
   }
 
-  get labTypeErrors(): WorkUnitFormErrors[ 'labType' ] {
-    return workUnitFormErrors(this.form!, 'labType');
+  get labTypeErrors(): WorkUnitFormErrors['discipline'] {
+    return workUnitFormErrors(this.form!, 'discipline');
   }
 
-  get technicianErrors(): WorkUnitFormErrors[ 'technician' ] {
+  get technicianErrors(): WorkUnitFormErrors['technician'] {
     return workUnitFormErrors(this.form!, 'technician');
   }
 
-  get startDateErrors(): WorkUnitFormErrors[ 'startDate' ] {
+  get startDateErrors(): WorkUnitFormErrors['startDate'] {
     return workUnitFormErrors(this.form!, 'startDate');
   }
-  get endDateErrors(): WorkUnitFormErrors[ 'endDate' ] {
+  get endDateErrors(): WorkUnitFormErrors['endDate'] {
     return workUnitFormErrors(this.form!, 'endDate');
   }
 }

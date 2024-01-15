@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import {
   ChangeDetectorRef,
   Component,
@@ -17,29 +18,49 @@ import {
   map,
   of,
 } from 'rxjs';
-import { ResearchPlanFormComponent } from '../plan/common/research-plan-form.component';
 import { ActivatedRoute, Router } from '@angular/router';
-import {
-  experimentalPlanForm,
-  experimentalPlanPatchFromForm,
-} from '../plan/common/research-plan-form';
 
-import { ModelContext } from 'src/app/common/model/context';
 import {
   ResearchPlanContext,
   ResearchPlanPatch,
   injectResearchPlanService,
 } from '../plan/common/research-plan';
+import { User } from 'src/app/user/common/user';
+import { Campus } from 'src/app/uni/campus/common/campus';
+import { Discipline } from 'src/app/uni/discipline/discipline';
+
+const melCampusFixture = new Campus({
+  id: uuidv4(),
+  code: 'MEL',
+  name: 'Melbourne',
+  createdAt: new Date(),
+  updatedAt: new Date()
+});
 
 const experimentalPlanCreateFixture: Partial<ResearchPlanPatch> = {
   title: 'The importance of being earnest',
-  processSummary: 'Behave earnestly, then deceptively and observe changes.',
-  fundingModel: 'Grant',
-  researcher: 'a@researcher',
-  researcherDiscipline: 'ICT',
-  researcherBaseCampus: 'MEL',
-  supervisor: null,
-  addWorkUnits: [],
+  description: 'Behave earnestly, then deceptively and observe changes.',
+  funding: 'Grant',
+  researcher: new User({
+    id: uuidv4(),
+    email: 'help@me',
+    name: 'Help me',
+    baseCampus: melCampusFixture,
+    disciplines: new Set(['ict']),
+    roles: new Set(),
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }),
+  coordinator: new User({
+    id: uuidv4(),
+    email: 'a@technician',
+    name: 'a technician',
+    baseCampus: melCampusFixture,
+    disciplines: new Set(['electrical']),
+    roles: new Set(),
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }),
 };
 
 @Component({
@@ -47,19 +68,7 @@ const experimentalPlanCreateFixture: Partial<ResearchPlanPatch> = {
   template: `
     <h1>Create experimental plan</h1>
 
-    <lab-experimental-plan-form [form]="form">
-      <div class="form-controls" (mouseenter)="_showAllFormErrors()">
-        {{ form.status }}
-        {{ form.errors | json }}
-        <button
-          mat-raised-button
-          [disabled]="!form.valid"
-          (click)="save(); $event.stopPropagation()"
-        >
-          <mat-icon>save</mat-icon> SAVE
-        </button>
-      </div>
-    </lab-experimental-plan-form>
+    <research-plan-form (save)="onSave($event)" />
   `,
   styles: [
     `
@@ -80,27 +89,9 @@ export class ResearchPlanCreatePage {
   readonly plans = injectResearchPlanService();
   readonly _context: ResearchPlanContext = inject(ResearchPlanContext);
 
-  readonly form = experimentalPlanForm();
-  readonly patch$ = experimentalPlanPatchFromForm(this.form);
 
-  ngAfterViewInit() {
-    this.form.patchValue({
-      ...experimentalPlanCreateFixture,
-      addWorkUnits: [],
-    });
-    this._cdRef.detectChanges();
-  }
-
-  async save() {
-    if (!this.form.valid) {
-      throw new Error('Cannot save invalid form');
-    }
-    const patch = await firstValueFrom(this.patch$);
-    const result = await firstValueFrom(this.plans.create(patch));
-    return await this._router.navigate(['/lab/experimental-plans', result.id]);
-  }
-
-  _showAllFormErrors() {
-    this.form.markAllAsTouched();
+  async onSave(patch: ResearchPlanPatch) {
+    const created = await firstValueFrom(this.plans.create(patch));
+    await this._router.navigate(['research', 'plans', created.id]);
   }
 }

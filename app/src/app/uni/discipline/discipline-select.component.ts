@@ -13,6 +13,7 @@ import { DISCLIPLINES, Discipline } from './discipline';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { disabledStateToggler } from 'src/app/utils/forms/disable-state-toggler';
+import { DisciplinePipe } from './discipline.pipe';
 
 @Component({
   selector: 'uni-discipline-select',
@@ -22,6 +23,8 @@ import { disabledStateToggler } from 'src/app/utils/forms/disable-state-toggler'
     ReactiveFormsModule,
     MatFormFieldModule,
     MatSelectModule,
+
+    DisciplinePipe,
   ],
   template: `
     <mat-form-field>
@@ -31,7 +34,7 @@ import { disabledStateToggler } from 'src/app/utils/forms/disable-state-toggler'
       <mat-select [formControl]="_control" (closed)="_onTouched()">
         @for (discipline of disciplines; track discipline) {
           <mat-option [value]="discipline">
-            {{ discipline }}
+            {{ discipline | uniDiscipline }}
           </mat-option>
         }
       </mat-select>
@@ -70,11 +73,11 @@ export class DisciplineSelectComponent implements ControlValueAccessor {
   writeValue(value: any) {
     this._control.setValue(value);
   }
-  _onChange = (value: Discipline | null) => {};
+  _onChange = (value: Discipline | null) => { };
   registerOnChange(fn: any): void {
     this._onChange = fn;
   }
-  _onTouched = () => {};
+  _onTouched = () => { };
   registerOnTouched(fn: any) {
     this._onTouched = fn;
   }

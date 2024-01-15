@@ -10,16 +10,16 @@ import {
 import { ResourceContext } from 'src/app/lab/lab-resource/resource';
 import { ResourceContainer } from 'src/app/lab/lab-resource/resource-container';
 import { ResourceFormService } from 'src/app/lab/lab-resource/resource-form.service';
-import { ResearchPlanFormPaneControl } from 'src/app/research/plan/common/research-plan-form-pane-control';
+import { ScaffoldFormPaneControl } from 'src/app/scaffold/form-pane/form-pane-control';
 
 export function typeIndexFromDetailRoute$(): Observable<
-  [ ResourceType, number | 'create' ]
+  [ResourceType, number | 'create']
 > {
   const activatedRoute = inject(ActivatedRoute);
 
-  return combineLatest([ activatedRoute.paramMap, activatedRoute.data ]).pipe(
-    map(([ paramMap, data ]) => {
-      const resourceType = data[ 'resourceType' ];
+  return combineLatest([activatedRoute.paramMap, activatedRoute.data]).pipe(
+    map(([paramMap, data]) => {
+      const resourceType = data['resourceType'];
       if (!isResourceType(resourceType)) {
         throw new Error('No resource type in route data');
       }
@@ -29,7 +29,7 @@ export function typeIndexFromDetailRoute$(): Observable<
       if (Number.isNaN(index)) {
         index = 'create';
       }
-      return [ resourceType, index ];
+      return [resourceType, index];
     }),
   );
 }
@@ -76,7 +76,7 @@ export function typeIndexFromDetailRoute$(): Observable<
       }
     }
   `,
-  providers: [ ResourceContext, ResourceFormService ],
+  providers: [ResourceContext, ResourceFormService],
 })
 export class WorkUnitResourceFormPage {
   readonly _context = inject(ResourceContext);
@@ -85,7 +85,7 @@ export class WorkUnitResourceFormPage {
   readonly _formService = inject(ResourceFormService);
   readonly _formConnection: Subscription;
 
-  readonly _formPane = inject(ResearchPlanFormPaneControl);
+  readonly _formPane = inject(ScaffoldFormPaneControl);
 
   readonly typeIndex$ = defer(() => this._context.committedTypeIndex$);
   readonly resourceType$ = defer(() => this._context.resourceType$);

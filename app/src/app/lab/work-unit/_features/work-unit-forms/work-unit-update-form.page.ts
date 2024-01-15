@@ -10,8 +10,7 @@ import {
   WorkUnit,
   formatWorkUnit,
 } from '../../common/work-unit';
-import { defer, map } from 'rxjs';
-import { ResearchPlanFormPaneControl } from 'src/app/research/plan/common/research-plan-form-pane-control';
+import { ScaffoldFormPaneControl } from 'src/app/scaffold/form-pane/form-pane-control';
 
 /**
  * Updates the basic info of a work unit.
@@ -33,13 +32,13 @@ import { ResearchPlanFormPaneControl } from 'src/app/research/plan/common/resear
   host: {
     class: 'mat-elevation-z8',
   },
-  styleUrls: [ './work-unit-form.css' ],
+  styleUrls: ['./work-unit-form.css'],
 })
 export class WorkUnitUpdateFormPage {
   readonly _workUnitContext = inject(WorkUnitContext);
   readonly workUnit$ = this._workUnitContext.workUnit$;
 
-  readonly _formPane = inject(ResearchPlanFormPaneControl);
+  readonly _formPane = inject(ScaffoldFormPaneControl);
 
   readonly form = workUnitForm();
 

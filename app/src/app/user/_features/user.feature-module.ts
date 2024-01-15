@@ -4,7 +4,7 @@ import { UserHomePage } from './user-home.page';
 import { CommonModule } from '@angular/common';
 import { AlterPasswordPage } from './alter-password.page';
 import { AlterPasswordFormComponent } from '../common/alter-password-form.component';
-import { LabListComponent } from 'src/app/lab/common/lab-list.component';
+import { LabListComponent } from 'src/app/lab/lab-list.component';
 import { ResearchPlanListComponent } from 'src/app/research/plan/common/research-plan-list.component';
 
 const USER_ROUTES: Routes = [
@@ -37,4 +37,4 @@ const USER_ROUTES: Routes = [
   ],
   declarations: [UserHomePage, AlterPasswordPage],
 })
-export class UserFeatureModule {}
+export class UserFeatureModule { }

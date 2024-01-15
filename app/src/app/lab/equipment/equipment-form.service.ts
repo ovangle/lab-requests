@@ -7,8 +7,6 @@ import {
   AbstractControl,
 } from '@angular/forms';
 import { Observable, map, share, firstValueFrom } from 'rxjs';
-import { LabType } from '../type/lab-type';
-import { EquipmentTag } from './tag/equipment-tag';
 import {
   EquipmentPatch,
   EquipmentContext,
@@ -20,7 +18,6 @@ import { HttpParams } from '@angular/common/http';
 export type EquipmentForm = FormGroup<{
   name: FormControl<string>;
   description: FormControl<string>;
-  availableInLabTypes: FormControl<LabType[] | 'all'>;
   tags: FormControl<string[]>;
   trainingDescriptions: FormControl<string[]>;
 }>;
@@ -46,9 +43,6 @@ export function equipmentForm(): EquipmentForm {
     }),
     description: new FormControl<string>('', { nonNullable: true }),
     tags: new FormControl<string[]>([], { nonNullable: true }),
-    availableInLabTypes: new FormControl<LabType[] | 'all'>('all', {
-      nonNullable: true,
-    }),
     trainingDescriptions: new FormControl<string[]>([], { nonNullable: true }),
   });
 

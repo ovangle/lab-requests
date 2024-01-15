@@ -26,6 +26,13 @@ const LAB_ROUTES: Routes = [
           ),
       },
       {
+        path: 'resources',
+        loadChildren: () =>
+          import('../lab-resources/_features/lab-resources.feature-module').then(
+            (module) => module.LabResourcesFeatureModule
+          )
+      },
+      {
         path: ':lab_id',
         component: LabProfilePage,
       },
@@ -44,4 +51,4 @@ const LAB_ROUTES: Routes = [
   ],
   declarations: [LabDashboardPage, LabHomePage, LabProfilePage],
 })
-export class LabFeatureModule {}
+export class LabFeatureModule { }

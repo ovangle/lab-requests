@@ -10,8 +10,10 @@ import {
 } from './common/user';
 import {
   BehaviorSubject,
+  Observable,
   filter,
   firstValueFrom,
+  map,
   of,
   startWith,
   switchMap,
@@ -19,6 +21,8 @@ import {
 } from 'rxjs';
 import { LoginContext } from '../oauth/login-context';
 import { Role } from './common/role';
+import { ResearchPlan } from '../research/plan/common/research-plan';
+import { Lab } from '../lab/lab';
 
 @Injectable({ providedIn: 'root' })
 export class UserContext extends ModelContext<User, UserPatch> {

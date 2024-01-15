@@ -1,3 +1,17 @@
+import {
+  HttpErrorResponse,
+  HttpStatusCode
+} from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import {
+  Observable,
+  catchError,
+  map,
+  tap
+} from 'rxjs';
+import { ResearchPlan, researchPlanFromJsonObject } from 'src/app/research/plan/common/research-plan';
+import { Campus, campusFromJsonObject } from 'src/app/uni/campus/common/campus';
+import { Discipline, isDiscipline } from 'src/app/uni/discipline/discipline';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import {
   Model,
@@ -7,41 +21,20 @@ import {
   modelIndexPageFromJsonObject,
   modelParamsFromJsonObject,
 } from '../../common/model/model';
-import { Role, roleFromJson } from './role';
-import {
-  HttpErrorResponse,
-  HttpParams,
-  HttpStatusCode,
-} from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { RestfulService } from '../../common/model/model-service';
 import {
   ModelCollection,
   injectModelService,
 } from '../../common/model/model-collection';
-import {
-  NEVER,
-  Observable,
-  Observer,
-  Subject,
-  catchError,
-  firstValueFrom,
-  map,
-  of,
-  tap,
-  throwError,
-} from 'rxjs';
+import { RestfulService } from '../../common/model/model-service';
 import { Actor } from '../actor';
-import { Lab, labFromJson } from 'src/app/lab/common/lab';
-import { Campus, campusFromJsonObject } from 'src/app/uni/campus/common/campus';
-import { Discipline, isDiscipline } from 'src/app/uni/discipline/discipline';
-import { ResearchPlan, researchPlanFromJsonObject } from 'src/app/research/plan/common/research-plan';
+import { Role, roleFromJson } from './role';
+import { Lab, labFromJsonObject } from 'src/app/lab/lab';
 
 export interface UserParams extends ModelParams {
   name: string;
   email: string;
   baseCampus: Campus;
-  // discipline: Discipline;
+  disciplines: ReadonlySet<Discipline>;
 
   roles: ReadonlySet<Role>;
 }
@@ -54,6 +47,7 @@ export class User extends Model implements UserParams {
   // readonly discipline: Discipline;
   readonly roles: ReadonlySet<Role>;
 
+  readonly disciplines: ReadonlySet<Discipline>;
   /**
    * The labs that the current user supervises
    */
@@ -65,6 +59,7 @@ export class User extends Model implements UserParams {
     this.name = params.name;
 
     this.roles = params.roles;
+    this.disciplines = params.disciplines;
   }
 
   canActAs(actor: Actor) {
@@ -74,36 +69,41 @@ export class User extends Model implements UserParams {
 
 function userParamsFromJsonObject(json: JsonObject): UserParams {
   const baseParams = modelParamsFromJsonObject(json);
-  if (typeof json[ 'email' ] !== 'string') {
+  if (typeof json['email'] !== 'string') {
     throw new Error("Expected a string 'email'");
   }
 
-  if (typeof json[ 'name' ] !== 'string') {
+  if (typeof json['name'] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
 
-  if (!isJsonObject(json[ 'baseCampus' ])) {
+  if (!isJsonObject(json['baseCampus'])) {
     throw new Error("Expected a json object 'baseCampus'");
   }
-  const baseCampus = campusFromJsonObject(json[ 'baseCampus' ]);
+  const baseCampus = campusFromJsonObject(json['baseCampus']);
 
   // if (!isDiscipline(json[ 'discipline' ])) {
   //   throw new Error('Expected a valid discipline');
   // }
 
   let roles: ReadonlySet<Role> = new Set();
-  if (Array.isArray(json[ 'roles' ])) {
-    roles = new Set(json[ 'roles' ].map(roleFromJson));
+  if (Array.isArray(json['roles'])) {
+    roles = new Set(json['roles'].map(roleFromJson));
   }
+
+  if (!Array.isArray(json['disciplines']) || !json['disciplines'].every(isDiscipline)) {
+    throw new Error("Expected an array of Disciplines 'disciplines'")
+  }
+  const disciplines = new Set(json['disciplines']);
 
   return {
     ...baseParams,
-    name: json[ 'name' ],
-    email: json[ 'email' ],
+    name: json['name'],
+    email: json['email'],
     baseCampus,
-    // discipline: json[ 'discipline' ],
 
     roles,
+    disciplines,
   };
 }
 
@@ -130,15 +130,15 @@ export class CurrentUser extends User implements CurrentUserParams {
 function currentUserFromJsonObject(json: JsonObject): CurrentUser {
   const userParams = userParamsFromJsonObject(json);
 
-  if (!isJsonObject(json[ 'labs' ])) {
+  if (!isJsonObject(json['labs'])) {
     throw new Error("Expected a json object 'labs'")
   }
-  const labs = modelIndexPageFromJsonObject(labFromJson, json[ 'labs' ]);
+  const labs = modelIndexPageFromJsonObject(labFromJsonObject, json['labs']);
 
-  if (!isJsonObject(json[ 'plans' ])) {
+  if (!isJsonObject(json['plans'])) {
     throw new Error("Expected a json object 'plans'");
   }
-  const plans = modelIndexPageFromJsonObject(researchPlanFromJsonObject, json[ 'plans' ]);
+  const plans = modelIndexPageFromJsonObject(researchPlanFromJsonObject, json['plans']);
 
   return new CurrentUser({
     ...userParams,

@@ -4,7 +4,6 @@ import {
   formatCampus,
 } from 'src/app/uni/campus/common/campus';
 import { validate as validateIsUUID } from 'uuid';
-import { LabType, formatLabType, isLabType } from '../../type/lab-type';
 import { formatISO, parseISO } from 'date-fns';
 import {
   Observable,
@@ -49,9 +48,8 @@ import {
   resourceContainerPatchToJson,
 } from '../../lab-resource/resource-container';
 import { ResourceType } from '../../lab-resource/resource-type';
-import { ModelParams, ModelPatch } from 'src/app/common/model/model';
 import { StoredFile } from 'src/app/common/file/stored-file';
-import { resourceParamsFromJsonObject } from '../../lab-resource/resource';
+import { Discipline, formatDiscipline, isDiscipline } from 'src/app/uni/discipline/discipline';
 
 export interface WorkUnitParams extends ResourceContainerParams {
   planId: string;
@@ -60,7 +58,7 @@ export interface WorkUnitParams extends ResourceContainerParams {
 
   campus: Campus;
   labId: string;
-  labType: LabType;
+  discipline: Discipline;
   supervisorId: string;
 
   processSummary: string;
@@ -81,7 +79,7 @@ export class WorkUnit extends ResourceContainer {
 
   readonly campus: Campus;
   readonly labId: string;
-  readonly labType: LabType;
+  readonly discipline: Discipline;
   readonly supervisorId: string;
 
   readonly processSummary: string;
@@ -96,7 +94,7 @@ export class WorkUnit extends ResourceContainer {
     this.name = params.name;
     this.campus = params.campus;
     this.labId = params.labId;
-    this.labType = params.labType;
+    this.discipline = params.discipline;
     this.supervisorId = params.supervisorId;
     this.processSummary = params.processSummary || '';
 
@@ -113,9 +111,7 @@ export function formatWorkUnit(
 ) {
   switch (format) {
     case 'campus+lab':
-      return `${formatCampus(workUnit.campus)} - ${formatLabType(
-        workUnit.labType,
-      )}`;
+      return `${formatCampus(workUnit.campus)} - ${formatDiscipline(workUnit.discipline)}`;
     default:
       throw new Error('Invalid lab type');
   }
@@ -123,56 +119,56 @@ export function formatWorkUnit(
 
 export function workUnitFromJsonObject(json: JsonObject): WorkUnit {
   const baseParams = resourceContainerParamsFromJson(json);
-  if (typeof json[ 'name' ] !== 'string') {
+  if (typeof json['name'] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
-  if (typeof json[ 'planId' ] !== 'string') {
+  if (typeof json['planId'] !== 'string') {
     throw new Error("Expected a string 'planId'");
   }
-  if (typeof json[ 'index' ] !== 'number') {
+  if (typeof json['index'] !== 'number') {
     throw new Error("Expected a number 'index'");
   }
 
-  if (typeof json[ 'labId' ] !== 'string' || !validateIsUUID(json[ 'labId' ])) {
+  if (typeof json['labId'] !== 'string' || !validateIsUUID(json['labId'])) {
     throw new Error("Expected a UUID 'labType'");
   }
 
-  if (typeof json[ 'supervisorId' ] !== 'string' || !validateIsUUID(json[ 'supervisorId' ])) {
+  if (typeof json['supervisorId'] !== 'string' || !validateIsUUID(json['supervisorId'])) {
     throw new Error("Expected a UUID 'supervisorId'");
   }
 
-  if (!isLabType(json[ 'labType' ])) {
-    throw new Error("Expected a lab type 'labType'");
+  if (!isDiscipline(json['discipline'])) {
+    throw new Error("Expected a Discipline 'discipline'");
   }
 
 
-  if (typeof json[ 'processSummary' ] != 'string') {
+  if (typeof json['processSummary'] != 'string') {
     throw new Error("Expected a string 'processSummary'");
   }
 
-  if (typeof json[ 'startDate' ] !== 'string' && json[ 'startDate' ] != null) {
+  if (typeof json['startDate'] !== 'string' && json['startDate'] != null) {
     throw new Error("Expected either a string or null 'startDate'");
   }
   const startDate =
-    json[ 'startDate' ] != null ? parseISO(json[ 'startDate' ]) : null;
-  if (typeof json[ 'endDate' ] !== 'string' && json[ 'endDate' ] != null) {
+    json['startDate'] != null ? parseISO(json['startDate']) : null;
+  if (typeof json['endDate'] !== 'string' && json['endDate'] != null) {
     throw new Error("Expected either a string or null 'endDate'");
   }
-  const endDate = json[ 'endDate' ] != null ? parseISO(json[ 'endDate' ]) : null;
+  const endDate = json['endDate'] != null ? parseISO(json['endDate']) : null;
 
-  if (!isJsonObject(json[ 'campus' ])) {
+  if (!isJsonObject(json['campus'])) {
     throw new Error("Expected a json object 'campus'");
   }
 
   return new WorkUnit({
     ...baseParams,
-    name: json[ 'name' ],
-    planId: json[ 'planId' ],
-    labId: json[ 'labId' ],
-    supervisorId: json[ 'supervisorId' ],
-    campus: campusFromJsonObject(json[ 'campus' ]),
-    labType: json[ 'labType' ],
-    processSummary: json[ 'processSummary' ],
+    name: json['name'],
+    planId: json['planId'],
+    labId: json['labId'],
+    supervisorId: json['supervisorId'],
+    campus: campusFromJsonObject(json['campus']),
+    discipline: json['discipline'],
+    processSummary: json['processSummary'],
 
     startDate,
     endDate,
@@ -182,7 +178,7 @@ export function workUnitFromJsonObject(json: JsonObject): WorkUnit {
 export interface WorkUnitPatch extends ResourceContainerPatch {
   readonly planId?: string;
   readonly campus: Campus | string;
-  readonly labType: LabType;
+  readonly discipline: Discipline;
   readonly name: string;
   readonly technician: string;
 
@@ -194,18 +190,18 @@ export interface WorkUnitPatch extends ResourceContainerPatch {
 
 
 export function workUnitPatchToJsonObject(patch: WorkUnitPatch): {
-  [ k: string ]: any;
+  [k: string]: any;
 } {
   let base: JsonObject = {};
   if (patch.planId) {
-    base[ 'planId' ] = patch.planId;
+    base['planId'] = patch.planId;
   }
 
   return {
     ...base,
     name: patch.name,
     campus: patch.campus instanceof Campus ? patch.campus.id : patch.campus,
-    labType: patch.labType,
+    discipline: patch.discipline,
     technician: patch.technician,
     processSummary: patch.processSummary,
     startDate: patch.startDate && formatISO(patch.startDate),
@@ -223,14 +219,14 @@ export interface CreateWorkUnitAttachment {
 export function createWorkUnitAttachmentToJson(
   createAttachment: CreateWorkUnitAttachment,
 ) {
-  const json: { [ k: string ]: any } = {
+  const json: { [k: string]: any } = {
     resourceType: createAttachment.resourceType,
   };
   if (createAttachment.resourceId) {
-    json[ 'resourceId' ] = createAttachment.resourceId;
+    json['resourceId'] = createAttachment.resourceId;
   }
   if (createAttachment.resourceIndex) {
-    json[ 'resourceIndex' ] = createAttachment.resourceIndex;
+    json['resourceIndex'] = createAttachment.resourceIndex;
   }
   return json;
 }
@@ -251,7 +247,7 @@ export class WorkUnitService extends RestfulService<WorkUnit> {
 
   resourceAttachmentPath(workUnit: WorkUnit | string) {
     const workUnitId = typeof workUnit === 'string' ? workUnit : workUnit.id;
-    return `/lab/work-units/${workUnitId}/files`;
+    return `/ lab / work - units / ${workUnitId} /files`;
   }
 
   readById(id: string) {
@@ -359,7 +355,7 @@ export class WorkUnitResourceContainerContext extends ResourceContainerContext<
     if (workUnit == null) {
       throw new Error('Cannot access resources in empty context');
     }
-    return [ 'work-units', `${workUnit.name || 0}` ];
+    return ['work-units', `${workUnit.name || 0}`];
   }
 
   override getContainerName(container: WorkUnit) {

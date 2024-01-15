@@ -4,7 +4,6 @@ import {
   ModelPatch,
   modelParamsFromJsonObject,
 } from 'src/app/common/model/model';
-import { LabType } from '../../type/lab-type';
 import { Injectable, Provider, Type, inject } from '@angular/core';
 import { RestfulService } from 'src/app/common/model/model-service';
 import { HttpParams } from '@angular/common/http';
@@ -75,7 +74,6 @@ export interface EquipmentPatch extends ModelPatch<Equipment> {
   name: string;
   description: string;
   tags: string[];
-  availableInLabTypes: LabType[];
   trainingDescriptions: string[];
 }
 
@@ -112,8 +110,7 @@ export class EquipmentService extends RestfulService<Equipment> {
 @Injectable()
 export class EquipmentCollection
   extends ModelCollection<Equipment>
-  implements EquipmentService
-{
+  implements EquipmentService {
   constructor(service: EquipmentService) {
     super(service);
   }

@@ -29,10 +29,11 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 
 import { ResourceContainerContext } from '../resource-container';
-import { ResearchPlanFormPaneControl } from 'src/app/research/plan/common/research-plan-form-pane-control';
 import type { ResourceType } from '../resource-type';
 import { ResourceTypePipe } from '../resource-type.pipe';
 import { Resource } from '../resource';
+import { ScaffoldFormPaneComponent } from 'src/app/scaffold/form-pane/form-pane.component';
+import { ScaffoldFormPaneControl } from 'src/app/scaffold/form-pane/form-pane-control';
 
 @Injectable()
 export abstract class ResourceTableDataSource<
@@ -44,11 +45,11 @@ export abstract class ResourceTableDataSource<
   readonly _containerContext = inject(ResourceContainerContext);
   readonly resourceContainer$ = this._containerContext.committed$;
 
-  readonly _formPane = inject(ResearchPlanFormPaneControl);
+  readonly _formPane = inject(ScaffoldFormPaneControl);
 
   async openResourceCreateForm(): Promise<boolean> {
     const containerPath = await this._containerContext.getContainerPath();
-    return this._formPane.open([ ...containerPath, this.resourceType, 'create' ]);
+    return this._formPane.open([...containerPath, this.resourceType, 'create'], {});
   }
 
   async openResourceUpdateFormAt(index: number): Promise<boolean> {
@@ -57,7 +58,7 @@ export abstract class ResourceTableDataSource<
       ...containerPath,
       this.resourceType,
       `${index}`,
-    ]);
+    ], {});
   }
 
   deleteElementAt(elementIndex: number): void {
@@ -89,7 +90,7 @@ export abstract class ResourceTableDataSource<
     ResourceTypePipe,
   ],
   templateUrl: './resource-table.component.html',
-  styleUrls: [ './resource-table.component.css' ],
+  styleUrls: ['./resource-table.component.css'],
   animations: [
     trigger('detailExpand', [
       state('collapsed', style({ height: '0px', minHeight: 0 })),
@@ -106,7 +107,7 @@ export class ResourceTableComponent<T extends Resource>
   dataSource: ResourceTableDataSource<T> = inject(ResourceTableDataSource);
 
   route = inject(ActivatedRoute);
-  _formPane = inject(ResearchPlanFormPaneControl);
+  _formPane = inject(ScaffoldFormPaneControl);
 
   @Input()
   get displayedColumns(): string[] {
@@ -114,7 +115,7 @@ export class ResourceTableComponent<T extends Resource>
   }
   set displayedColumns(columns: string[]) {
     this._displayedColumns = columns;
-    this._displayedColumnsWithElementActions = [ ...columns, 'element-actions' ];
+    this._displayedColumnsWithElementActions = [...columns, 'element-actions'];
   }
 
   private _displayedColumns: string[] = [];

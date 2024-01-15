@@ -12,11 +12,6 @@ import { ScaffoldStateService } from '../scaffold/scaffold-state.service';
     <div>
       ABANDON ALL HOPE YE WHO <a routerLink="/oauth/login">ENTER HERE</a>
     </div>
-
-    <!--
-        <button mat-button (click)="loginContext.loginExternalUser('microsoft')">Login via microsoft</button>
-        <a mat-button routerLink="/lab">MyLab</a>
-    -->
   `,
   styles: `
     :host {
@@ -27,11 +22,6 @@ import { ScaffoldStateService } from '../scaffold/scaffold-state.service';
     }
     `,
 })
-export class PublicPageComponent implements OnInit {
-  readonly _destroyRef = inject(DestroyRef);
-  readonly scaffoldState = inject(ScaffoldStateService);
+export class PublicPageComponent {
 
-  ngOnInit() {
-    this.scaffoldState.disableSidenav(this._destroyRef);
-  }
 }

@@ -81,4 +81,6 @@ export function modelIndexPageFromJsonObject<T extends Model>(
   };
 }
 
-export interface ModelPatch<T extends Model> {}
+export interface ModelPatch<T extends Model> { }
+
+export interface ModelLookup<T extends Model> { }

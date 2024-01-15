@@ -1,9 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { Component, DestroyRef, Input, inject } from '@angular/core';
 
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { SidenavMenuComponent } from './sidenav-menu/sidenav-menu.component';
 import { ToolbarComponent } from './scaffold-toolbar.component';
+import { ScaffoldStateService } from './scaffold-state.service';
+import { ScaffoldFormPaneComponent } from './form-pane/form-pane.component';
 
 @Component({
   selector: 'scaffold-layout',
@@ -14,6 +16,7 @@ import { ToolbarComponent } from './scaffold-toolbar.component';
 
     SidenavMenuComponent,
     ToolbarComponent,
+    ScaffoldFormPaneComponent
   ],
   template: `
     <scaffold-toolbar />
@@ -23,33 +26,26 @@ import { ToolbarComponent } from './scaffold-toolbar.component';
       </mat-sidenav>
       <mat-sidenav-content>
         <ng-content select=".content" />
+
       </mat-sidenav-content>
     </mat-sidenav-container>
-  `,
-  styles: `
-    :host { 
-        min-height: calc(100% - var(--mat-toolbar-standard-height)); 
-        --scaffold-toolbar-height: 40px;
-    }
-
-    scaffold-toolbar {
-        position: fixed;
-        top: 0;
-        width: 100%;
-        z-index: 100;
-    }
     
-    mat-sidenav-container {
-        position: absolute;
-        top: var(--mat-toolbar-standard-height);
-        bottom: 0;
-        left: 0;
-        right: 0;
-    }
-
-    mat-sidenav {
-      width: 20em;
-    }
-    `,
+    <scaffold-form-pane>
+      <ng-content select=".form-pane-content">
+      </ng-content>
+    </scaffold-form-pane>
+  `,
+  styleUrls: ['./scaffold-layout.scss']
 })
-export class ScaffoldLayoutComponent {}
+export class ScaffoldLayoutComponent {
+  readonly state = inject(ScaffoldStateService);
+  readonly _destroyRef = inject(DestroyRef)
+
+  ngOnInit() {
+    const stateConnection = this.state.connect(this);
+
+    this._destroyRef.onDestroy(() => {
+      stateConnection.unsubscribe();
+    });
+  }
+}

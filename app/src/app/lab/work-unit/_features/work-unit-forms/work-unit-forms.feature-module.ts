@@ -29,8 +29,8 @@ import { ResourceContainerContext } from 'src/app/lab/lab-resource/resource-cont
             component: WorkUnitResourceFormHostPage,
             loadChildren: () =>
               import(
-                '../../../lab-resources/_features/resource-forms/resource-form.feature-module'
-              ).then((module) => module.WorkUnitResourceFormsFeatureModule),
+                '../../../lab-resources/_features/lab-resources.feature-module'
+              ).then((module) => module.LabResourcesFeatureModule),
           },
         ],
       },
@@ -51,4 +51,4 @@ import { ResourceContainerContext } from 'src/app/lab/lab-resource/resource-cont
     },
   ],
 })
-export class WorkUnitFormsFeatureModule {}
+export class WorkUnitFormsFeatureModule { }
