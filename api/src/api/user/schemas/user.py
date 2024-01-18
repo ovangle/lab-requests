@@ -4,6 +4,7 @@ from typing import Set
 
 from typing_extensions import override
 from uuid import UUID
+from pydantic import BaseModel
 
 from pydantic.types import SecretStr
 
@@ -13,13 +14,14 @@ from db.models.user import User, UserDomain
 
 
 from ...base.schemas import (
+    ModelCreateRequest,
     ModelLookup,
     ModelView,
     ModelUpdateRequest,
     ModelIndex,
     ModelIndexPage,
 )
-from api.uni.schemas import CampusView
+from api.uni.schemas import CampusLookup, CampusView
 
 
 class UserView(ModelView[User]):
@@ -87,3 +89,20 @@ UserIndexPage = ModelIndexPage[UserView, User]
 class AlterPasswordRequest(ModelUpdateRequest[User]):
     current_value: str
     new_value: str
+
+
+class CreateTemporaryUserRequest(ModelCreateRequest[User]):
+    email: str
+    name: str
+    base_campus: CampusLookup | UUID
+    discipline: Discipline
+
+
+class CreateTemporaryUserResponse(BaseModel):
+    token: str
+    user: UserView
+
+
+class FinalizeTemporaryUserRequest(ModelUpdateRequest[User]):
+    token: str
+    password: str

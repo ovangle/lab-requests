@@ -11,7 +11,7 @@ import { OauthFeatureModule } from './oauth/_features/oauth.feature-module';
 const routes: Routes = [
   {
     path: '',
-    canActivate: [requiresAuthorizationGuard],
+    canActivate: [ requiresAuthorizationGuard ],
     children: [
       {
         path: 'lab',
@@ -42,9 +42,14 @@ const routes: Routes = [
     loadChildren: () => OauthFeatureModule,
   },
   {
+    path: 'redirect-temporary-user',
+    loadComponent: () => import('./user/_features/public/temporary-user-redirect.page')
+      .then(module => module.TemporaryUserRedirectPage)
+  },
+  {
     path: 'public',
     component: PublicPageComponent,
-    canActivate: [publicPageGuard],
+    canActivate: [ publicPageGuard ],
   },
   {
     path: 'uni/campuses',
@@ -65,7 +70,7 @@ export class AppRoutes {
 }
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes, { enableTracing: false })],
-  exports: [RouterModule],
+  imports: [ RouterModule.forRoot(routes, { enableTracing: false }) ],
+  exports: [ RouterModule ],
 })
 export class AppRoutingModule { }

@@ -17,22 +17,24 @@ import { CampusSearchComponent } from 'src/app/uni/campus/campus-search.componen
 import { DisciplineSelectComponent } from 'src/app/uni/discipline/discipline-select.component';
 import { Equipment } from 'src/app/lab/equipment/common/equipment';
 
-import { ResearchPlan, ResearchPlanPatch } from './research-plan';
-import { ResearchPlanResearcherFormComponent } from '../researcher/researcher-form.component';
-import { ResearchFunding, ResearchFundingService } from '../../funding/research-funding';
+import { ResearchPlan, CreateResearchPlan } from './research-plan';
+import { ResearchFunding, ResearchFundingLookup, ResearchFundingService } from '../../funding/research-funding';
 import { ResearchFundingSearchComponent } from '../../funding/research-funding-search.component';
 import { ResearchFundingSelectComponent } from '../../funding/research-funding-select.component';
-import { User } from 'src/app/user/common/user';
-import { ResearchPlanTaskForm, researchPlanTaskForm } from '../task/research-plan-task-form.component';
+import { User, UserLookup } from 'src/app/user/common/user';
+import { ResearchPlanTaskForm, createResearchPlanTaskFromForm, researchPlanTaskForm } from '../task/research-plan-task-form.component';
 import { MatIconModule } from '@angular/material/icon';
-import { isFundingModelOrNameValidator } from '../../funding/is-funding-model-or-name-validator';
-import { ResourceContainerFormControls } from 'src/app/lab/lab-resource/resource-container-form.service';
+import { isResearchFundingIdOrLookupValidator } from '../../funding/is-research-funding-or-research-funding-name-validator';
+import { ResourceContainerFormControls, resourceContainerFormControls } from 'src/app/lab/lab-resource/resource-container-form.service';
+import { CreateResearchPlanTask } from '../task/research-plan-task';
+import { UserSearchComponent } from 'src/app/user/common/user-search.component';
 
 export type ResearchPlanForm = FormGroup<{
   title: FormControl<string>;
   description: FormControl<string>;
-  researcher: FormControl<User | null>;
-  funding: FormControl<ResearchFunding | string | null>;
+  researcher: FormControl<UserLookup | string | null>;
+  coordinator: FormControl<UserLookup | string | null>;
+  funding: FormControl<ResearchFundingLookup | string | null>;
   tasks: FormArray<ResearchPlanTaskForm>;
 } & ResourceContainerFormControls>;
 
@@ -46,19 +48,39 @@ function patchFormValue(form: ResearchPlanForm, plan: ResearchPlan) {
 
   const tasks = form.controls.tasks;
   for (let i = 0; i < plan.tasks.length; i++) {
-    const task = plan.tasks[i];
-    let taskForm = tasks.controls[i];
+    const task = plan.tasks[ i ];
+    let taskForm = tasks.controls[ i ];
     if (taskForm == null) {
       tasks.controls.push(researchPlanTaskForm(task))
     }
   }
 }
 
-function researchPlanPatchFromForm(form: ResearchPlanForm): ResearchPlanPatch {
+function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan {
   if (!form.valid) {
     throw new Error('Invalid form has no patch');
   }
-  return {}
+  const patch = {
+    title: form.value.title!,
+    description: form.value.description!,
+    researcher: form.value.researcher || null,
+    coordinator: form.value.coordinator || null,
+    funding: form.value.funding!,
+    tasks: {
+      startIndex: 0,
+      items: <CreateResearchPlanTask[]>[]
+    }
+  }
+
+  const createTasks: CreateResearchPlanTask[] = [];
+
+  const taskForms = form.controls.tasks;
+  taskForms.controls.forEach((taskForm) => {
+    const createTask = createResearchPlanTaskFromForm(taskForm);
+    patch[ 'tasks' ][ 'items' ].push(createTask)
+  });
+
+  return patch;
 
 }
 
@@ -77,10 +99,9 @@ function researchPlanPatchFromForm(form: ResearchPlanForm): ResearchPlanPatch {
     MatDatepickerModule,
 
     DisciplineSelectComponent,
-    ResearchFundingSearchComponent,
     ResearchFundingSelectComponent,
     CampusSearchComponent,
-    ResearchPlanResearcherFormComponent,
+    UserSearchComponent
   ],
   template: `
     <form [formGroup]="form">
@@ -97,14 +118,21 @@ function researchPlanPatchFromForm(form: ResearchPlanForm): ResearchPlanPatch {
         <textarea
           matInput
           id="process-summary"
-          formControlName="processSummary"
+          formControlName="description"
         >
         </textarea>
       </mat-form-field>
 
-      <research-plan-researcher-form [form]="form" />
+      <user-search formControlName="researcher"
+        createTemporaryIfNotFound>
+        <mat-label>Primary researcher</mat-label>
 
-      <research-funding-model-select formControlName="fundingModel">
+        @if (researcherErrors && researcherErrors['required']) {
+          <mat-error>A value is required</mat-error>
+        }
+      </user-search>
+
+      <research-funding-select formControlName="funding">
         <mat-label>Funding source</mat-label>
 
         @if (fundingErrors && fundingErrors['required']) {
@@ -113,7 +141,7 @@ function researchPlanPatchFromForm(form: ResearchPlanForm): ResearchPlanPatch {
         @if (fundingErrors && fundingErrors['notAFundingModel']) {
           <mat-error>Unrecognised funding source</mat-error>
         }
-      </research-funding-model-select>
+      </research-funding-select>
 
       <div class="form-controls" (mouseenter)="_showAllFormErrors()">
         <button mat-raised-button [disabled]="!form.valid" (click)="onSaveButtonClick()">
@@ -151,35 +179,42 @@ export class ResearchPlanFormComponent {
   readonly form: ResearchPlanForm = new FormGroup({
     title: new FormControl<string>('', {
       nonNullable: true,
-      validators: [Validators.required],
+      validators: [ Validators.required ],
     }),
-    description: new FormControl<string>('' {
+    description: new FormControl<string>('', {
       nonNullable: true,
     }),
-    researcher: new FormControl<User | null>(null{
-      nonNullable: true,
-      validators: [Validators.required],
+    researcher: new FormControl<UserLookup | string | null>(null, {
+      validators: [ Validators.required ],
     }),
-    funding: new FormControl<ResearchFunding | string | null>(null, {
-      validators: [Validators.required],
-      asyncValidators: [isFundingModelOrNameValidator()],
+    coordinator: new FormControl<UserLookup | string | null>(null, {
+      validators: [ Validators.required ]
+    }),
+    funding: new FormControl<ResearchFundingLookup | string | null>(null, {
+      validators: [ Validators.required ],
+      asyncValidators: [ isResearchFundingIdOrLookupValidator() ],
     }),
     tasks: new FormArray<ResearchPlanTaskForm>([]),
+    ...resourceContainerFormControls()
   });
 
   @Output()
-  save = new EventEmitter<ResearchPlanPatch>()
+  save = new EventEmitter<CreateResearchPlan>()
 
   get titleErrors() {
     return this.form.controls.title.errors || null;
   }
 
-  get fundingModel(): ResearchFunding | string | null {
+  get funding(): ResearchFundingLookup | string | null {
     return this.form.controls.funding.value || null;
   }
 
   get fundingErrors(): ValidationErrors | null {
     return this.form.controls.funding.errors;
+  }
+
+  get researcherErrors() {
+    return this.form.controls.researcher.errors;
   }
 
   @Input()
@@ -204,8 +239,8 @@ export class ResearchPlanFormComponent {
     if (!this.form.valid) {
       throw new Error('Cannot save invalid form');
     }
-    const patch: ResearchPlanPatch = {
-
+    if (this.plan) {
     }
+
   }
 }

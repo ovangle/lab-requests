@@ -2,7 +2,6 @@ import { Injectable, inject } from '@angular/core';
 import { ModelContext } from '../common/model/context';
 import {
   User,
-  UserPatch,
   UserService,
   UserCollection,
   injectUserService,
@@ -23,13 +22,14 @@ import { LoginContext } from '../oauth/login-context';
 import { Role } from './common/role';
 import { ResearchPlan } from '../research/plan/common/research-plan';
 import { Lab } from '../lab/lab';
+import { ModelPatch } from '../common/model/model';
 
 @Injectable({ providedIn: 'root' })
-export class UserContext extends ModelContext<User, UserPatch> {
+export class UserContext extends ModelContext<User> {
   readonly userService = injectUserService();
   readonly loginContext = inject(LoginContext);
 
-  override _doUpdate(id: string, patch: UserPatch): Promise<User> {
+  override _doUpdate(id: string, patch: ModelPatch<User>): Promise<User> {
     return firstValueFrom(this.userService.update(id, patch));
   }
 

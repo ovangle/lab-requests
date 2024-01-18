@@ -42,31 +42,31 @@ export interface EquipmentParams extends ModelParams {
 export function equipmentFromJsonObject(json: JsonObject): Equipment {
   const baseParams = modelParamsFromJsonObject(json);
 
-  if (typeof json['name'] !== 'string') {
+  if (typeof json[ 'name' ] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
-  if (typeof json['description'] !== 'string') {
+  if (typeof json[ 'description' ] !== 'string') {
     throw new Error("Expected a string 'description'");
   }
   if (
-    !Array.isArray(json['tags']) ||
-    !json['tags'].every((t) => typeof t === 'string')
+    !Array.isArray(json[ 'tags' ]) ||
+    !json[ 'tags' ].every((t) => typeof t === 'string')
   ) {
     throw new Error("Expected an array of strings 'tags'");
   }
   if (
-    !Array.isArray(json['trainingDescriptions']) ||
-    !json['trainingDescriptions'].every((t) => typeof t === 'string')
+    !Array.isArray(json[ 'trainingDescriptions' ]) ||
+    !json[ 'trainingDescriptions' ].every((t) => typeof t === 'string')
   ) {
     throw new Error("Expected an array of strings 'trainingDescriptions");
   }
 
   return new Equipment({
     ...baseParams,
-    name: json['name'],
-    description: json['description'],
-    tags: json['tags'],
-    trainingDescriptions: json['trainingDescriptions'],
+    name: json[ 'name' ],
+    description: json[ 'description' ],
+    tags: json[ 'tags' ],
+    trainingDescriptions: json[ 'trainingDescriptions' ],
   });
 }
 
@@ -75,12 +75,6 @@ export interface EquipmentPatch extends ModelPatch<Equipment> {
   description: string;
   tags: string[];
   trainingDescriptions: string[];
-}
-
-export function equipmentPatchToJson(patch: EquipmentPatch): {
-  [k: string]: unknown;
-} {
-  return { ...patch };
 }
 
 export interface EquipmentQuery {
@@ -103,7 +97,6 @@ export function equipmentQueryToHttpParams(query: Partial<EquipmentQuery>) {
 export class EquipmentService extends RestfulService<Equipment> {
   override model = Equipment;
   override modelFromJsonObject = equipmentFromJsonObject;
-  override modelPatchToJsonObject = equipmentPatchToJson;
   override path = '/lab/equipments';
 }
 

@@ -1,11 +1,10 @@
 import { HttpErrorResponse } from "@angular/common/http";
-import { inject } from "@angular/core";
 import { AsyncValidatorFn, AbstractControl, ValidationErrors } from "@angular/forms";
 import { Observable, of, map, catchError, throwError, first } from "rxjs";
-import { CampusService, Campus } from "./common/campus";
+import { Campus, injectCampusService } from "./common/campus";
 
 export function isCampusOrCampusCodeValidator(): AsyncValidatorFn {
-  const campuses = inject(CampusService);
+  const campuses = injectCampusService();
   return function (
     control: AbstractControl<Campus | string | null>,
   ): Observable<ValidationErrors | null> {
@@ -13,7 +12,7 @@ export function isCampusOrCampusCodeValidator(): AsyncValidatorFn {
       return of(null);
     } else if (typeof control.value === 'string') {
       if (/[A-Z]{3}/.test(control.value)) {
-        return campuses.getForCode(control.value).pipe(
+        return campuses.lookup({ code: control.value }).pipe(
           map(() => null),
           catchError((err) => {
             if (err instanceof HttpErrorResponse && err.status === 404) {

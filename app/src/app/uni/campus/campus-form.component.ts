@@ -13,7 +13,6 @@ import {
 import {
   Campus,
   CampusCode,
-  CampusPatch,
   CampusService,
 } from './common/campus';
 
@@ -22,25 +21,19 @@ export type CampusForm = FormGroup<{
   name: FormControl<string>;
 }>;
 
-function campusPatchFromForm(form: CampusForm): CampusPatch {
-  if (!form.valid) {
-    throw new Error('Cannot get patch from invalid form');
-  }
-  return form.value as CampusPatch;
-}
 export function campusForm(): CampusForm {
   const service = inject(CampusService);
   return new FormGroup({
     code: new FormControl<CampusCode>('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.pattern(/^[_A-Z]{0,8}$/)],
+      validators: [ Validators.required, Validators.pattern(/^[_A-Z]{0,8}$/) ],
       asyncValidators: [
         (control) => validateCodeUnique(control as FormControl<CampusCode>),
       ],
     }),
     name: new FormControl<string>('', {
       nonNullable: true,
-      validators: [Validators.required],
+      validators: [ Validators.required ],
     }),
   });
 
@@ -60,7 +53,7 @@ export function campusForm(): CampusForm {
 @Component({
   selector: 'uni-campus-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatFormFieldModule],
+  imports: [ CommonModule, ReactiveFormsModule, MatFormFieldModule ],
   template: `
     <form [formGroup]="form">
       <mat-form-field>
@@ -100,7 +93,7 @@ export class CampusFormComponent {
 
   @Input()
   get name(): string {
-    return this.form.value['name']!;
+    return this.form.value[ 'name' ]!;
   }
   set name(value: string) {
     this.form.patchValue({ name: value });

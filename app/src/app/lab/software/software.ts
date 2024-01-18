@@ -88,7 +88,6 @@ export function softwareQueryToHttpParams(lookup: Partial<SoftwareQuery>) {
 export class SoftwareService extends RestfulService<Software> {
   override model = Software;
   override modelFromJsonObject = softwareFromJsonObject;
-  override modelPatchToJsonObject = softwarePatchToJsonObject;
 
   override path: string = '/lab/softwares';
 }

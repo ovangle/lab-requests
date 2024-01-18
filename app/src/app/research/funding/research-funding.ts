@@ -14,7 +14,7 @@ import {
 import { RestfulService } from 'src/app/common/model/model-service';
 import { JsonObject } from 'src/app/utils/is-json-object';
 
-export const FUNDING_MODEL_NAMES = ['student_project'];
+export const FUNDING_MODEL_NAMES = [ 'student_project' ];
 
 export interface ResearchFundingParams extends ModelParams {
   name: string;
@@ -36,16 +36,16 @@ export function researchFundingFromJsonObject(
   json: JsonObject,
 ): ResearchFundingParams {
   const baseParams = modelParamsFromJsonObject(json);
-  if (typeof json['name'] !== 'string') {
+  if (typeof json[ 'name' ] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
-  if (typeof json['description'] !== 'string') {
+  if (typeof json[ 'description' ] !== 'string') {
     throw new Error("Expected a string 'description'");
   }
   return new ResearchFunding({
     ...baseParams,
-    name: json['name'],
-    description: json['description'],
+    name: json[ 'name' ],
+    description: json[ 'description' ],
   });
 }
 
@@ -71,24 +71,40 @@ export interface ResearchFundingQuery {
   text: string;
 }
 
-function fundingModelLookupToHttpParams(lookup: Partial<ResearchFundingQuery>) {
-  return new HttpParams();
+export interface ResearchFundingLookup {
+  id?: string;
+  name?: string;
+}
+
+function researchFundingLookupToHttpParams(lookup: ResearchFundingLookup) {
+  let params = new HttpParams();
+  if (lookup.id) {
+    params = params.set('id', lookup.id)
+  }
+  if (lookup.name) {
+    params = params.set('name_eq', lookup.name);
+  }
+  return params;
 }
 
 @Injectable({ providedIn: 'root' })
 export class ResearchFundingService extends RestfulService<ResearchFunding> {
   override model: Type<ResearchFunding> = ResearchFunding;
   override modelFromJsonObject = researchFundingFromJsonObject;
-  override readonly modelPatchToJsonObject = researchFundingPatchToJsonObject;
   override readonly path: string = '/uni/research/funding';
 
   getById(id: string): Observable<ResearchFunding> {
     return this.fetch(id);
   }
 
-  getByName(name: string): Observable<ResearchFunding | null> {
-    return this.queryOne({ name_eq: name });
+  lookup(lookup: string | ResearchFundingLookup) {
+    if (typeof lookup === 'string') {
+      return this.getById(lookup);
+    } else {
+      return this.queryOne(researchFundingLookupToHttpParams(lookup));
+    }
   }
+
 
   fetchByDescription(description: string): Observable<ResearchFunding | null> {
     return this.queryOne({ description_eq: description });
@@ -111,18 +127,20 @@ export class ResearchFundingService extends RestfulService<ResearchFunding> {
 
 @Injectable({ providedIn: 'root' })
 export class ResearchFundingCollection
-  extends ModelCollection<ResearchFunding>
-  implements ResearchFundingService
-{
+  extends ModelCollection<ResearchFunding, ResearchFundingService>
+  implements ResearchFundingService {
   constructor(service: ResearchFundingService) {
     super(service);
   }
   getById(id: string): Observable<ResearchFunding> {
     return this.fetch(id);
   }
-  getByName(name: string): Observable<ResearchFunding | null> {
-    return this.queryOne({ name_eq: name });
+  lookup(request: string | ResearchFundingLookup) {
+    return this.service.lookup(request).pipe(
+      this._maybeCacheResult
+    );
   }
+
   fetchByDescription(description: string): Observable<ResearchFunding | null> {
     return this.queryOne({ description_eq: description });
   }
@@ -137,8 +155,4 @@ export class ResearchFundingCollection
   all(): Observable<ResearchFunding[]> {
     return this.query({});
   }
-}
-
-export function injectResearchFundingService() {
-  return injectModelService(ResearchFundingService, ResearchFundingCollection);
 }

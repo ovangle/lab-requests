@@ -12,7 +12,7 @@ import {
 import { enAU } from 'date-fns/locale';
 import { MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
 import { provideLocalStorage } from './utils/local-storage';
-import { PlatformLocation } from '@angular/common';
+import { APP_BASE_HREF, PlatformLocation } from '@angular/common';
 import {
   AUTHORIZED_API_URL_MATCHER,
   baseUrlMatcherFn,
@@ -27,6 +27,7 @@ import {
   provideAppOauthProviderParams,
 } from './app-oauth-provider-params';
 import { ScaffoldLayoutComponent } from './scaffold/scaffold-layout.component';
+import { Platform } from '@angular/cdk/platform';
 
 /**
  * This function is used internal to get a string instance of the `<base href="" />` value from `index.html`.
@@ -44,7 +45,7 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
 }
 
 @NgModule({
-  declarations: [AppComponent],
+  declarations: [ AppComponent ],
   imports: [
     BrowserModule,
     AppRoutingModule,
@@ -65,9 +66,15 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
   ],
   providers: [
     {
+      provide: APP_BASE_HREF,
+      useFactory: (s: PlatformLocation) => s.getBaseHrefFromDOM(),
+      deps: [ PlatformLocation ]
+    },
+    {
       provide: API_BASE_URL,
       useValue: '/api',
     },
+
     ...provideLocalStorage(),
     { provide: MAT_DATE_LOCALE, useValue: enAU },
     { provide: MAT_DATE_FORMATS, useValue: MAT_DATE_FNS_FORMATS },
@@ -77,13 +84,13 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
       provide: AUTHORIZED_API_URL_MATCHER,
       multi: true,
       useFactory: (apiBaseUrl: string) =>
-        baseUrlMatcherFn(apiBaseUrl, ['/oauth/token']),
-      deps: [API_BASE_URL],
+        baseUrlMatcherFn(apiBaseUrl, [ '/oauth/token' ]),
+      deps: [ API_BASE_URL ],
     },
     provideAppOauthProviderParams(),
 
     FileUploadService,
   ],
-  bootstrap: [AppComponent],
+  bootstrap: [ AppComponent ],
 })
 export class AppModule { }

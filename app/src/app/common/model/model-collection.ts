@@ -67,23 +67,19 @@ export class ModelCollection<
     return this.service.modelFromJsonObject(json);
   }
 
-  modelPatchToJsonObject(patch: ModelPatch<T>): JsonObject {
-    return this.service.modelPatchToJsonObject(patch);
-  }
-
   modelIndexPageFromJsonObject(json: JsonObject): ModelIndexPage<T> {
     return this.service.modelIndexPageFromJsonObject(json);
   }
   query(
-    params: HttpParams | { [k: string]: string | number | string[] },
+    params: HttpParams | { [ k: string ]: string | number | string[] },
   ): Observable<T[]> {
     return this.service.query(params).pipe(this._cacheManyResults);
   }
-  queryOne(params: HttpParams | { [k: string]: string | number | string[] }) {
+  queryOne(params: HttpParams | { [ k: string ]: string | number | string[] }) {
     return this.service.queryOne(params).pipe(this._maybeCacheResult);
   }
   queryPage(
-    params: HttpParams | { [k: string]: string | number | string[] },
+    params: HttpParams | { [ k: string ]: string | number | string[] },
   ): Observable<ModelIndexPage<T>> {
     return this.service.queryPage(params).pipe(this._cacheResultPage);
   }

@@ -2,32 +2,20 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   ChangeDetectorRef,
   Component,
-  Inject,
-  Injectable,
-  Optional,
-  SkipSelf,
-  ViewChild,
   inject,
 } from '@angular/core';
 import {
-  Subject,
-  Subscription,
-  filter,
-  first,
   firstValueFrom,
-  map,
-  of,
 } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import {
   ResearchPlanContext,
-  ResearchPlanPatch,
+  CreateResearchPlan,
   injectResearchPlanService,
 } from '../plan/common/research-plan';
 import { User } from 'src/app/user/common/user';
 import { Campus } from 'src/app/uni/campus/common/campus';
-import { Discipline } from 'src/app/uni/discipline/discipline';
 
 const melCampusFixture = new Campus({
   id: uuidv4(),
@@ -37,7 +25,7 @@ const melCampusFixture = new Campus({
   updatedAt: new Date()
 });
 
-const experimentalPlanCreateFixture: Partial<ResearchPlanPatch> = {
+const experimentalPlanCreateFixture: Partial<CreateResearchPlan> = {
   title: 'The importance of being earnest',
   description: 'Behave earnestly, then deceptively and observe changes.',
   funding: 'Grant',
@@ -46,7 +34,7 @@ const experimentalPlanCreateFixture: Partial<ResearchPlanPatch> = {
     email: 'help@me',
     name: 'Help me',
     baseCampus: melCampusFixture,
-    disciplines: new Set(['ict']),
+    disciplines: new Set([ 'ict' ]),
     roles: new Set(),
     createdAt: new Date(),
     updatedAt: new Date()
@@ -56,7 +44,7 @@ const experimentalPlanCreateFixture: Partial<ResearchPlanPatch> = {
     email: 'a@technician',
     name: 'a technician',
     baseCampus: melCampusFixture,
-    disciplines: new Set(['electrical']),
+    disciplines: new Set([ 'electrical' ]),
     roles: new Set(),
     createdAt: new Date(),
     updatedAt: new Date()
@@ -78,7 +66,7 @@ const experimentalPlanCreateFixture: Partial<ResearchPlanPatch> = {
       }
     `,
   ],
-  providers: [ResearchPlanContext],
+  providers: [ ResearchPlanContext ],
 })
 export class ResearchPlanCreatePage {
   readonly _cdRef = inject(ChangeDetectorRef);
@@ -90,8 +78,8 @@ export class ResearchPlanCreatePage {
   readonly _context: ResearchPlanContext = inject(ResearchPlanContext);
 
 
-  async onSave(patch: ResearchPlanPatch) {
+  async onSave(patch: CreateResearchPlan) {
     const created = await firstValueFrom(this.plans.create(patch));
-    await this._router.navigate(['research', 'plans', created.id]);
+    await this._router.navigate([ 'research', 'plans', created.id ]);
   }
 }

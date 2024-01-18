@@ -4,7 +4,7 @@ import { Form, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Va
 import { ResearchPlan } from "../common/research-plan"
 import { MatInputModule } from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { ResearchPlanTask, ResearchPlanTaskPatch } from "./research-plan-task";
+import { ResearchPlanTask, CreateResearchPlanTask } from "./research-plan-task";
 import { Lab } from "src/app/lab/lab";
 import { User } from "src/app/user/common/user";
 
@@ -21,7 +21,7 @@ export function researchPlanTaskForm(task?: ResearchPlanTask): ResearchPlanTaskF
   return new FormGroup({
     description: new FormControl(
       task?.description || '',
-      { nonNullable: true, validators: [Validators.required] }
+      { nonNullable: true, validators: [ Validators.required ] }
     ),
     startDate: new FormControl<Date | null>(task?.startDate || null),
     endDate: new FormControl<Date | null>(task?.endDate || null),
@@ -31,7 +31,7 @@ export function researchPlanTaskForm(task?: ResearchPlanTask): ResearchPlanTaskF
   })
 }
 
-export function researchPlanTaskPatchFromForm(form: ResearchPlanTaskForm): ResearchPlanTaskPatch {
+export function createResearchPlanTaskFromForm(form: ResearchPlanTaskForm): CreateResearchPlanTask {
   if (!form.valid) {
     throw new Error('Invalid form has no patch');
   }

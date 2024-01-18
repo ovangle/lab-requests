@@ -1,6 +1,8 @@
 from __future__ import annotations
+from datetime import datetime
 
 from enum import Enum
+import random
 from typing import TYPE_CHECKING, Annotated, ClassVar
 from uuid import UUID
 
@@ -11,7 +13,7 @@ from sqlalchemy.ext.declarative import AbstractConcreteBase
 from sqlalchemy.orm import Mapped, mapped_column, relationship, declared_attr
 from sqlalchemy.dialects import postgresql
 
-from db import LocalSession
+from db import LocalSession, local_object_session
 
 from .base import Base, DoesNotExist
 from .base.fields import uuid_pk
@@ -20,19 +22,30 @@ from ..models.uni import Campus, Discipline
 
 
 class UserDoesNotExist(DoesNotExist):
-    def __init__(self, *, for_id: UUID | None = None, for_email: str | None = None):
+    def __init__(
+        self,
+        *,
+        for_id: UUID | None = None,
+        for_email: str | None = None,
+        for_temporary_token: str | None = None,
+    ):
         from .user import User
 
-        msg = None
+        if for_id:
+            return super().__init__(for_id=for_id)
         if for_email:
             msg = f"User with email {for_email} does not exist"
-
-        super().__init__(msg, for_id=for_id)
+            return super().__init__(msg)
+        if for_temporary_token:
+            msg = f"User does not exist with temporary user token {for_temporary_token}"
+            return super().__init__(msg)
+        raise NotImplementedError
 
 
 class UserDomain(Enum):
     NATIVE = "native"
     EXTERNAL = "external"
+    TEMPORARY = "temporary"
 
 
 user_domain = Annotated[
@@ -154,3 +167,50 @@ class ExternalUserCredentials(UserCredentials):
 
     user_id = mapped_column(ForeignKey("user.id"), primary_key=True)
     provider: Mapped[str] = mapped_column(postgresql.VARCHAR(64))
+
+
+def _generate_temporary_user_token():
+    """
+    Generates a random hexadecimal string 30 characters long
+    """
+    return "%030" % random.randrange(16**30)
+
+
+class TemporaryUserCredentials(UserCredentials):
+    __tablename__ = "temporary_user_credentials"
+    __mapper_args__ = {
+        "polymorphic_identity": UserDomain.TEMPORARY.value,
+        "concrete": True,
+    }
+
+    user_id = mapped_column(ForeignKey("user.id"), primary_key=True)
+    token: Mapped[str] = mapped_column(
+        postgresql.VARCHAR(32),
+        default_factory=_generate_temporary_user_token,
+        unique=True,
+    )
+    consumed_at: Mapped[datetime | None] = mapped_column(
+        postgresql.TIMESTAMP(timezone=True), default=None
+    )
+
+    @classmethod
+    async def get_for_token(cls, db: LocalSession, token: str):
+        credentials = await db.scalar(
+            select(TemporaryUserCredentials).where(
+                TemporaryUserCredentials.token == token
+            )
+        )
+        if credentials is None:
+            raise UserDoesNotExist(for_temporary_token=token)
+        return credentials
+
+    async def create_native_credentials(self, password: str):
+        db = local_object_session(self)
+        user = await db.get(User, self.user_id)
+        assert user is not None
+
+        credentials = NativeUserCredentials(user=user, password=password)
+        db.add(credentials)
+
+        self.consumed_at = datetime.utcnow()
+        db.add(self)

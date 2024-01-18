@@ -1,5 +1,6 @@
 import {
   HttpErrorResponse,
+  HttpParams,
   HttpStatusCode
 } from '@angular/common/http';
 import { Injectable } from '@angular/core';
@@ -10,7 +11,7 @@ import {
   tap
 } from 'rxjs';
 import { ResearchPlan, researchPlanFromJsonObject } from 'src/app/research/plan/common/research-plan';
-import { Campus, campusFromJsonObject } from 'src/app/uni/campus/common/campus';
+import { Campus, CampusLookup, campusFromJsonObject } from 'src/app/uni/campus/common/campus';
 import { Discipline, isDiscipline } from 'src/app/uni/discipline/discipline';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import {
@@ -69,37 +70,37 @@ export class User extends Model implements UserParams {
 
 function userParamsFromJsonObject(json: JsonObject): UserParams {
   const baseParams = modelParamsFromJsonObject(json);
-  if (typeof json['email'] !== 'string') {
+  if (typeof json[ 'email' ] !== 'string') {
     throw new Error("Expected a string 'email'");
   }
 
-  if (typeof json['name'] !== 'string') {
+  if (typeof json[ 'name' ] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
 
-  if (!isJsonObject(json['baseCampus'])) {
+  if (!isJsonObject(json[ 'baseCampus' ])) {
     throw new Error("Expected a json object 'baseCampus'");
   }
-  const baseCampus = campusFromJsonObject(json['baseCampus']);
+  const baseCampus = campusFromJsonObject(json[ 'baseCampus' ]);
 
   // if (!isDiscipline(json[ 'discipline' ])) {
   //   throw new Error('Expected a valid discipline');
   // }
 
   let roles: ReadonlySet<Role> = new Set();
-  if (Array.isArray(json['roles'])) {
-    roles = new Set(json['roles'].map(roleFromJson));
+  if (Array.isArray(json[ 'roles' ])) {
+    roles = new Set(json[ 'roles' ].map(roleFromJson));
   }
 
-  if (!Array.isArray(json['disciplines']) || !json['disciplines'].every(isDiscipline)) {
+  if (!Array.isArray(json[ 'disciplines' ]) || !json[ 'disciplines' ].every(isDiscipline)) {
     throw new Error("Expected an array of Disciplines 'disciplines'")
   }
-  const disciplines = new Set(json['disciplines']);
+  const disciplines = new Set(json[ 'disciplines' ]);
 
   return {
     ...baseParams,
-    name: json['name'],
-    email: json['email'],
+    name: json[ 'name' ],
+    email: json[ 'email' ],
     baseCampus,
 
     roles,
@@ -111,6 +112,20 @@ export function userFromJsonObject(json: JsonObject): User {
   return new User(userParamsFromJsonObject(json));
 }
 
+export interface UserLookup {
+  id?: string;
+  email?: string;
+}
+function userLookupToHttpParams(lookup: UserLookup): HttpParams {
+  let params = new HttpParams();
+  if (lookup.id) {
+    params = params.set('id', lookup.id);
+  }
+  if (lookup.email) {
+    params = params.set('email', lookup.email);
+  }
+  return params;
+}
 interface CurrentUserParams extends UserParams {
   readonly labs: ModelIndexPage<Lab>;
   readonly plans: ModelIndexPage<ResearchPlan>;
@@ -130,27 +145,21 @@ export class CurrentUser extends User implements CurrentUserParams {
 function currentUserFromJsonObject(json: JsonObject): CurrentUser {
   const userParams = userParamsFromJsonObject(json);
 
-  if (!isJsonObject(json['labs'])) {
+  if (!isJsonObject(json[ 'labs' ])) {
     throw new Error("Expected a json object 'labs'")
   }
-  const labs = modelIndexPageFromJsonObject(labFromJsonObject, json['labs']);
+  const labs = modelIndexPageFromJsonObject(labFromJsonObject, json[ 'labs' ]);
 
-  if (!isJsonObject(json['plans'])) {
+  if (!isJsonObject(json[ 'plans' ])) {
     throw new Error("Expected a json object 'plans'");
   }
-  const plans = modelIndexPageFromJsonObject(researchPlanFromJsonObject, json['plans']);
+  const plans = modelIndexPageFromJsonObject(researchPlanFromJsonObject, json[ 'plans' ]);
 
   return new CurrentUser({
     ...userParams,
     labs,
     plans
   });
-}
-
-export interface UserPatch extends ModelPatch<User> { }
-
-function userPatchToJson(patch: UserPatch) {
-  return {};
 }
 
 export interface AlterPassword {
@@ -160,18 +169,55 @@ export interface AlterPassword {
 
 export class AlterPasswordError extends Error { }
 
+export interface CreateTemporaryUserRequest {
+  name: string;
+  email: string;
+  baseCampus: CampusLookup | string;
+  discipline: Discipline;
+}
+
+export interface CreateTemporaryUserResult {
+  token: string;
+  user: User;
+}
+
+function createTemporaryUserResultFromJsonObject(json: JsonObject): CreateTemporaryUserResult {
+  if (typeof json[ 'token' ] !== 'string') {
+    throw new Error("Expected a string 'token'");
+  }
+  if (!isJsonObject(json[ 'user' ])) {
+    throw new Error("Expected a json object 'user'");
+  }
+  return {
+    token: json[ 'token' ],
+    user: userFromJsonObject(json[ 'user' ])
+  };
+}
+
+export interface FinalizeTemporaryUserRequest {
+  email: string;
+  token: string;
+  password: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class UserService extends RestfulService<User> {
   override readonly model = User;
   override readonly path: string = '/users';
 
   override readonly modelFromJsonObject = userFromJsonObject;
-  override readonly modelPatchToJsonObject = userPatchToJson;
 
   me(): Observable<CurrentUser> {
     return this._httpClient
       .get<JsonObject>(this.indexMethodUrl('me'))
       .pipe(map((result) => currentUserFromJsonObject(result)));
+  }
+
+  lookup(lookup: UserLookup | string): Observable<User | null> {
+    if (typeof lookup === 'string') {
+      return this.fetch(lookup);
+    }
+    return this.queryOne(userLookupToHttpParams(lookup));
   }
 
   alterPassword(alterPasswordRequest: AlterPassword): Observable<User> {
@@ -191,6 +237,26 @@ export class UserService extends RestfulService<User> {
           }
           throw err;
         }),
+      );
+  }
+
+  createTemporaryUser(request: CreateTemporaryUserRequest) {
+    return this._httpClient
+      .post<JsonObject>(
+        this.indexMethodUrl('create-temporary-user'),
+        request
+      ).pipe(
+        map((result) => createTemporaryUserResultFromJsonObject(result))
+      );
+  }
+
+  finalizeTemporaryUser(request: FinalizeTemporaryUserRequest) {
+    return this._httpClient
+      .post<JsonObject>(
+        this.indexMethodUrl('finalize-temporary-user'),
+        request
+      ).pipe(
+        map((result) => this.modelFromJsonObject(result))
       );
   }
 }
@@ -224,6 +290,26 @@ export class UserCollection extends ModelCollection<User, UserService> implement
         this._cacheCurrentUser(result)
       }),
     );
+  }
+
+  lookup(lookup: string | UserLookup) {
+    return this.service.lookup(lookup).pipe(
+      this._maybeCacheResult
+    );
+  }
+
+  createTemporaryUser(request: CreateTemporaryUserRequest) {
+    return this.service.createTemporaryUser(request).pipe(
+      tap(result => {
+        this._cache.set(result.user.id, result.user);
+      })
+    )
+  }
+
+  finalizeTemporaryUser(request: FinalizeTemporaryUserRequest): Observable<User> {
+    return this.service.finalizeTemporaryUser(request).pipe(
+      this._cacheResult
+    )
   }
 }
 

@@ -3,6 +3,7 @@ import {
   Component,
   EventEmitter,
   Injectable,
+  Input,
   Output,
   inject,
 } from '@angular/core';
@@ -20,6 +21,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
 import { AlterPassword, AlterPasswordError, User, UserService } from './user';
+import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
 
 type AlterPasswordForm = FormGroup<{
   currentValue: FormControl<string>;
@@ -56,6 +58,28 @@ function createCurrentPasswordValidator(
   };
 }
 
+function alterPasswordForm(hasCurrentPassword: boolean, resultErrors: Observable<AlterPasswordError | null>): AlterPasswordForm {
+  return new FormGroup({
+    currentValue: new FormControl<string>('', {
+      nonNullable: true,
+      validators: hasCurrentPassword ? [ Validators.required ] : [],
+      asyncValidators: hasCurrentPassword ? [ createCurrentPasswordValidator(resultErrors) ] : [],
+    }),
+    newValue: new FormControl<string>('', {
+      nonNullable: true,
+      validators: [ Validators.required ],
+    }),
+    newValueAgain: new FormControl<string>('', {
+      nonNullable: true,
+      validators: [
+        Validators.required,
+        (control: AbstractControl) =>
+          sameValueForNewPasswordValidator(control as FormControl<string>),
+      ],
+    }),
+  });
+}
+
 export class AlterPasswordRequest implements AlterPassword {
   _result: Promise<User>;
   setSuccess: (user: User) => void = () => { };
@@ -88,24 +112,27 @@ export class AlterPasswordRequest implements AlterPassword {
     MatInputModule,
   ],
   template: `
-    <form [formGroup]="form" (ngSubmit)="_handleSubmit($event)">
-      <mat-form-field>
-        <mat-label>Current password</mat-label>
-        <input
-          matInput
-          type="password"
-          formControlName="currentValue"
-          required
-        />
+    <form [formGroup]="form!" (ngSubmit)="_handleSubmit($event)">
 
-        @if (currentValueErrors?.required) {
-          <mat-error>A value is required</mat-error>
-        }
+      @if (hasCurrentPassword) {
+        <mat-form-field>
+          <mat-label>Current password</mat-label>
+          <input
+            matInput
+            type="password"
+            formControlName="currentValue"
+            required
+          />
 
-        @if (currentValueErrors?.incorrectForCurrentUser) {
-          <mat-error>Incorrect for current user</mat-error>
-        }
-      </mat-form-field>
+          @if (currentValueErrors?.required) {
+            <mat-error>A value is required</mat-error>
+          }
+
+          @if (currentValueErrors?.incorrectForCurrentUser) {
+            <mat-error>Incorrect for current user</mat-error>
+          }
+        </mat-form-field>
+      }
 
       <mat-form-field>
         <mat-label>New password</mat-label>
@@ -157,31 +184,25 @@ export class AlterPasswordFormComponent {
     this._resultFailure.next(failure);
   }
 
-  readonly form: AlterPasswordForm = new FormGroup({
-    currentValue: new FormControl<string>('', {
-      nonNullable: true,
-      validators: [ Validators.required ],
-      asyncValidators: [ createCurrentPasswordValidator(this._resultFailure) ],
-    }),
-    newValue: new FormControl<string>('', {
-      nonNullable: true,
-      validators: [ Validators.required ],
-    }),
-    newValueAgain: new FormControl<string>('', {
-      nonNullable: true,
-      validators: [
-        Validators.required,
-        (control: AbstractControl) =>
-          sameValueForNewPasswordValidator(control as FormControl<string>),
-      ],
-    }),
-  });
+  @Input()
+  get hasCurrentPassword(): boolean {
+    return this._hasCurrentPassword;
+  }
+  set hasCurrentPassword(value: BooleanInput) {
+    this._hasCurrentPassword = coerceBooleanProperty(value);
+  }
+  _hasCurrentPassword: boolean = false;
 
   @Output()
   alterPasswordRequest = new EventEmitter<AlterPasswordRequest>();
 
+  form: AlterPasswordForm | undefined;
   ngOnInit() {
-    this.form.valueChanges.subscribe(() => this._clearResultSuccess());
+    const form = alterPasswordForm(
+      this.hasCurrentPassword,
+      this._resultFailure
+    )
+    this.form!.valueChanges.subscribe(() => this._clearResultSuccess());
   }
 
   ngOnDestroy() {
@@ -193,7 +214,7 @@ export class AlterPasswordFormComponent {
     required: string | null;
     incorrectForCurrentUser: string | null;
   } | null {
-    const control = this.form.controls.currentValue;
+    const control = this.form!.controls.currentValue;
     return (
       control.errors && {
         required: control.errors[ 'required' ],
@@ -205,7 +226,7 @@ export class AlterPasswordFormComponent {
   get newValueErrors(): {
     required: string | null;
   } | null {
-    const control = this.form.controls.newValue;
+    const control = this.form!.controls.newValue;
     return (
       control.errors && {
         required: control.errors[ 'required' ],
@@ -217,7 +238,7 @@ export class AlterPasswordFormComponent {
     required: string | null;
     sameNewValue: string | null;
   } | null {
-    const control = this.form.controls.newValueAgain;
+    const control = this.form!.controls.newValueAgain;
     return (
       control.errors && {
         required: control.errors[ 'required' ],
@@ -228,14 +249,14 @@ export class AlterPasswordFormComponent {
 
   async _handleSubmit(event: SubmitEvent): Promise<void> {
     event.preventDefault();
-    if (!this.form.valid) {
+    if (!this.form!.valid) {
       throw new Error('Invalid form has no value');
     }
     this._clearResultFailure();
 
     const request = new AlterPasswordRequest(
-      this.form.value.currentValue!,
-      this.form.value.newValue!,
+      this.form!.value.currentValue!,
+      this.form!.value.newValue!,
     );
     try {
       const user = await request.result();

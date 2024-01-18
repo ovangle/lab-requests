@@ -18,7 +18,7 @@ import { disabledStateToggler } from 'src/app/utils/forms/disable-state-toggler'
 import { UserContext } from 'src/app/user/user-context';
 
 @Component({
-  selector: 'uni-research-funding-model-select',
+  selector: 'research-funding-select',
   standalone: true,
   imports: [
     CommonModule,
@@ -36,6 +36,9 @@ import { UserContext } from 'src/app/user/user-context';
           }
         }
       </mat-select>
+      <mat-error>
+        <ng-content select="mat-error"></ng-content>
+      </mat-error>
     </mat-form-field>
   `,
   providers: [

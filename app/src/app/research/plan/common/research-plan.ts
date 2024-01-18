@@ -9,9 +9,10 @@ import {
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import {
   ResearchFunding,
+  ResearchFundingLookup,
   researchFundingFromJsonObject,
 } from '../../funding/research-funding';
-import { User, userFromJsonObject } from 'src/app/user/common/user';
+import { User, UserLookup, userFromJsonObject } from 'src/app/user/common/user';
 import { Injectable, Type, inject } from '@angular/core';
 import {
   ModelService,
@@ -25,7 +26,7 @@ import {
 } from 'src/app/common/model/model-collection';
 import { ModelContext } from 'src/app/common/model/context';
 import { ResourceContainer, ResourceContainerParams, resourceContainerParamsFromJson } from 'src/app/lab/lab-resource/resource-container';
-import { AppendResearchPlanTaskRequest, ResearchPlanTask, UpdateResearchPlanTaskRequest, researchPlanTaskFromJson, researchPlanTaskPatchToJson } from '../task/research-plan-task';
+import { ResearchPlanTask, researchPlanTaskFromJson, createResearchPlanTaskToJson, SpliceResearchPlanTasks } from '../task/research-plan-task';
 import { UserContext } from 'src/app/user/user-context';
 import urlJoin from 'url-join';
 import { P } from '@angular/cdk/keycodes';
@@ -37,12 +38,12 @@ export interface ResearchPlanAttachment extends ModelParams {
 
 export function researchPlanAttachmentFromJsonObject(json: JsonObject) {
   const baseParams = modelParamsFromJsonObject(json);
-  if (typeof json['path'] !== 'string') {
+  if (typeof json[ 'path' ] !== 'string') {
     throw new Error("ResearchPlanAttachment: 'path' must be a string");
   }
   return {
     ...baseParams,
-    path: json['path'],
+    path: json[ 'path' ],
   };
 }
 
@@ -63,50 +64,50 @@ export interface ResearchPlanParams extends ResourceContainerParams {
 export function researchPlanFromJsonObject(json: JsonObject): ResearchPlan {
   const baseParams = resourceContainerParamsFromJson(json);
 
-  if (typeof json['title'] !== 'string') {
+  if (typeof json[ 'title' ] !== 'string') {
     throw new Error("ResearchPlanParams: 'title' must be a string");
   }
-  if (typeof json['description'] !== 'string') {
+  if (typeof json[ 'description' ] !== 'string') {
     throw new Error("ResearchPlanParams: 'description' must be a string");
   }
-  if (!isJsonObject(json['funding'])) {
+  if (!isJsonObject(json[ 'funding' ])) {
     throw new Error("ResearchPlanParams: 'funding' must be a json object");
   }
-  const funding = researchFundingFromJsonObject(json['funding']);
+  const funding = researchFundingFromJsonObject(json[ 'funding' ]);
 
-  if (!isJsonObject(json['researcher'])) {
+  if (!isJsonObject(json[ 'researcher' ])) {
     throw new Error("ResearchPlanParams: 'researcher' must be a json object");
   }
-  const researcher = userFromJsonObject(json['researcher']);
+  const researcher = userFromJsonObject(json[ 'researcher' ]);
 
-  if (!isJsonObject(json['coordinator'])) {
+  if (!isJsonObject(json[ 'coordinator' ])) {
     throw new Error("ResearchPlanParams: 'coordinator' must be a json object");
   }
-  const coordinator = userFromJsonObject(json['coordinator']);
+  const coordinator = userFromJsonObject(json[ 'coordinator' ]);
 
-  if (!Array.isArray(json['tasks']) || !json['tasks'].every(isJsonObject)) {
+  if (!Array.isArray(json[ 'tasks' ]) || !json[ 'tasks' ].every(isJsonObject)) {
     throw new Error(
       "ResearchPlanParams: 'tasks' must be an array of json objects",
     );
   }
-  const tasks = json['tasks'].map((o) => researchPlanTaskFromJson(o));
+  const tasks = json[ 'tasks' ].map((o) => researchPlanTaskFromJson(o));
 
   if (
-    !Array.isArray(json['attachments']) ||
-    !json['attachments'].every(isJsonObject)
+    !Array.isArray(json[ 'attachments' ]) ||
+    !json[ 'attachments' ].every(isJsonObject)
   ) {
     throw new Error(
       "ResearchPlanParams: 'attachments' must be an array of json objects",
     );
   }
-  const attachments = json['attachments'].map((o) =>
+  const attachments = json[ 'attachments' ].map((o) =>
     researchPlanAttachmentFromJsonObject(o),
   );
 
   return new ResearchPlan({
     ...baseParams,
-    title: json['title'],
-    description: json['description'],
+    title: json[ 'title' ],
+    description: json[ 'description' ],
     funding,
     researcher,
     coordinator,
@@ -136,30 +137,20 @@ export class ResearchPlan extends ResourceContainer implements ResearchPlanParam
   }
 }
 
-export interface ResearchPlanPatch {
+export interface CreateResearchPlan {
   title: string;
   description: string;
   funding: string | ResearchFundingLookup;
-  researcher: string | UserLookup;
-  coordinator: string | UserLookup;
-  spliceTasks: {
-    start: number;
-    end: number;
-    items: ResearchPlanTaskPatch[]
-  }[]
+  researcher: string | UserLookup | null;
+  coordinator: string | UserLookup | null;
+  tasks: SpliceResearchPlanTasks;
 }
 
-export function researchPlanPatchToJsonObject(
-  patch: ResearchPlanPatch,
-): JsonObject {
-  return {};
-}
 
 @Injectable({ providedIn: 'root' })
 export class ResearchPlanService extends RestfulService<ResearchPlan> {
   override model = ResearchPlan;
   override modelFromJsonObject = researchPlanFromJsonObject;
-  override modelPatchToJsonObject = researchPlanPatchToJsonObject;
 
   override path = '/research/plan';
 }
@@ -192,8 +183,5 @@ export class ResearchPlanContext extends ModelContext<ResearchPlan> {
   ): Promise<ResearchPlan> {
     return firstValueFrom(this.service.update(id, patch));
   }
-}
-function appendResearchPlanTaskRequestToJson(request: AppendResearchPlanTaskRequest): any {
-  throw new Error('Function not implemented.');
 }
 

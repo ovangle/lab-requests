@@ -31,7 +31,6 @@ export abstract class ModelService<T extends Model> {
 
   abstract readonly model: Type<T>;
   abstract modelFromJsonObject(json: JsonObject): T;
-  abstract modelPatchToJsonObject(patch: ModelPatch<T>): JsonObject;
 
   modelIndexPageFromJsonObject(json: JsonObject): ModelIndexPage<T> {
     return modelIndexPageFromJsonObject(
@@ -47,24 +46,24 @@ export abstract class ModelService<T extends Model> {
    * @returns
    */
   query(
-    params: HttpParams | { [k: string]: number | string | string[] },
+    params: HttpParams | { [ k: string ]: number | string | string[] },
   ): Observable<T[]> {
     return this.queryPage(params).pipe(map((page) => page.items));
   }
   queryOne(
-    params: HttpParams | { [k: string]: number | string | string[] },
+    params: HttpParams | { [ k: string ]: number | string | string[] },
   ): Observable<T | null> {
     return this.query(params).pipe(
       map((items) => {
         if (items.length > 1) {
           throw new Error('Server returned multiple results');
         }
-        return items[0] || null;
+        return items[ 0 ] || null;
       }),
     );
   }
   abstract queryPage(
-    params: HttpParams | { [k: string]: number | string | string[] },
+    params: HttpParams | { [ k: string ]: number | string | string[] },
   ): Observable<ModelIndexPage<T>>;
 
   abstract create(request: ModelPatch<T>): Observable<T>;
@@ -108,17 +107,17 @@ export abstract class RestfulService<T extends Model> extends ModelService<T> {
 
   override fetch(
     id: string,
-    options?: { params: { [k: string]: any } | HttpParams },
+    options?: { params: { [ k: string ]: any } | HttpParams },
   ): Observable<T> {
     return this._httpClient
-      .get<{ [k: string]: unknown }>(this.resourceUrl(id), {
+      .get<{ [ k: string ]: unknown }>(this.resourceUrl(id), {
         params: options?.params,
       })
       .pipe(map((result) => this.modelFromJsonObject(result)));
   }
 
   override queryPage(
-    params: HttpParams | { [k: string]: string | number | string[] },
+    params: HttpParams | { [ k: string ]: string | number | string[] },
   ): Observable<ModelIndexPage<T>> {
     return this._httpClient
       .get<JsonObject>(this.indexUrl, { params: params })
@@ -129,7 +128,7 @@ export abstract class RestfulService<T extends Model> extends ModelService<T> {
     return this._httpClient
       .post<JsonObject>(
         this.indexUrl + '/',
-        this.modelPatchToJsonObject(createRequest),
+        createRequest
       )
       .pipe(map((result) => this.modelFromJsonObject(result)));
   }
@@ -143,10 +142,7 @@ export abstract class RestfulService<T extends Model> extends ModelService<T> {
     }
 
     return this._httpClient
-      .put<JsonObject>(
-        this.resourceUrl(model),
-        this.modelPatchToJsonObject(updateRequest),
-      )
+      .put<JsonObject>(this.resourceUrl(model), updateRequest)
       .pipe(map((result) => this.modelFromJsonObject(result)));
   }
 }

@@ -60,7 +60,7 @@ interface FlattenedMenuNode {
 
         <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
           <button mat-icon-button disabled></button>
-          {{ node.title }}
+          <a [routerLink]="node.routerLink">{{ node.title }}</a>
         </mat-tree-node>
       </mat-tree>
   `,
@@ -83,7 +83,7 @@ export class SidenavMenuComponent implements OnInit {
   >(
     (node: SidenavMenuNode, level: number) => ({
       expandable: node.type === 'group',
-      title: node.title,
+      ...node,
       level,
     }),
     (node: FlattenedMenuNode) => node.level,

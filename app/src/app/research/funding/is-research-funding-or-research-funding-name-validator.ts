@@ -6,7 +6,7 @@ import { Observable, switchMap, of, map, catchError, first } from "rxjs";
 import { ResearchFundingService, ResearchFunding } from "./research-funding";
 
 
-export function isFundingModelOrNameValidator(): AsyncValidatorFn {
+export function isResearchFundingIdOrLookupValidator(): AsyncValidatorFn {
   const fundingModelService = inject(ResearchFundingService);
 
   return function (
@@ -17,13 +17,13 @@ export function isFundingModelOrNameValidator(): AsyncValidatorFn {
         if (value instanceof ResearchFunding || value == null) {
           return of(null);
         }
-        return fundingModelService.getByName(value).pipe(
+        return fundingModelService.lookup({ name: value }).pipe(
           map(() => null),
           catchError((err) => {
             if (err instanceof HttpErrorResponse && err.status === 404) {
               return of({
-                notAFundingModel: 'Not the name of a funding model',
-              });
+                isResearchFundingIdOrLookup: 'Not the name of a funding model',
+              } as ValidationErrors);
             }
             throw err;
           }),
