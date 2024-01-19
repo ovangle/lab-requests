@@ -31,8 +31,8 @@ const routes: Routes = [
       {
         path: 'user',
         loadChildren: () =>
-          import('./user/_features/user.feature-module').then(
-            (module) => module.UserFeatureModule,
+          import('./user/_features/user/user-routes').then(
+            (module) => module.USER_ROUTES,
           ),
       },
     ],
@@ -43,7 +43,7 @@ const routes: Routes = [
   },
   {
     path: 'redirect-temporary-user',
-    loadComponent: () => import('./user/_features/public/temporary-user-redirect.page')
+    loadComponent: () => import('./user/_features/temporary-user/temporary-user-redirect.page')
       .then(module => module.TemporaryUserRedirectPage)
   },
   {

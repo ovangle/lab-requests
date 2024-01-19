@@ -1,10 +1,14 @@
 import { Component, inject } from '@angular/core';
-import { UserService } from '../common/user';
-import { AlterPasswordRequest } from '../common/alter-password-form.component';
+import { UserService } from '../../common/user';
+import { AlterPasswordFormComponent, AlterPasswordRequest } from '../../common/alter-password-form.component';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'alter-password-page',
+  standalone: true,
+  imports: [
+    AlterPasswordFormComponent
+  ],
   template: `
     <user-alter-password-form
       hasCurrentPassword

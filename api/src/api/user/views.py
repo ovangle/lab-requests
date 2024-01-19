@@ -16,14 +16,16 @@ from db.models.user import (
 from api.auth.context import get_current_authenticated_user
 from .schemas.user import (
     AlterPasswordRequest,
-    CreateTemporaryUserRequest,
-    CreateTemporaryUserResponse,
-    FinalizeTemporaryUserRequest,
-    TemporaryUserView,
     UserIndex,
     UserView,
 )
 from .schemas.current_user import CurrentUserView
+from .schemas.temporary_access_user import (
+    CreateTemporaryUserRequest,
+    CreateTemporaryUserResponse,
+    FinalizeTemporaryUserRequest,
+    TemporaryUserView,
+)
 from .queries import query_users
 
 
@@ -118,12 +120,16 @@ async def prepare_finalize_temporary_user(
 async def finalize_temporary_user(
     request: FinalizeTemporaryUserRequest, db=Depends(get_db)
 ) -> UserView:
-    temporary_credentials = await User.get_for_email(db, request.email)
+    user = await User.get_for_id(db, request.id)
+    temporary_access = await user.get_latest_temporary_access_token()
+    if temporary_access is None:
+        raise HTTPException(HTTPStatus.CONFLICT, detail="no token found for user")
 
-    if temporary_credentials.consumed_at:
-        raise HTTPException(HTTPStatus.CONFLICT, detail="Credentials already consumed")
+    if temporary_access.is_expired:
+        raise HTTPException(HTTPStatus.CONFLICT, detail="credentials expired")
 
-    await temporary_credentials.create_native_credentials(password=request.password)
-    user = await User.get_for_id(db, temporary_credentials.user_id)
+    if temporary_access.is_consumed:
+        raise HTTPException(HTTPStatus.CONFLICT, detail="credentials already used")
 
+    await temporary_access.create_native_credentials(password=request.password)
     return await UserView.from_model(user)

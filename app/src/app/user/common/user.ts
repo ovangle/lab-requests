@@ -30,6 +30,8 @@ import { RestfulService } from '../../common/model/model-service';
 import { Actor } from '../actor';
 import { Role, roleFromJson } from './role';
 import { Lab, labFromJsonObject } from 'src/app/lab/lab';
+import parseISO from 'date-fns/parseISO';
+import urlJoin from 'url-join';
 
 export interface UserParams extends ModelParams {
   name: string;
@@ -116,6 +118,7 @@ export interface UserLookup {
   id?: string;
   email?: string;
 }
+
 function userLookupToHttpParams(lookup: UserLookup): HttpParams {
   let params = new HttpParams();
   if (lookup.id) {
@@ -162,6 +165,56 @@ function currentUserFromJsonObject(json: JsonObject): CurrentUser {
   });
 }
 
+
+interface TemporaryAccessUserParams extends UserParams {
+  tokenExpiresAt: Date;
+  tokenIsExpired: boolean;
+  tokenConsumedAt: Date | null;
+  tokenIsConsumed: boolean;
+}
+
+export class TemporaryAccessUser extends User implements TemporaryAccessUserParams {
+  tokenExpiresAt: Date;
+  tokenIsExpired: boolean;
+  tokenConsumedAt: Date | null;
+  tokenIsConsumed: boolean;
+
+  constructor(params: TemporaryAccessUserParams) {
+    super(params);
+    this.tokenExpiresAt = params.tokenExpiresAt;
+    this.tokenIsExpired = params.tokenIsExpired;
+    this.tokenConsumedAt = params.tokenConsumedAt;
+    this.tokenIsConsumed = params.tokenIsConsumed;
+  }
+}
+
+function temporaryAccessUserFromJsonObject(json: JsonObject) {
+  const userParams = userParamsFromJsonObject(json);
+
+  if (typeof json[ 'tokenExpiresAt' ] !== 'string') {
+    throw new Error("Expected a string 'tokenExpiresAt'")
+  }
+  if (typeof json[ 'tokenIsExpired' ] !== 'boolean') {
+    throw new Error("Expected a boolean 'tokenIsExpired'")
+  }
+  if (typeof json[ 'tokenConsumedAt' ] !== 'string' && json[ 'tokenConsumedAt' ] !== null) {
+    throw new Error("Expected a string or null 'tokenConsumedAt'");
+  }
+  if (typeof json[ 'tokenIsConsumed' ] !== 'boolean') {
+    throw new Error("Expected a boolean 'tokenIsConsumed'");
+  }
+
+  return new TemporaryAccessUser({
+    ...userParams,
+    tokenExpiresAt: parseISO(json[ 'tokenExpiresAt' ]),
+    tokenIsExpired: json[ 'tokenIsExpired' ],
+    tokenConsumedAt: json[ 'tokenConsumedAt' ] ? parseISO(json[ 'tokenConsumedAt' ]) : null,
+    tokenIsConsumed: json[ 'tokenIsConsumed' ]
+  });
+}
+
+
+
 export interface AlterPassword {
   currentValue: string;
   newValue: string;
@@ -195,7 +248,7 @@ function createTemporaryUserResultFromJsonObject(json: JsonObject): CreateTempor
 }
 
 export interface FinalizeTemporaryUserRequest {
-  email: string;
+  id: string;
   token: string;
   password: string;
 }
@@ -247,6 +300,15 @@ export class UserService extends RestfulService<User> {
         request
       ).pipe(
         map((result) => createTemporaryUserResultFromJsonObject(result))
+      );
+  }
+
+  fetchTemporaryUser(id: string): Observable<TemporaryAccessUser> {
+    return this._httpClient
+      .get<JsonObject>(
+        urlJoin(this.indexMethodUrl('finalize-temporary-user'), id)
+      ).pipe(
+        map((result) => temporaryAccessUserFromJsonObject(result))
       );
   }
 
@@ -304,6 +366,10 @@ export class UserCollection extends ModelCollection<User, UserService> implement
         this._cache.set(result.user.id, result.user);
       })
     )
+  }
+
+  fetchTemporaryUser(id: string) {
+    return this.service.fetchTemporaryUser(id);
   }
 
   finalizeTemporaryUser(request: FinalizeTemporaryUserRequest): Observable<User> {

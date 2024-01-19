@@ -10,7 +10,7 @@
   "python.analysis.extraPaths": [
     "api/src/"
   ],
-  "python.analysis.diagnosticMode": "workspace",
+  "python.analysis.diagnosticMode": "openFilesOnly",
   "editor.formatOnSave": true,
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter",
@@ -19,5 +19,4 @@
   "[typescript]": {
     "editor.defaultFormatter": "vscode.typescript-language-features"
   },
-  "typescript.tsserver.experimental.enableProjectDiagnostics": true,
 }

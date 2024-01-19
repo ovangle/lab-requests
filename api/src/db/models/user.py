@@ -45,7 +45,6 @@ class UserDoesNotExist(DoesNotExist):
 class UserDomain(Enum):
     NATIVE = "native"
     EXTERNAL = "external"
-    TEMPORARY = "temporary"
 
 
 user_domain = Annotated[
@@ -80,6 +79,10 @@ class User(Base):
     def credentials(self) -> Mapped[list[UserCredentials]]:
         return relationship("UserCredentials", back_populates="user")
 
+    temporary_access_tokens: Mapped[list[TemporaryAccessToken]] = relationship(
+        "TemporaryAccessToken", back_populates="user"
+    )
+
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID):
         user = await db.get(User, id)
@@ -111,7 +114,6 @@ class User(Base):
 class UserCredentials(AbstractConcreteBase, Base):
     strict_attrs = True
     __tablename__ = "user_credentials"
-
     __user_domain__: ClassVar[UserDomain]
 
     @classmethod
@@ -155,7 +157,6 @@ class NativeUserCredentials(UserCredentials):
         "polymorphic_identity": UserDomain.NATIVE.value,
         "concrete": True,
     }
-
     user_id = mapped_column(ForeignKey("user.id"), primary_key=True)
     password_hash: Mapped[str] = mapped_column(postgresql.VARCHAR(256))
 
@@ -189,14 +190,16 @@ def _generate_temporary_user_token():
     return "%030" % random.randrange(16**30)
 
 
-class TemporaryAccessToken(UserCredentials):
-    __tablename__ = "temporary_user_credentials"
-    __mapper_args__ = {
-        "polymorphic_identity": UserDomain.TEMPORARY.value,
-        "concrete": True,
-    }
+class TemporaryAccessToken(Base):
+    """
+    A temporary access token which has been generated for the user in order to
+    set/reset a password
+    """
 
-    user_id = mapped_column(ForeignKey("user.id"), primary_key=True)
+    __tablename__ = "user_temporary_access_token"
+
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"), primary_key=True)
+    user: Mapped[User] = relationship(User, back_populates="temporary_access_tokens")
     token: Mapped[str] = mapped_column(
         postgresql.VARCHAR(32),
         default=_generate_temporary_user_token,

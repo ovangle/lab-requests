@@ -1,12 +1,19 @@
 import { Component, inject } from '@angular/core';
-import { UserContext } from '../user-context';
+import { UserContext } from '../../user-context';
 import { filter, map, shareReplay } from 'rxjs';
-import { CurrentUser, User } from '../common/user';
+import { CurrentUser, User } from '../../common/user';
 import { CommonModule } from '@angular/common';
 import { LabListComponent } from 'src/app/lab/lab-list.component';
+import { ResearchPlanListComponent } from 'src/app/research/plan/common/research-plan-list.component';
 
 @Component({
   selector: 'user-home-page',
+  standalone: true,
+  imports: [
+    CommonModule,
+    LabListComponent,
+    ResearchPlanListComponent
+  ],
   template: `
     <div class="labs-container">
       <h1>Labs</h1>

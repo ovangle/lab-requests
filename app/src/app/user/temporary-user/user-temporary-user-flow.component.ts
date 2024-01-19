@@ -17,8 +17,8 @@ import urlJoin from "url-join";
         CUSTOM_ELEMENTS_SCHEMA
     ],
     template: `
-        <div>
-            <h4>Create temporary user</h4>
+    <div>
+        <h4>Create temporary user</h4>
         @if (isSuccess) {
             <p>
                 A temporary user has been created {{result!.user.email}}
@@ -29,12 +29,11 @@ import urlJoin from "url-join";
                     {{userRedirectUrl}}
                 </div>
 
-            <p> 
-                Or save and share the QR code:
+            <p>Or save and share the QR code:
 
-                <div class="redirect-qr">
-                    <ext-qr-code data="{{userRedirectUrl}}" />
-                </div>
+            <div class="redirect-qr">
+                <ext-qr-code data="{{userRedirectUrl}}" />
+            </div>
 
             <p>to set their password and finalize their account.
         } @else {
