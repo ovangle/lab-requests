@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from enum import Enum
 import random
@@ -8,7 +8,7 @@ from uuid import UUID
 
 from passlib.hash import pbkdf2_sha256
 
-from sqlalchemy import ForeignKey, select
+from sqlalchemy import ForeignKey, func, select
 from sqlalchemy.ext.declarative import AbstractConcreteBase
 from sqlalchemy.orm import Mapped, mapped_column, relationship, declared_attr
 from sqlalchemy.dialects import postgresql
@@ -94,6 +94,19 @@ class User(Base):
             raise UserDoesNotExist(for_email=email)
         return user
 
+    async def get_latest_temporary_access_token(self) -> TemporaryAccessToken | None:
+        db = local_object_session(self)
+        latest_created_at = select(func.max(TemporaryAccessToken.created_at)).where(
+            TemporaryAccessToken.user_id == self.id
+        )
+
+        return await db.scalar(
+            select(TemporaryAccessToken).where(
+                TemporaryAccessToken.user_id == self.id,
+                TemporaryAccessToken.created_at == latest_created_at,
+            )
+        )
+
 
 class UserCredentials(AbstractConcreteBase, Base):
     strict_attrs = True
@@ -176,7 +189,7 @@ def _generate_temporary_user_token():
     return "%030" % random.randrange(16**30)
 
 
-class TemporaryUserCredentials(UserCredentials):
+class TemporaryAccessToken(UserCredentials):
     __tablename__ = "temporary_user_credentials"
     __mapper_args__ = {
         "polymorphic_identity": UserDomain.TEMPORARY.value,
@@ -186,23 +199,24 @@ class TemporaryUserCredentials(UserCredentials):
     user_id = mapped_column(ForeignKey("user.id"), primary_key=True)
     token: Mapped[str] = mapped_column(
         postgresql.VARCHAR(32),
-        default_factory=_generate_temporary_user_token,
+        default=_generate_temporary_user_token,
         unique=True,
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        postgresql.TIMESTAMP(timezone=True),
+        default=datetime.utcnow() + timedelta(hours=24),
     )
     consumed_at: Mapped[datetime | None] = mapped_column(
         postgresql.TIMESTAMP(timezone=True), default=None
     )
 
-    @classmethod
-    async def get_for_token(cls, db: LocalSession, token: str):
-        credentials = await db.scalar(
-            select(TemporaryUserCredentials).where(
-                TemporaryUserCredentials.token == token
-            )
-        )
-        if credentials is None:
-            raise UserDoesNotExist(for_temporary_token=token)
-        return credentials
+    @property
+    def is_expired(self):
+        return self.expires_at >= datetime.utcnow()
+
+    @property
+    def is_consumed(self):
+        return self.consumed_at is not None
 
     async def create_native_credentials(self, password: str):
         db = local_object_session(self)

@@ -3,7 +3,7 @@ import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 import { AppModule } from './app/app.module';
 
 // @ts-ignore
-import { QRCode } from 'webcomponent-qr-code';
+import QRCode from 'webcomponent-qr-code/qr-code';
 
 customElements.define('ext-qr-code', QRCode);
 

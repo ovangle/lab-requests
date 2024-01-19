@@ -1,16 +1,20 @@
 from __future__ import annotations
 import asyncio
+from datetime import datetime
+from http import HTTPStatus
 from typing import Set
 
 from typing_extensions import override
 from uuid import UUID
+from fastapi import HTTPException
 from pydantic import BaseModel
 
 from pydantic.types import SecretStr
+from sqlalchemy import func, select
 
-from db import LocalSession
+from db import LocalSession, local_object_session
 from db.models.uni.discipline import Discipline
-from db.models.user import User, UserDomain
+from db.models.user import TemporaryAccessToken, User, UserDomain
 
 
 from ...base.schemas import (
@@ -50,6 +54,30 @@ class UserView(ModelView[User]):
             created_at=model.created_at,
             updated_at=model.updated_at,
             **kwargs,
+        )
+
+
+class TemporaryUserView(UserView):
+    token_expires_at: datetime
+    token_expired: bool
+
+    token_consumed_at: datetime | None
+    token_consumed: bool
+
+    @classmethod
+    async def from_model(cls, model: User, **kwargs):
+        latest_access_token = await model.get_latest_temporary_access_token()
+        if latest_access_token is None:
+            raise HTTPException(
+                HTTPStatus.CONFLICT, detail="User has no temporary access tokens"
+            )
+
+        return await super().from_model(
+            model,
+            token_expires_at=latest_access_token.expires_at,
+            token_expired=latest_access_token.is_expired,
+            token_consumed_at=latest_access_token.consumed_at,
+            token_consumed=latest_access_token.is_consumed,
         )
 
 
@@ -104,5 +132,6 @@ class CreateTemporaryUserResponse(BaseModel):
 
 
 class FinalizeTemporaryUserRequest(ModelUpdateRequest[User]):
+    id: UUID
     token: str
     password: str

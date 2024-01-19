@@ -7,7 +7,7 @@ from api.uni.schemas import lookup_campus
 from db import get_db
 from db.models.user import (
     NativeUserCredentials,
-    TemporaryUserCredentials,
+    TemporaryAccessToken,
     User,
     UserDoesNotExist,
     UserDomain,
@@ -19,6 +19,7 @@ from .schemas.user import (
     CreateTemporaryUserRequest,
     CreateTemporaryUserResponse,
     FinalizeTemporaryUserRequest,
+    TemporaryUserView,
     UserIndex,
     UserView,
 )
@@ -96,7 +97,7 @@ async def create_temporary_user(
         roles=["student"],
     )
 
-    credentials = TemporaryUserCredentials(user=user)
+    credentials = TemporaryAccessToken(user=user)
     db.add_all([user, credentials])
     await db.commit()
 
@@ -105,13 +106,19 @@ async def create_temporary_user(
     )
 
 
-@users.post("finalize-temporary-user")
+@users.get("/finalize-temporary-user/{email}")
+async def prepare_finalize_temporary_user(
+    id: UUID, db=Depends(get_db)
+) -> TemporaryUserView:
+    user = await User.get_for_id(db, id)
+    return await TemporaryUserView.from_model(user)
+
+
+@users.post("/finalize-temporary-user")
 async def finalize_temporary_user(
     request: FinalizeTemporaryUserRequest, db=Depends(get_db)
 ) -> UserView:
-    temporary_credentials = await TemporaryUserCredentials.get_for_token(
-        db, request.token
-    )
+    temporary_credentials = await User.get_for_email(db, request.email)
 
     if temporary_credentials.consumed_at:
         raise HTTPException(HTTPStatus.CONFLICT, detail="Credentials already consumed")
