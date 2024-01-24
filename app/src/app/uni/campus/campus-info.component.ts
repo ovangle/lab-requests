@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
-import { Campus } from './common/campus';
+import { Campus } from './campus';
 
 @Component({
   selector: 'uni-campus-info',

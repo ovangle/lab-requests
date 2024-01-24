@@ -31,7 +31,7 @@ import {
   softwareFromJsonObject,
   SoftwareParams,
 } from '../software/software';
-import { ResearchPlan } from 'src/app/research/plan/common/research-plan';
+import { ResearchPlan } from 'src/app/research/plan/research-plan';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 
 export interface ResourceContainerParams extends ModelParams {

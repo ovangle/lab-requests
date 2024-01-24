@@ -15,26 +15,26 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { CampusSearchComponent } from 'src/app/uni/campus/campus-search.component';
 import { DisciplineSelectComponent } from 'src/app/uni/discipline/discipline-select.component';
-import { Equipment } from 'src/app/lab/equipment/common/equipment';
 
 import { ResearchPlan, CreateResearchPlan } from './research-plan';
-import { ResearchFunding, ResearchFundingLookup, ResearchFundingService } from '../../funding/research-funding';
-import { ResearchFundingSearchComponent } from '../../funding/research-funding-search.component';
-import { ResearchFundingSelectComponent } from '../../funding/research-funding-select.component';
-import { User, UserLookup } from 'src/app/user/common/user';
-import { ResearchPlanTaskForm, createResearchPlanTaskFromForm, researchPlanTaskForm } from '../task/research-plan-task-form.component';
+import { ResearchFunding } from '../funding/research-funding';
+import { ResearchFundingSelectComponent } from '../funding/research-funding-select.component';
+import { UserLookup } from 'src/app/user/common/user';
+import { ResearchPlanTaskForm, ResearchPlanTaskFormComponent, createResearchPlanTaskFromForm, researchPlanTaskForm } from './task/research-plan-task-form.component';
 import { MatIconModule } from '@angular/material/icon';
-import { isResearchFundingIdOrLookupValidator } from '../../funding/is-research-funding-or-research-funding-name-validator';
 import { ResourceContainerFormControls, resourceContainerFormControls } from 'src/app/lab/lab-resource/resource-container-form.service';
-import { CreateResearchPlanTask } from '../task/research-plan-task';
+import { CreateResearchPlanTask } from './task/research-plan-task';
 import { UserSearchComponent } from 'src/app/user/common/user-search.component';
+import { MatButtonModule } from '@angular/material/button';
+import { format } from 'date-fns';
+import { MatCardModule } from '@angular/material/card';
 
 export type ResearchPlanForm = FormGroup<{
   title: FormControl<string>;
   description: FormControl<string>;
   researcher: FormControl<UserLookup | string | null>;
   coordinator: FormControl<UserLookup | string | null>;
-  funding: FormControl<ResearchFundingLookup | string | null>;
+  funding: FormControl<ResearchFunding | null>;
   tasks: FormArray<ResearchPlanTaskForm>;
 } & ResourceContainerFormControls>;
 
@@ -65,7 +65,7 @@ function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan 
     description: form.value.description!,
     researcher: form.value.researcher || null,
     coordinator: form.value.coordinator || null,
-    funding: form.value.funding!,
+    funding: form.value.funding!.id,
     tasks: {
       startIndex: 0,
       items: <CreateResearchPlanTask[]>[]
@@ -92,6 +92,9 @@ function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan 
   imports: [
     CommonModule,
     ReactiveFormsModule,
+
+    MatButtonModule,
+    MatCardModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -101,7 +104,8 @@ function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan 
     DisciplineSelectComponent,
     ResearchFundingSelectComponent,
     CampusSearchComponent,
-    UserSearchComponent
+    UserSearchComponent,
+    ResearchPlanTaskFormComponent
   ],
   template: `
     <form [formGroup]="form">
@@ -123,14 +127,32 @@ function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan 
         </textarea>
       </mat-form-field>
 
-      <user-search formControlName="researcher"
-        createTemporaryIfNotFound>
-        <mat-label>Primary researcher</mat-label>
+      @switch (currentUserPlanRole) {
 
-        @if (researcherErrors && researcherErrors['required']) {
-          <mat-error>A value is required</mat-error>
+        @case ('coordinator') {
+          <user-search formControlName="researcher"
+            [includeRoles]="_userSearchIncludeRoles"
+            createTemporaryIfNotFound
+            required >
+            <mat-label>Primary researcher</mat-label>
+
+            @if (researcherErrors && researcherErrors['required']) {
+              <mat-error>A value is required</mat-error>
+            }
+          </user-search>
         }
-      </user-search>
+        @case ('researcher') {
+          <user-search formControlName="coordinator"
+                       [includeRoles]="_userSearchIncludeRoles" 
+                       required >
+              <mat-label>Coordinator</mat-label>
+              
+              @if (coordinatorErrors && coordinatorErrors['required']) {
+                <mat-error>A value is required</mat-error>
+              }
+          </user-search>
+        }
+      }
 
       <research-funding-select formControlName="funding">
         <mat-label>Funding source</mat-label>
@@ -142,6 +164,21 @@ function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan 
           <mat-error>Unrecognised funding source</mat-error>
         }
       </research-funding-select>
+
+      <div formArrayName="tasks" #tasksContainer>
+        <h3>Tasks</h3>
+
+        @for (control of taskForms; track control) {
+          <mat-card>
+            <research-plan-task-form 
+              [index]="$index"
+              [form]="control" />
+          </mat-card>
+        }
+      </div>
+
+
+      
 
       <div class="form-controls" (mouseenter)="_showAllFormErrors()">
         <button mat-raised-button [disabled]="!form.valid" (click)="onSaveButtonClick()">
@@ -175,6 +212,23 @@ export class ResearchPlanFormComponent {
   }
   _plan: ResearchPlan | null = null;
 
+  @Input({ required: true })
+  currentUserPlanRole: 'coordinator' | 'researcher' = 'researcher';
+
+  @Input({ required: true })
+  currentUserId: string | undefined;
+
+  _userSearchIncludeRoles = new Set<string>();
+
+  @Input()
+  get hideReviewControls(): boolean {
+    return this._hideReviewControls;
+  }
+  set hideReviewControls(value: BooleanInput) {
+    this._hideReviewControls = coerceBooleanProperty(value);
+  }
+
+  _hideReviewControls = false;
 
   readonly form: ResearchPlanForm = new FormGroup({
     title: new FormControl<string>('', {
@@ -190,22 +244,37 @@ export class ResearchPlanFormComponent {
     coordinator: new FormControl<UserLookup | string | null>(null, {
       validators: [ Validators.required ]
     }),
-    funding: new FormControl<ResearchFundingLookup | string | null>(null, {
+    funding: new FormControl<ResearchFunding | null>(null, {
       validators: [ Validators.required ],
-      asyncValidators: [ isResearchFundingIdOrLookupValidator() ],
     }),
-    tasks: new FormArray<ResearchPlanTaskForm>([]),
+    tasks: new FormArray<ResearchPlanTaskForm>([
+      // At least one task is always necessary
+      researchPlanTaskForm()
+    ]),
     ...resourceContainerFormControls()
   });
 
   @Output()
   save = new EventEmitter<CreateResearchPlan>()
 
+  ngOnInit() {
+    this.form.patchValue({ [ this.currentUserPlanRole ]: this.currentUserId! });
+
+    switch (this.currentUserPlanRole) {
+      case 'coordinator':
+        this._userSearchIncludeRoles.add('student');
+        break;
+      case 'researcher':
+        this._userSearchIncludeRoles.add('lab-tech');
+        break;
+    }
+  }
+
   get titleErrors() {
     return this.form.controls.title.errors || null;
   }
 
-  get funding(): ResearchFundingLookup | string | null {
+  get funding(): ResearchFunding | null {
     return this.form.controls.funding.value || null;
   }
 
@@ -216,6 +285,15 @@ export class ResearchPlanFormComponent {
   get researcherErrors() {
     return this.form.controls.researcher.errors;
   }
+
+  get coordinatorErrors() {
+    return this.form.controls.coordinator.errors;
+  }
+
+  get taskForms(): ResearchPlanTaskForm[] {
+    return this.form.controls.tasks.controls;
+  }
+
 
   @Input()
   get disabled(): boolean {

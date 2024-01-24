@@ -11,11 +11,12 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { filter } from "rxjs";
 import { CampusSearchComponent } from "src/app/uni/campus/campus-search.component";
 import { DisciplineSelectComponent } from "src/app/uni/discipline/discipline-select.component";
+import { MatButtonModule } from "@angular/material/button";
 
 function cquEmailValidator(control: AbstractControl<string>) {
     const value = control.value;
     if (!value.endsWith('@cqu.edu.au')) {
-        return { notACquEmail: 'Email must be a cqu.edu.au address' };
+        return { cquEmail: 'Email must be a cqu.edu.au address' };
     }
     return null;
 }
@@ -46,6 +47,7 @@ function createTemporaryUserRequestFromForm(form: CreateTemporaryUserForm): Crea
         CommonModule,
         ReactiveFormsModule,
 
+        MatButtonModule,
         MatFormFieldModule,
         MatInputModule,
 
@@ -53,7 +55,7 @@ function createTemporaryUserRequestFromForm(form: CreateTemporaryUserForm): Crea
         DisciplineSelectComponent
     ],
     template: `
-    <ng-container [formGroup]="form">
+    <form [formGroup]="form" (ngSubmit)="_onFormSubmit($event)">
         <mat-form-field> 
             <mat-label>Name</mat-label>
             <input matInput formControlName="name" required/>
@@ -72,7 +74,7 @@ function createTemporaryUserRequestFromForm(form: CreateTemporaryUserForm): Crea
             }
 
             @if (emailErrors && (emailErrors['email'] || emailErrors['cquEmail'])) {
-                <mat-error>Expected a <i>*&64#;cqu.edu.au</i> email address</mat-error>
+                <mat-error>Expected a <i>*&#64;cqu.edu.au</i> email address</mat-error>
             }
         </mat-form-field>
 
@@ -91,7 +93,12 @@ function createTemporaryUserRequestFromForm(form: CreateTemporaryUserForm): Crea
             }
         </uni-discipline-select>
 
-    </ng-container>
+        <button mat-raised-button type="submit"
+                [disabled]="!form.valid">
+            Save
+        </button>
+
+    </form>
     `
 })
 export class CreateTemporaryUserFormComponent {
@@ -153,6 +160,13 @@ export class CreateTemporaryUserFormComponent {
 
     get disciplineErrors() {
         return this.form.controls.discipline.errors;
+    }
+
+    _onFormSubmit(evt: Event) {
+        debugger;
+        evt.preventDefault();
+        const request = createTemporaryUserRequestFromForm(this.form);
+        this.save.next(request);
     }
 
 }

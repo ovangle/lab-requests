@@ -6,7 +6,7 @@ import {
   ViewEncapsulation,
   inject,
 } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import {
   Observable,
   Subscription,
@@ -15,12 +15,16 @@ import {
   shareReplay,
   switchMap,
 } from 'rxjs';
+import { MatTabsModule } from "@angular/material/tabs";
 import { BodyScrollbarHidingService } from 'src/app/utils/body-scrollbar-hiding.service';
 import {
   ResearchPlan,
   ResearchPlanContext,
   ResearchPlanService,
-} from '../plan/common/research-plan';
+} from '../plan/research-plan';
+import { CommonModule } from '@angular/common';
+import { ResearchPlanInfoComponent } from '../plan/research-plan-info.component';
+import { MatCardModule } from '@angular/material/card';
 
 export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
   const activatedRoute = inject(ActivatedRoute);
@@ -41,6 +45,15 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
 
 @Component({
   selector: 'research-plan-detail-page',
+  standalone: true,
+  imports: [
+    CommonModule,
+    RouterModule,
+
+    MatCardModule,
+    MatTabsModule,
+    ResearchPlanInfoComponent,
+  ],
   template: `
     @if (plan$ | async; as plan) {
       <research-plan-info [plan]="plan" />

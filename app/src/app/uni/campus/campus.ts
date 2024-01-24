@@ -81,6 +81,20 @@ export interface CampusLookup {
   code?: CampusCode;
 }
 
+export function campusIdFromCampusLookup(lookup: CampusLookup | string) {
+  if (typeof lookup === 'string') {
+    return lookup;
+  }
+  return lookup.id || null;
+}
+
+export function campusCodeFromCampusLookup(lookup: CampusLookup | string) {
+  if (typeof lookup === 'string') {
+    return null;
+  }
+  return lookup.code || null;
+}
+
 function campusLookupToHttpParams(lookup: CampusLookup) {
   let params = new HttpParams();
   if (lookup.id) {

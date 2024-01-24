@@ -1,6 +1,5 @@
 import { validate as validateIsUUID } from 'uuid';
 
-import { firstValueFrom } from 'rxjs';
 import {
   CostEstimate,
   costEstimateFromJson,
@@ -25,7 +24,6 @@ import {
   equipmentLikeToJson,
 } from 'src/app/lab/equipment/equipment-like';
 import { Resource, ResourceParams, resourceParamsFromJsonObject } from '../../lab-resource/resource';
-import { resourceFileAttachmentFromJson } from '../../lab-resource/file-attachment/file-attachment';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 
 export interface EquipmentLeaseParams extends ResourceParams {

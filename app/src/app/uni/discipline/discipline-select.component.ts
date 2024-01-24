@@ -1,5 +1,5 @@
 import { CommonModule, formatNumber } from '@angular/common';
-import { Component, Input, inject } from '@angular/core';
+import { Component, DestroyRef, Input, inject } from '@angular/core';
 import {
   ControlContainer,
   ControlValueAccessor,
@@ -61,13 +61,17 @@ import { DisciplinePipe } from './discipline.pipe';
 })
 export class DisciplineSelectComponent implements ControlValueAccessor {
   readonly disciplines = DISCLIPLINES;
+  readonly _destroyRef = inject(DestroyRef);
 
   readonly _control = new FormControl<Discipline | null>(null);
 
-  constructor() {
-    this._control.valueChanges.pipe(takeUntilDestroyed()).subscribe((value) => {
+  ngOnInit() {
+    const onChangeSubscription = this._control.valueChanges.subscribe((value) => {
       this._onChange(value);
     });
+    this._destroyRef.onDestroy(() => {
+      onChangeSubscription.unsubscribe();
+    })
   }
 
   writeValue(value: any) {

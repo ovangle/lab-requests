@@ -1,6 +1,10 @@
 import { Component, inject } from '@angular/core';
 import { BehaviorSubject, Subject, shareReplay, switchMap, tap } from 'rxjs';
-import { injectResearchPlanService } from '../plan/common/research-plan';
+import { injectResearchPlanService } from '../plan/research-plan';
+import { CommonModule } from '@angular/common';
+import { MatButtonModule } from '@angular/material/button';
+import { MatListModule } from '@angular/material/list';
+import { RouterModule } from '@angular/router';
 
 interface Actor {
   readonly role: string;
@@ -14,6 +18,14 @@ const researcherFixture = {
 
 @Component({
   selector: 'lab-experimental-plan-index',
+  standalone: true,
+  imports: [
+    CommonModule,
+    RouterModule,
+
+    MatButtonModule,
+    MatListModule
+  ],
   template: `
     @if (actor$ | async; as actor) {
       <div>{{ actor | json }}</div>

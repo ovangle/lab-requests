@@ -12,7 +12,7 @@ import { firstValueFrom } from 'rxjs';
   template: `
     <user-alter-password-form
       hasCurrentPassword
-      (alterPasswordRequest)="_handleAlterPasswordRequest($event)"
+      (save)="_handleAlterPasswordRequest($event)"
     />
   `,
 })

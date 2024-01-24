@@ -19,5 +19,10 @@ export const USER_ROUTES: Routes = [
     path: 'logout',
     redirectTo: '/oauth/logout',
   },
+  {
+    path: 'create-temporary',
+    loadComponent: () => import('./create-temporary-user.page')
+      .then(module => module.CreateTemporaryUserPage)
+  }
 ];
 

@@ -2,7 +2,7 @@ import {
   Campus,
   campusFromJsonObject,
   formatCampus,
-} from 'src/app/uni/campus/common/campus';
+} from 'src/app/uni/campus/campus';
 import { validate as validateIsUUID } from 'uuid';
 import { formatISO, parseISO } from 'date-fns';
 import {
@@ -38,7 +38,7 @@ import {
   ResearchPlanContext,
   ResearchPlanService,
   injectResearchPlanService,
-} from 'src/app/research/plan/common/research-plan';
+} from 'src/app/research/plan/research-plan';
 import {
   ResourceContainer,
   ResourceContainerContext,

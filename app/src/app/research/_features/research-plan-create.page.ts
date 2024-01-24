@@ -5,7 +5,9 @@ import {
   inject,
 } from '@angular/core';
 import {
-  firstValueFrom,
+  defer,
+  filter,
+  firstValueFrom, map,
 } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -13,9 +15,12 @@ import {
   ResearchPlanContext,
   CreateResearchPlan,
   injectResearchPlanService,
-} from '../plan/common/research-plan';
-import { User } from 'src/app/user/common/user';
-import { Campus } from 'src/app/uni/campus/common/campus';
+} from '../plan/research-plan';
+import { CurrentUser, User } from 'src/app/user/common/user';
+import { Campus } from 'src/app/uni/campus/campus';
+import { UserContext } from 'src/app/user/user-context';
+import { ResearchPlanFormComponent } from '../plan/research-plan-form.component';
+import { CommonModule } from '@angular/common';
 
 const melCampusFixture = new Campus({
   id: uuidv4(),
@@ -53,10 +58,20 @@ const experimentalPlanCreateFixture: Partial<CreateResearchPlan> = {
 
 @Component({
   selector: 'lab-experimental-plan-create-page',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ResearchPlanFormComponent
+  ],
   template: `
     <h1>Create experimental plan</h1>
 
-    <research-plan-form (save)="onSave($event)" />
+    @if (currentUser$ | async; as currentUser) {
+      <research-plan-form 
+        [currentUserPlanRole]="currentUser.roles.has('student') ? 'researcher' : 'coordinator'"
+        [currentUserId]="currentUser.id"
+        (save)="onSave($event)" />
+    }
   `,
   styles: [
     `
@@ -77,6 +92,10 @@ export class ResearchPlanCreatePage {
   readonly plans = injectResearchPlanService();
   readonly _context: ResearchPlanContext = inject(ResearchPlanContext);
 
+  readonly _user = inject(UserContext);
+  readonly currentUser$ = this._user.user.pipe(
+    filter((u): u is CurrentUser => u != null)
+  );
 
   async onSave(patch: CreateResearchPlan) {
     const created = await firstValueFrom(this.plans.create(patch));

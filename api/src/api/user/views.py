@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, HTTPException, security
 from api.uni.schemas import lookup_campus
 
-from db import get_db
+from db import LocalSession, get_db
 from db.models.user import (
     NativeUserCredentials,
     TemporaryAccessToken,
@@ -33,8 +33,16 @@ users = APIRouter(prefix="/users", tags=["users"])
 
 
 @users.get("/")
-async def index_users(search: Optional[str] = None, db=Depends(get_db)):
-    index = UserIndex(query_users(search=search))
+async def index_users(
+    search: Optional[str] = None,
+    include_roles: Optional[str] = None,
+    db=Depends(get_db),
+):
+    if include_roles:
+        include_role_set = set(include_roles.split(","))
+    else:
+        include_role_set = None
+    index = UserIndex(query_users(search=search, include_roles=include_role_set))
     return await index.load_page(db, 0)
 
 
@@ -80,56 +88,35 @@ async def create_temporary_user(
     user=Depends(get_current_authenticated_user),
     db=Depends(get_db),
 ) -> CreateTemporaryUserResponse:
-    if "create-temporary-user" not in user.roles:
-        raise HTTPException(
-            HTTPStatus.UNAUTHORIZED,
-            detail="Not a member of the 'create-temporary-user' group",
-        )
-
-    campus = await lookup_campus(db, request.base_campus)
-
-    user = User(
-        id=uuid4(),
-        domain=UserDomain.NATIVE,
-        email=request.email,
-        name=request.name,
-        title="student",
-        campus=campus,
-        disciplines=[request.discipline],
-        roles=["student"],
-    )
-
-    credentials = TemporaryAccessToken(user=user)
-    db.add_all([user, credentials])
-    await db.commit()
-
-    return CreateTemporaryUserResponse(
-        token=credentials.token, user=await UserView.from_model(user)
-    )
+    user = await request.do_create(db)
+    return await CreateTemporaryUserResponse.from_model(user)
 
 
-@users.get("/finalize-temporary-user/{email}")
+@users.get("/finalize-temporary-user/{id}")
 async def prepare_finalize_temporary_user(
-    id: UUID, db=Depends(get_db)
+    id: UUID, token: str, db=Depends(get_db)
 ) -> TemporaryUserView:
     user = await User.get_for_id(db, id)
-    return await TemporaryUserView.from_model(user)
+    if not await user.get_temporary_access_token(token):
+        raise HTTPException(HTTPStatus.UNAUTHORIZED, "Invalid access token")
+
+    return await TemporaryUserView.from_model(user, token=token)
 
 
 @users.post("/finalize-temporary-user")
 async def finalize_temporary_user(
-    request: FinalizeTemporaryUserRequest, db=Depends(get_db)
+    request: FinalizeTemporaryUserRequest, db: LocalSession = Depends(get_db)
 ) -> UserView:
     user = await User.get_for_id(db, request.id)
-    temporary_access = await user.get_latest_temporary_access_token()
-    if temporary_access is None:
-        raise HTTPException(HTTPStatus.CONFLICT, detail="no token found for user")
+    temporary_access = await user.get_temporary_access_token(request.token)
 
-    if temporary_access.is_expired:
-        raise HTTPException(HTTPStatus.CONFLICT, detail="credentials expired")
+    if not temporary_access or temporary_access.is_expired:
+        raise HTTPException(HTTPStatus.UNAUTHORIZED, "Invalid or expired access token")
 
     if temporary_access.is_consumed:
         raise HTTPException(HTTPStatus.CONFLICT, detail="credentials already used")
 
     await temporary_access.create_native_credentials(password=request.password)
+    await db.commit()
+    await db.refresh(user)
     return await UserView.from_model(user)

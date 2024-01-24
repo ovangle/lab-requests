@@ -14,7 +14,7 @@ import {
   Campus,
   CampusCode,
   CampusService,
-} from './common/campus';
+} from './campus';
 
 export type CampusForm = FormGroup<{
   code: FormControl<CampusCode>;

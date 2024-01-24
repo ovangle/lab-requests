@@ -10,8 +10,8 @@ import {
   map,
   tap
 } from 'rxjs';
-import { ResearchPlan, researchPlanFromJsonObject } from 'src/app/research/plan/common/research-plan';
-import { Campus, CampusLookup, campusFromJsonObject } from 'src/app/uni/campus/common/campus';
+import { ResearchPlan, researchPlanFromJsonObject } from 'src/app/research/plan/research-plan';
+import { Campus, CampusLookup, campusFromJsonObject } from 'src/app/uni/campus/campus';
 import { Discipline, isDiscipline } from 'src/app/uni/discipline/discipline';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import {
@@ -194,29 +194,29 @@ function temporaryAccessUserFromJsonObject(json: JsonObject) {
   if (typeof json[ 'tokenExpiresAt' ] !== 'string') {
     throw new Error("Expected a string 'tokenExpiresAt'")
   }
-  if (typeof json[ 'tokenIsExpired' ] !== 'boolean') {
-    throw new Error("Expected a boolean 'tokenIsExpired'")
+  if (typeof json[ 'tokenExpired' ] !== 'boolean') {
+    throw new Error("Expected a boolean 'tokenExpired'")
   }
   if (typeof json[ 'tokenConsumedAt' ] !== 'string' && json[ 'tokenConsumedAt' ] !== null) {
     throw new Error("Expected a string or null 'tokenConsumedAt'");
   }
-  if (typeof json[ 'tokenIsConsumed' ] !== 'boolean') {
-    throw new Error("Expected a boolean 'tokenIsConsumed'");
+  if (typeof json[ 'tokenConsumed' ] !== 'boolean') {
+    throw new Error("Expected a boolean 'tokenConsumed'");
   }
 
   return new TemporaryAccessUser({
     ...userParams,
     tokenExpiresAt: parseISO(json[ 'tokenExpiresAt' ]),
-    tokenIsExpired: json[ 'tokenIsExpired' ],
+    tokenIsExpired: json[ 'tokenExpired' ],
     tokenConsumedAt: json[ 'tokenConsumedAt' ] ? parseISO(json[ 'tokenConsumedAt' ]) : null,
-    tokenIsConsumed: json[ 'tokenIsConsumed' ]
+    tokenIsConsumed: json[ 'tokenConsumed' ]
   });
 }
 
 
 
 export interface AlterPassword {
-  currentValue: string;
+  currentValue: string | undefined;
   newValue: string;
 }
 
@@ -231,6 +231,7 @@ export interface CreateTemporaryUserRequest {
 
 export interface CreateTemporaryUserResult {
   token: string;
+  tokenExpiresAt: Date;
   user: User;
 }
 
@@ -238,11 +239,15 @@ function createTemporaryUserResultFromJsonObject(json: JsonObject): CreateTempor
   if (typeof json[ 'token' ] !== 'string') {
     throw new Error("Expected a string 'token'");
   }
+  if (typeof json[ 'tokenExpiresAt' ] !== 'string') {
+    throw new Error("Expected a string 'tokenExpiresAt'")
+  }
   if (!isJsonObject(json[ 'user' ])) {
     throw new Error("Expected a json object 'user'");
   }
   return {
     token: json[ 'token' ],
+    tokenExpiresAt: parseISO(json[ 'tokenExpiresAt' ]),
     user: userFromJsonObject(json[ 'user' ])
   };
 }
@@ -303,10 +308,11 @@ export class UserService extends RestfulService<User> {
       );
   }
 
-  fetchTemporaryUser(id: string): Observable<TemporaryAccessUser> {
+  fetchTemporaryUser(id: string, accessToken: string): Observable<TemporaryAccessUser> {
     return this._httpClient
       .get<JsonObject>(
-        urlJoin(this.indexMethodUrl('finalize-temporary-user'), id)
+        urlJoin(this.indexMethodUrl('finalize-temporary-user'), id),
+        { params: { token: accessToken } }
       ).pipe(
         map((result) => temporaryAccessUserFromJsonObject(result))
       );
@@ -368,8 +374,8 @@ export class UserCollection extends ModelCollection<User, UserService> implement
     )
   }
 
-  fetchTemporaryUser(id: string) {
-    return this.service.fetchTemporaryUser(id);
+  fetchTemporaryUser(id: string, accessToken: string) {
+    return this.service.fetchTemporaryUser(id, accessToken);
   }
 
   finalizeTemporaryUser(request: FinalizeTemporaryUserRequest): Observable<User> {

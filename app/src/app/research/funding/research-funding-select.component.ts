@@ -3,8 +3,11 @@ import {
   FUNDING_MODEL_NAMES,
   ResearchFunding,
   ResearchFundingCollection,
+  ResearchFundingLookup,
+  injectResearchFundingService,
+  researchFundingIdFromLookup,
 } from './research-funding';
-import { Observable, of } from 'rxjs';
+import { Observable, map, of, shareReplay } from 'rxjs';
 import { MatSelectModule } from '@angular/material/select';
 import { CommonModule } from '@angular/common';
 import {
@@ -16,6 +19,7 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { disabledStateToggler } from 'src/app/utils/forms/disable-state-toggler';
 import { UserContext } from 'src/app/user/user-context';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'research-funding-select',
@@ -31,8 +35,8 @@ import { UserContext } from 'src/app/user/user-context';
       <mat-label><ng-content select="mat-label"></ng-content></mat-label>
       <mat-select [formControl]="formControl">
         @if (options$ | async; as options) {
-          @for (option of options; track option) {
-            {{ option.name }}
+          @for (option of options; track option.id) {
+            <mat-option [value]="option">{{ option.name }}</mat-option>
           }
         }
       </mat-select>
@@ -52,32 +56,38 @@ import { UserContext } from 'src/app/user/user-context';
 export class ResearchFundingSelectComponent implements ControlValueAccessor {
   readonly userContext = inject(UserContext);
 
-  readonly collection = inject(ResearchFundingCollection);
-  readonly options$: Observable<ResearchFunding[]> = of(
-    [],
-  ); /* this.collection.pageItems$; */
-
-  ngOnInit() {
-    // this.collection.setLookup({ name_eq: FUNDING_MODEL_NAMES });
-  }
+  readonly researchFundings = injectResearchFundingService();
+  readonly options$: Observable<ResearchFunding[]> = this.researchFundings.all().pipe(
+    shareReplay(1)
+  );
 
   readonly formControl = new FormControl<ResearchFunding | null>(null);
 
-  writeValue(obj: ResearchFunding | string | null): void {
-    if (obj instanceof ResearchFunding || obj == null) {
-      this.formControl.setValue(obj);
-    } else if (typeof obj === 'string') {
-      this.collection.fetch(obj).subscribe(
-        (result) => {
-          this.formControl.setValue(result);
-        },
-        (err) => {
-          this.formControl.setValue(null);
-          throw err;
-        },
+  // Coerce control value into ResearchFundingLookup or null
+  readonly value$ = this.formControl.valueChanges.pipe(
+    takeUntilDestroyed(),
+    map(value => {
+      if (value instanceof ResearchFunding) {
+        return value.id;
+      }
+      return value;
+    })
+  );
+
+  writeValue(obj: ResearchFunding | null): void {
+    if (obj == null) {
+      this.formControl.setValue(null);
+    } else {
+      this.researchFundings.lookup(obj).subscribe(
+        (funding) => this.formControl.setValue(funding)
       );
     }
   }
+
+  ngOnInit() {
+    this.value$.subscribe(value => this._onChange(value));
+  }
+
   _onChange = (value: any) => { };
   registerOnChange(fn: any): void {
     this._onChange = fn;

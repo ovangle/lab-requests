@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, tzinfo
+from datetime import datetime, timedelta, timezone, tzinfo
 from typing import Annotated, Optional
 from fastapi import Depends, HTTPException
 from pydantic import BaseModel
@@ -49,7 +49,7 @@ class Token(BaseModel):
         refreshable=False,
     ):
         expires_in = expires_in or DEFAULT_ACCESS_TOKEN_EXPIRES_IN
-        expires_at = datetime.utcnow() + expires_in
+        expires_at = datetime.now(tz=timezone.utc) + expires_in
 
         token_data = {"sub": user.email, "exp": expires_at}
         if refreshable:

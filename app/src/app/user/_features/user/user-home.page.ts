@@ -4,13 +4,19 @@ import { filter, map, shareReplay } from 'rxjs';
 import { CurrentUser, User } from '../../common/user';
 import { CommonModule } from '@angular/common';
 import { LabListComponent } from 'src/app/lab/lab-list.component';
-import { ResearchPlanListComponent } from 'src/app/research/plan/common/research-plan-list.component';
+import { ResearchPlanListComponent } from 'src/app/research/plan/research-plan-list.component';
+import { RouterModule } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
 
 @Component({
   selector: 'user-home-page',
   standalone: true,
   imports: [
     CommonModule,
+    RouterModule,
+
+    MatButtonModule,
+
     LabListComponent,
     ResearchPlanListComponent
   ],
@@ -30,6 +36,10 @@ import { ResearchPlanListComponent } from 'src/app/research/plan/common/research
         <research-plan-list [plans]="plans" />
       }
     </div>
+
+    <button mat-button [routerLink]="['/user', 'create-temporary']">
+      Add student user
+    </button>
   `,
 })
 export class UserHomePage {

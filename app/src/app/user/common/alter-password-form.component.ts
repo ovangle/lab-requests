@@ -86,7 +86,7 @@ export class AlterPasswordRequest implements AlterPassword {
   setFailure: (err: any) => void = () => { };
 
   constructor(
-    readonly currentValue: string,
+    readonly currentValue: string | undefined,
     readonly newValue: string,
   ) {
     this._result = new Promise<User>((resolve, reject) => {
@@ -112,6 +112,7 @@ export class AlterPasswordRequest implements AlterPassword {
     MatInputModule,
   ],
   template: `
+  @if (form) {
     <form [formGroup]="form!" (ngSubmit)="_handleSubmit($event)">
 
       @if (hasCurrentPassword) {
@@ -163,6 +164,7 @@ export class AlterPasswordRequest implements AlterPassword {
 
       <button mat-button type="submit"><mat-icon>save</mat-icon>Save</button>
     </form>
+  }
   `,
 })
 export class AlterPasswordFormComponent {
@@ -194,11 +196,11 @@ export class AlterPasswordFormComponent {
   _hasCurrentPassword: boolean = false;
 
   @Output()
-  alterPasswordRequest = new EventEmitter<AlterPasswordRequest>();
+  save = new EventEmitter<AlterPasswordRequest>();
 
   form: AlterPasswordForm | undefined;
   ngOnInit() {
-    const form = alterPasswordForm(
+    this.form = alterPasswordForm(
       this.hasCurrentPassword,
       this._resultFailure
     )
@@ -255,9 +257,10 @@ export class AlterPasswordFormComponent {
     this._clearResultFailure();
 
     const request = new AlterPasswordRequest(
-      this.form!.value.currentValue!,
+      this.form!.value.currentValue,
       this.form!.value.newValue!,
     );
+    this.save.next(request);
     try {
       const user = await request.result();
       return this._setResultSuccess(user);

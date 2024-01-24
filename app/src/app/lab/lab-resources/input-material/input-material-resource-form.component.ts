@@ -19,7 +19,7 @@ import {
   costEstimateForm,
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
-import { BehaviorSubject, Observable, map } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import { HazardClassesSelectComponent } from '../../lab-resource/hazardous/hazard-classes-select.component';
 import { HazardClass } from '../../lab-resource/hazardous/hazardous';
 import { ProvisionFormComponent } from '../../lab-resource/provision/provision-form.component';
@@ -30,7 +30,7 @@ import {
   ResourceStorageFormComponent,
 } from '../../lab-resource/storage/resource-storage-form.component';
 import { WorkUnitContext } from '../../work-unit/common/work-unit';
-import { ResearchPlanContext } from 'src/app/research/plan/common/research-plan';
+import { ResearchPlanContext } from 'src/app/research/plan/research-plan';
 
 export type InputMaterialForm = FormGroup<{
   name: FormControl<string>;

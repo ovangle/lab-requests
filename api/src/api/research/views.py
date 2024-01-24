@@ -1,3 +1,4 @@
+from typing import Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
@@ -20,21 +21,28 @@ from .schemas import (
     ResearchPlanView,
     ResearchPlanTaskIndex,
 )
+from .queries import query_research_fundings, query_research_plans
 
 research = APIRouter(prefix="/research", tags=["research"])
 
 
 @research.get("/funding")
 async def index_research_fundings(
-    page_index: int = 0, db=Depends(get_db)
+    name_eq: Optional[str] = None, page_index: int = 0, db=Depends(get_db)
 ) -> ResearchFundingIndexPage:
-    index = ResearchFundingIndex(select(ResearchFunding))
+    index = ResearchFundingIndex(query_research_fundings(name_eq=name_eq))
     return await index.load_page(db, page_index)
 
 
 @research.get("/plans")
-async def index_plans(db=Depends(get_db)) -> ResearchPlanIndexPage:
-    plan_index = ResearchPlanIndex(select(ResearchPlan))
+async def index_plans(
+    researcher: Optional[str] = None,
+    coordinator: Optional[str] = None,
+    db=Depends(get_db),
+) -> ResearchPlanIndexPage:
+    plan_index = ResearchPlanIndex(
+        query_research_plans(researcher=researcher, coordinator=coordinator)
+    )
     return await plan_index.load_page(db, 0)
 
 

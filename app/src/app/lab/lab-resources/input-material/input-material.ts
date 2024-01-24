@@ -4,11 +4,6 @@ import {
   costEstimateToJson,
 } from 'src/app/research/funding/cost-estimate/cost-estimate';
 import {
-  ResourceFileAttachment,
-  resourceFileAttachmentFromJson,
-  resourceFileAttachmentToJson,
-} from '../../lab-resource/file-attachment/file-attachment';
-import {
   HazardClass,
   hazardClassesFromJson,
   hazardClassesToJson,

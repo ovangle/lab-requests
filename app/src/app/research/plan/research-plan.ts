@@ -11,14 +11,12 @@ import {
   ResearchFunding,
   ResearchFundingLookup,
   researchFundingFromJsonObject,
-} from '../../funding/research-funding';
+} from '../funding/research-funding';
 import { User, UserLookup, userFromJsonObject } from 'src/app/user/common/user';
 import { Injectable, Type, inject } from '@angular/core';
 import {
-  ModelService,
   RestfulService,
 } from 'src/app/common/model/model-service';
-import { HttpParams } from '@angular/common/http';
 import { Observable, firstValueFrom, map, of, tap } from 'rxjs';
 import {
   ModelCollection,
@@ -26,10 +24,8 @@ import {
 } from 'src/app/common/model/model-collection';
 import { ModelContext } from 'src/app/common/model/context';
 import { ResourceContainer, ResourceContainerParams, resourceContainerParamsFromJson } from 'src/app/lab/lab-resource/resource-container';
-import { ResearchPlanTask, researchPlanTaskFromJson, createResearchPlanTaskToJson, SpliceResearchPlanTasks } from '../task/research-plan-task';
+import { ResearchPlanTask, researchPlanTaskFromJson, SpliceResearchPlanTasks } from './task/research-plan-task';
 import { UserContext } from 'src/app/user/user-context';
-import urlJoin from 'url-join';
-import { P } from '@angular/cdk/keycodes';
 
 export interface ResearchPlanAttachment extends ModelParams {
   readonly id: string;

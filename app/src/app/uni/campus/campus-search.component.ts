@@ -14,7 +14,7 @@ import { disabledStateToggler } from 'src/app/utils/forms/disable-state-toggler'
 import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
 import { MatInputModule } from '@angular/material/input';
 import { CampusInfoComponent } from './campus-info.component';
-import { Campus, CampusService } from './common/campus';
+import { Campus, CampusService } from './campus';
 
 @Component({
   selector: 'uni-campus-search',

@@ -10,18 +10,18 @@ function temporaryUserInfoFromRoute(): Observable<[ TemporaryAccessUser, string 
     const users = injectUserService();
     const route = inject(ActivatedRoute);
 
-    return route.paramMap.pipe(
+    return route.queryParams.pipe(
         first(),
         switchMap(params => {
-            const userId = params.get('id');
+            const userId = params[ 'id' ];
             if (!userId) {
                 throw new Error('No id in route params');
             }
-            const token = params.get('token');
+            const token = params[ 'token' ];
             if (!token) {
                 throw new Error('No token in route params');
             }
-            return users.fetchTemporaryUser(userId).pipe(
+            return users.fetchTemporaryUser(userId, token).pipe(
                 map(temporaryUser => [ temporaryUser, token ] as [ TemporaryAccessUser, string ]),
                 shareReplay(1)
             )
@@ -53,7 +53,7 @@ function temporaryUserInfoFromRoute(): Observable<[ TemporaryAccessUser, string 
             <p> Please set a new password </p>
 
             <user-alter-password-form
-                (alterPasswordRequest)="_onAlterPasswordRequest($event)" />
+                (save)="_onAlterPasswordRequest($event)" />
         }
     }
     `,
@@ -70,6 +70,12 @@ export class TemporaryUserRedirectPage {
     readonly accessToken$ = defer(() => this._userInfo.pipe(
         map(([ , token ]) => token)
     ))
+
+    ngOnInit() {
+        this._userInfo.subscribe(([ user, token ]) => {
+            console.log('user', user, 'token', token);
+        })
+    }
 
     async _onAlterPasswordRequest(request: AlterPasswordRequest) {
         const userId = await firstValueFrom(this.user$.pipe(map(user => user.id)));

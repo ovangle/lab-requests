@@ -7,11 +7,11 @@ import {
 } from '@angular/core';
 import { Observable, Subscription, of } from 'rxjs';
 import { CampusFormComponent } from '../campus-form.component';
-import { CampusService } from '../common/campus';
+import { CampusService } from '../campus';
 
 @Component({
   standalone: true,
-  imports: [CampusFormComponent],
+  imports: [ CampusFormComponent ],
   template: `
     <h1>Create campus</h1>
     <uni-campus-form></uni-campus-form>

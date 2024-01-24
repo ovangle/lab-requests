@@ -2,7 +2,7 @@ import { Injectable, Type, inject } from "@angular/core";
 import { ModelIndexPage, ModelParams, ModelPatch, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { ModelService, RestfulService } from "src/app/common/model/model-service";
 import { JsonObject } from "src/app/utils/is-json-object";
-import { ResearchPlanContext } from "../common/research-plan";
+import { ResearchPlanContext } from "../research-plan";
 import { HttpParams } from "@angular/common/http";
 import { Observable, map } from "rxjs";
 import { format, formatISO, parseISO } from "date-fns";

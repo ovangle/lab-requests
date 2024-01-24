@@ -16,7 +16,7 @@ import type {
   ResourceContainer,
   ResourceContainerContext,
 } from './resource-container';
-import { ResearchPlan } from 'src/app/research/plan/common/research-plan';
+import { ResearchPlan } from 'src/app/research/plan/research-plan';
 import { ModelParams, modelParamsFromJsonObject } from 'src/app/common/model/model';
 import { JsonObject } from 'src/app/utils/is-json-object';
 

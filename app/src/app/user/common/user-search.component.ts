@@ -10,6 +10,9 @@ import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler"
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatInputModule } from "@angular/material/input";
 import { CreateTemporaryUserFlowComponent } from "../temporary-user/user-temporary-user-flow.component";
+import { RouterModule } from "@angular/router";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
 
 
 @Component({
@@ -17,13 +20,14 @@ import { CreateTemporaryUserFlowComponent } from "../temporary-user/user-tempora
     standalone: true,
     imports: [
         CommonModule,
+        RouterModule,
         ReactiveFormsModule,
 
         MatAutocompleteModule,
+        MatButtonModule,
         MatFormFieldModule,
+        MatIconModule,
         MatInputModule,
-
-        CreateTemporaryUserFlowComponent
     ],
     template: `
     <mat-form-field>
@@ -36,6 +40,11 @@ import { CreateTemporaryUserFlowComponent } from "../temporary-user/user-tempora
             [matAutocomplete]="autocomplete"
             [required]="required" 
             [formControl]="selectedUserControl" />
+
+        <button mat-icon-button matIconSuffix
+            (click)="selectedUserControl.setValue(null)">
+            <mat-icon>close</mat-icon>
+        </button>
         
         <mat-error>
             <ng-content select="mat-error"></ng-content>
@@ -45,24 +54,26 @@ import { CreateTemporaryUserFlowComponent } from "../temporary-user/user-tempora
     <mat-autocomplete #autocomplete [displayWith]="_displayUser">
         @if (autocompleteOptions$ | async; as autocompleteOptions) {
             @for (user of autocompleteOptions; track user.id) {
-                <mat-option [value]="user.id">
-                    {{_displayUser(user)}}
+                <mat-option [value]="user">
+                    {{user.name}} 
+                </mat-option>
+ 
+            }
+            @if (autocompleteOptions.length < 5 && createTemporaryIfNotFound && selectedUserId == null) {
+                <mat-option value="_NOT_FOUND_">
+                    The user isn't listed <a [routerLink]="['/user', 'create-temporary']">Create</a>
                 </mat-option>
             }
         }
+   </mat-autocomplete>
 
-        @if (createTemporaryIfNotFound) {
-            <mat-option value="_NOT_FOUND_">
-                Could not locate user.
-            </mat-option>
-        }
-    </mat-autocomplete>
-
+    <!--
     @if (createTemporaryIfNotFound && isCreatingTemporaryUser) {
         <user-create-temporary-user
             (userCreated)="_onTemporaryUserCreated($event)">
         </user-create-temporary-user>
     }
+    -->
 
     `,
     providers: [
@@ -77,12 +88,15 @@ export class UserSearchComponent implements ControlValueAccessor {
     readonly autocompleteOptions$: Observable<User[]> = this.selectedUserControl.valueChanges.pipe(
         takeUntilDestroyed(),
         debounceTime(300),
-        startWith(null),
+        startWith(''),
         switchMap((value) => {
             if (value instanceof User) {
                 return of([ value ]);
-            } else if (typeof value === 'string' && value !== '_NOT_FOUND_') {
-                return this._userService.query({ search: value || '' })
+            } else if (value == null || typeof value === 'string' && value !== '_NOT_FOUND_') {
+                return this._userService.query({
+                    search: value || '',
+                    include_roles: Array.from(this.includeRoles)
+                })
             } else {
                 return of([]);
             }
@@ -98,6 +112,12 @@ export class UserSearchComponent implements ControlValueAccessor {
     }
     private _required: boolean = false;
 
+    /**
+     * Roles to restrict the user search to.
+     */
+    @Input()
+    includeRoles = new Set<string>();
+
     @Input()
     get createTemporaryIfNotFound() {
         return this._createTemporaryIfNotFound;
@@ -109,6 +129,13 @@ export class UserSearchComponent implements ControlValueAccessor {
 
     get isCreatingTemporaryUser() {
         return this.selectedUserControl.value != null && !(this.selectedUserControl.value instanceof User);
+    }
+
+    get selectedUserId(): string | null {
+        if (this.selectedUserControl.value instanceof User) {
+            return this.selectedUserControl.value.id;
+        }
+        return null;
     }
 
     ngOnInit() {
@@ -132,14 +159,19 @@ export class UserSearchComponent implements ControlValueAccessor {
     writeValue(obj: UserLookup | string | null): void {
         if (obj == null) {
             this.selectedUserControl.setValue(null);
-        } else {
-            firstValueFrom(this._userService.lookup(obj)).then(user => {
-                if (user == null) {
-                    console.warn(`Search value ${obj} was bound to non-existent user`)
-                }
-                this.selectedUserControl.setValue(user);
-            });
+            return;
+        } else if (typeof obj === 'string' || obj[ 'id' ]) {
+            const userId = typeof obj === 'string' ? obj : obj[ 'id' ]!;
+            if (this.selectedUserId === userId) {
+                return;
+            }
         }
+        firstValueFrom(this._userService.lookup(obj)).then(user => {
+            if (user == null) {
+                console.warn(`Search value ${obj} was bound to non-existent user`)
+            }
+            this.selectedUserControl.setValue(user);
+        });
 
     }
     _onChange = (value: UserLookup | null) => { };
@@ -153,12 +185,13 @@ export class UserSearchComponent implements ControlValueAccessor {
     setDisabledState = disabledStateToggler(this.selectedUserControl);
 
     _displayUser(value: any) {
+        console.log('value', value);
         if (value == null) {
             return '';
         } else if (value == '_NOT_FOUND_') {
             return 'Creating...';
         } else {
-            return value.name;
+            return `${value.name} (${value.email})`;
         }
     }
 

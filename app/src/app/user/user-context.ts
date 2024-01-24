@@ -20,7 +20,7 @@ import {
 } from 'rxjs';
 import { LoginContext } from '../oauth/login-context';
 import { Role } from './common/role';
-import { ResearchPlan } from '../research/plan/common/research-plan';
+import { ResearchPlan } from '../research/plan/research-plan';
 import { Lab } from '../lab/lab';
 import { ModelPatch } from '../common/model/model';
 

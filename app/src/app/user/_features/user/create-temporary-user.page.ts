@@ -21,10 +21,10 @@ import { HttpParams } from "@angular/common/http";
     ],
     template: `
     <div>
-        <h4>Create temporary user</h4>
+        <h4>Create student user</h4>
         @if (result) {
             <p>
-                A temporary user has been created {{result!.user.email}}
+                A user has been created {{result!.user.email}}
             <p>
                 Either: 
                 Instruct the user to navigate to 
@@ -64,6 +64,7 @@ export class CreateTemporaryUserPage {
     }
 
     _onFormSave(request: CreateTemporaryUserRequest) {
+        debugger;
         this.users.createTemporaryUser(request).subscribe(result => {
             this.result = result
         });

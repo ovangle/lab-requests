@@ -7,7 +7,7 @@ import { formatDiscipline } from "src/app/uni/discipline/discipline";
 import { Lab } from "src/app/lab/lab";
 import { ScaffoldStateService } from "../scaffold-state.service";
 import { SidenavMenuComponent } from "./sidenav-menu.component";
-import { ResearchPlan } from "src/app/research/plan/common/research-plan";
+import { ResearchPlan } from "src/app/research/plan/research-plan";
 import { ActivatedRoute } from "@angular/router";
 
 const _STATIC_NODES: SidenavMenuNode[] = [

@@ -23,8 +23,8 @@ const routes: Routes = [
       {
         path: 'research',
         loadChildren: () =>
-          import('./research/_features/research-plan.feature-module').then(
-            module => module.ResearchPlanFeatureModule
+          import('./research/_features/research-plan.routes').then(
+            module => module.RESEARCH_PLAN_ROUTES
           )
 
       },
@@ -42,7 +42,7 @@ const routes: Routes = [
     loadChildren: () => OauthFeatureModule,
   },
   {
-    path: 'redirect-temporary-user',
+    path: 'create-user',
     loadComponent: () => import('./user/_features/temporary-user/temporary-user-redirect.page')
       .then(module => module.TemporaryUserRedirectPage)
   },

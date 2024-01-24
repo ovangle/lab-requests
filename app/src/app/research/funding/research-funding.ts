@@ -1,6 +1,6 @@
 import { HttpParams } from '@angular/common/http';
 import { Injectable, Type, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, map, of } from 'rxjs';
 import { Role, roleFromJson } from 'src/app/user/common/role';
 import {
   Model,
@@ -74,6 +74,14 @@ export interface ResearchFundingQuery {
 export interface ResearchFundingLookup {
   id?: string;
   name?: string;
+  description?: string;
+}
+
+export function researchFundingIdFromLookup(lookup: ResearchFundingLookup | string) {
+  if (typeof lookup === 'string') {
+    return lookup;
+  }
+  return lookup[ 'id' ] || null;
 }
 
 function researchFundingLookupToHttpParams(lookup: ResearchFundingLookup) {
@@ -82,7 +90,11 @@ function researchFundingLookupToHttpParams(lookup: ResearchFundingLookup) {
     params = params.set('id', lookup.id)
   }
   if (lookup.name) {
+    debugger;
     params = params.set('name_eq', lookup.name);
+  }
+  if (lookup.description) {
+    params = params.set('description_eq', lookup.description);
   }
   return params;
 }
@@ -91,24 +103,16 @@ function researchFundingLookupToHttpParams(lookup: ResearchFundingLookup) {
 export class ResearchFundingService extends RestfulService<ResearchFunding> {
   override model: Type<ResearchFunding> = ResearchFunding;
   override modelFromJsonObject = researchFundingFromJsonObject;
-  override readonly path: string = '/uni/research/funding';
-
-  getById(id: string): Observable<ResearchFunding> {
-    return this.fetch(id);
-  }
+  override readonly path: string = '/research/funding';
 
   lookup(lookup: string | ResearchFundingLookup) {
     if (typeof lookup === 'string') {
-      return this.getById(lookup);
+      return this.fetch(lookup);
     } else {
       return this.queryOne(researchFundingLookupToHttpParams(lookup));
     }
   }
 
-
-  fetchByDescription(description: string): Observable<ResearchFunding | null> {
-    return this.queryOne({ description_eq: description });
-  }
 
   isNameUnique(name: string): Observable<boolean> {
     return this.queryPage({ name_eq: name }).pipe(
@@ -116,12 +120,8 @@ export class ResearchFundingService extends RestfulService<ResearchFunding> {
     );
   }
 
-  search(input: string): Observable<ResearchFunding[]> {
-    return this.query({ text: input });
-  }
-
   all(): Observable<ResearchFunding[]> {
-    return this.query({ name_eq: FUNDING_MODEL_NAMES });
+    return this.query({});
   }
 }
 
@@ -132,27 +132,30 @@ export class ResearchFundingCollection
   constructor(service: ResearchFundingService) {
     super(service);
   }
-  getById(id: string): Observable<ResearchFunding> {
-    return this.fetch(id);
-  }
+
   lookup(request: string | ResearchFundingLookup) {
     return this.service.lookup(request).pipe(
       this._maybeCacheResult
     );
   }
 
-  fetchByDescription(description: string): Observable<ResearchFunding | null> {
-    return this.queryOne({ description_eq: description });
-  }
+
   isNameUnique(name: string): Observable<boolean> {
     return this.queryPage({ name_eq: name }).pipe(
       map((page) => page.totalItemCount === 0),
     );
   }
-  search(input: string): Observable<ResearchFunding[]> {
-    return this.query({ s: input });
-  }
   all(): Observable<ResearchFunding[]> {
-    return this.query({});
+    if (this._cache.size == 0) {
+      return this.query({});
+    }
+
+    return of(Array.from(this._cache.keys()).map(
+      k => this._cache.get(k)!
+    ));
   }
+}
+
+export function injectResearchFundingService() {
+  return injectModelService(ResearchFundingService, ResearchFundingCollection);
 }

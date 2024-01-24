@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from "@angular/common/http";
 import { AsyncValidatorFn, AbstractControl, ValidationErrors } from "@angular/forms";
 import { Observable, of, map, catchError, throwError, first } from "rxjs";
-import { Campus, injectCampusService } from "./common/campus";
+import { Campus, injectCampusService } from "./campus";
 
 export function isCampusOrCampusCodeValidator(): AsyncValidatorFn {
   const campuses = injectCampusService();

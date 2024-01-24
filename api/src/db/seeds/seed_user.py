@@ -96,7 +96,7 @@ async def seed_users(db: LocalSession):
             db.add(lab_tech)
 
         if set(lab_tech.disciplines) != disciplines:
-            lab_tech.disciplines = disciplines
+            lab_tech.disciplines = list(disciplines)
             db.add(lab_tech)
 
         if lab_tech.name != name:
@@ -105,11 +105,13 @@ async def seed_users(db: LocalSession):
 
         roles = {
             "lab-tech",
-            *[f"lab-tech-{d.value}" for d in disciplines],
+            *[f"lab-tech--{d.value}" for d in disciplines],
         }
-        if set(lab_tech.roles) - roles:
-            lab_tech.roles = lab_tech.roles | roles
+        if roles - set(lab_tech.roles):
+            print("new roles", lab_tech.role_set | roles)
+            lab_tech.role_set = lab_tech.role_set | roles
             db.add(lab_tech)
+        print("roles", lab_tech.roles)
 
         return lab_tech
 

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from enum import Enum
 import random
@@ -8,7 +8,7 @@ from uuid import UUID
 
 from passlib.hash import pbkdf2_sha256
 
-from sqlalchemy import ForeignKey, func, select
+from sqlalchemy import ForeignKey, TypeDecorator, func, select
 from sqlalchemy.ext.declarative import AbstractConcreteBase
 from sqlalchemy.orm import Mapped, mapped_column, relationship, declared_attr
 from sqlalchemy.dialects import postgresql
@@ -67,13 +67,30 @@ class User(Base):
     campus_id: Mapped[UUID] = mapped_column(ForeignKey("uni_campus.id"))
     campus: Mapped[Campus] = relationship()
 
-    disciplines: Mapped[set[Discipline]] = mapped_column(
+    disciplines: Mapped[list[Discipline]] = mapped_column(
         postgresql.ARRAY(postgresql.ENUM(Discipline)), server_default="{}"
     )
 
-    roles: Mapped[set[str]] = mapped_column(
-        postgresql.ARRAY(postgresql.VARCHAR(64)), server_default="{}"
+    @property
+    def discipline_set(self):
+        return set(self.disciplines)
+
+    @discipline_set.setter
+    def discipline_set(self, value: set[Discipline]):
+        self.disciplines = list(value)
+
+    roles: Mapped[list[str]] = mapped_column(
+        postgresql.ARRAY(postgresql.VARCHAR(64)),
+        server_default="{}",
     )
+
+    @property
+    def role_set(self):
+        return set(self.roles)
+
+    @role_set.setter
+    def role_set(self, value: set[str]):
+        self.roles = list(value)
 
     @declared_attr
     def credentials(self) -> Mapped[list[UserCredentials]]:
@@ -99,14 +116,27 @@ class User(Base):
 
     async def get_latest_temporary_access_token(self) -> TemporaryAccessToken | None:
         db = local_object_session(self)
-        latest_created_at = select(func.max(TemporaryAccessToken.created_at)).where(
-            TemporaryAccessToken.user_id == self.id
+        latest_created_at = (
+            select(func.max(TemporaryAccessToken.created_at))
+            .where(TemporaryAccessToken.user_id == self.id)
+            .scalar_subquery()
         )
 
         return await db.scalar(
             select(TemporaryAccessToken).where(
                 TemporaryAccessToken.user_id == self.id,
                 TemporaryAccessToken.created_at == latest_created_at,
+            )
+        )
+
+    async def get_temporary_access_token(
+        self, token: str
+    ) -> TemporaryAccessToken | None:
+        db = local_object_session(self)
+        return await db.scalar(
+            select(TemporaryAccessToken).where(
+                TemporaryAccessToken.user_id == self.id,
+                TemporaryAccessToken.token == token,
             )
         )
 
@@ -185,9 +215,9 @@ class ExternalUserCredentials(UserCredentials):
 
 def _generate_temporary_user_token():
     """
-    Generates a random hexadecimal string 30 characters long
+    Generates a random hexadecimal string 32 characters long
     """
-    return "%030" % random.randrange(16**30)
+    return "{:03x}".format(random.randrange(16**32))
 
 
 class TemporaryAccessToken(Base):
@@ -198,7 +228,8 @@ class TemporaryAccessToken(Base):
 
     __tablename__ = "user_temporary_access_token"
 
-    user_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"), primary_key=True)
+    id: Mapped[uuid_pk]
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
     user: Mapped[User] = relationship(User, back_populates="temporary_access_tokens")
     token: Mapped[str] = mapped_column(
         postgresql.VARCHAR(32),
@@ -207,7 +238,7 @@ class TemporaryAccessToken(Base):
     )
     expires_at: Mapped[datetime] = mapped_column(
         postgresql.TIMESTAMP(timezone=True),
-        default=datetime.utcnow() + timedelta(hours=24),
+        default=datetime.now(tz=timezone.utc) + timedelta(hours=24),
     )
     consumed_at: Mapped[datetime | None] = mapped_column(
         postgresql.TIMESTAMP(timezone=True), default=None
@@ -215,7 +246,7 @@ class TemporaryAccessToken(Base):
 
     @property
     def is_expired(self):
-        return self.expires_at >= datetime.utcnow()
+        return self.expires_at < datetime.now(tz=timezone.utc)
 
     @property
     def is_consumed(self):
@@ -229,5 +260,8 @@ class TemporaryAccessToken(Base):
         credentials = NativeUserCredentials(user=user, password=password)
         db.add(credentials)
 
-        self.consumed_at = datetime.utcnow()
+        self.consumed_at = datetime.now(tz=timezone.utc)
         db.add(self)
+
+        user.disabled = False
+        db.add(user)
