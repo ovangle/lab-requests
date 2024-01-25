@@ -1,6 +1,6 @@
 import { APP_BASE_HREF, CommonModule } from "@angular/common";
 import { CUSTOM_ELEMENTS_SCHEMA, Component, inject } from "@angular/core";
-import { CreateTemporaryUserFormComponent } from "../../temporary-user/user-temporary-user-create-form.component";
+import { CreateTemporaryUserFormComponent } from "../../temporary-user/user-create-temporary-user-form.component";
 import { CreateTemporaryUserRequest, CreateTemporaryUserResult, TemporaryAccessUser, injectUserService } from "../../common/user";
 import { Router } from "@angular/router";
 import { firstValueFrom } from "rxjs";

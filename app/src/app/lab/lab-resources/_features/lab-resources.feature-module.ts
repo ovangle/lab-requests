@@ -1,38 +1,14 @@
-import { NgModule } from '@angular/core';
-import { WorkUnitResourceFormPage } from './resource-form.page';
-import { CommonModule } from '@angular/common';
-import { RouterModule, Routes } from '@angular/router';
-import { ResourceFormTitleComponent } from 'src/app/lab/lab-resource/common/resource-form-title.component';
-import { ALL_RESOURCE_TYPES } from 'src/app/lab/lab-resource/resource-type';
-import { EquipmentLeaseFormComponent } from '../equipment-lease/equipment-lease-form.component';
-import { InputMaterialResourceFormComponent } from '../input-material/input-material-resource-form.component';
-import { OutputMaterialResourceFormComponent } from '../output-material/output-material-resource-form.component';
-import { SoftwareLeaseFormComponent } from '../software-lease/software-resource-form.component';
+import { Routes } from '@angular/router';
+import { ALL_RESOURCE_TYPES, ResourceType } from 'src/app/lab/lab-resource/resource-type';
 
-const RESOURCE_FORM_ROUTES: Routes = ALL_RESOURCE_TYPES.flatMap(
-  (resourceType) => [
+export const RESOURCE_FORM_ROUTES: Routes = ALL_RESOURCE_TYPES.flatMap(
+  (resourceType: ResourceType) => [
     {
       outlet: 'form',
       path: resourceType + '/:resource_id',
-      component: WorkUnitResourceFormPage,
+      loadComponent: () => import('./resource-form.page')
+        .then(module => module.WorkUnitResourceFormPage),
       data: { resourceType },
     },
   ],
 );
-
-@NgModule({
-  imports: [
-    CommonModule,
-    RouterModule.forChild(RESOURCE_FORM_ROUTES),
-
-    ResourceFormTitleComponent,
-
-    EquipmentLeaseFormComponent,
-    SoftwareLeaseFormComponent,
-
-    InputMaterialResourceFormComponent,
-    OutputMaterialResourceFormComponent,
-  ],
-  declarations: [WorkUnitResourceFormPage],
-})
-export class LabResourcesFeatureModule { }

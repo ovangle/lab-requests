@@ -15,7 +15,7 @@ const _STATIC_NODES: SidenavMenuNode[] = [
     type: 'link',
     title: 'Home',
     icon: 'home',
-    routerLink: [ '/home' ],
+    routerLink: [ '/user', 'home' ],
   },
 ]
 

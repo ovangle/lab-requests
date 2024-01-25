@@ -4,17 +4,16 @@ from db.models.uni import Campus
 
 
 def query_campuses(
-    code_eq: str | None = None, text_like: str | None = None
+    code_eq: str | None = None,
+    search: str | None = None,
 ) -> Select[tuple[Campus]]:
     clauses = []
 
     if code_eq is not None:
         return select(Campus).where(Campus.code == code_eq)
 
-    if text_like:
+    if search:
         clauses.append(
-            or_(
-                Campus.name.ilike(f"%{text_like}%"), Campus.code.ilike(f"%{text_like}%")
-            )
+            or_(Campus.name.ilike(f"%{search}%"), Campus.code.ilike(f"%{search}%"))
         )
     return select(Campus).where(*clauses)

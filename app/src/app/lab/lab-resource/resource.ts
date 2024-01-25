@@ -47,13 +47,13 @@ export function resourceParamsFromJsonObject(json: JsonObject): ResourceParams {
   }
 }
 
-export class Resource<T extends ResourceParams = ResourceParams> {
+export class Resource {
   readonly type: ResourceType;
 
   readonly id: string;
   readonly index: number | 'create';
 
-  constructor(params: T) {
+  constructor(params: ResourceParams) {
     this.id = params.id;
     this.type = params.type;
 

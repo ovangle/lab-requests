@@ -8,8 +8,6 @@ import {
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { WorkUnit, formatWorkUnit } from './work-unit';
-import { formatCampus } from 'src/app/uni/campus/common/campus';
 
 @Component({
   selector: 'lab-work-unit-form-title',

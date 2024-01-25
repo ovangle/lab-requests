@@ -11,15 +11,21 @@ import { ResourceContext } from 'src/app/lab/lab-resource/resource';
 import { ResourceContainer } from 'src/app/lab/lab-resource/resource-container';
 import { ResourceFormService } from 'src/app/lab/lab-resource/resource-form.service';
 import { ScaffoldFormPaneControl } from 'src/app/scaffold/form-pane/form-pane-control';
+import { ResourceFormTitleComponent } from '../../lab-resource/common/resource-form-title.component';
+import { EquipmentLeaseFormComponent } from '../equipment-lease/equipment-lease-form.component';
+import { CommonModule } from '@angular/common';
+import { InputMaterialFormComponent } from '../input-material/input-material-resource-form.component';
+import { SoftwareLeaseFormComponent } from '../software-lease/software-resource-form.component';
+import { OutputMaterialFormComponent } from '../output-material/output-material-resource-form.component';
 
 export function typeIndexFromDetailRoute$(): Observable<
-  [ResourceType, number | 'create']
+  [ ResourceType, number | 'create' ]
 > {
   const activatedRoute = inject(ActivatedRoute);
 
-  return combineLatest([activatedRoute.paramMap, activatedRoute.data]).pipe(
-    map(([paramMap, data]) => {
-      const resourceType = data['resourceType'];
+  return combineLatest([ activatedRoute.paramMap, activatedRoute.data ]).pipe(
+    map(([ paramMap, data ]) => {
+      const resourceType = data[ 'resourceType' ];
       if (!isResourceType(resourceType)) {
         throw new Error('No resource type in route data');
       }
@@ -29,13 +35,22 @@ export function typeIndexFromDetailRoute$(): Observable<
       if (Number.isNaN(index)) {
         index = 'create';
       }
-      return [resourceType, index];
+      return [ resourceType, index ];
     }),
   );
 }
 
 @Component({
   selector: 'lab-work-unit-resource-form-page',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ResourceFormTitleComponent,
+    EquipmentLeaseFormComponent,
+    InputMaterialFormComponent,
+    SoftwareLeaseFormComponent,
+    OutputMaterialFormComponent
+  ],
   template: `
     @if (_formService.isReady | async; as typeIndex) {
       @if (containerName$ | async; as containerName) {
@@ -61,22 +76,22 @@ export function typeIndexFromDetailRoute$(): Observable<
             }
 
             @case ('software-lease') {
-              <lab-software-resource-form />
+              <lab-software-lease-form />
             }
 
             @case ('input-material') {
-              <lab-input-material-resource-form />
+              <lab-input-material-form />
             }
 
             @case ('output-material') {
-              <lab-output-material-resource-form />
+              <lab-output-material-form />
             }
           }
         }
       }
     }
   `,
-  providers: [ResourceContext, ResourceFormService],
+  providers: [ ResourceContext, ResourceFormService ],
 })
 export class WorkUnitResourceFormPage {
   readonly _context = inject(ResourceContext);

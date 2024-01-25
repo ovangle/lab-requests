@@ -11,6 +11,7 @@ import { MatDatepickerModule } from "@angular/material/datepicker";
 import { BooleanInput, NumberInput, coerceBooleanProperty, coerceNumberProperty } from "@angular/cdk/coercion";
 import { UserSearchComponent } from "src/app/user/common/user-search.component";
 import { LabSearchComponent } from "src/app/lab/lab-search.component";
+import { ResizeTextareaOnInputDirective } from "src/app/common/forms/resize-textarea-on-input.directive";
 
 
 export type ResearchPlanTaskForm = FormGroup<{
@@ -60,6 +61,7 @@ export function createResearchPlanTaskFromForm(form: ResearchPlanTaskForm): Crea
     MatFormFieldModule,
     MatInputModule,
 
+    ResizeTextareaOnInputDirective,
     LabSearchComponent,
     UserSearchComponent
 
@@ -70,15 +72,18 @@ export function createResearchPlanTaskFromForm(form: ResearchPlanTaskForm): Crea
     </div>
 
     <div class="controls" [formGroup]="form!">
-      <mat-form-field>
+      <mat-form-field class="description-field">
         <mat-label>Description</mat-label>
-        <input matInput type="text" formControlName="description" required/> 
+        <textarea matInput resizeOnInput
+                  formControlName="description" required> 
+        </textarea>
         @if (descriptionErrors && descriptionErrors['required']) {
           <mat-error>A description is required</mat-error>
         }
       </mat-form-field>
 
-      <mat-form-field>
+      <div>
+      <mat-form-field class="duration-field">
           <mat-label>Duration</mat-label>
           <mat-date-range-input [rangePicker]="durationPicker">
             <input matStartDate formControlName="startDate" placeholder="start" />
@@ -90,13 +95,15 @@ export function createResearchPlanTaskFromForm(form: ResearchPlanTaskForm): Crea
           <mat-datepicker-toggle matIconSuffix [for]="durationPicker" />
           <mat-date-range-picker #durationPicker />
       </mat-form-field>
+      </div>
 
       @if (!hideReviewControls) {
-          <lab-search formControlName="lab">
-            <mat-label>Lab</mat-label>
+        <lab-search formControlName="lab">
+          <mat-label>Lab</mat-label>
         </lab-search>
 
-        <user-search formControlName="technician" [includeRoles]="technicianRoles">
+        <user-search formControlName="technician" 
+                     [includeRoles]="technicianRoles">
           <mat-label>Technician</mat-label>
         </user-search>
       }
@@ -104,19 +111,34 @@ export function createResearchPlanTaskFromForm(form: ResearchPlanTaskForm): Crea
   `,
   styles: `
   :host {
+    margin-top: var(--mat-form-field-subscript-text-line-height);
+    margin-right: 1em;
     display: flex;
   }
 
+  .controls {
+    display: flex; 
+    flex-grow: 1;
+  }
+  .duration-field {
+    margin-left: 1em;
+  }
+  .description-field {
+    flex-grow: 1;
+  }
+
+  /*
   :host mat-form-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
     max-height: 0;
     overflow: hidden;
   }
+  */
 
   .index {
     min-width: 3em;
     display: flex;
     justify-content: center;
-    align-items: center;
+    // align-items: center;
   }
   `
 })

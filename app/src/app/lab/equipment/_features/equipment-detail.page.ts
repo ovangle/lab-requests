@@ -16,6 +16,8 @@ import {
   EquipmentService,
   Equipment,
 } from '../common/equipment';
+import { EquipmentInfoComponent } from '../equipment-info.component';
+import { EquipmentTrainingDescriptionsInfoComponent } from '../training/training-descriptions-info.component';
 
 function equipmentContextFromDetailRoute(): Observable<Equipment> {
   const route = inject(ActivatedRoute);
@@ -36,6 +38,12 @@ function equipmentContextFromDetailRoute(): Observable<Equipment> {
 
 @Component({
   selector: 'lab-equipment-detail-page',
+  standalone: true,
+  imports: [
+    CommonModule,
+    EquipmentInfoComponent,
+    EquipmentTrainingDescriptionsInfoComponent
+  ],
   template: `
     @if (context.equipment$ | async; as equipment) {
       <lab-equipment-info [equipment]="equipment"></lab-equipment-info>
@@ -49,7 +57,7 @@ function equipmentContextFromDetailRoute(): Observable<Equipment> {
       </lab-equipment-training-descriptions-info>
     }
   `,
-  providers: [EquipmentContext],
+  providers: [ EquipmentContext ],
 })
 export class EquipmentDetailPage {
   readonly context = inject(EquipmentContext);

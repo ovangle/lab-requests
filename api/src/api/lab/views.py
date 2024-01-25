@@ -1,12 +1,17 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends
+from api.lab.queries import query_labs
+from api.uni.schemas import CampusLookup, lookup_campus
 
 from db import get_db
+from db.models.uni import Campus
+from db.models.lab import Lab
+from db.models.uni.discipline import Discipline
 
 from .lab_equipment.views import lab_equipments, lab_equipment_tags
 from .work_unit.views import lab_work_units
 
-from .schemas import Lab
+from .schemas import LabIndex, LabIndexPage, LabView
 
 lab = APIRouter(prefix="/lab", tags=["labs"])
 
@@ -15,6 +20,36 @@ lab.include_router(lab_equipment_tags)
 lab.include_router(lab_work_units)
 
 
+@lab.get("/")
+async def index_labs(
+    search: str | None = None,
+    campus: UUID | None = None,
+    campus_id: UUID | None = None,
+    campus_code: str | None = None,
+    discipline: Discipline | None = None,
+    page_index: int = 0,
+    db=Depends(get_db),
+) -> LabIndexPage:
+    campus_lookup: CampusLookup | UUID | None = None
+    if campus_code or campus_id:
+        campus_lookup = CampusLookup(id=campus_id, code=campus_code)
+    elif campus_lookup:
+        campus_lookup = campus
+
+    campus_model: Campus | None = None
+    if campus_lookup:
+        campus_model = await lookup_campus(db, campus_lookup)
+
+    labs = query_labs(
+        campus=campus_model,
+        discipline=discipline,
+        search=search,
+    )
+    campus_index = LabIndex(labs)
+    return await campus_index.load_page(db, page_index=page_index)
+
+
 @lab.get("/{lab_id}")
 async def read_lab(lab_id: UUID, db=Depends(get_db)):
-    return await Lab.get_for_id(db, lab_id)
+    lab = await Lab.get_for_id(db, lab_id)
+    return await LabView.from_model(lab)

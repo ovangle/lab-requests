@@ -22,12 +22,16 @@ import { ResearchFundingSelectComponent } from '../funding/research-funding-sele
 import { UserLookup } from 'src/app/user/common/user';
 import { ResearchPlanTaskForm, ResearchPlanTaskFormComponent, createResearchPlanTaskFromForm, researchPlanTaskForm } from './task/research-plan-task-form.component';
 import { MatIconModule } from '@angular/material/icon';
-import { ResourceContainerFormControls, resourceContainerFormControls } from 'src/app/lab/lab-resource/resource-container-form.service';
+import { ResourceContainerFormControls, ResourceContainerFormService, resourceContainerFormControls } from 'src/app/lab/lab-resource/resource-container-form.service';
 import { CreateResearchPlanTask } from './task/research-plan-task';
 import { UserSearchComponent } from 'src/app/user/common/user-search.component';
 import { MatButtonModule } from '@angular/material/button';
 import { format } from 'date-fns';
 import { MatCardModule } from '@angular/material/card';
+import { ResourceType } from 'src/app/lab/lab-resource/resource-type';
+import { of } from 'rxjs';
+import { S } from '@angular/cdk/keycodes';
+import { LabResourceContainerFormComponent } from 'src/app/lab/lab-resource/resource-container-form.component';
 
 export type ResearchPlanForm = FormGroup<{
   title: FormControl<string>;
@@ -105,7 +109,8 @@ function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan 
     ResearchFundingSelectComponent,
     CampusSearchComponent,
     UserSearchComponent,
-    ResearchPlanTaskFormComponent
+    ResearchPlanTaskFormComponent,
+    LabResourceContainerFormComponent
   ],
   template: `
     <form [formGroup]="form">
@@ -166,29 +171,51 @@ function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan 
       </research-funding-select>
 
       <div formArrayName="tasks" #tasksContainer>
-        <h3>Tasks</h3>
+        <h2>
+          Tasks
+          <button class="append-task-button" mat-raised-button (click)="onAppendTaskClick()">
+            <mat-icon>add</mat-icon> Add
+          </button>
+        </h2>
 
         @for (control of taskForms; track control) {
           <mat-card>
             <research-plan-task-form 
               [index]="$index"
-              [form]="control" />
+              [form]="control" 
+              [hideReviewControls]="hideReviewControls" />
           </mat-card>
         }
+
+        <div class="resources" #resourceContainer>
+          <h2>Requirements</h2>
+
+          <lab-resource-container-form 
+            [container]="plan"
+            [form]="form" />
+        </div>
+
       </div>
-
-
-      
-
-      <div class="form-controls" (mouseenter)="_showAllFormErrors()">
-        <button mat-raised-button [disabled]="!form.valid" (click)="onSaveButtonClick()">
-          <mat-icon>save</mat-icon> SAVE
-        </button>
+      <div class="form-controls">
+        <div (mouseenter)="_showAllFormErrors()">
+          <button mat-raised-button [disabled]="!form.valid" 
+                  (click)="onSaveButtonClick()">
+            <mat-icon>save</mat-icon> SAVE
+          </button>
+        </div>
       </div>
     </form>
   `,
   styles: [
     `
+      .form-controls {
+        display: flex;
+        justify-content: right;
+      }
+
+      .append-task-button {
+        float: right;
+      }
       mat-card + mat-card {
         margin-top: 1em;
       }
@@ -268,6 +295,7 @@ export class ResearchPlanFormComponent {
         this._userSearchIncludeRoles.add('lab-tech');
         break;
     }
+
   }
 
   get titleErrors() {
@@ -290,8 +318,12 @@ export class ResearchPlanFormComponent {
     return this.form.controls.coordinator.errors;
   }
 
+  get taskArray(): FormArray<ResearchPlanTaskForm> {
+    return this.form.controls.tasks;
+  }
+
   get taskForms(): ResearchPlanTaskForm[] {
-    return this.form.controls.tasks.controls;
+    return this.taskArray.controls;
   }
 
 
@@ -313,12 +345,13 @@ export class ResearchPlanFormComponent {
     this.form.markAllAsTouched();
   }
 
+  onAppendTaskClick() {
+    this.taskArray.push(researchPlanTaskForm());
+  }
+
   onSaveButtonClick() {
     if (!this.form.valid) {
       throw new Error('Cannot save invalid form');
     }
-    if (this.plan) {
-    }
-
   }
 }

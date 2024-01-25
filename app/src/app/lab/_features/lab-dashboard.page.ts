@@ -1,8 +1,17 @@
+import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
+import { MatListModule } from '@angular/material/list';
+import { RouterModule } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 
 @Component({
   selector: 'lab-dashboard-page',
+  standalone: true,
+  imports: [
+    CommonModule,
+    RouterModule,
+    MatListModule
+  ],
   template: `
     <mat-nav-list
       [ngClass]="{ expanded: isNavExpanded, collapsed: !isNavExpanded }"
@@ -33,7 +42,7 @@ import { BehaviorSubject } from 'rxjs';
     </main>
   `,
   animations: [],
-  styleUrls: ['./lab-dashboard.page.css'],
+  styleUrls: [ './lab-dashboard.page.css' ],
 })
 export class LabDashboardPage {
   readonly navExpansionState = new BehaviorSubject<'expanded' | 'collapsed'>(

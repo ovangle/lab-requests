@@ -36,7 +36,7 @@ export interface EquipmentLeaseParams extends ResourceParams {
   usageCostEstimate: CostEstimate | null;
 }
 
-export class EquipmentLease extends Resource<EquipmentLeaseParams> {
+export class EquipmentLease extends Resource {
   override readonly type = 'equipment-lease';
 
   equipment: Equipment;

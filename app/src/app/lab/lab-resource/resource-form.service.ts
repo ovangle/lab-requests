@@ -6,6 +6,7 @@ import {
   filter,
   first,
   firstValueFrom,
+  map,
   switchMap,
   tap,
 } from 'rxjs';
@@ -18,7 +19,6 @@ import {
 } from './resource';
 import { ResourceContainerFormService } from './resource-container-form.service';
 import { ResourceContainer } from './resource-container';
-import { ResourceType } from './resource-type';
 
 @Injectable()
 export class ResourceFormService<
@@ -36,9 +36,8 @@ export class ResourceFormService<
     this.resourceContext.committedTypeIndex$.pipe(
       tap((typeIndex) => this._typeIndexSubject.next(typeIndex)),
       filter(isResourceTypeIndex),
-      switchMap(async ([resourceType, index]) => {
-        await this.containerFormService.initResourceForm(resourceType, index);
-        return [resourceType, index] as ResourceTypeIndex;
+      tap(([ resourceType, index ]) => {
+        this.containerFormService.initResourceForm(resourceType, index);
       }),
     ),
   ).then((typeIndex) => typeIndex);
@@ -51,15 +50,15 @@ export class ResourceFormService<
   }
 
   get resourceType() {
-    return this._typeIndex[0];
+    return this._typeIndex[ 0 ];
   }
 
   get resourceIndex() {
-    return this._typeIndex[1];
+    return this._typeIndex[ 1 ];
   }
 
   get form(): TForm {
-    const [resourceType, index] = this._typeIndex;
+    const [ resourceType, index ] = this._typeIndex;
     const form = this.containerFormService.getResourceForm(resourceType, index);
     if (form == null) {
       throw new Error('Resource form not initialized');
@@ -68,26 +67,28 @@ export class ResourceFormService<
   }
 
   get isCreate(): boolean {
-    const [resourceType, index] = this._typeIndex;
+    const [ resourceType, index ] = this._typeIndex;
     return index === 'create';
   }
 
   async save(): Promise<T> {
-    const [resourceType, index] = this._typeIndex;
-    const container: ResourceContainer =
-      await this.containerFormService.commit();
+    const [ resourceType, index ] = this._typeIndex;
+    throw new Error('NotImplemented');
+    /*
+    const container: ResourceContainer = await this.containerFormService.commit();
     if (index === 'create') {
       const resources = container.getResources<T>(resourceType);
-      return resources[resources.length - 1];
+      return resources[ resources.length - 1 ];
     }
     return container.getResourceAt<T>(resourceType, index);
+    */
   }
 
   connect(): Subscription {
     return new Subscription(() => {
       this._typeIndexSubject.complete();
 
-      const [resourceType, index] = this._typeIndex;
+      const [ resourceType, index ] = this._typeIndex;
       return this.containerFormService.clearResourceForm(resourceType, index);
     });
   }

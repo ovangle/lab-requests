@@ -9,16 +9,21 @@ import {
   EquipmentPatch,
   EquipmentService,
 } from '../common/equipment';
+import { LabEquipmentFormComponent } from '../equipment-form.component';
 
 const equipmentCreateFixture: EquipmentPatch = {
   name: 'HP Elitebook',
   description: 'My personal laptop',
-  tags: ['laptop'],
+  tags: [ 'laptop' ],
   trainingDescriptions: [],
 };
 
 @Component({
   selector: 'lab-equipment-create-page',
+  standalone: true,
+  imports: [
+    LabEquipmentFormComponent
+  ],
   template: `
     <h1>Create equipment</h1>
 
@@ -26,8 +31,7 @@ const equipmentCreateFixture: EquipmentPatch = {
       [form]="form"
       [committed]="null"
       (requestCommit)="createEquipment($event)"
-    >
-    </lab-equipment-form>
+    />
   `,
 })
 export class EquipmentCreatePage {
@@ -44,6 +48,6 @@ export class EquipmentCreatePage {
 
   async createEquipment(patch: EquipmentPatch) {
     const equipment = await firstValueFrom(this.equipmentService.create(patch));
-    await this._router.navigate(['lab', 'equipments', equipment.id]);
+    await this._router.navigate([ 'lab', 'equipments', equipment.id ]);
   }
 }

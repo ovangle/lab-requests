@@ -28,7 +28,7 @@ export interface OutputMaterialParams extends ResourceParams {
   hazardClasses: HazardClass[];
 }
 
-export class OutputMaterial extends Resource<OutputMaterialParams> {
+export class OutputMaterial extends Resource {
   override readonly type = 'output-material';
 
   name: string;

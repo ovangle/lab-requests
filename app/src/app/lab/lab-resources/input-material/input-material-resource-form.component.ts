@@ -69,7 +69,7 @@ export type InputMaterialFormErrors = ValidationErrors & {
 };
 
 @Component({
-  selector: 'lab-input-material-resource-form',
+  selector: 'lab-input-material-form',
   standalone: true,
   imports: [
     CommonModule,
@@ -137,7 +137,7 @@ export type InputMaterialFormErrors = ValidationErrors & {
     `,
   ],
 })
-export class InputMaterialResourceFormComponent {
+export class InputMaterialFormComponent {
   readonly _planContext = inject(ResearchPlanContext);
   readonly _workUnitContext = inject(WorkUnitContext);
   readonly formService = inject(

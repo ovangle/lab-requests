@@ -1,54 +1,39 @@
-import { CommonModule } from '@angular/common';
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
-import { LabDashboardPage } from './lab-dashboard.page';
-import { MatListModule } from '@angular/material/list';
-import { MatButtonModule } from '@angular/material/button';
-import { LabHomePage } from './lab-home.page';
-import { MatIconModule } from '@angular/material/icon';
-import { LabProfilePage } from './lab-profile.page';
+import { Routes } from '@angular/router';
 
-const LAB_ROUTES: Routes = [
+export const LAB_ROUTES: Routes = [
   {
     path: '',
-    component: LabDashboardPage,
+    loadComponent: () => import('./lab-dashboard.page').then(
+      module => module.LabDashboardPage
+    ),
     children: [
       {
         path: '',
         pathMatch: 'full',
-        component: LabHomePage,
+        loadComponent: () => import('./lab-home.page').then(
+          module => module.LabHomePage,
+        )
       },
       {
         path: 'equipments',
         loadChildren: () =>
           import('../equipment/_features/equipment.feature-module').then(
-            (module) => module.EquipmentFeatureModule,
+            (module) => module.EQUIPMENT_ROUTES,
           ),
       },
       {
         path: 'resources',
         loadChildren: () =>
           import('../lab-resources/_features/lab-resources.feature-module').then(
-            (module) => module.LabResourcesFeatureModule
+            (module) => module.RESOURCE_FORM_ROUTES
           )
       },
       {
         path: ':lab_id',
-        component: LabProfilePage,
+        loadComponent: () =>
+          import('./lab-profile.page').then(module => module.LabProfilePage),
       },
     ],
   },
 ];
 
-@NgModule({
-  imports: [
-    CommonModule,
-    RouterModule.forChild(LAB_ROUTES),
-
-    MatButtonModule,
-    MatIconModule,
-    MatListModule,
-  ],
-  declarations: [LabDashboardPage, LabHomePage, LabProfilePage],
-})
-export class LabFeatureModule { }

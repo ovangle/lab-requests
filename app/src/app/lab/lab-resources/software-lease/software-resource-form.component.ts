@@ -49,7 +49,7 @@ export type SoftwareLeaseFormErrors = ValidationErrors & {
 };
 
 @Component({
-  selector: 'lab-software-resource-form',
+  selector: 'lab-software-lease-form',
   standalone: true,
   imports: [
     CommonModule,

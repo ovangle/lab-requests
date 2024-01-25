@@ -29,7 +29,7 @@ export interface InputMaterialParams extends ResourceParams {
   hazardClasses?: HazardClass[];
 }
 
-export class InputMaterial extends Resource<InputMaterialParams> {
+export class InputMaterial extends Resource {
   override readonly type = 'input-material';
 
   name: string;

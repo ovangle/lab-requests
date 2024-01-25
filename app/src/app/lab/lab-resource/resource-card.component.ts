@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
 import { EquipmentLeaseTableComponent } from '../lab-resources/equipment-lease/equipment-lease-table.component';
 import { SoftwareLeaseTableComponent } from '../lab-resources/software-lease/software-resource-table.component';
 import { InputMaterialTableComponent } from '../lab-resources/input-material/input-material-resource-table.component';
-import { OutputMaterialResourceTableComponent } from '../lab-resources/output-material/output-material-resource-table.component';
+import { OutputMaterialTableComponent } from '../lab-resources/output-material/output-material-resource-table.component';
 
 @Component({
   selector: 'lab-resource-card',
@@ -18,7 +18,7 @@ import { OutputMaterialResourceTableComponent } from '../lab-resources/output-ma
     EquipmentLeaseTableComponent,
     SoftwareLeaseTableComponent,
     InputMaterialTableComponent,
-    OutputMaterialResourceTableComponent,
+    OutputMaterialTableComponent,
   ],
   template: `
     @switch (resourceType) {

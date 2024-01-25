@@ -8,7 +8,7 @@ import {
 } from '../../lab-resource/common/resource-table.component';
 
 @Injectable()
-export class OutputMaterialResourceTableDataSource extends ResourceTableDataSource<OutputMaterial> {
+export class OutputMaterialTableDataSource extends ResourceTableDataSource<OutputMaterial> {
   override readonly resourceType = 'output-material';
   override readonly resourceTitle = 'Output material';
 }
@@ -16,7 +16,7 @@ export class OutputMaterialResourceTableDataSource extends ResourceTableDataSour
 @Component({
   selector: 'lab-output-material-table',
   standalone: true,
-  imports: [CommonModule, MatTableModule, ResourceTableComponent],
+  imports: [ CommonModule, MatTableModule, ResourceTableComponent ],
   template: `
     <lab-resource-table
       [displayedColumns]="['name']"
@@ -35,8 +35,8 @@ export class OutputMaterialResourceTableDataSource extends ResourceTableDataSour
   providers: [
     {
       provide: ResourceTableDataSource,
-      useClass: OutputMaterialResourceTableDataSource,
+      useClass: OutputMaterialTableDataSource,
     },
   ],
 })
-export class OutputMaterialResourceTableComponent {}
+export class OutputMaterialTableComponent { }

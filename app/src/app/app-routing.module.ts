@@ -17,7 +17,7 @@ const routes: Routes = [
         path: 'lab',
         loadChildren: () =>
           import('./lab/_features/lab.feature-module').then(
-            (module) => module.LabFeatureModule,
+            (module) => module.LAB_ROUTES,
           ),
       },
       {

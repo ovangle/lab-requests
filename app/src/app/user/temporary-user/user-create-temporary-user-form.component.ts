@@ -3,11 +3,10 @@ import { Component, DestroyRef, EventEmitter, Input, Output, inject } from "@ang
 import { AbstractControl, EmailValidator, FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { CampusLookup } from "src/app/uni/campus/common/campus";
+import { CampusLookup } from "src/app/uni/campus/campus";
 import { Discipline } from "src/app/uni/discipline/discipline";
 import { CreateTemporaryUserRequest } from "../common/user";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { filter } from "rxjs";
 import { CampusSearchComponent } from "src/app/uni/campus/campus-search.component";
 import { DisciplineSelectComponent } from "src/app/uni/discipline/discipline-select.component";

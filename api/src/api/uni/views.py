@@ -31,5 +31,5 @@ async def index_campuses(
     page_index: int = 0,
     db=Depends(get_db),
 ) -> CampusIndexPage:
-    query = query_campuses(code_eq=code_eq, text_like=text_like)
+    query = query_campuses(code_eq=code_eq, search=text_like)
     return await CampusIndex(query).load_page(db, page_index)

@@ -46,12 +46,12 @@ export abstract class ModelService<T extends Model> {
    * @returns
    */
   query(
-    params: HttpParams | { [ k: string ]: number | string | string[] },
+    params: HttpParams | { [ k: string ]: number | string | string[] | undefined },
   ): Observable<T[]> {
     return this.queryPage(params).pipe(map((page) => page.items));
   }
   queryOne(
-    params: HttpParams | { [ k: string ]: number | string | string[] },
+    params: HttpParams | { [ k: string ]: number | string | string[] | undefined },
   ): Observable<T | null> {
     return this.query(params).pipe(
       map((items) => {
@@ -63,7 +63,7 @@ export abstract class ModelService<T extends Model> {
     );
   }
   abstract queryPage(
-    params: HttpParams | { [ k: string ]: number | string | string[] },
+    params: HttpParams | { [ k: string ]: number | string | string[] | undefined },
   ): Observable<ModelIndexPage<T>>;
 
   abstract create(request: ModelPatch<T>): Observable<T>;

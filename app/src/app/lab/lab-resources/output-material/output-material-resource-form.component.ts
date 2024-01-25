@@ -42,11 +42,11 @@ export function createOutputMaterialForm(): OutputMaterialForm {
   return new FormGroup({
     name: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required],
+      validators: [ Validators.required ],
     }),
     baseUnit: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required],
+      validators: [ Validators.required ],
     }),
     numUnitsProduced: new FormControl(0, { nonNullable: true }),
 
@@ -83,7 +83,7 @@ export type OutputMaterialFormErrors = ValidationErrors & {
   baseUnit?: { required: string | null };
 };
 @Component({
-  selector: 'lab-output-material-resource-form',
+  selector: 'lab-output-material-form',
   standalone: true,
   imports: [
     CommonModule,
@@ -127,7 +127,7 @@ export type OutputMaterialFormErrors = ValidationErrors & {
     </form>
   `,
 })
-export class OutputMaterialResourceFormComponent {
+export class OutputMaterialFormComponent {
   _formService = inject(
     ResourceFormService<OutputMaterial, OutputMaterialForm>,
   );

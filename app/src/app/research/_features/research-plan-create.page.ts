@@ -68,6 +68,7 @@ const experimentalPlanCreateFixture: Partial<CreateResearchPlan> = {
 
     @if (currentUser$ | async; as currentUser) {
       <research-plan-form 
+        hideReviewControls
         [currentUserPlanRole]="currentUser.roles.has('student') ? 'researcher' : 'coordinator'"
         [currentUserId]="currentUser.id"
         (save)="onSave($event)" />
@@ -75,6 +76,10 @@ const experimentalPlanCreateFixture: Partial<CreateResearchPlan> = {
   `,
   styles: [
     `
+      :host {
+        display: block;
+        margin: 2em 1em;
+      }
       .form-controls {
         display: flex;
         justify-content: right;

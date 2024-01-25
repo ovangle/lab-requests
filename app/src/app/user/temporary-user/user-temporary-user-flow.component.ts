@@ -1,7 +1,7 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, EventEmitter, Input, Output, inject } from "@angular/core";
 import { CreateTemporaryUserRequest, CreateTemporaryUserResult, User, injectUserService } from "../common/user";
 import { APP_BASE_HREF } from "@angular/common";
-import { CreateTemporaryUserFormComponent } from "./user-temporary-user-create-form.component";
+import { CreateTemporaryUserFormComponent } from "./user-create-temporary-user-form.component";
 import { firstValueFrom } from "rxjs";
 import { HttpParams } from "@angular/common/http";
 import urlJoin from "url-join";

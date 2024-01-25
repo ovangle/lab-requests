@@ -14,7 +14,7 @@ export interface SoftwareLeaseParams extends ResourceParams {
   softwareProvision: SoftwareProvision | null;
 }
 
-export class SoftwareLease extends Resource<SoftwareLeaseParams> {
+export class SoftwareLease extends Resource {
   override readonly type = 'software-lease';
 
   software: Software;

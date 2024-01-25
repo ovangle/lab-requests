@@ -182,7 +182,7 @@ function delResourcePatch<T extends Resource>(
   };
 }
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export abstract class ResourceContainerContext<
   T extends ResourceContainer,
   TPatch extends ResourceContainerPatch,
@@ -198,7 +198,6 @@ export abstract class ResourceContainerContext<
   abstract container$: Observable<T>;
   readonly containerName$ = defer(() =>
     this.container$.pipe(
-      tap((c) => console.log('container', c)),
       map((c) => this.getContainerName(c)),
     ),
   );

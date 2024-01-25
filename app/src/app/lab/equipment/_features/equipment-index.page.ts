@@ -3,9 +3,15 @@ import { Component, inject } from '@angular/core';
 import { BehaviorSubject, defer, map, shareReplay, switchMap } from 'rxjs';
 import { EquipmentCollection } from '../common/equipment';
 import { HttpParams } from '@angular/common/http';
+import { LabEquipmentListComponent } from '../equipment-list.component';
 
 @Component({
   selector: 'lab-equipment-index-page',
+  standalone: true,
+  imports: [
+    CommonModule,
+    LabEquipmentListComponent
+  ],
   template: `
     <h1>
       Lab Equipment
@@ -30,12 +36,12 @@ import { HttpParams } from '@angular/common/http';
       }
     `,
   ],
-  providers: [EquipmentCollection],
+  providers: [ EquipmentCollection ],
 })
 export class EquipmentIndexPage {
   readonly equipmentCollection = inject(EquipmentCollection);
 
-  readonly query = new BehaviorSubject<{ [k: string]: any[] }>({});
+  readonly query = new BehaviorSubject<{ [ k: string ]: any[] }>({});
   readonly page$ = this.query.pipe(
     switchMap((params) =>
       this.equipmentCollection.queryPage(

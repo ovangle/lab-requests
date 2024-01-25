@@ -5,6 +5,8 @@ import { Component } from '@angular/core';
  */
 @Component({
   selector: 'lab-profile-page',
+  standalone: true,
+  imports: [],
   template: ``,
 })
-export class LabProfilePage {}
+export class LabProfilePage { }
