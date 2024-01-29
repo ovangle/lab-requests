@@ -15,7 +15,7 @@ import {
   EquipmentContext,
   EquipmentService,
   Equipment,
-} from '../common/equipment';
+} from '../equipment';
 import { EquipmentInfoComponent } from '../equipment-info.component';
 import { EquipmentTrainingDescriptionsInfoComponent } from '../training/training-descriptions-info.component';
 

@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { BehaviorSubject, defer, map, shareReplay, switchMap } from 'rxjs';
-import { EquipmentCollection } from '../common/equipment';
+import { EquipmentCollection } from '../equipment';
 import { HttpParams } from '@angular/common/http';
 import { LabEquipmentListComponent } from '../equipment-list.component';
 

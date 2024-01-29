@@ -13,6 +13,7 @@ import { BehaviorSubject } from 'rxjs';
     MatListModule
   ],
   template: `
+  <!--
     <mat-nav-list
       [ngClass]="{ expanded: isNavExpanded, collapsed: !isNavExpanded }"
     >
@@ -37,6 +38,7 @@ import { BehaviorSubject } from 'rxjs';
         }
       </a>
     </mat-nav-list>
+  -->
     <main>
       <router-outlet></router-outlet>
     </main>

@@ -12,7 +12,7 @@ import {
 } from 'rxjs';
 import { ResourceType, isResourceType } from './resource-type';
 import { ResourceFileAttachment } from './file-attachment/file-attachment';
-import type {
+import {
   ResourceContainer,
   ResourceContainerContext,
 } from './resource-container';
@@ -71,18 +71,12 @@ export function isResourceTypeIndex(obj: any): obj is ResourceTypeIndex {
   );
 }
 
-export const RESOURCE_CONTAINER_CONTEXT = new InjectionToken<
-  ResourceContainerContext<any, any>
->('RESOURCE_CONTAINER_CONTEXT');
 
 @Injectable()
 export class ResourceContext<T extends Resource> {
-  readonly _containerContext = inject(RESOURCE_CONTAINER_CONTEXT);
-  readonly plan$: Observable<ResearchPlan> = this._containerContext.plan$;
-  readonly container$: Observable<ResourceContainer> =
-    this._containerContext.committed$;
+  readonly _containerContext = inject(ResourceContainerContext);
+  readonly container$: Observable<ResourceContainer> = this._containerContext.committed$;
 
-  readonly containerName$ = this._containerContext.containerName$;
   readonly _committedTypeIndexSubject = new ReplaySubject<
     [ ResourceType, number | 'create' ]
   >(1);

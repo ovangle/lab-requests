@@ -39,7 +39,7 @@ import {
   EquipmentService,
   equipmentQueryToHttpParams,
   injectEquipmentService,
-} from './common/equipment';
+} from './equipment';
 import {
   EquipmentRequest,
   isEquipmentRequest,

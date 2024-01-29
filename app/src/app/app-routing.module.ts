@@ -16,9 +16,17 @@ const routes: Routes = [
       {
         path: 'lab',
         loadChildren: () =>
-          import('./lab/_features/lab.feature-module').then(
+          import('./lab/_features/lab.routes').then(
             (module) => module.LAB_ROUTES,
           ),
+      },
+      {
+        path: 'lab-forms',
+        outlet: 'form',
+        loadChildren: () =>
+          import('./lab/_features/lab.routes').then(
+            module => module.LAB_FORM_ROUTES
+          )
       },
       {
         path: 'research',

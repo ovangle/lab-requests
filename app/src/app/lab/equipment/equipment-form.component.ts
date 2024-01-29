@@ -24,7 +24,7 @@ import {
 } from './equipment-form.service';
 import { EquipmentTagInputComponent } from './tag/equipment-tag-input.component';
 import { EquipmentTrainingDescriptionsInputComponent } from './training/training-descriptions-input.component';
-import { Equipment, EquipmentPatch } from './common/equipment';
+import { Equipment, EquipmentPatch } from './equipment';
 import { ResizeTextareaOnInputDirective } from 'src/app/common/forms/resize-textarea-on-input.directive';
 
 export const equipmentFixtures: Equipment[] = [];

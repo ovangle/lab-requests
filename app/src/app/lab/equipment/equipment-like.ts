@@ -4,7 +4,7 @@ import {
   equipmentRequestFromJson,
   isEquipmentRequest,
 } from './request/equipment-request';
-import { Equipment, equipmentFromJsonObject } from './common/equipment';
+import { Equipment, equipmentFromJsonObject } from './equipment';
 import { isJsonObject } from 'src/app/utils/is-json-object';
 
 export type EquipmentLike = Equipment | EquipmentRequest | string;

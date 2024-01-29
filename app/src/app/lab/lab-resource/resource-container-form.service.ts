@@ -242,41 +242,40 @@ export type GetResourceAtFn<T extends Resource> = (resourceType: T[ 'type' ], in
  */
 @Injectable({ providedIn: 'root' })
 export abstract class ResourceContainerFormService {
-  container: ResourceContainer | null | undefined;
+  context: ResourceContainerContext | undefined;
   form: ResourceContainerForm | undefined;
 
   checkHasForm() {
-    if (!this.form || this.container === undefined) {
+    if (!this.form || this.context === undefined) {
       throw new Error('Resource form service not initialized');
     }
   }
 
   setupForm(
     form: ResourceContainerForm,
-    container: ResourceContainer | null
+    context: ResourceContainerContext
   ) {
     if (this.form) {
       throw new Error('Cannot initialize resource form service. Previous form not destroyed');
     }
     this.form = form;
-    this.container = container
+    this.context = context;
   }
 
   teardownForm() {
-    if (!this.form) {
-      throw new Error("Cannot teardown resource form service. No current form");
-    }
-    this.form = this.container = undefined;
+    this.checkHasForm();
+    this.form = this.context = undefined;
   }
 
-  initResourceForm(
+  async initResourceForm(
     resourceType: ResourceType,
     index: number | 'create',
-  ): void {
+  ): Promise<void> {
+    this.checkHasForm();
     if (index === 'create') {
       return this.pushResourceCreateForm(resourceType);
     }
-    const committed = this.container?.getResourceAt(resourceType, index);
+    const committed = await this.context!.getResourceAt(resourceType, index);
     return initReplaceForm(this.form!, resourceType, [ index, committed || {} ]);
   }
 
@@ -284,6 +283,7 @@ export abstract class ResourceContainerFormService {
     resourceType: ResourceType,
     index: number | 'create',
   ): Promise<void> {
+    this.checkHasForm();
     if (index == 'create') {
       return this.popResourceCreateForm(resourceType);
     }

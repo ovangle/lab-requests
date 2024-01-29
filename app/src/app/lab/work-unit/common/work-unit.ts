@@ -315,31 +315,24 @@ export class WorkUnitContext extends ModelContext<WorkUnit, WorkUnitPatch> {
 }
 
 @Injectable()
-export class WorkUnitResourceContainerContext extends ResourceContainerContext<
-  WorkUnit,
-  WorkUnitPatch
-> {
+export class WorkUnitResourceContainerContext extends ResourceContainerContext {
   readonly _workUnitContext = inject(WorkUnitContext);
 
   readonly committed$ = this._workUnitContext.committed$;
-  override readonly plan$ = this._workUnitContext.plan$;
-  override readonly container$ = defer(() => this.committed$);
 
   constructor() {
     super();
     this.committed$.subscribe((committed) =>
       console.log('committed', committed),
     );
-    this.container$.subscribe((container) =>
-      console.log('container 0', container),
-    );
   }
+
 
   override commitContext(patch: WorkUnitPatch): Promise<WorkUnit> {
     return this._workUnitContext.commit(patch);
   }
 
-  override async patchFromContainerPatch(
+  async patchFromContainerPatch(
     containerPatch: ResourceContainerPatch,
   ): Promise<WorkUnitPatch> {
     const workUnit = await firstValueFrom(this._workUnitContext.workUnit$);
@@ -349,7 +342,7 @@ export class WorkUnitResourceContainerContext extends ResourceContainerContext<
     throw new Error('not implemented');
   }
 
-  override async getContainerPath(): Promise<string[]> {
+  async getContainerRouterLink(): Promise<string[]> {
     const workUnit = await firstValueFrom(this.committed$);
     if (workUnit == null) {
       throw new Error('Cannot access resources in empty context');
@@ -357,7 +350,7 @@ export class WorkUnitResourceContainerContext extends ResourceContainerContext<
     return [ 'work-units', `${workUnit.name || 0}` ];
   }
 
-  override getContainerName(container: WorkUnit) {
+  getContainerName(container: WorkUnit) {
     console.log('getting container name', container);
     return formatWorkUnit(container);
   }

@@ -41,7 +41,7 @@ export class SidenavMenuRoot {
 
   readonly labsGroup$: Observable<SidenavMenuGroup> = this._currentUser.pipe(
     map(user => {
-      return user.labs.items.map(item => this.createLabLink(item))
+      return user.labs.items.map(item => this.createLabGroup(item))
     }),
     map(links => ({
       type: 'group',
@@ -57,7 +57,12 @@ export class SidenavMenuRoot {
       title: 'Plans',
       children: [
         ...links,
-        { type: 'link', title: 'create', routerLink: [ 'research', 'create' ] }
+        {
+          type: 'link',
+          icon: 'add',
+          title: 'New research plan',
+          routerLink: [ 'research', 'create' ]
+        }
       ]
     }))
   );
@@ -71,12 +76,26 @@ export class SidenavMenuRoot {
   );
 
 
-  createLabLink(lab: Lab): SidenavMenuLink {
+  createLabGroup(lab: Lab): SidenavMenuGroup {
     return {
-      type: 'link',
-      icon: 'spanner',
+      type: 'group',
+      title: `${lab.campus.name} - ${formatDiscipline(lab.discipline)}`,
       routerLink: [ `/lab/${lab.id}` ],
-      title: `${lab.campus.name} - ${formatDiscipline(lab.discipline)}`
+      children: [
+        {
+          type: 'link',
+          title: 'Equipment',
+          icon: 'build_circle',
+          routerLink: [ `/lab/${lab.id}/equipment` ],
+        },
+        /* {
+          type: 'work',
+          title: 'Upcoming work',
+          icon: 'work',
+          routerLink: []
+
+        } */
+      ]
     }
   }
 

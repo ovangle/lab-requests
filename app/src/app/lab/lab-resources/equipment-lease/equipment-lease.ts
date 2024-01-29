@@ -9,7 +9,7 @@ import {
   Equipment,
   equipmentFromJsonObject,
   EquipmentService,
-} from 'src/app/lab/equipment/common/equipment';
+} from 'src/app/lab/equipment/equipment';
 import {
   LabEquipmentProvision,
   labEquipmentProvisionFromJsonObject

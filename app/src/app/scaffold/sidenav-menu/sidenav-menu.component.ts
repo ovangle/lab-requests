@@ -9,14 +9,13 @@ import { FlatTreeControl } from '@angular/cdk/tree';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterModule } from '@angular/router';
-import { ScaffoldStateService } from '../scaffold-state.service';
-import { map } from 'rxjs';
 import { SidenavMenuRoot } from './sidenav-menu';
-import { SidenavMenuNode } from './model';
+import { SidenavMenuNode, isFixedGroup } from './model';
 
 interface FlattenedMenuNode {
   readonly title: string;
   readonly level: number;
+  readonly isFixed: boolean;
   readonly expandable: boolean;
   readonly icon?: string;
   readonly link?: any[];
@@ -40,12 +39,12 @@ interface FlattenedMenuNode {
   template: `
       <mat-tree [dataSource]="_dataSource" [treeControl]="_treeControl">
         <mat-tree-node
-          *matTreeNodeDef="let node; when: isExpandable"
+          *matTreeNodeDef="let node; when: isExpandableGroup"
           matTreeNodePadding
         >
           <button
             mat-icon-button
-            matTreeNodeToggle
+            matTreeNodeToggle matTreeNodeToggleRecursive
             [attr.aria-label]="'Toggle ' + node.title"
           >
             <mat-icon class="mat-icon-rtl-mirror">
@@ -58,8 +57,18 @@ interface FlattenedMenuNode {
           {{ node.title }}
         </mat-tree-node>
 
-        <mat-tree-node *matTreeNodeDef="let node" matTreeNodePadding>
-          <button mat-icon-button disabled></button>
+        <mat-tree-node
+              *matTreeNodeDef="let node; when: isStaticGroup"
+              matTreeNodePadding matTreeNodePaddingIndent="48"
+        >
+          <a [routerLink]="node.routerLink">{{node.title}}</a>
+        </mat-tree-node>
+
+        <mat-tree-node *matTreeNodeDef="let node" 
+            matTreeNodePadding matTreeNodePaddingIndent="24">
+          <button mat-icon-button disabled>
+            <mat-icon>{{node?.icon}}</mat-icon>
+          </button>
           <a [routerLink]="node.routerLink">{{ node.title }}</a>
         </mat-tree-node>
       </mat-tree>
@@ -83,6 +92,7 @@ export class SidenavMenuComponent implements OnInit {
   >(
     (node: SidenavMenuNode, level: number) => ({
       expandable: node.type === 'group',
+      isFixed: node.type === 'group' && isFixedGroup(node),
       ...node,
       level,
     }),
@@ -96,8 +106,14 @@ export class SidenavMenuComponent implements OnInit {
     FlattenedMenuNode
   >(this._treeControl, this._treeFlattener);
 
-  isExpandable(_: number, node: FlattenedMenuNode) {
-    return node.expandable;
+  isExpandableGroup(_: number, node: FlattenedMenuNode) {
+    console.log('is expandable group', node, node.expandable && !node.isFixed)
+    return node.expandable && !node.isFixed;
+  }
+
+  isStaticGroup(_: number, node: FlattenedMenuNode) {
+    console.log('is fixed group', node, node.expandable && node.isFixed);
+    return node.expandable && node.isFixed;
   }
 
   setNodes(nodes: SidenavMenuNode[]) {

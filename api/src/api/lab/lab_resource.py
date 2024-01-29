@@ -1,10 +1,7 @@
 from __future__ import annotations
-import asyncio
-from typing import Generic, Protocol, Self, TypeVar
+from typing import Generic, TypeVar
 from uuid import UUID
 
-from sqlalchemy import Select
-from sqlalchemy.ext.asyncio import async_object_session
 from db import LocalSession
 
 from db.models.lab import LabResource

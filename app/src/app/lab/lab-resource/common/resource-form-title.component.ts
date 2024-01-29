@@ -1,4 +1,5 @@
 import {
+  ChangeDetectionStrategy,
   Component,
   EventEmitter,
   Input,
@@ -11,36 +12,49 @@ import { MatIconModule } from '@angular/material/icon';
 
 import type { ResourceType } from '../resource-type';
 import { ResourceTypePipe } from '../resource-type.pipe';
-import { WorkUnitFormTitleComponent } from '../../work-unit/common/work-unit-form-title.component';
 
 @Component({
   selector: 'lab-resource-form-title',
   standalone: true,
-  imports: [ CommonModule, ResourceTypePipe, WorkUnitFormTitleComponent ],
-  template: `
-    <lab-work-unit-form-title
-      [workUnitName]="containerName!"
-      subtitle="{{ isCreate ? 'Add' : 'Update' }} {{ resourceType }}"
-      [saveDisabled]="saveDisabled"
-      (requestSave)="requestSave.emit($event)"
-      (requestClose)="requestClose.emit($event)"
-    >
-      {{ resourceIndex === 'create' ? 'Add' : 'Update' }}
-      {{ resourceType! | resourceType }}
-    </lab-work-unit-form-title>
-  `,
-  styles: [
-    `
-      lab-work-unit-form-title {
-        width: 100%;
-      }
-    `,
+  imports: [
+    CommonModule,
+    ResourceTypePipe,
+    MatButtonModule,
+    MatIconModule,
   ],
+  template: `
+  <h3 class="title">
+    {{ resourceIndex === 'create' ? 'Add' : 'Update' }}
+    {{ resourceType! | resourceType:'titleCase' }}
+  </h3>
+
+  <div class= "form-controls">
+      <button mat-icon-button
+              [disabled]="saveDisabled"
+              (click)="requestSave.emit()">
+        <mat-icon> save </mat-icon>
+      </button>
+
+      <button mat-icon-button (click)="requestClose.emit()">
+        <mat-icon> cancel </mat-icon>
+      </button>
+  
+  </div>
+  `,
+  styles: `
+    :host {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    h3 {
+      padding-left: 2em;
+      margin-bottom: 0;
+    }
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ResourceFormTitleComponent {
-  @Input({ required: true })
-  containerName: string | undefined = undefined;
-
   @Input({ required: true })
   resourceType: ResourceType | undefined = undefined;
 

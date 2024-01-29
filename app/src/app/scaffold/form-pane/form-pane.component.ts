@@ -6,13 +6,20 @@ import { CommonModule } from "@angular/common";
 @Component({
   selector: 'scaffold-form-pane',
   standalone: true,
-  imports: [CommonModule],
+  imports: [ CommonModule ],
   template: `
-  <div class="sticky-top" >
-    <ng-content></ng-content>
+  <div class="container" [class.visible]="isOpen">
+    <div class="sticky-top" >
+      <ng-content></ng-content>
+    </div>
   </div>
   `,
   styles: `
+  .container.visible {
+    min-width: 40em;
+    padding: 1em 2em;
+    box-sizing: border-box;
+  }
   .sticky-top {
     width: 100%;
     height: 100vh;

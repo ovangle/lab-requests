@@ -26,7 +26,7 @@ export class ScaffoldFormPaneControl {
       isOpen,
       this.contextSubject
     ]).subscribe(
-      ([isOpen, context]) => formPane.toggleIsOpen(isOpen, context)
+      ([ isOpen, context ]) => formPane.toggleIsOpen(isOpen, context)
     );
 
     return new Subscription(() => {
@@ -36,11 +36,11 @@ export class ScaffoldFormPaneControl {
 
   open(formPath: any[], context: any): Promise<boolean> {
     this.contextSubject.next(context);
-    return this._router.navigate([{ outlets: { form: formPath } }]);
+    return this._router.navigate([ '/', { outlets: { form: formPath } } ]);
   }
 
   async close(): Promise<boolean> {
-    const isFulfilled = this._router.navigate([{ outlets: { form: null } }]);
+    const isFulfilled = this._router.navigate([ { outlets: { form: null } } ]);
     this.contextSubject.next(null);
     return isFulfilled;
   }

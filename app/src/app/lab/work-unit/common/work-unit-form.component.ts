@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
-import { ReactiveFormsModule } from '@angular/forms';
+import { ReactiveFormsModule, ValidationErrors } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,8 +8,6 @@ import { MatInputModule } from '@angular/material/input';
 import { CampusSearchComponent } from 'src/app/uni/campus/campus-search.component';
 import {
   WorkUnitForm,
-  WorkUnitFormErrors,
-  workUnitFormErrors,
 } from './work-unit-form';
 import { WorkUnitDurationFormComponent } from '../duration/work-unit-duration-form.component';
 import { DisciplineSelectComponent } from 'src/app/uni/discipline/discipline-select.component';
@@ -37,7 +35,7 @@ import { DisciplineSelectComponent } from 'src/app/uni/discipline/discipline-sel
           <mat-label>Name</mat-label>
           <input matInput formControlName="name" required />
 
-          @if (nameErrors?.required) {
+          @if (nameErrors && nameErrors['required']) {
             <mat-error>A value is required</mat-error>
           }
         </mat-form-field>
@@ -47,10 +45,10 @@ import { DisciplineSelectComponent } from 'src/app/uni/discipline/discipline-sel
         <uni-campus-search formControlName="campus" required>
           <mat-label>Campus</mat-label>
 
-          @if (campusErrors?.notACampus) {
+          @if (campusErrors && campusErrors['notACampus']) {
             <mat-error>Expected a campus</mat-error>
           }
-          @if (campusErrors?.required) {
+          @if (campusErrors && campusErrors['required']) {
             <mat-error>A value is required</mat-error>
           }
         </uni-campus-search>
@@ -59,7 +57,7 @@ import { DisciplineSelectComponent } from 'src/app/uni/discipline/discipline-sel
       @if (isEditableField('discipline')) {
         <lab-type-select formControlName="labType" required>
           <mat-label>Lab type</mat-label>
-          @if (labTypeErrors?.required) {
+          @if (labTypeErrors && labTypeErrors['required']) {
             <mat-error>A value is required</mat-error>
           }
         </lab-type-select>
@@ -70,10 +68,10 @@ import { DisciplineSelectComponent } from 'src/app/uni/discipline/discipline-sel
           <mat-label>technician</mat-label>
           <input matInput formControlName="technician" />
 
-          @if (technicianErrors?.required) {
+          @if (technicianErrors && technicianErrors['required']) {
             <mat-error>A value is required</mat-error>
           }
-          @if (technicianErrors?.email) {
+          @if (technicianErrors && technicianErrors['email']) {
             <mat-error>Invalid email</mat-error>
           }
         </mat-form-field>
@@ -97,33 +95,33 @@ export class WorkUnitFormComponent {
   @Input()
   fixedFields: string[] | undefined = undefined;
 
-  isEditableField(name: keyof WorkUnitForm['controls']): boolean {
+  isEditableField(name: keyof WorkUnitForm[ 'controls' ]): boolean {
     if (this.fixedFields === undefined) {
       return true;
     }
     return !this.fixedFields.includes(name);
   }
 
-  get nameErrors(): WorkUnitFormErrors['name'] {
-    return workUnitFormErrors(this.form!, 'name');
+  get nameErrors(): ValidationErrors | null {
+    return this.form! && this.form.controls.name.errors;
   }
 
-  get campusErrors(): WorkUnitFormErrors['campus'] {
-    return workUnitFormErrors(this.form!, 'campus');
+  get campusErrors(): ValidationErrors | null {
+    return this.form! && this.form.controls.campus.errors;
   }
 
-  get labTypeErrors(): WorkUnitFormErrors['discipline'] {
-    return workUnitFormErrors(this.form!, 'discipline');
+  get labTypeErrors(): ValidationErrors | null {
+    return this.form! && this.form.controls.discipline.errors;
   }
 
-  get technicianErrors(): WorkUnitFormErrors['technician'] {
-    return workUnitFormErrors(this.form!, 'technician');
+  get technicianErrors(): ValidationErrors | null {
+    return this.form! && this.form.controls.technician.errors;
   }
 
-  get startDateErrors(): WorkUnitFormErrors['startDate'] {
-    return workUnitFormErrors(this.form!, 'startDate');
+  get startDateErrors(): ValidationErrors | null {
+    return this.form! && this.form.controls.startDate.errors;
   }
-  get endDateErrors(): WorkUnitFormErrors['endDate'] {
-    return workUnitFormErrors(this.form!, 'endDate');
+  get endDateErrors(): ValidationErrors | null {
+    return this.form! && this.form.controls.endDate.errors;
   }
 }

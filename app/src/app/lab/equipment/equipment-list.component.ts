@@ -4,7 +4,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatListModule } from '@angular/material/list';
 import { EquipmentTagChipsComponent } from './tag/equipment-tag-chips.component';
 import { RouterModule } from '@angular/router';
-import { Equipment } from './common/equipment';
+import { Equipment } from './equipment';
 
 @Component({
   selector: 'lab-equipment-list',

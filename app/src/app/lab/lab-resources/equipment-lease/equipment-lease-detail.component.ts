@@ -7,7 +7,7 @@ import { Observable, of } from 'rxjs';
 import {
   Equipment,
   EquipmentService,
-} from 'src/app/lab/equipment/common/equipment';
+} from 'src/app/lab/equipment/equipment';
 import { EquipmentRequest } from 'src/app/lab/equipment/request/equipment-request';
 import { EquipmentRequestInfoComponent } from 'src/app/lab/equipment/request/equipment-request-info.component';
 

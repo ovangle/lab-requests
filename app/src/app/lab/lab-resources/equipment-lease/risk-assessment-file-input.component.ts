@@ -22,10 +22,12 @@ import { CommonFileInputComponent } from 'src/app/common/file/file-input.compone
     /* NgxMatFileInputModule */
   ],
   template: `
+  <!--
     <mat-form-field>
       <mat-label>Risk assessment form</mat-label>
-      <!-- <ngx-mat-file-input [formControl]="_control" /> -->
+      <ngx-mat-file-input [formControl]="_control" />
     </mat-form-field>
+  -->
   `,
   providers: [
     {

@@ -20,7 +20,7 @@ import {
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { EquipmentRiskAssessmentFileInputComponent } from './risk-assessment-file-input.component';
 import { EquipmentLike } from 'src/app/lab/equipment/equipment-like';
-import { Equipment } from 'src/app/lab/equipment/common/equipment';
+import { Equipment } from 'src/app/lab/equipment/equipment';
 import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
 import { ResourceFormService } from '../../lab-resource/resource-form.service';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';

@@ -32,7 +32,6 @@ import { ResourceContainerContext } from '../resource-container';
 import type { ResourceType } from '../resource-type';
 import { ResourceTypePipe } from '../resource-type.pipe';
 import { Resource } from '../resource';
-import { ScaffoldFormPaneComponent } from 'src/app/scaffold/form-pane/form-pane.component';
 import { ScaffoldFormPaneControl } from 'src/app/scaffold/form-pane/form-pane-control';
 
 @Injectable()
@@ -48,14 +47,13 @@ export abstract class ResourceTableDataSource<
   readonly _formPane = inject(ScaffoldFormPaneControl);
 
   async openResourceCreateForm(): Promise<boolean> {
-    const containerPath = await this._containerContext.getContainerPath();
-    return this._formPane.open([...containerPath, this.resourceType, 'create'], {});
+    return this._formPane.open([ 'lab-forms', 'resources', this.resourceType, 'create' ], {});
   }
 
   async openResourceUpdateFormAt(index: number): Promise<boolean> {
-    const containerPath = await this._containerContext.getContainerPath();
     return this._formPane.open([
-      ...containerPath,
+      'lab',
+      'resources',
       this.resourceType,
       `${index}`,
     ], {});
@@ -90,7 +88,7 @@ export abstract class ResourceTableDataSource<
     ResourceTypePipe,
   ],
   templateUrl: './resource-table.component.html',
-  styleUrls: ['./resource-table.component.css'],
+  styleUrls: [ './resource-table.component.css' ],
   animations: [
     trigger('detailExpand', [
       state('collapsed', style({ height: '0px', minHeight: 0 })),
@@ -115,7 +113,7 @@ export class ResourceTableComponent<T extends Resource>
   }
   set displayedColumns(columns: string[]) {
     this._displayedColumns = columns;
-    this._displayedColumnsWithElementActions = [...columns, 'element-actions'];
+    this._displayedColumnsWithElementActions = [ ...columns, 'element-actions' ];
   }
 
   private _displayedColumns: string[] = [];

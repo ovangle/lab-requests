@@ -3,9 +3,11 @@ import { CommonModule } from '@angular/common';
 import {
   Component,
   EventEmitter,
+  Injectable,
   Input,
   Output,
   TemplateRef,
+  forwardRef,
   inject,
 } from '@angular/core';
 import { AbstractControl, AsyncValidatorFn, FormArray, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
@@ -28,10 +30,11 @@ import { UserSearchComponent } from 'src/app/user/common/user-search.component';
 import { MatButtonModule } from '@angular/material/button';
 import { format } from 'date-fns';
 import { MatCardModule } from '@angular/material/card';
-import { ResourceType } from 'src/app/lab/lab-resource/resource-type';
-import { of } from 'rxjs';
+import { ALL_RESOURCE_TYPES, ResourceType } from 'src/app/lab/lab-resource/resource-type';
+import { BehaviorSubject, Observable, firstValueFrom, of } from 'rxjs';
 import { S } from '@angular/cdk/keycodes';
 import { LabResourceContainerFormComponent } from 'src/app/lab/lab-resource/resource-container-form.component';
+import { ResourceContainer, ResourceContainerContext, ResourceContainerPatch, resourceContainerAttr } from 'src/app/lab/lab-resource/resource-container';
 
 export type ResearchPlanForm = FormGroup<{
   title: FormControl<string>;
@@ -76,8 +79,6 @@ function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan 
     }
   }
 
-  const createTasks: CreateResearchPlanTask[] = [];
-
   const taskForms = form.controls.tasks;
   taskForms.controls.forEach((taskForm) => {
     const createTask = createResearchPlanTaskFromForm(taskForm);
@@ -89,7 +90,45 @@ function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan 
 }
 
 
+@Injectable()
+export class ResearchPlanFormResourceContainerContext extends ResourceContainerContext {
+  readonly _containerSubject = new BehaviorSubject<ResourceContainer>(new ResourceContainer({
+    id: 'unset',
+    equipments: [],
+    softwares: [],
+    inputMaterials: [],
+    outputMaterials: [],
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }));
 
+  setPlan(plan: ResearchPlan) {
+    this._containerSubject.next(plan);
+  }
+
+  override commitContext(patch: Partial<ResourceContainerPatch>) {
+    const container = { ...this._containerSubject.value };
+    for (const type of ALL_RESOURCE_TYPES) {
+      const attr = resourceContainerAttr(type);
+      if (patch.hasOwnProperty(attr)) {
+        for (const splice of patch[ attr ]!) {
+          (container[ attr ] as Array<any>).splice(
+            splice.start, splice.end || container[ attr ].length, ...splice.items
+          )
+        }
+      }
+    }
+    this._containerSubject.next(new ResourceContainer(container));
+    return firstValueFrom(this._containerSubject);
+  }
+
+  override committed$: Observable<ResourceContainer> = this._containerSubject.asObservable();
+
+  override async getContainerRouterLink(): Promise<any[]> {
+    const committed = await firstValueFrom(this.committed$);
+    return [];
+  }
+}
 @Component({
   selector: 'research-plan-form',
   standalone: true,
@@ -229,12 +268,21 @@ function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan 
       }
     `,
   ],
+  providers: [
+    {
+      provide: ResourceContainerContext,
+      useClass: ResearchPlanFormResourceContainerContext
+    }
+  ]
 })
 export class ResearchPlanFormComponent {
+  readonly containerContext = inject(ResourceContainerContext) as ResearchPlanFormResourceContainerContext;
+
   @Input()
   get plan(): ResearchPlan | null { return this._plan; }
   set plan(value: ResearchPlan) {
     this._plan = value;
+    this.containerContext.setPlan(value);
     patchFormValue(this.form, value);
   }
   _plan: ResearchPlan | null = null;

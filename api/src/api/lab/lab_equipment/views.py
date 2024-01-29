@@ -19,7 +19,7 @@ from .schemas import (
 
 
 lab_equipment_tags = APIRouter(
-    prefix="/lab/equipments/tags", tags=["lab-equipment", "lab-equipment-tags"]
+    prefix="/equipments/tags", tags=["lab-equipment", "lab-equipment-tags"]
 )
 
 
@@ -34,7 +34,7 @@ lab_equipment_tags = APIRouter(
 #     )
 
 
-lab_equipments = APIRouter(prefix="/lab/equipments", tags=["lab-equipments"])
+lab_equipments = APIRouter(prefix="/equipments", tags=["lab-equipments"])
 
 
 @lab_equipments.get("/")

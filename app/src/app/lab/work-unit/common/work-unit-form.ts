@@ -1,7 +1,7 @@
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Observable, filter, map, startWith } from 'rxjs';
-import { Campus } from 'src/app/uni/campus/common/campus';
+import { Campus } from 'src/app/uni/campus/campus';
 import { Discipline } from 'src/app/uni/discipline/discipline';
 import { collectFieldErrors } from 'src/app/utils/forms/validators';
 
@@ -12,7 +12,6 @@ import { campusForm } from 'src/app/uni/campus/campus-form.component';
 import {
   ResourceContainerFormControls,
   resourceContainerPatchFromForm,
-  ResourceContainerFormErrors,
   resourceContainerFormControls,
 } from '../../lab-resource/resource-container-form.service';
 
@@ -47,52 +46,22 @@ export function workUnitPatchFromForm(form: WorkUnitForm): WorkUnitPatch {
   };
 }
 
-export interface WorkUnitFormErrors extends ResourceContainerFormErrors {
-  name: {
-    required: string | null;
-    notUniqueForPlan: string | null;
-  } | null;
-  campus: {
-    notACampus: string | null;
-    required: string | null;
-  } | null;
-  discipline: {
-    required: string | null;
-  } | null;
-  technician: {
-    required: string | null;
-    email: string | null;
-  } | null;
-  startDate: {} | null;
-  endDate: {} | null;
-}
-
-type ErrKey = keyof WorkUnitForm['controls'] & keyof WorkUnitFormErrors;
-
-export function workUnitFormErrors<TKey extends ErrKey>(
-  form: WorkUnitForm,
-  field: TKey,
-): WorkUnitFormErrors[TKey] | null {
-  const control = form.controls[field];
-  return control.errors as WorkUnitFormErrors[TKey] | null;
-}
-
 export function workUnitForm(): WorkUnitForm {
   return new FormGroup(
     {
       name: new FormControl<string>('', {
         nonNullable: true,
-        validators: [Validators.required],
+        validators: [ Validators.required ],
       }),
       campus: new FormControl<Campus | string | null>(null, {
-        validators: [Validators.required],
+        validators: [ Validators.required ],
       }),
       discipline: new FormControl<Discipline | null>(null, {
-        validators: [Validators.required],
+        validators: [ Validators.required ],
       }),
       technician: new FormControl('', {
         nonNullable: true,
-        validators: [Validators.required, Validators.email],
+        validators: [ Validators.required, Validators.email ],
       }),
       processSummary: new FormControl('', { nonNullable: true }),
 

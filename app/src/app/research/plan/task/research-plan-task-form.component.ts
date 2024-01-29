@@ -121,7 +121,8 @@ export function createResearchPlanTaskFromForm(form: ResearchPlanTaskForm): Crea
     flex-grow: 1;
   }
   .duration-field {
-    margin-left: 1em;
+    padding-left: 1em;
+    box-sizing: border-box;
   }
   .description-field {
     flex-grow: 1;

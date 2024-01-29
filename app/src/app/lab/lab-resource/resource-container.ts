@@ -42,7 +42,7 @@ export interface ResourceContainerParams extends ModelParams {
   outputMaterials: readonly OutputMaterial[];
 }
 
-export abstract class ResourceContainer extends Model {
+export class ResourceContainer extends Model {
   equipments: readonly EquipmentLease[];
   softwares: readonly SoftwareLease[];
 
@@ -183,24 +183,10 @@ function delResourcePatch<T extends Resource>(
 }
 
 @Injectable({ providedIn: 'root' })
-export abstract class ResourceContainerContext<
-  T extends ResourceContainer,
-  TPatch extends ResourceContainerPatch,
-> {
-  abstract commitContext(patch: TPatch): Promise<T>;
-  abstract patchFromContainerPatch(
-    patch: ResourceContainerPatch,
-  ): Promise<TPatch>;
-  abstract getContainerPath(): Promise<string[]>;
-
-  abstract committed$: Observable<T>;
-  abstract plan$: Observable<ResearchPlan>;
-  abstract container$: Observable<T>;
-  readonly containerName$ = defer(() =>
-    this.container$.pipe(
-      map((c) => this.getContainerName(c)),
-    ),
-  );
+export abstract class ResourceContainerContext {
+  abstract commitContext(patch: Partial<ResourceContainerPatch>): Promise<ResourceContainer>;
+  abstract committed$: Observable<ResourceContainer>;
+  abstract getContainerRouterLink(): Promise<any[]>;
 
   committedResources$<TResource extends Resource>(
     resourceType: ResourceType,
@@ -212,12 +198,18 @@ export abstract class ResourceContainerContext<
     );
   }
 
-  async commit(patch: TPatch): Promise<T> {
+  async getResourceAt<T extends Resource>(resourceType: T[ 'type' ], index: number): Promise<T | undefined> {
+    const committed = await firstValueFrom(this.committed$);
+    return committed.getResourceAt(resourceType, index);
+  }
+
+  async commit(patch: ResourceContainerPatch): Promise<ResourceContainer> {
     const committed = await firstValueFrom(this.committed$);
     if (!committed) {
       throw new Error('Cannot commit resources until container exists');
     }
-    return this.commitContext(await this.patchFromContainerPatch(patch));
+    this.commitContext(patch);
+    return firstValueFrom(this.committed$);
   }
 
   async deleteResourceAt(resourceType: ResourceType, index: number) {
@@ -225,11 +217,7 @@ export abstract class ResourceContainerContext<
     if (committed == null) {
       throw new Error('Cannot delete resources until container');
     }
-    const patch = await this.patchFromContainerPatch(
-      delResourcePatch(resourceType, [ index ]) as TPatch,
-    );
+    const patch = delResourcePatch(resourceType, [ index ]);
     return this.commitContext(patch);
   }
-
-  abstract getContainerName(container: T): string;
 }

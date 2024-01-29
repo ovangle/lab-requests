@@ -8,7 +8,7 @@ import {
   EquipmentCollection,
   EquipmentPatch,
   EquipmentService,
-} from '../common/equipment';
+} from '../equipment';
 import { LabEquipmentFormComponent } from '../equipment-form.component';
 
 const equipmentCreateFixture: EquipmentPatch = {
