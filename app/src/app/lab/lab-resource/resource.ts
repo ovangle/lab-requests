@@ -19,6 +19,7 @@ import {
 import { ResearchPlan } from 'src/app/research/plan/research-plan';
 import { ModelParams, modelParamsFromJsonObject } from 'src/app/common/model/model';
 import { JsonObject } from 'src/app/utils/is-json-object';
+import { ResourceContainerControl } from './resource-container-form-control';
 
 export interface ResourceParams extends ModelParams {
   index: number | 'create';
@@ -75,11 +76,10 @@ export function isResourceTypeIndex(obj: any): obj is ResourceTypeIndex {
 @Injectable()
 export class ResourceContext<T extends Resource> {
   readonly _containerContext = inject(ResourceContainerContext);
-  readonly container$: Observable<ResourceContainer> = this._containerContext.committed$;
 
-  readonly _committedTypeIndexSubject = new ReplaySubject<
-    [ ResourceType, number | 'create' ]
-  >(1);
+  readonly container$ = this._containerContext.committed$;
+
+  readonly _committedTypeIndexSubject = new ReplaySubject<ResourceTypeIndex>(1);
   readonly committedTypeIndex$ = this._committedTypeIndexSubject.asObservable();
 
   readonly resourceType$ = defer(() =>

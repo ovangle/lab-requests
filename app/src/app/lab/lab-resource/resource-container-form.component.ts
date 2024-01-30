@@ -1,7 +1,7 @@
 import { CommonModule } from "@angular/common";
 import { Component, Input, inject } from "@angular/core";
 import { FormGroup, ReactiveFormsModule } from "@angular/forms";
-import { ResourceContainerFormService } from "./resource-container-form.service";
+import { ResourceContainerControl } from "./resource-container-form-control";
 import { EquipmentLeaseTableComponent } from "../lab-resources/equipment-lease/equipment-lease-table.component";
 import { SoftwareLeaseTableComponent } from "../lab-resources/software-lease/software-resource-table.component";
 import { InputMaterialTableComponent } from "../lab-resources/input-material/input-material-resource-table.component";
@@ -47,7 +47,7 @@ import { ResourceContainer, ResourceContainerContext } from "./resource-containe
     `
 })
 export class LabResourceContainerFormComponent {
-    readonly containerForms = inject(ResourceContainerFormService);
+    formControl: ResourceContainerControl | undefined;
     readonly context = inject(ResourceContainerContext);
 
     @Input({ required: true })
@@ -57,11 +57,15 @@ export class LabResourceContainerFormComponent {
     container: ResourceContainer | null = null;
 
     ngOnInit() {
-        this.containerForms.setupForm(this.form!, this.context);
+        this.formControl = new ResourceContainerControl(
+            this.form!,
+            this.container
+        );
+        this.context.attachControl(this.formControl);
     }
 
     ngOnDestroy() {
-        this.containerForms.teardownForm();
+        this.context.detachControl();
     }
 
 }

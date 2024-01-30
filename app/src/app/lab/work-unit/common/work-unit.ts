@@ -290,6 +290,10 @@ export class WorkUnitCollection extends ModelCollection<WorkUnit, WorkUnitServic
   }
 }
 
+export function injectWorkUnitService() {
+  return injectModelService(WorkUnitService, WorkUnitCollection);
+}
+
 @Injectable()
 export class WorkUnitContext extends ModelContext<WorkUnit, WorkUnitPatch> {
   readonly service = injectWorkUnitService();
@@ -310,52 +314,5 @@ export class WorkUnitContext extends ModelContext<WorkUnit, WorkUnitPatch> {
     }),
   );
 
-  models = inject(WorkUnitService);
   readonly workUnit$ = this.committed$;
-}
-
-@Injectable()
-export class WorkUnitResourceContainerContext extends ResourceContainerContext {
-  readonly _workUnitContext = inject(WorkUnitContext);
-
-  readonly committed$ = this._workUnitContext.committed$;
-
-  constructor() {
-    super();
-    this.committed$.subscribe((committed) =>
-      console.log('committed', committed),
-    );
-  }
-
-
-  override commitContext(patch: WorkUnitPatch): Promise<WorkUnit> {
-    return this._workUnitContext.commit(patch);
-  }
-
-  async patchFromContainerPatch(
-    containerPatch: ResourceContainerPatch,
-  ): Promise<WorkUnitPatch> {
-    const workUnit = await firstValueFrom(this._workUnitContext.workUnit$);
-    if (workUnit == null) {
-      throw new Error('Cannot access resources in empty context');
-    }
-    throw new Error('not implemented');
-  }
-
-  async getContainerRouterLink(): Promise<string[]> {
-    const workUnit = await firstValueFrom(this.committed$);
-    if (workUnit == null) {
-      throw new Error('Cannot access resources in empty context');
-    }
-    return [ 'work-units', `${workUnit.name || 0}` ];
-  }
-
-  getContainerName(container: WorkUnit) {
-    console.log('getting container name', container);
-    return formatWorkUnit(container);
-  }
-}
-
-export function injectWorkUnitService() {
-  return injectModelService(WorkUnitService, WorkUnitCollection);
 }

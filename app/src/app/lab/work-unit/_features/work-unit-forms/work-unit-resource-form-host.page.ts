@@ -5,7 +5,7 @@ import {
   OnDestroy,
   inject,
 } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { Subscription, map } from 'rxjs';
 import { BodyScrollbarHidingService } from 'src/app/utils/body-scrollbar-hiding.service';
 import {
@@ -15,21 +15,23 @@ import {
 import { workUnitForm } from '../../common/work-unit-form';
 import { ResourceContainerContext } from 'src/app/lab/lab-resource/resource-container';
 import {
-  ResourceContainerFormService,
+  ResourceContainerControl,
   ResourceContainerForm,
-} from 'src/app/lab/lab-resource/resource-container-form.service';
+} from 'src/app/lab/lab-resource/resource-container-form-control';
+import { CommonModule } from '@angular/common';
 
 @Injectable()
-class WorkUnitResourceContainerFormService extends ResourceContainerFormService {
+class WorkUnitResourceContainerFormService extends ResourceContainerControl {
   readonly _formHost = inject(WorkUnitResourceFormHostPage);
-
-  get form(): ResourceContainerForm {
-    return this._formHost.form as any;
-  }
 }
 
 @Component({
   selector: 'lab-work-unit-resource-form-host-page',
+  standalone: true,
+  imports: [
+    CommonModule,
+    RouterModule
+  ],
   template: ` <router-outlet></router-outlet> `,
   host: {
     class: 'mat-elevation-z8',
@@ -41,7 +43,7 @@ class WorkUnitResourceContainerFormService extends ResourceContainerFormService 
       useClass: WorkUnitResourceContainerContext,
     },
     {
-      provide: ResourceContainerFormService,
+      provide: ResourceContainerControl,
       useClass: WorkUnitResourceContainerFormService,
     },
   ],

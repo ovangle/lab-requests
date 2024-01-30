@@ -128,18 +128,11 @@ export function createResearchPlanTaskFromForm(form: ResearchPlanTaskForm): Crea
     flex-grow: 1;
   }
 
-  /*
-  :host mat-form-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-    max-height: 0;
-    overflow: hidden;
-  }
-  */
 
   .index {
     min-width: 3em;
     display: flex;
     justify-content: center;
-    // align-items: center;
   }
   `
 })

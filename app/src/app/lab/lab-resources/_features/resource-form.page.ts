@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, Subscription, combineLatest, defer, map, of } from 'rxjs';
 
@@ -52,7 +52,7 @@ export function typeIndexFromDetailRoute$(): Observable<
     OutputMaterialFormComponent
   ],
   template: `
-    @if (_formService.isReady | async; as typeIndex) {
+    @if (_formService.typeIndex$ | async; as typeIndex) {
       <lab-resource-form-title
         [resourceType]="_formService.resourceType"
         [resourceIndex]="_formService.resourceIndex"
@@ -63,7 +63,7 @@ export function typeIndexFromDetailRoute$(): Observable<
       </lab-resource-form-title>
 
       @if (containerId$ | async; as containerId) {
-        @if (fundingModel$ | async; as fundingModel) {
+        @if (funding$ | async; as fundingModel) {
           @switch (typeIndex[0]) {
             @case ('equipment-lease') {
               <lab-equipment-lease-form
@@ -89,49 +89,42 @@ export function typeIndexFromDetailRoute$(): Observable<
     }
   `,
   providers: [ ResourceContext, ResourceFormService ],
+  //changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LabResourceFormPage {
+  readonly _cd = inject(ChangeDetectorRef);
   readonly _context = inject(ResourceContext);
-  readonly _contextConnection: Subscription;
+  _contextConnection: Subscription;
 
   readonly _formService = inject(ResourceFormService);
-  readonly _formConnection: Subscription;
+  _formConnection: Subscription;
 
   readonly _formPane = inject(ScaffoldFormPaneControl);
 
   readonly typeIndex$ = defer(() => this._context.committedTypeIndex$);
   readonly resourceType$ = defer(() => this._context.resourceType$);
 
-  readonly containerId$: Observable<string> = of('abcdef12345');/*
-  this._context.container$.pipe(
-    map((container: ResourceContainer) => container.id),
+  readonly containerId$: Observable<string> = this._context.container$.pipe(
+    map(container => container.id)
   );
-  */
-  /*
-  readonly containerName$: Observable<string> = this._context.container$.pipe(
-    map((container: ResourceContainer) => '<container name>'),
-  );
-  */
 
-  readonly fundingModel$: Observable<ResearchFunding> = of(new ResearchFunding({
-    id: 'test',
-    name: 'Test',
-    description: 'TEST FUNDING',
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }));
-  // this._context.committed$.pipe(map((plan) => plan.funding));
+  readonly funding$: Observable<ResearchFunding | null> = this._context.container$.pipe(
+    map(container => container.funding)
+  );
 
   constructor() {
     this._contextConnection = this._context.sendTypeIndex(
       typeIndexFromDetailRoute$(),
     );
     this._formConnection = this._formService.connect();
+    this._formService.form.valueChanges.subscribe(() => {
+      this._cd.detectChanges()
+    })
   }
 
   ngOnDestroy() {
-    this._contextConnection.unsubscribe();
-    this._formConnection.unsubscribe();
+    this._contextConnection!.unsubscribe();
+    this._formConnection!.unsubscribe();
   }
 
   async close() {

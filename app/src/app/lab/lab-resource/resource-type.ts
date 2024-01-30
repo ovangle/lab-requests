@@ -13,7 +13,7 @@ export function isResourceType(obj: any): obj is ResourceType {
   return typeof obj === 'string' && _ALL_RESOURCE_TYPES.includes(obj as any);
 }
 
-export const ALL_RESOURCE_TYPES = _ALL_RESOURCE_TYPES as ReadonlyArray<ResourceType>;
+export const ALL_RESOURCE_TYPES: ReadonlyArray<ResourceType> = _ALL_RESOURCE_TYPES;
 
 export function resourceTypeFromJson(json: unknown) {
   if (!isResourceType(json)) {

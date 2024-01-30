@@ -24,7 +24,7 @@ import { ResearchFundingSelectComponent } from '../funding/research-funding-sele
 import { UserLookup } from 'src/app/user/common/user';
 import { ResearchPlanTaskForm, ResearchPlanTaskFormComponent, createResearchPlanTaskFromForm, researchPlanTaskForm } from './task/research-plan-task-form.component';
 import { MatIconModule } from '@angular/material/icon';
-import { ResourceContainerFormControls, ResourceContainerFormService, resourceContainerFormControls } from 'src/app/lab/lab-resource/resource-container-form.service';
+import { ResourceContainerFormControls, ResourceContainerControl, resourceContainerFormControls } from 'src/app/lab/lab-resource/resource-container-form-control';
 import { CreateResearchPlanTask } from './task/research-plan-task';
 import { UserSearchComponent } from 'src/app/user/common/user-search.component';
 import { MatButtonModule } from '@angular/material/button';
@@ -90,45 +90,6 @@ function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan 
 }
 
 
-@Injectable()
-export class ResearchPlanFormResourceContainerContext extends ResourceContainerContext {
-  readonly _containerSubject = new BehaviorSubject<ResourceContainer>(new ResourceContainer({
-    id: 'unset',
-    equipments: [],
-    softwares: [],
-    inputMaterials: [],
-    outputMaterials: [],
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }));
-
-  setPlan(plan: ResearchPlan) {
-    this._containerSubject.next(plan);
-  }
-
-  override commitContext(patch: Partial<ResourceContainerPatch>) {
-    const container = { ...this._containerSubject.value };
-    for (const type of ALL_RESOURCE_TYPES) {
-      const attr = resourceContainerAttr(type);
-      if (patch.hasOwnProperty(attr)) {
-        for (const splice of patch[ attr ]!) {
-          (container[ attr ] as Array<any>).splice(
-            splice.start, splice.end || container[ attr ].length, ...splice.items
-          )
-        }
-      }
-    }
-    this._containerSubject.next(new ResourceContainer(container));
-    return firstValueFrom(this._containerSubject);
-  }
-
-  override committed$: Observable<ResourceContainer> = this._containerSubject.asObservable();
-
-  override async getContainerRouterLink(): Promise<any[]> {
-    const committed = await firstValueFrom(this.committed$);
-    return [];
-  }
-}
 @Component({
   selector: 'research-plan-form',
   standalone: true,
@@ -268,21 +229,13 @@ export class ResearchPlanFormResourceContainerContext extends ResourceContainerC
       }
     `,
   ],
-  providers: [
-    {
-      provide: ResourceContainerContext,
-      useClass: ResearchPlanFormResourceContainerContext
-    }
-  ]
 })
 export class ResearchPlanFormComponent {
-  readonly containerContext = inject(ResourceContainerContext) as ResearchPlanFormResourceContainerContext;
 
   @Input()
   get plan(): ResearchPlan | null { return this._plan; }
   set plan(value: ResearchPlan) {
     this._plan = value;
-    this.containerContext.setPlan(value);
     patchFormValue(this.form, value);
   }
   _plan: ResearchPlan | null = null;

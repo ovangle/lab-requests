@@ -115,7 +115,7 @@ export function researchPlanFromJsonObject(json: JsonObject): ResearchPlan {
 export class ResearchPlan extends ResourceContainer implements ResearchPlanParams {
   title: string;
   description: string;
-  funding: ResearchFunding;
+  override funding: ResearchFunding;
   researcher: User;
   coordinator: User;
   tasks: readonly ResearchPlanTask[];

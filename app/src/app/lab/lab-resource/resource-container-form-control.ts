@@ -1,3 +1,4 @@
+import { v4 as uuid } from 'uuid';
 import { Injectable, inject } from '@angular/core';
 import { FormArray, FormGroup } from '@angular/forms';
 import { BehaviorSubject, NEVER, Observable, defer, filter, firstValueFrom, map, of } from 'rxjs';
@@ -240,42 +241,44 @@ export type GetResourceAtFn<T extends Resource> = (resourceType: T[ 'type' ], in
  * Root service so that resource create/update forms (which display in the scaffold form pane)
  * equipments, softwares, inputMaterials and outputMaterials.
  */
-@Injectable({ providedIn: 'root' })
-export abstract class ResourceContainerFormService {
-  context: ResourceContainerContext | undefined;
-  form: ResourceContainerForm | undefined;
+export class ResourceContainerControl {
+  _committedSubject = new BehaviorSubject<ResourceContainer>(new ResourceContainer({
+    id: uuid(),
+    funding: null,
+    equipments: [],
+    softwares: [],
+    inputMaterials: [],
+    outputMaterials: [],
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }));
+  readonly committed$ = this._committedSubject.asObservable();
 
-  checkHasForm() {
-    if (!this.form || this.context === undefined) {
-      throw new Error('Resource form service not initialized');
-    }
-  }
-
-  setupForm(
-    form: ResourceContainerForm,
-    context: ResourceContainerContext
+  constructor(
+    readonly form: ResourceContainerForm,
+    container: ResourceContainer | null
   ) {
-    if (this.form) {
-      throw new Error('Cannot initialize resource form service. Previous form not destroyed');
-    }
     this.form = form;
-    this.context = context;
+    if (container) {
+      this._committedSubject.next(container);
+    }
   }
 
-  teardownForm() {
-    this.checkHasForm();
-    this.form = this.context = undefined;
+  commit(patch: ResourceContainerPatch): Promise<ResourceContainer> {
+    const committed = this._committedSubject.value;
+    this._committedSubject.next(committed.apply(patch));
+    return firstValueFrom(this._committedSubject);
+
   }
 
   async initResourceForm(
     resourceType: ResourceType,
     index: number | 'create',
   ): Promise<void> {
-    this.checkHasForm();
     if (index === 'create') {
       return this.pushResourceCreateForm(resourceType);
     }
-    const committed = await this.context!.getResourceAt(resourceType, index);
+    const committed = this._committedSubject.value.getResourceAt(resourceType, index);
     return initReplaceForm(this.form!, resourceType, [ index, committed || {} ]);
   }
 
@@ -283,7 +286,6 @@ export abstract class ResourceContainerFormService {
     resourceType: ResourceType,
     index: number | 'create',
   ): Promise<void> {
-    this.checkHasForm();
     if (index == 'create') {
       return this.popResourceCreateForm(resourceType);
     }
