@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ViewChild, inject } from '@angular/core';
+import { Component, Input, ViewChild, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -19,11 +19,10 @@ import {
   costEstimateForm,
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, first } from 'rxjs';
 import { HazardClassesSelectComponent } from '../../lab-resource/hazardous/hazard-classes-select.component';
 import { HazardClass } from '../../lab-resource/hazardous/hazardous';
 import { ProvisionFormComponent } from '../../lab-resource/provision/provision-form.component';
-import { ResourceFormService } from '../../lab-resource/resource-form.service';
 import {
   ResourceStorageForm,
   resourceStorageForm,
@@ -31,6 +30,7 @@ import {
 } from '../../lab-resource/storage/resource-storage-form.component';
 import { WorkUnitContext } from '../../work-unit/common/work-unit';
 import { ResearchPlanContext } from 'src/app/research/plan/research-plan';
+import { ResourceContext } from '../../lab-resource/resource';
 
 export type InputMaterialForm = FormGroup<{
   name: FormControl<string>;
@@ -45,7 +45,7 @@ export type InputMaterialForm = FormGroup<{
   perUnitCostEstimate: CostEstimateForm;
 }>;
 
-export function inputMaterialForm(): InputMaterialForm {
+export function inputMaterialForm(inputMaterial?: Partial<InputMaterial>): InputMaterialForm {
   return new FormGroup({
     name: new FormControl<string>('', {
       nonNullable: true,
@@ -87,6 +87,7 @@ export type InputMaterialFormErrors = ValidationErrors & {
     ProvisionFormComponent,
   ],
   template: `
+  @if (form) {
     <form [formGroup]="form">
       <mat-form-field>
         <mat-label>Name</mat-label>
@@ -125,6 +126,7 @@ export type InputMaterialFormErrors = ValidationErrors & {
         <span class="label">Hazard classes</span>
       </lab-req-hazard-classes-select>
     </form>
+  }
   `,
   styles: [
     `
@@ -139,38 +141,15 @@ export type InputMaterialFormErrors = ValidationErrors & {
 })
 export class InputMaterialFormComponent {
   readonly _planContext = inject(ResearchPlanContext);
-  readonly _workUnitContext = inject(WorkUnitContext);
-  readonly formService = inject(
-    ResourceFormService<InputMaterial, InputMaterialForm>,
-  );
+  readonly context = inject(ResourceContext<InputMaterial>);
 
-  get resourceType() {
-    return this.formService.resourceType;
-  }
-
-  get form(): InputMaterialForm {
-    return this.formService.form;
-  }
+  form: InputMaterialForm | undefined;
 
   ngOnInit() {
-    this.form.statusChanges.subscribe((status) => {
-      for (const [ key, control ] of Object.entries(this.form.controls)) {
-        console.log(key, control.valid, control.errors);
-      }
-      console.log('status', status);
-    });
-
-    /*
-    this._planContext.plan$.subscribe((plan) => {
-      this._fundingModelSubject.next(plan.fundingModel);
-    });
-    */
-
-    this._workUnitContext.workUnit$.subscribe((workUnit) => {
-      this._durationSubject.next({
-        startDate: workUnit.startDate,
-        endDate: workUnit.endDate,
-      });
+    this.context.committed$.pipe(
+      first()
+    ).subscribe(inputMaterial => {
+      this.form = inputMaterialForm(inputMaterial);
     });
   }
 
@@ -180,11 +159,11 @@ export class InputMaterialFormComponent {
   }
 
   get baseUnit(): string {
-    return this.form.value?.baseUnit || '';
+    return this.form!.value?.baseUnit || '';
   }
 
   get nameErrors(): InputMaterialFormErrors[ 'name' ] | null {
-    const control = this.form.controls.name;
+    const control = this.form!.controls.name;
     return control.errors as InputMaterialFormErrors[ 'name' ] | null;
   }
 

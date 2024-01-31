@@ -21,47 +21,42 @@ import { ResourceContainer, ResourceContainerContext } from "./resource-containe
         OutputMaterialTableComponent
     ],
     template: `
-    @if (form) {
-        <ng-container [formGroup]="form">
-            <div class="equipment-lease-table-container">
-            <h3>Equipment leases</h3>
-            <lab-equipment-lease-table />
-            </div>
+    <div class="equipment-lease-table-container">
+        <h3>Equipment leases</h3>
+        <lab-equipment-lease-table />
+    </div>
         
-            <div class="software-lease-table-container">
-                <h3>Software</h3>
-                <lab-software-lease-table />
-            </div>
+    <div class="software-lease-table-container">
+        <h3>Software</h3>
+        <lab-software-lease-table />
+    </div>
 
-            <div class="input-material-table-container">
-                <h3>Input materials</h3>
-                <lab-input-material-table />
-            </div>
+    <div class="input-material-table-container">
+        <h3>Input materials</h3>
+        <lab-input-material-table />
+    </div>
 
-            <div class="output-material-table-container">
-                <h3>Output materials</h3>
-                <lab-output-material-table />
-            </div>
-        </ng-container>
-    }
+    <div class="output-material-table-container">
+        <h3>Output materials</h3>
+        <lab-output-material-table />
+     </div>
     `
 })
 export class LabResourceContainerFormComponent {
-    formControl: ResourceContainerControl | undefined;
+    containerControl: ResourceContainerControl | undefined;
     readonly context = inject(ResourceContainerContext);
-
-    @Input({ required: true })
-    form: FormGroup<any> | undefined;
 
     @Input({ required: true })
     container: ResourceContainer | null = null;
 
     ngOnInit() {
-        this.formControl = new ResourceContainerControl(
-            this.form!,
-            this.container
+        this.containerControl = new ResourceContainerControl(
+            this.container,
+            (patch) => {
+                throw new Error('not implemented');
+            }
         );
-        this.context.attachControl(this.formControl);
+        this.context.attachControl(this.containerControl);
     }
 
     ngOnDestroy() {

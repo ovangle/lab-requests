@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ViewChild, inject } from '@angular/core';
+import { Component, Input, ViewChild, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -12,7 +12,7 @@ import { MatInputModule } from '@angular/material/input';
 import { OutputMaterial } from './output-material';
 
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subscription, map } from 'rxjs';
+import { Subscription, first, map } from 'rxjs';
 import { groupDisabledStateToggler } from 'src/app/utils/forms/disable-state-toggler';
 import {
   ResourceDisposalForm,
@@ -21,12 +21,12 @@ import {
 } from '../../lab-resource/disposal/resource-disposal-form.component';
 import { HazardClassesSelectComponent } from '../../lab-resource/hazardous/hazard-classes-select.component';
 import { HazardClass } from '../../lab-resource/hazardous/hazardous';
-import { ResourceFormService } from '../../lab-resource/resource-form.service';
 import {
   ResourceStorageForm,
   resourceStorageForm,
   ResourceStorageFormComponent,
 } from '../../lab-resource/storage/resource-storage-form.component';
+import { ResourceContext } from '../../lab-resource/resource';
 
 export type OutputMaterialForm = FormGroup<{
   name: FormControl<string>;
@@ -38,7 +38,7 @@ export type OutputMaterialForm = FormGroup<{
   hazardClasses: FormControl<HazardClass[]>;
 }>;
 
-export function createOutputMaterialForm(): OutputMaterialForm {
+export function outputMaterialForm(outputMaterial?: Partial<OutputMaterial>): OutputMaterialForm {
   return new FormGroup({
     name: new FormControl('', {
       nonNullable: true,
@@ -97,6 +97,7 @@ export type OutputMaterialFormErrors = ValidationErrors & {
     HazardClassesSelectComponent,
   ],
   template: `
+  @if (form) {
     <form [formGroup]="form">
       <mat-form-field>
         <mat-label>Name</mat-label>
@@ -125,18 +126,24 @@ export type OutputMaterialFormErrors = ValidationErrors & {
         </lab-req-hazard-classes-select>
       }
     </form>
+  }
   `,
 })
 export class OutputMaterialFormComponent {
-  _formService = inject(
-    ResourceFormService<OutputMaterial, OutputMaterialForm>,
-  );
+  readonly context = inject(ResourceContext<OutputMaterial>);
 
-  get form(): OutputMaterialForm {
-    return this._formService.form;
+  form: OutputMaterialForm | undefined;
+
+  ngOnInit() {
+    this.context.committed$.pipe(
+      first()
+    ).subscribe(committed => {
+      this.form = outputMaterialForm(committed);
+    })
   }
 
+
   get baseUnit(): string {
-    return this.form.value.baseUnit || '';
+    return this.form!.value.baseUnit || '';
   }
 }

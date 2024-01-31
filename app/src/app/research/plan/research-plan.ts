@@ -43,7 +43,7 @@ export function researchPlanAttachmentFromJsonObject(json: JsonObject) {
   };
 }
 
-export interface ResearchPlanParams extends ResourceContainerParams {
+export interface ResearchPlanParams extends ResourceContainerParams, ModelParams {
   readonly id: string;
   readonly title: string;
   readonly description: string;
@@ -58,7 +58,8 @@ export interface ResearchPlanParams extends ResourceContainerParams {
 }
 
 export function researchPlanFromJsonObject(json: JsonObject): ResearchPlan {
-  const baseParams = resourceContainerParamsFromJson(json);
+  const baseParams = modelParamsFromJsonObject(json);
+  const containerParams = resourceContainerParamsFromJson(json);
 
   if (typeof json[ 'title' ] !== 'string') {
     throw new Error("ResearchPlanParams: 'title' must be a string");
@@ -102,6 +103,7 @@ export function researchPlanFromJsonObject(json: JsonObject): ResearchPlan {
 
   return new ResearchPlan({
     ...baseParams,
+    ...containerParams,
     title: json[ 'title' ],
     description: json[ 'description' ],
     funding,
@@ -112,14 +114,16 @@ export function researchPlanFromJsonObject(json: JsonObject): ResearchPlan {
   });
 }
 
-export class ResearchPlan extends ResourceContainer implements ResearchPlanParams {
+export class ResearchPlan extends Model implements ResearchPlanParams {
   title: string;
   description: string;
-  override funding: ResearchFunding;
+  funding: ResearchFunding;
   researcher: User;
   coordinator: User;
   tasks: readonly ResearchPlanTask[];
   attachments: readonly ResearchPlanAttachment[];
+
+  readonly _container: ResourceContainer;
 
   constructor(params: ResearchPlanParams) {
     super(params);
@@ -130,6 +134,20 @@ export class ResearchPlan extends ResourceContainer implements ResearchPlanParam
     this.coordinator = params.coordinator;
     this.tasks = params.tasks;
     this.attachments = params.attachments;
+    this._container = new ResourceContainer(params);
+  }
+
+  get equipments() {
+    return this._container.equipments;
+  }
+  get softwares() {
+    return this._container.softwares;
+  }
+  get inputMaterials() {
+    return this._container.inputMaterials;
+  }
+  get outputMaterials() {
+    return this._container.outputMaterials;
   }
 }
 

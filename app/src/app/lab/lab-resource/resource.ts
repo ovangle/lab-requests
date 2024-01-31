@@ -77,7 +77,7 @@ export function isResourceTypeIndex(obj: any): obj is ResourceTypeIndex {
 export class ResourceContext<T extends Resource> {
   readonly _containerContext = inject(ResourceContainerContext);
 
-  readonly container$ = this._containerContext.committed$;
+  readonly container$: Observable<ResourceContainer> = this._containerContext.committed$;
 
   readonly _committedTypeIndexSubject = new ReplaySubject<ResourceTypeIndex>(1);
   readonly committedTypeIndex$ = this._committedTypeIndexSubject.asObservable();

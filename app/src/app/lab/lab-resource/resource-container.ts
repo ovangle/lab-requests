@@ -1,5 +1,5 @@
 import { Injectable, ɵɵi18nApply } from '@angular/core';
-import { Observable, Subscription, defer, firstValueFrom, map, tap } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription, defer, firstValueFrom, map, tap } from 'rxjs';
 import { ALL_RESOURCE_TYPES, ResourceType } from './resource-type';
 
 import type { Resource } from './resource';
@@ -33,11 +33,11 @@ import {
 } from '../software/software';
 import { ResearchPlan } from 'src/app/research/plan/research-plan';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
-import { ResourceContainerControl } from './resource-container-form-control';
 import { isThisSecond } from 'date-fns';
 import { ResearchFunding, researchFundingFromJsonObject } from 'src/app/research/funding/research-funding';
+import { ResourceContainerControl } from './resource-container-form-control';
 
-export interface ResourceContainerParams extends ModelParams {
+export interface ResourceContainerParams {
   funding: ResearchFunding | null;
   equipments: EquipmentLease[];
   softwares: SoftwareLease[];
@@ -46,7 +46,7 @@ export interface ResourceContainerParams extends ModelParams {
   outputMaterials: OutputMaterial[];
 }
 
-export class ResourceContainer extends Model {
+export class ResourceContainer {
   funding: ResearchFunding | null;
 
   equipments: EquipmentLease[];
@@ -56,7 +56,6 @@ export class ResourceContainer extends Model {
   outputMaterials: OutputMaterial[];
 
   constructor(params: ResourceContainerParams) {
-    super(params);
     this.funding = params.funding;
     this.equipments = params.equipments;
     this.softwares = params.softwares;

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Injectable, ViewChild, inject } from '@angular/core';
+import { Component, Injectable, Input, ViewChild, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -17,7 +17,7 @@ import {
   costEstimateForm,
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { ProvisionFormComponent } from '../../lab-resource/provision/provision-form.component';
-import { ResourceFormService } from '../../lab-resource/resource-form.service';
+import { ResourceContext } from '../../lab-resource/resource';
 
 export type SoftwareLeaseForm = FormGroup<{
   name: FormControl<string>;
@@ -29,7 +29,7 @@ export type SoftwareLeaseForm = FormGroup<{
   estimatedCost: CostEstimateForm;
 }>;
 
-export function softwareLeaseForm(): SoftwareLeaseForm {
+export function softwareLeaseForm(lease?: Partial<SoftwareLease>): SoftwareLeaseForm {
   return new FormGroup({
     name: new FormControl('', {
       nonNullable: true,
@@ -63,7 +63,7 @@ export type SoftwareLeaseFormErrors = ValidationErrors & {
     ProvisionFormComponent,
   ],
   template: `
-    <form [formGroup]="form">
+    <form [formGroup]="form!">
       <mat-form-field>
         <mat-label>Name</mat-label>
         <input matInput id="software-name" formControlName="name" />
@@ -114,13 +114,17 @@ export type SoftwareLeaseFormErrors = ValidationErrors & {
   ],
 })
 export class SoftwareLeaseFormComponent {
-  readonly formService = inject(ResourceFormService<SoftwareLease, SoftwareLeaseForm>);
+  readonly context = inject(ResourceContext<SoftwareLease>);
 
-  get form(): SoftwareLeaseForm {
-    return this.formService.form;
+  form: SoftwareLeaseForm | undefined;
+
+  ngOnInit() {
+    this.context.committed$.subscribe(committed => {
+      this.form = softwareLeaseForm(committed);
+    });
   }
 
   get isLicenseRequired() {
-    return !!this.form.value.isLicenseRequired;
+    return !!this.form!.value.isLicenseRequired;
   }
 }

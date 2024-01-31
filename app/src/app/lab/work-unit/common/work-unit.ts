@@ -7,25 +7,17 @@ import { validate as validateIsUUID } from 'uuid';
 import { formatISO, parseISO } from 'date-fns';
 import {
   Observable,
-  defer,
   filter,
   firstValueFrom,
-  map,
   skipWhile,
 } from 'rxjs';
 import {
-  Inject,
-  Injectable,
-  Optional,
-  Provider,
-  SkipSelf,
-  inject,
+  Injectable, inject,
 } from '@angular/core';
 import { RestfulService } from 'src/app/common/model/model-service';
 
 import { FileUploadService } from 'src/app/common/file/file-upload.service';
 
-import { HttpParams } from '@angular/common/http';
 import urlJoin from 'url-join';
 import { ModelContext } from 'src/app/common/model/context';
 import {
@@ -41,7 +33,6 @@ import {
 } from 'src/app/research/plan/research-plan';
 import {
   ResourceContainer,
-  ResourceContainerContext,
   ResourceContainerParams,
   ResourceContainerPatch,
   resourceContainerParamsFromJson,
@@ -50,8 +41,9 @@ import {
 import { ResourceType } from '../../lab-resource/resource-type';
 import { StoredFile } from 'src/app/common/file/stored-file';
 import { Discipline, formatDiscipline, isDiscipline } from 'src/app/uni/discipline/discipline';
+import { Model, ModelParams, modelParamsFromJsonObject } from 'src/app/common/model/model';
 
-export interface WorkUnitParams extends ResourceContainerParams {
+export interface WorkUnitParams extends ResourceContainerParams, ModelParams {
   planId: string;
   id: string;
   name: string;
@@ -73,7 +65,7 @@ export interface WorkUnitParams extends ResourceContainerParams {
  * technician.
  */
 
-export class WorkUnit extends ResourceContainer {
+export class WorkUnit extends Model implements WorkUnitParams {
   readonly planId: string;
   readonly name: string;
 
@@ -86,6 +78,8 @@ export class WorkUnit extends ResourceContainer {
 
   readonly startDate: Date | null;
   readonly endDate: Date | null;
+
+  readonly _container: ResourceContainer;
 
   constructor(params: WorkUnitParams) {
     super(params);
@@ -100,7 +94,25 @@ export class WorkUnit extends ResourceContainer {
 
     this.startDate = params.startDate || null;
     this.endDate = params.endDate || null;
+    this._container = new ResourceContainer(params);
   }
+  get funding() {
+    return this._container.funding;
+  }
+
+  get equipments() {
+    return this._container.equipments;
+  }
+  get softwares() {
+    return this._container.softwares;
+  }
+  get inputMaterials() {
+    return this._container.inputMaterials;
+  }
+  get outputMaterials() {
+    return this._container.outputMaterials;
+  }
+
 }
 
 export type WorkUnitFmt = 'campus+lab';
@@ -118,7 +130,8 @@ export function formatWorkUnit(
 }
 
 export function workUnitFromJsonObject(json: JsonObject): WorkUnit {
-  const baseParams = resourceContainerParamsFromJson(json);
+  const baseParams = modelParamsFromJsonObject(json);
+  const containerParams = resourceContainerParamsFromJson(json);
   if (typeof json[ 'name' ] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
@@ -162,6 +175,7 @@ export function workUnitFromJsonObject(json: JsonObject): WorkUnit {
 
   return new WorkUnit({
     ...baseParams,
+    ...containerParams,
     name: json[ 'name' ],
     planId: json[ 'planId' ],
     labId: json[ 'labId' ],

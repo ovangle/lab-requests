@@ -24,7 +24,7 @@ import { ResearchFundingSelectComponent } from '../funding/research-funding-sele
 import { UserLookup } from 'src/app/user/common/user';
 import { ResearchPlanTaskForm, ResearchPlanTaskFormComponent, createResearchPlanTaskFromForm, researchPlanTaskForm } from './task/research-plan-task-form.component';
 import { MatIconModule } from '@angular/material/icon';
-import { ResourceContainerFormControls, ResourceContainerControl, resourceContainerFormControls } from 'src/app/lab/lab-resource/resource-container-form-control';
+import { ResourceContainerControl } from 'src/app/lab/lab-resource/resource-container-form-control';
 import { CreateResearchPlanTask } from './task/research-plan-task';
 import { UserSearchComponent } from 'src/app/user/common/user-search.component';
 import { MatButtonModule } from '@angular/material/button';
@@ -43,7 +43,7 @@ export type ResearchPlanForm = FormGroup<{
   coordinator: FormControl<UserLookup | string | null>;
   funding: FormControl<ResearchFunding | null>;
   tasks: FormArray<ResearchPlanTaskForm>;
-} & ResourceContainerFormControls>;
+}>;
 
 function patchFormValue(form: ResearchPlanForm, plan: ResearchPlan) {
   form.patchValue({
@@ -191,8 +191,7 @@ function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan 
           <h2>Requirements</h2>
 
           <lab-resource-container-form 
-            [container]="plan"
-            [form]="form" />
+            [container]="plan?._container || null" />
         </div>
 
       </div>
@@ -279,7 +278,6 @@ export class ResearchPlanFormComponent {
       // At least one task is always necessary
       researchPlanTaskForm()
     ]),
-    ...resourceContainerFormControls()
   });
 
   @Output()

@@ -22,8 +22,8 @@ import { EquipmentRiskAssessmentFileInputComponent } from './risk-assessment-fil
 import { EquipmentLike } from 'src/app/lab/equipment/equipment-like';
 import { Equipment } from 'src/app/lab/equipment/equipment';
 import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
-import { ResourceFormService } from '../../lab-resource/resource-form.service';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
+import { ResourceContext } from '../../lab-resource/resource';
 
 export type EquipmentLeaseForm = FormGroup<{
   equipment: FormControl<EquipmentLike | null>;
@@ -76,10 +76,11 @@ export type EquipmentLeaseFormErrors = ValidationErrors & {
     EquipmentRiskAssessmentFileInputComponent,
   ],
   template: `
+  @if (form) {
     <form [formGroup]="form">
       <lab-equipment-search
         formControlName="equipment"
-        [purchaseRequestFundingModel]="fundingModel"
+        [purchaseRequestFundingModel]="funding"
       >
         <mat-label>Equipment</mat-label>
       </lab-equipment-search>
@@ -104,40 +105,25 @@ export type EquipmentLeaseFormErrors = ValidationErrors & {
         <lab-equipment-risk-assessment-file-input />
       </ng-container>
     </form>
+  }
   `,
 })
 export class EquipmentLeaseFormComponent {
-  readonly formService = inject(
-    ResourceFormService<EquipmentLease, EquipmentLeaseForm>,
-  );
+  readonly context = inject(ResourceContext<EquipmentLease>);
+
+  form: EquipmentLeaseForm | undefined;
 
   @Input({ required: true })
-  workUnitId: string | undefined = undefined;
-
-  @Input({ required: true })
-  fundingModel: ResearchFunding | undefined = undefined;
-
-  @Input()
-  get isCreate() {
-    return this._isCreate;
-  }
-  set isCreate(isCreate: BooleanInput) {
-    this._isCreate = coerceBooleanProperty(isCreate);
-  }
-  _isCreate: boolean = true;
-
-  get form(): EquipmentLeaseForm {
-    return this.formService.form;
-  }
+  funding: ResearchFunding | undefined = undefined;
 
   get equipmentControl(): FormControl<EquipmentLike | null> {
-    return this.form.controls.equipment;
+    return this.form!.controls.equipment;
   }
 
   ngOnInit() {
-    if (this._isCreate) {
-      this.equipmentControl.disable();
-    }
+    this.context.committed$.subscribe(committed => {
+      this.form = equipmentLeaseForm(committed);
+    })
   }
 
   readonly selectedEquipment$: Observable<EquipmentLike | null> = defer(() =>
