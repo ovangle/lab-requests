@@ -77,6 +77,25 @@ export interface EquipmentPatch extends ModelPatch<Equipment> {
   trainingDescriptions: string[];
 }
 
+export interface LabEquipmentCreateRequest {
+  name: string;
+  description?: string;
+  tags?: string[];
+  trainingDescriptions?: string;
+}
+
+export function labEquipmentCreateRequestToJson(request: LabEquipmentCreateRequest): JsonObject {
+  return {
+    ...request
+  };
+}
+
+export interface EquipmentInstallRequest {
+  equipment: LabEquipmentCreateRequest | string;
+  lab: string;
+}
+
+
 export interface EquipmentQuery {
   name?: string;
   searchText?: string;
@@ -109,14 +128,6 @@ export class EquipmentCollection
   }
 }
 
-@Injectable()
-export class EquipmentContext extends ModelContext<Equipment, EquipmentPatch> {
-  readonly service = injectEquipmentService();
-  override _doUpdate(id: string, patch: EquipmentPatch): Promise<Equipment> {
-    return firstValueFrom(this.service.update(id, patch));
-  }
-  readonly equipment$ = defer(() => this.committed$);
-}
 
 export function injectEquipmentService() {
   return injectModelService(EquipmentService, EquipmentCollection);

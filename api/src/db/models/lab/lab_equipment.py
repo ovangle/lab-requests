@@ -25,6 +25,10 @@ class LabEquipmentDoesNotExist(DoesNotExist):
         super().__init__(for_id=for_id)
 
 
+class LabEquipmentProvisionDoesNotExist(DoesNotExist):
+    pass
+
+
 class LabEquipmentProvisioningError(ModelException):
     pass
 
@@ -63,6 +67,8 @@ class LabEquipmentInstallation(Base):
 
     lab_id: Mapped[UUID] = mapped_column(ForeignKey("lab.id"))
     lab: Mapped[Lab] = relationship()
+
+    num_installed: Mapped[int] = mapped_column(postgresql.INTEGER, default=1)
 
     last_provisioned_at: Mapped[action_timestamp]
 
@@ -109,6 +115,7 @@ class LabEquipmentProvision(Base):
     actual_cost: Mapped[float | None] = mapped_column(
         postgresql.FLOAT, server_default=None
     )
+    quantity_required: Mapped[int] = mapped_column(postgresql.INTEGER, default=1)
     purchase_url: Mapped[str] = mapped_column(postgresql.VARCHAR(1024), default=None)
 
     approved_at: Mapped[action_timestamp]
@@ -129,6 +136,8 @@ class LabEquipmentProvision(Base):
         equipment_or_install: LabEquipment | LabEquipmentInstallation,
         lab: Lab | None = None,
         estimated_cost: float | None,
+        quantity_required: int = 1,
+        purchase_url: str,
     ):
         if isinstance(equipment_or_install, LabEquipmentInstallation):
             self.equipment_id = equipment_or_install.equipment_id
@@ -143,7 +152,16 @@ class LabEquipmentProvision(Base):
             self.lab_id = lab.id
 
         self.estimated_cost = estimated_cost
+        self.quantity_required = quantity_required
+        self.purchase_url = purchase_url
         super().__init__()
+
+    @classmethod
+    async def get_for_id(cls, db: LocalSession, id: UUID):
+        model = await db.get(cls, id)
+        if not model:
+            raise LabEquipmentProvisionDoesNotExist(for_id=id)
+        return model
 
     @property
     def is_new_installation(self):

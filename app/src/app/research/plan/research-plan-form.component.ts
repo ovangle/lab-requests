@@ -3,14 +3,10 @@ import { CommonModule } from '@angular/common';
 import {
   Component,
   EventEmitter,
-  Injectable,
   Input,
   Output,
-  TemplateRef,
-  forwardRef,
-  inject,
 } from '@angular/core';
-import { AbstractControl, AsyncValidatorFn, FormArray, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { FormArray, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -24,17 +20,11 @@ import { ResearchFundingSelectComponent } from '../funding/research-funding-sele
 import { UserLookup } from 'src/app/user/common/user';
 import { ResearchPlanTaskForm, ResearchPlanTaskFormComponent, createResearchPlanTaskFromForm, researchPlanTaskForm } from './task/research-plan-task-form.component';
 import { MatIconModule } from '@angular/material/icon';
-import { ResourceContainerControl } from 'src/app/lab/lab-resource/resource-container-form-control';
 import { CreateResearchPlanTask } from './task/research-plan-task';
 import { UserSearchComponent } from 'src/app/user/common/user-search.component';
 import { MatButtonModule } from '@angular/material/button';
-import { format } from 'date-fns';
 import { MatCardModule } from '@angular/material/card';
-import { ALL_RESOURCE_TYPES, ResourceType } from 'src/app/lab/lab-resource/resource-type';
-import { BehaviorSubject, Observable, firstValueFrom, of } from 'rxjs';
-import { S } from '@angular/cdk/keycodes';
 import { LabResourceContainerFormComponent } from 'src/app/lab/lab-resource/resource-container-form.component';
-import { ResourceContainer, ResourceContainerContext, ResourceContainerPatch, resourceContainerAttr } from 'src/app/lab/lab-resource/resource-container';
 
 export type ResearchPlanForm = FormGroup<{
   title: FormControl<string>;
@@ -191,7 +181,8 @@ function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan 
           <h2>Requirements</h2>
 
           <lab-resource-container-form 
-            [container]="plan?._container || null" />
+            [container]="plan?._container || null" 
+            [funding]="funding" />
         </div>
 
       </div>

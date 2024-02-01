@@ -46,12 +46,12 @@ export abstract class ModelService<T extends Model> {
    * @returns
    */
   query(
-    params: HttpParams | { [ k: string ]: number | string | string[] | undefined },
+    params: HttpParams | { [ k: string ]: number | string | string[] },
   ): Observable<T[]> {
     return this.queryPage(params).pipe(map((page) => page.items));
   }
   queryOne(
-    params: HttpParams | { [ k: string ]: number | string | string[] | undefined },
+    params: HttpParams | { [ k: string ]: number | string | string[] },
   ): Observable<T | null> {
     return this.query(params).pipe(
       map((items) => {
@@ -63,7 +63,7 @@ export abstract class ModelService<T extends Model> {
     );
   }
   abstract queryPage(
-    params: HttpParams | { [ k: string ]: number | string | string[] | undefined },
+    params: HttpParams | { [ k: string ]: number | string | string[] },
   ): Observable<ModelIndexPage<T>>;
 
   abstract create(request: ModelPatch<T>): Observable<T>;
@@ -79,14 +79,14 @@ export abstract class RestfulService<T extends Model> extends ModelService<T> {
   abstract readonly path: string;
 
   get indexUrl(): string {
-    return urlJoin(this._apiBaseUrl, this.path) + '/';
+    return urlJoin(this._apiBaseUrl, this.path);
   }
 
   /** A static RPC method on the resource index.
    *  e.g. /users/me
    */
   indexMethodUrl(name: string) {
-    return urlJoin(this.indexUrl, name);
+    return urlJoin(this.indexUrl, name) + '/';
   }
 
   resourceUrl(id: string) {

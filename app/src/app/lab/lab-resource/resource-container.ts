@@ -1,5 +1,5 @@
 import { Injectable, ɵɵi18nApply } from '@angular/core';
-import { BehaviorSubject, Observable, Subscription, defer, firstValueFrom, map, tap } from 'rxjs';
+import { BehaviorSubject, Observable, ReplaySubject, Subscription, defer, firstValueFrom, map, tap } from 'rxjs';
 import { ALL_RESOURCE_TYPES, ResourceType } from './resource-type';
 
 import type { Resource } from './resource';
@@ -35,10 +35,9 @@ import { ResearchPlan } from 'src/app/research/plan/research-plan';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { isThisSecond } from 'date-fns';
 import { ResearchFunding, researchFundingFromJsonObject } from 'src/app/research/funding/research-funding';
-import { ResourceContainerControl } from './resource-container-form-control';
+import { ResourceContainerControl } from './resource-container-control';
 
 export interface ResourceContainerParams {
-  funding: ResearchFunding | null;
   equipments: EquipmentLease[];
   softwares: SoftwareLease[];
 
@@ -46,9 +45,7 @@ export interface ResourceContainerParams {
   outputMaterials: OutputMaterial[];
 }
 
-export class ResourceContainer {
-  funding: ResearchFunding | null;
-
+export class ResourceContainer implements ResourceContainerParams {
   equipments: EquipmentLease[];
   softwares: SoftwareLease[];
 
@@ -56,7 +53,6 @@ export class ResourceContainer {
   outputMaterials: OutputMaterial[];
 
   constructor(params: ResourceContainerParams) {
-    this.funding = params.funding;
     this.equipments = params.equipments;
     this.softwares = params.softwares;
     this.inputMaterials = params.inputMaterials;
@@ -114,10 +110,6 @@ export function resourceContainerAttr(
 export function resourceContainerParamsFromJson(json: JsonObject): ResourceContainerParams {
   const baseParams = modelParamsFromJsonObject(json);
 
-  if (!isJsonObject(json[ 'funding' ]) && json[ 'funding' ] !== null) {
-    throw new Error("Expected a json object or null, \'funding\'");
-  }
-
   if (!Array.isArray(json[ 'equipments' ]) || !json[ 'equipments' ].every(isJsonObject)) {
     throw new Error("Expected a list of json objects 'equipments'")
   }
@@ -141,7 +133,6 @@ export function resourceContainerParamsFromJson(json: JsonObject): ResourceConta
 
   return {
     ...baseParams,
-    funding: json[ 'funding' ] && researchFundingFromJsonObject(json[ 'funding' ]),
     equipments,
     softwares,
 
@@ -209,6 +200,15 @@ function delResourcePatch<T extends Resource>(
 @Injectable({ providedIn: 'root' })
 export class ResourceContainerContext {
   _control: ResourceContainerControl | undefined;
+  _controlCommitted: Subscription | undefined;
+  _controlFunding: Subscription | undefined;
+
+  _committedSubject = new ReplaySubject<ResourceContainer>(1);
+  committed$ = this._committedSubject.asObservable();
+
+  _fundingSubject = new ReplaySubject<ResearchFunding>(1);
+  funding$ = this._fundingSubject.asObservable();
+
 
   get control(): ResourceContainerControl {
     if (this._control === undefined) {
@@ -222,13 +222,19 @@ export class ResourceContainerContext {
       throw new Error('Can only attach at most one container form to context');
     }
     this._control = control;
+    this._controlCommitted = this._control.committed$.subscribe(
+      (container) => {
+        this._committedSubject.next(container)
+      }
+    );
+    this._controlFunding = this._control.funding$.subscribe(
+      (funding) => this._fundingSubject.next(funding)
+    );
   }
   detachControl() {
+    this._controlCommitted!.unsubscribe();
+    this._controlFunding!.unsubscribe();
     this._control = undefined;
-  }
-
-  get committed$() {
-    return this.control.committed$;
   }
 
   committedResources$<TResource extends Resource>(
@@ -252,11 +258,11 @@ export class ResourceContainerContext {
       throw new Error('Cannot commit resources until container exists');
     }
     this.control.commit(patch);
-    return firstValueFrom(this.control.committed$);
+    return firstValueFrom(this.committed$);
   }
 
   async deleteResourceAt(resourceType: ResourceType, index: number) {
-    const committed = await firstValueFrom(this.control.committed$);
+    const committed = await firstValueFrom(this.committed$);
     if (committed == null) {
       throw new Error('Cannot delete resources until container');
     }

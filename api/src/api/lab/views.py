@@ -27,6 +27,7 @@ async def index_labs(
     campus_id: UUID | None = None,
     campus_code: str | None = None,
     discipline: Discipline | None = None,
+    ids: str | None = None,
     page_index: int = 0,
     db=Depends(get_db),
 ) -> LabIndexPage:
@@ -40,10 +41,16 @@ async def index_labs(
     if campus_lookup:
         campus_model = await lookup_campus(db, campus_lookup)
 
+    if ids:
+        id_in = [UUID(hex=v) for v in ids.split(",")]
+    else:
+        id_in = []
+
     labs = query_labs(
         campus=campus_model,
         discipline=discipline,
         search=search,
+        id_in=id_in,
     )
     campus_index = LabIndex(labs)
     return await campus_index.load_page(db, page_index=page_index)

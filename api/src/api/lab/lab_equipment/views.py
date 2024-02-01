@@ -7,12 +7,16 @@ from api.lab.lab_equipment.queries import query_equipments
 
 from db import LocalSession, get_db
 from db.models.lab import LabEquipment
+from db.models.lab.lab_equipment import LabEquipmentProvision
 
 from .schemas import (
     LabEquipmentCreateRequest,
     LabEquipmentIndex,
     LabEquipmentIndexPage,
     LabEquipmentLookup,
+    LabEquipmentProvisionRequest,
+    LabEquipmentProvisionView,
+    LabEquipmentProvisioningPage,
     LabEquipmentUpdateRequest,
     LabEquipmentView,
 )
@@ -60,6 +64,28 @@ async def create_equipment(
     model = await create_req.do_create(db)
     await db.commit()
     return await LabEquipmentView.from_model(model)
+
+
+@lab_equipments.get("/provisioning")
+async def index_equipment_provisions(
+    db=Depends(get_db),
+) -> LabEquipmentProvisioningPage:
+    raise NotImplementedError
+
+
+@lab_equipments.get("/provisioning/{provisioin_id}")
+async def get_equipment_provisioning(
+    provision_id: UUID, db=Depends(get_db)
+) -> LabEquipmentProvisionView:
+    provision = await LabEquipmentProvision.get_for_id(db, provisioning_id)
+    return await LabEquipmentProvisionView.from_model(provision)
+
+
+@lab_equipments.post("/provisioning")
+async def request_equipment_provision(
+    request: LabEquipmentProvisionRequest, db=Depends(get_db)
+) -> LabEquipmentProvisionView:
+    raise NotImplemented
 
 
 @lab_equipments.get("/{equipment_id}")

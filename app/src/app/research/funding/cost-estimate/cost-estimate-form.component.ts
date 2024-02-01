@@ -1,6 +1,6 @@
 import { Component, DestroyRef, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, ValidationErrors } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { CurrencyInputComponent } from 'src/app/common/currency/currency-input.component';
 import { MeasurementUnitPipe } from 'src/app/common/measurement/common-measurement-unit.pipe';
@@ -113,6 +113,11 @@ function costEstimatesFromFormValue(
                 ></span>
               </span>
             }
+
+            @if (perUnitCostErrors) {
+              <mat-error>{{perUnitCostErrors | json}}</mat-error>
+            }
+
           </common-currency-input>
         }
 
@@ -180,6 +185,13 @@ export class CostEstimateFormComponent {
   _isFixedPerUnitCost = false;
   get isFixedPerUnitCost() {
     return this._isFixedPerUnitCost;
+  }
+
+  get perUnitCostErrors(): ValidationErrors | null {
+    if (!this.form!.valid) {
+      debugger;
+    }
+    return this.form!.controls.perUnitCost.errors;
   }
 
   @Input()

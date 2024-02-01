@@ -11,15 +11,12 @@ import {
   shareReplay,
 } from 'rxjs';
 import { ResourceType, isResourceType } from './resource-type';
-import { ResourceFileAttachment } from './file-attachment/file-attachment';
 import {
   ResourceContainer,
   ResourceContainerContext,
 } from './resource-container';
-import { ResearchPlan } from 'src/app/research/plan/research-plan';
 import { ModelParams, modelParamsFromJsonObject } from 'src/app/common/model/model';
 import { JsonObject } from 'src/app/utils/is-json-object';
-import { ResourceContainerControl } from './resource-container-form-control';
 
 export interface ResourceParams extends ModelParams {
   index: number | 'create';
@@ -77,6 +74,7 @@ export function isResourceTypeIndex(obj: any): obj is ResourceTypeIndex {
 export class ResourceContext<T extends Resource> {
   readonly _containerContext = inject(ResourceContainerContext);
 
+  readonly funding$ = this._containerContext.funding$;
   readonly container$: Observable<ResourceContainer> = this._containerContext.committed$;
 
   readonly _committedTypeIndexSubject = new ReplaySubject<ResourceTypeIndex>(1);

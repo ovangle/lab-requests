@@ -96,9 +96,6 @@ export class WorkUnit extends Model implements WorkUnitParams {
     this.endDate = params.endDate || null;
     this._container = new ResourceContainer(params);
   }
-  get funding() {
-    return this._container.funding;
-  }
 
   get equipments() {
     return this._container.equipments;

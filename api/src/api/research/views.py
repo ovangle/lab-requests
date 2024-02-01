@@ -28,16 +28,16 @@ research = APIRouter(prefix="/research", tags=["research"])
 
 @research.get("/funding")
 async def index_research_fundings(
-    name_eq: Optional[str] = None, page_index: int = 0, db=Depends(get_db)
+    name: Optional[str] = None, page_index: int = 0, db=Depends(get_db)
 ) -> ResearchFundingIndexPage:
-    index = ResearchFundingIndex(query_research_fundings(name_eq=name_eq))
+    index = ResearchFundingIndex(query_research_fundings(name_eq=name))
     return await index.load_page(db, page_index)
 
 
 @research.get("/plans")
 async def index_plans(
-    researcher: Optional[str] = None,
-    coordinator: Optional[str] = None,
+    researcher: Optional[UUID] = None,
+    coordinator: Optional[UUID] = None,
     db=Depends(get_db),
 ) -> ResearchPlanIndexPage:
     plan_index = ResearchPlanIndex(

@@ -80,10 +80,7 @@ const experimentalPlanCreateFixture: Partial<CreateResearchPlan> = {
         display: block;
         margin: 2em 1em;
       }
-      .form-controls {
-        display: flex;
-        justify-content: right;
-      }
+      
     `,
   ],
   providers: [ ResearchPlanContext ],

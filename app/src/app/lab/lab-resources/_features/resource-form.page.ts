@@ -55,13 +55,14 @@ export function typeIndexFromDetailRoute$(): Observable<
       <lab-resource-form-title
         [resourceType]="typeIndex[0]"
         [resourceIndex]="typeIndex[1]"
-        [saveDisabled]="!_form!.valid"
+        [saveDisabled]="!_form?.valid"
         (requestClose)="close()"
         (requestSave)="saveAndClose()"
       >
       </lab-resource-form-title>
 
       @if (funding$ | async; as funding) {
+        {{funding | json}}
         @switch (typeIndex[0]) {
           @case ('equipment-lease') {
             <lab-equipment-lease-form 
@@ -97,9 +98,7 @@ export class LabResourceFormPage {
   readonly typeIndex$ = defer(() => this._context.committedTypeIndex$);
   readonly resourceType$ = defer(() => this._context.resourceType$);
 
-  readonly funding$: Observable<ResearchFunding | null> = this._context.container$.pipe(
-    map(container => container.funding)
-  );
+  readonly funding$: Observable<ResearchFunding | null> = this._context.funding$;
 
   constructor() {
     this._contextConnection = this._context.sendTypeIndex(

@@ -1,14 +1,11 @@
 import {
-  Injectable,
-  InjectionToken,
   LOCALE_ID,
   Pipe,
   PipeTransform,
   inject,
 } from '@angular/core';
-import { PatternValidator } from '@angular/forms';
 
-const PLURAL: { [k: string]: string } = {
+const PLURAL: { [ k: string ]: string } = {
   '(quiz)$': '$1zes',
   '^(ox)$': '$1en',
   '([m|l])ouse$': '$1ice',
@@ -18,7 +15,7 @@ const PLURAL: { [k: string]: string } = {
   '(hive)$': '$1s',
   '(?:([^f])fe|([lr])f)$': '$1$2ves',
   '(shea|lea|loa|thie)f$': '$1ves',
-  sis$: 'ses',
+  'sis$': 'ses',
   '([ti])um$': '$1a',
   '(tomat|potat|ech|her|vet)o$': '$1oes',
   '(bu)s$': '$1ses',
@@ -29,7 +26,7 @@ const PLURAL: { [k: string]: string } = {
   '([^s]+)$': '$1s',
 };
 
-const SINGULAR: { [k: string]: string } = {
+const SINGULAR: { [ k: string ]: string } = {
   '(quiz)zes$': '$1',
   '(matr)ices$': '$1ix',
   '(vert|ind)ices$': '$1ex',
@@ -62,7 +59,7 @@ const SINGULAR: { [k: string]: string } = {
 
 const __compiled = new Map<string, RegExp>();
 
-const IRREGULAR_WORDS: { [k: string]: string } = {
+const IRREGULAR_WORDS: { [ k: string ]: string } = {
   move: 'moves',
   foot: 'feet',
   goose: 'geese',
@@ -77,7 +74,7 @@ function formatOne(word: string) {
   if (word.toLowerCase() in IRREGULAR_WORDS) {
     return word;
   }
-  for (const [pattern, replace] of Object.entries(PLURAL)) {
+  for (const [ pattern, replace ] of Object.entries(PLURAL)) {
     if (!__compiled.has(pattern)) {
       const regex = new RegExp(pattern, 'i');
       __compiled.set(pattern, regex);
@@ -87,14 +84,14 @@ function formatOne(word: string) {
       return word.replace(regex, replace);
     }
   }
-  throw new Error('Word does not match any rules ${word}');
+  throw new Error(`Word does not match any rules ${word}`);
 }
 
 function formatMany(word: string) {
   if (word.toLowerCase() in IRREGULAR_WORDS) {
-    return IRREGULAR_WORDS[word];
+    return IRREGULAR_WORDS[ word ];
   }
-  for (const [pattern, replace] of Object.entries(SINGULAR)) {
+  for (const [ pattern, replace ] of Object.entries(PLURAL)) {
     if (!__compiled.has(pattern)) {
       __compiled.set(pattern, new RegExp(pattern, 'i'));
     }
@@ -103,7 +100,7 @@ function formatMany(word: string) {
       return word.replace(regex, replace);
     }
   }
-  throw new Error('Word does not match any regular words');
+  throw new Error(`Word '${word}' does not match any regular words`);
 }
 
 const UNCOUNTABLE_WORDS: string[] = [
@@ -132,7 +129,7 @@ export function formatPlural(
   switch (rule) {
     case 'one':
       return formatOne(word);
-    case 'many':
+    case 'other':
       return formatMany(word);
     default:
       throw new Error(`Unrecognised plural rule {rule}`);

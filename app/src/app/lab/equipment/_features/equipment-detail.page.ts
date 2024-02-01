@@ -2,36 +2,31 @@ import { CommonModule } from '@angular/common';
 import { Component, Injectable, Provider, inject } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import {
-  Connectable,
   Observable,
-  Subscription,
-  connectable,
-  shareReplay,
   switchMap,
 } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
-  EquipmentCollection,
   EquipmentContext,
-  EquipmentService,
   Equipment,
+  injectEquipmentService,
 } from '../equipment';
 import { EquipmentInfoComponent } from '../equipment-info.component';
 import { EquipmentTrainingDescriptionsInfoComponent } from '../training/training-descriptions-info.component';
 
-function equipmentContextFromDetailRoute(): Observable<Equipment> {
+function equipmentFromDetailRoute(): Observable<Equipment> {
   const route = inject(ActivatedRoute);
-  const equipmentService = inject(EquipmentService);
-  const equipments = inject(EquipmentCollection, { optional: true });
+  const equipments = injectEquipmentService();
 
   return route.paramMap.pipe(
     takeUntilDestroyed(),
     switchMap((params) => {
       const equipmentId = params.get('equipment_id');
+      console.log('equipment id', equipmentId);
       if (!equipmentId) {
         throw new Error('No equipment in route');
       }
-      return equipmentService.fetch(equipmentId);
+      return equipments.fetch(equipmentId);
     }),
   );
 }
@@ -45,7 +40,8 @@ function equipmentContextFromDetailRoute(): Observable<Equipment> {
     EquipmentTrainingDescriptionsInfoComponent
   ],
   template: `
-    @if (context.equipment$ | async; as equipment) {
+    Equipment detail
+    @if (equipment$ | async; as equipment) {
       <lab-equipment-info [equipment]="equipment"></lab-equipment-info>
 
       <h3>Description</h3>
@@ -60,9 +56,6 @@ function equipmentContextFromDetailRoute(): Observable<Equipment> {
   providers: [ EquipmentContext ],
 })
 export class EquipmentDetailPage {
-  readonly context = inject(EquipmentContext);
+  readonly equipment$ = equipmentFromDetailRoute();
 
-  constructor() {
-    this.context.sendCommitted(equipmentContextFromDetailRoute());
-  }
 }

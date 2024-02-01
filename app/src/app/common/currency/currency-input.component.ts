@@ -47,7 +47,6 @@ import { disabledStateToggler } from 'src/app/utils/forms/disable-state-toggler'
       <input
         matInput
         type="text"
-        pattern="[0-9]+(.[0-9]{0,2})"
         [formControl]="_control"
         (focus)="_onInputFocus($event)"
         (blur)="_onInputBlur($event)"
@@ -56,6 +55,10 @@ import { disabledStateToggler } from 'src/app/utils/forms/disable-state-toggler'
       <div matTextSuffix>
         <ng-content select=".input-text-suffix"></ng-content>
       </div>
+
+      @if (_control.errors && _control.errors['pattern']) {
+        <mat-error>Not a valid amount</mat-error>
+      }
 
       <mat-error>
         <ng-content select="mat-error"></ng-content>
@@ -73,20 +76,23 @@ import { disabledStateToggler } from 'src/app/utils/forms/disable-state-toggler'
 export class CurrencyInputComponent implements ControlValueAccessor {
   _control = new FormControl<string>('0.00', {
     nonNullable: true,
+    validators: [
+      Validators.pattern(/^([0-9]+)(,[0-9]{3})*(.[0-9]{0,2})?$/)
+    ]
   });
 
   readonly _focusSubject = new BehaviorSubject<boolean>(false);
 
   readonly value$: Observable<number> = this._control.valueChanges.pipe(
     takeUntilDestroyed(),
-    map((value) => Number.parseFloat(value)),
+    map((value) => Number.parseFloat((value || '').replaceAll(',', ''))),
     filter((v) => !Number.isNaN(v)),
     shareReplay(1),
   );
 
   readonly formattedValue$: Observable<string> = defer(() => {
-    return combineLatest([this.value$, this._focusSubject]).pipe(
-      switchMap(([value, isFocused]) => (isFocused ? NEVER : of(value))),
+    return combineLatest([ this.value$, this._focusSubject ]).pipe(
+      switchMap(([ value, isFocused ]) => (isFocused ? NEVER : of(value))),
       map((value) => formatCurrency(value, 'en', '')),
     );
   });
@@ -96,11 +102,14 @@ export class CurrencyInputComponent implements ControlValueAccessor {
       .pipe(takeUntilDestroyed())
       .subscribe((value) => this._onChange(value));
 
-    this.formattedValue$.subscribe((value) =>
+    this.formattedValue$.subscribe((value) => {
       this._control.setValue(value, {
         emitEvent: false,
-      }),
-    );
+      })
+      if (!this._control.valid) {
+        debugger;
+      }
+    });
   }
 
   ngOnDestroy() {
@@ -121,11 +130,11 @@ export class CurrencyInputComponent implements ControlValueAccessor {
     this._control.setValue(obj);
   }
 
-  _onChange = (value: any) => {};
+  _onChange = (value: any) => { };
   registerOnChange(fn: any): void {
     this._onChange = fn;
   }
-  _onTouched = () => {};
+  _onTouched = () => { };
   registerOnTouched(fn: any): void {
     this._onTouched = fn;
   }

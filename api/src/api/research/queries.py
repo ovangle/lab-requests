@@ -8,8 +8,8 @@ from db.models.user import User
 
 
 def query_research_plans(
-    researcher: str | None = None,
-    coordinator: str | None = None,
+    researcher: UUID | None = None,
+    coordinator: UUID | None = None,
 ):
     queries = []
     if researcher:

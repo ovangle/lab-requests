@@ -1,3 +1,4 @@
+from uuid import UUID
 from sqlalchemy import Select, or_, select
 from db.models.lab import Lab
 from db.models.uni import Discipline, Campus
@@ -9,6 +10,7 @@ def query_labs(
     campus: Campus | None = None,
     discipline: Discipline | None = None,
     search: str | None = None,
+    id_in: list[UUID] | None = None,
 ) -> Select[tuple[Lab]]:
     clauses: list = []
 
@@ -27,5 +29,8 @@ def query_labs(
                 *(Lab.discipline.ilike(s) for s in search_components)
             )
         )
+
+    if id_in:
+        clauses.append(Lab.id.in_(id_in))
 
     return select(Lab).where(*clauses)

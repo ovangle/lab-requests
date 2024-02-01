@@ -13,7 +13,7 @@ import {
   ResourceContainerFormControls,
   resourceContainerPatchFromForm,
   resourceContainerFormControls,
-} from '../../lab-resource/resource-container-form-control';
+} from '../../lab-resource/resource-container-control';
 
 export type WorkUnitForm = FormGroup<
   {

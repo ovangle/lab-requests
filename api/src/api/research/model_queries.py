@@ -9,9 +9,9 @@ from db.models.research import ResearchFunding
 def query_funding_models(
     name_eq: str | None = None, text: str | None = None
 ) -> Select[tuple[ResearchFunding]]:
-    clauses = []
+    clauses: list = []
     if name_eq is not None:
-        clauses.append(ResearchFunding.name == name_eq)
+        clauses.append(ResearchFunding.name.ilike(f"%{name_eq}%"))
 
     if text is not None:
         clauses.append(

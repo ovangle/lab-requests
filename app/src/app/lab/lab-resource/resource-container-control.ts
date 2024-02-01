@@ -1,48 +1,45 @@
 import { v4 as uuid } from 'uuid';
 import { FormArray, FormGroup } from '@angular/forms';
-import { BehaviorSubject, Subject, firstValueFrom } from 'rxjs';
-import { Resource } from './resource';
+import { BehaviorSubject, Observable, ReplaySubject, firstValueFrom } from 'rxjs';
 import {
   ResourceContainer,
   ResourceContainerPatch,
 } from './resource-container';
-import { ResourceType } from './resource-type';
+import { ResearchFunding } from 'src/app/research/funding/research-funding';
 
-
-
-
-
-
-export type GetResourceAtFn<T extends Resource> = (resourceType: T[ 'type' ], index: number) => T | undefined;
 
 /**
- * Root service so that resource create/update forms (which display in the scaffold form pane)
- * equipments, softwares, inputMaterials and outputMaterials.
+ * Used to control the current research container in the context.
  */
 export class ResourceContainerControl {
   _committedSubject = new BehaviorSubject<ResourceContainer>(new ResourceContainer({
-    funding: null,
     equipments: [],
     softwares: [],
     inputMaterials: [],
     outputMaterials: [],
   }));
   readonly committed$ = this._committedSubject.asObservable();
-  _onCommit = new Subject<ResourceContainerPatch>();
+  _fundingSubject = new ReplaySubject<ResearchFunding>(1);
+  readonly funding$ = this._fundingSubject.asObservable();
+
+  _onCommit: (patch: ResourceContainerPatch) => void;
 
   constructor(
     container: ResourceContainer | null,
+    funding: Observable<ResearchFunding>,
     onCommit: (patch: ResourceContainerPatch) => void
   ) {
     if (container) {
       this._committedSubject.next(container);
     }
-    this._onCommit.subscribe(onCommit);
+    funding.subscribe(this._fundingSubject);
+    this._onCommit = onCommit;
   }
 
   commit(patch: ResourceContainerPatch): Promise<ResourceContainer> {
     const committed = this._committedSubject.value;
     this._committedSubject.next(committed.apply(patch));
+    this._onCommit(patch);
     return firstValueFrom(this._committedSubject);
   }
 }

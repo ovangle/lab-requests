@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { EQUIPMENT_ROUTES } from '../equipment/_features/equipment-routes';
 
 export const LAB_ROUTES: Routes = [
   {
@@ -16,20 +17,22 @@ export const LAB_ROUTES: Routes = [
       },
       {
         path: 'equipment',
-        loadChildren: () =>
-          import('../equipment/_features/equipment.feature-module').then(
-            (module) => module.EQUIPMENT_ROUTES,
-          ),
+        children: [
+          ...EQUIPMENT_ROUTES
+        ]
       },
       {
         path: ':lab_id',
         loadComponent: () =>
           import('./lab-profile.page').then(module => module.LabProfilePage),
-        loadChildren: () =>
-          import('../equipment/_features/equipment.feature-module').then(
-            (module) => module.EQUIPMENT_ROUTES
-          )
+        children: [
+          {
+            path: 'equipment',
+            children: EQUIPMENT_ROUTES
+          }
+        ]
       },
+
     ],
   },
   {
