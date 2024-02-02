@@ -49,6 +49,10 @@ class LabEquipment(Base):
         postgresql.ARRAY(postgresql.TEXT), server_default="{}"
     )
 
+    installations: Mapped[list[LabEquipmentInstallation]] = relationship(
+        back_populates="equipment"
+    )
+
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID):
         e = await db.get(LabEquipment, id)

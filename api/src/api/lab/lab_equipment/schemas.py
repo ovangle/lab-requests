@@ -33,17 +33,17 @@ class LabEquipmentView(ModelView[LabEquipment]):
     training_descriptions: list[str]
     tags: set[str]
 
-    installations: dict[UUID, int]
+    installations: ModelIndexPage[LabEquipmentInstallationView]
 
     @classmethod
     async def from_model(cls, equipment: LabEquipment):
         db = local_object_session(equipment)
-        installed_in_lab_ids = await db.execute(
-            select(
-                LabEquipmentInstallation.id, LabEquipmentInstallation.num_installed
-            ).where(LabEquipmentInstallation.equipment_id == equipment.id)
+        installation_index = LabEquipmentInstallationIndex(
+            select(LabEquipmentInstallation).where(
+                LabEquipmentInstallation.equipment_id == equipment.id
+            )
         )
-        installations = dict((k, v) for k, v in installed_in_lab_ids)
+        installations = await installation_index.load_page(db, 0)
 
         return cls(
             id=cast(UUID, equipment.id),
@@ -57,12 +57,12 @@ class LabEquipmentView(ModelView[LabEquipment]):
         )
 
 
-class LabEquipmentIndex(ModelIndex[LabEquipmentView, LabEquipment]):
+class LabEquipmentIndex(ModelIndex[LabEquipmentView]):
     __item_view__ = LabEquipmentView
 
 
 # TODO: type PEP 695
-LabEquipmentIndexPage = ModelIndexPage[LabEquipmentView, LabEquipment]
+LabEquipmentIndexPage = ModelIndexPage[LabEquipmentView]
 
 
 class LabEquipmentLookup(ModelLookup[LabEquipment]):
@@ -101,6 +101,30 @@ class LabEquipmentCreateRequest(ModelCreateRequest[LabEquipment]):
         )
         db.add(equipment)
         return equipment
+
+
+class LabEquipmentInstallationView(ModelView[LabEquipmentInstallation]):
+    equipment_id: UUID
+    lab_id: UUID
+    num_installed: int
+
+    @classmethod
+    async def from_model(cls, model: LabEquipmentInstallation):
+        return cls(
+            id=model.id,
+            equipment_id=model.equipment_id,
+            lab_id=model.lab_id,
+            num_installed=model.num_installed,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
+        )
+
+
+class LabEquipmentInstallationIndex(ModelIndex[LabEquipmentInstallationView]):
+    __item_view__ = LabEquipmentInstallationView
+
+
+LabEquipmentInstallationPage = ModelIndexPage[LabEquipmentInstallationView]
 
 
 class LabEquipmentInstallRequest(ModelCreateRequest[LabEquipment]):
@@ -163,15 +187,11 @@ class LabEquipmentProvisionView(ModelView[LabEquipmentProvision]):
         )
 
 
-class LabEquipmentProvisioningIndex(
-    ModelIndex[LabEquipmentProvisionView, LabEquipmentProvision]
-):
+class LabEquipmentProvisioningIndex(ModelIndex[LabEquipmentProvisionView]):
     __item_view__ = LabEquipmentProvisionView
 
 
-LabEquipmentProvisioningPage = ModelIndexPage[
-    LabEquipmentProvisionView, LabEquipmentProvision
-]
+LabEquipmentProvisioningPage = ModelIndexPage[LabEquipmentProvisionView]
 
 
 class LabEquipmentProvisionRequest(ModelCreateRequest[LabEquipment]):

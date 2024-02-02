@@ -14,6 +14,11 @@ import { LoginContext } from './oauth/login-context';
       </div>
     </scaffold-layout>
   `,
+  styles: `
+  .content {
+    height: 100%;
+  }
+  `
 })
 export class AppComponent {
   title = 'lab_req';

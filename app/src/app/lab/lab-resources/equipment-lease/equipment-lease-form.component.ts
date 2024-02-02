@@ -24,6 +24,8 @@ import { Equipment } from 'src/app/lab/equipment/equipment';
 import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { ResourceContext } from '../../lab-resource/resource';
+import { injectMaybeLabFromContext } from '../../lab-context';
+import { Lab } from '../../lab';
 
 export type EquipmentLeaseForm = FormGroup<{
   equipment: FormControl<EquipmentLike | null>;
@@ -78,12 +80,15 @@ export type EquipmentLeaseFormErrors = ValidationErrors & {
   template: `
   @if (form) {
     <form [formGroup]="form">
-      <lab-equipment-search
-        formControlName="equipment"
-        [purchaseRequestFundingModel]="funding"
-      >
-        <mat-label>Equipment</mat-label>
-      </lab-equipment-search>
+      @if (lab$ | async; as lab) {
+        <lab-equipment-search
+          formControlName="equipment"
+          [funding]="funding"
+          [inLab]="lab"
+        >
+          <mat-label>Equipment</mat-label>
+        </lab-equipment-search>
+      }
 
       @if (
         selectedEquipmentTrainingDescriptions$ | async;
@@ -109,6 +114,7 @@ export type EquipmentLeaseFormErrors = ValidationErrors & {
   `,
 })
 export class EquipmentLeaseFormComponent {
+  readonly lab$: Observable<Lab | null> = injectMaybeLabFromContext();
   readonly context = inject(ResourceContext<EquipmentLease>);
 
   form: EquipmentLeaseForm | undefined;

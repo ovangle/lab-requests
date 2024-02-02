@@ -65,7 +65,7 @@ class ModelUpdateRequest(BaseModel, Generic[TModel]):
 TModelView = TypeVar("TModelView", bound=ModelView)
 
 
-class ModelIndexPage(BaseModel, Generic[TModelView, TModel]):
+class ModelIndexPage(BaseModel, Generic[TModelView]):
     items: list[TModelView]
     total_item_count: int
     total_page_count: int
@@ -73,7 +73,7 @@ class ModelIndexPage(BaseModel, Generic[TModelView, TModel]):
     page_size: int
 
 
-class ModelIndex(Generic[TModelView, TModel]):
+class ModelIndex(Generic[TModelView]):
     __abstract__: ClassVar[bool]
     __item_view__: ClassVar[type[ModelView]]
 
@@ -106,7 +106,7 @@ class ModelIndex(Generic[TModelView, TModel]):
 
     async def load_page(
         self, db: LocalSession, page_index: int
-    ) -> ModelIndexPage[TModelView, TModel]:
+    ) -> ModelIndexPage[TModelView]:
         total_item_count = (
             await db.scalar(
                 self.selection.order_by(None).with_only_columns(
@@ -121,7 +121,7 @@ class ModelIndex(Generic[TModelView, TModel]):
             self.page_size
         )
         items = await self._gather_items(await db.scalars(selection))
-        return ModelIndexPage[TModelView, TModel](
+        return ModelIndexPage[TModelView](
             items=items,
             total_item_count=total_item_count,
             total_page_count=total_page_count,

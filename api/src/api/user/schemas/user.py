@@ -82,12 +82,12 @@ async def lookup_user(db: LocalSession, ref: UserRef):
     return await ref.get(db)
 
 
-class UserIndex(ModelIndex[UserView, User]):
+class UserIndex(ModelIndex[UserView]):
     __item_view__ = UserView
 
 
 # TODO: PEP 695
-UserIndexPage = ModelIndexPage[UserView, User]
+UserIndexPage = ModelIndexPage[UserView]
 
 
 class AlterPasswordRequest(ModelUpdateRequest[User]):

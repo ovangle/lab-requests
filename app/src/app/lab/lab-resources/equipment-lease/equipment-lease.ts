@@ -15,10 +15,6 @@ import {
   labEquipmentProvisionFromJsonObject
 } from 'src/app/lab/equipment/provision/lab-equipment-provision';
 import {
-  equipmentRequestToJson,
-  isEquipmentRequest,
-} from 'src/app/lab/equipment/request/equipment-request';
-import {
   EquipmentLike,
   equipmentLikeFromJson,
   equipmentLikeToJson,
@@ -118,8 +114,6 @@ export function equipmentLeaseParamsToJson(lease: EquipmentLeaseParams): {
   let equipment;
   if (lease.equipment instanceof Equipment) {
     equipment = lease.equipment.id;
-  } else if (isEquipmentRequest(lease.equipment)) {
-    equipment = equipmentRequestToJson(lease.equipment);
   } else {
     equipment = lease.equipment;
   }

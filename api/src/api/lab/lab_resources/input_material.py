@@ -9,5 +9,5 @@ class InputMaterialView(LabResourceView[InputMaterial]):
     pass
 
 
-class InputMaterialIndex(LabResourceIndex[InputMaterialView, InputMaterial]):
+class InputMaterialIndex(LabResourceIndex[InputMaterialView]):
     __item_view__ = InputMaterialView

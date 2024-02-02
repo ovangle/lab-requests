@@ -47,11 +47,12 @@ async def index_equipments(
     name: Optional[str] = None,
     has_tags: set[str] | str | None = None,
     page_index: int = 0,
+    lab: UUID | None = None,
     db=Depends(get_db),
 ) -> LabEquipmentIndexPage:
     equipment_index = LabEquipmentIndex(
         query_equipments(
-            name_istartswith=name_startswith, name_eq=name, has_tags=has_tags
+            lab=lab, name_istartswith=name_startswith, name_eq=name, has_tags=has_tags
         )
     )
     return await equipment_index.load_page(db, page_index)
@@ -73,19 +74,19 @@ async def index_equipment_provisions(
     raise NotImplementedError
 
 
-@lab_equipments.get("/provisioning/{provisioin_id}")
-async def get_equipment_provisioning(
-    provision_id: UUID, db=Depends(get_db)
-) -> LabEquipmentProvisionView:
-    provision = await LabEquipmentProvision.get_for_id(db, provisioning_id)
-    return await LabEquipmentProvisionView.from_model(provision)
-
-
 @lab_equipments.post("/provisioning")
 async def request_equipment_provision(
     request: LabEquipmentProvisionRequest, db=Depends(get_db)
 ) -> LabEquipmentProvisionView:
     raise NotImplemented
+
+
+@lab_equipments.get("/provisioning/{provisioin_id}")
+async def get_equipment_provisioning(
+    provision_id: UUID, db=Depends(get_db)
+) -> LabEquipmentProvisionView:
+    provision = await LabEquipmentProvision.get_for_id(db, provision_id)
+    return await LabEquipmentProvisionView.from_model(provision)
 
 
 @lab_equipments.get("/{equipment_id}")

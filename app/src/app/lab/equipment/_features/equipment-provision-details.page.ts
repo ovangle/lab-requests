@@ -1,13 +1,15 @@
 import { CommonModule } from "@angular/common";
 import { Component, inject } from "@angular/core";
-import { EquipmentProvisioningService } from "../provision/lab-equipment-provision";
+import { LabEquipmentProvisioningService } from "../provision/lab-equipment-provision";
 import { ActivatedRoute } from "@angular/router";
-import { switchMap } from "rxjs";
-import { LabEquipmentDetailComponent } from "../equipment-detail.component";
+import { shareReplay, switchMap } from "rxjs";
+import { LabEquipmentPageHeaderComponent } from "../equipment-page-header.component";
+import { injectEquipmentService } from "../equipment";
+import { EquipmentContext } from "../equipment-context";
 
 function equipmentProvisionFromActivatedRoute() {
     const activatedRoute = inject(ActivatedRoute);
-    const equipmentProvisions = inject(EquipmentProvisioningService);
+    const equipmentProvisions = inject(LabEquipmentProvisioningService);
 
     return activatedRoute.paramMap.pipe(
         switchMap(params => {
@@ -21,25 +23,35 @@ function equipmentProvisionFromActivatedRoute() {
 }
 
 @Component({
-    selector: 'lab-equipment-provisioin-details-page',
+    selector: 'lab-equipment-provision-details-page',
     standalone: true,
     imports: [
         CommonModule,
-        LabEquipmentDetailComponent,
+        LabEquipmentPageHeaderComponent,
     ],
     template: `
     @if (provision$ | async; as provision) {
-        <div class="title">
-            Equipment provision request
-        </div>
-
-        <div class="content">
-            <lab-equipment-detail>{{provision.equipment}}</lab-equipment-detail>
-        </div>
+        @if (equipment$ | async; as equipment) {
+            <lab-equipment-page-header [equipment]="equipment">
+            </lab-equipment-page-header>
+        }
     }
-    `
+    `,
+    providers: [
+        EquipmentContext
+    ]
 })
 export class LabEquipmentProvisionDetailsPage {
+    readonly equipmentService = injectEquipmentService();
+    readonly equipmentContext = inject(EquipmentContext);
     readonly provision$ = equipmentProvisionFromActivatedRoute()
 
+    readonly equipment$ = this.provision$.pipe(
+        switchMap(provision => this.equipmentService.fetch(provision.equipmentId)),
+        shareReplay(1)
+    );
+
+    ngOnInit() {
+        this.equipmentContext.sendCommitted(this.equipment$)
+    }
 }

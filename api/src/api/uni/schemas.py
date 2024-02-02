@@ -51,11 +51,11 @@ async def lookup_campus(db: LocalSession, ref: CampusLookup | UUID):
     return await ref.get(db)
 
 
-class CampusIndex(ModelIndex[CampusView, Campus]):
+class CampusIndex(ModelIndex[CampusView]):
     __item_view__ = CampusView
 
 
-CampusIndexPage = ModelIndexPage[CampusView, Campus]
+CampusIndexPage = ModelIndexPage[CampusView]
 
 
 class CampusUpdateRequest(ModelUpdateRequest[Campus]):

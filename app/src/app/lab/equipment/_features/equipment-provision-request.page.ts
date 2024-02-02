@@ -2,22 +2,25 @@ import { CommonModule } from "@angular/common";
 import { Component, inject } from "@angular/core";
 import { LabProfilePage } from "../../_features/lab-profile.page";
 import { ResearchFunding, injectResearchFundingService } from "src/app/research/funding/research-funding";
-import { Observable, filter, of, shareReplay } from "rxjs";
-import { EquipmentProvisioiningRequestFormComponent } from "../provision/equipment-provisioning-request-form.component";
+import { Observable, filter, map, of, shareReplay } from "rxjs";
+import { EquipmentProvisionRequestFormComponent } from "../provision/equipment-provision-request-form.component";
 import { Lab } from "../../lab";
+import { injectMaybeLabFromContext } from "../../lab-context";
 
 @Component({
     selector: 'lab-equipment-request-page',
     standalone: true,
     imports: [
         CommonModule,
-        EquipmentProvisioiningRequestFormComponent
+        EquipmentProvisionRequestFormComponent
     ],
     template: `
     @if (funding$ | async; as funding) {
-        <lab-equipment-provision-request-form
-            [lab]="lab$ | async"
-            [funding]="funding" />
+        @if (lab$ | async; as lab) {
+            <lab-equipment-provision-request-form
+                [lab]="lab"
+                [funding]="funding" />
+        }
     }
     `
 })
@@ -34,6 +37,5 @@ export class EquipmentRequestPage {
         shareReplay(1)
     );
 
-    readonly labProfile = inject(LabProfilePage, { optional: true });
-    readonly lab$: Observable<Lab | null> = this.labProfile ? this.labProfile.lab$ : of(null);
+    readonly lab$: Observable<Lab | null> = injectMaybeLabFromContext();
 }

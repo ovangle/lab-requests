@@ -62,12 +62,12 @@ class ResearchPlanTaskView(ModelView[ResearchPlanTask]):
         )
 
 
-class ResearchPlanTaskIndex(ModelIndex[ResearchPlanTaskView, ResearchPlanTask]):
+class ResearchPlanTaskIndex(ModelIndex[ResearchPlanTaskView]):
     __item_view__ = ResearchPlanTaskView
 
 
 # TODO: PEP 695
-ResearchPlanTaskIndexPage = ModelIndexPage[ResearchPlanTaskView, ResearchPlanTask]
+ResearchPlanTaskIndexPage = ModelIndexPage[ResearchPlanTaskView]
 
 
 class ResearchPlanTaskAppendRequest(ModelCreateRequest[ResearchPlanTask]):
@@ -177,12 +177,12 @@ async def lookup_research_plan(db: LocalSession, lookup: ResearchPlanLookup | UU
     return await lookup.get(db)
 
 
-class ResearchPlanIndex(ModelIndex[ResearchPlanView, ResearchPlan]):
+class ResearchPlanIndex(ModelIndex[ResearchPlanView]):
     __item_view__ = ResearchPlanView
 
 
 # TODO: PEP 695
-ResearchPlanIndexPage = ModelIndexPage[ResearchPlanView, ResearchPlan]
+ResearchPlanIndexPage = ModelIndexPage[ResearchPlanView]
 
 
 class ResearchPlanCreateRequest(ModelCreateRequest[ResearchPlan]):

@@ -4,6 +4,7 @@ import { Lab, injectLabService } from '../lab';
 import { Observable, ReplaySubject, shareReplay, switchMap } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { DisciplinePipe } from 'src/app/uni/discipline/discipline.pipe';
+import { LabContext } from '../lab-context';
 
 export function labFromActivatedRoute(): Observable<Lab> {
   const route = inject(ActivatedRoute);
@@ -38,8 +39,16 @@ export function labFromActivatedRoute(): Observable<Lab> {
     <h1>{{lab.campus.name}} - {{lab.discipline | uniDiscipline}} Lab</h1>
     <router-outlet />
   }
-  `
+  `,
+  providers: [
+    LabContext
+  ]
 })
 export class LabProfilePage {
   readonly lab$ = labFromActivatedRoute();
+  readonly context = inject(LabContext);
+
+  ngOnInit() {
+    this.context.sendCommitted(this.lab$);
+  }
 }

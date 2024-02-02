@@ -1,13 +1,9 @@
 import { validate as validateIsUUID } from 'uuid';
-import {
-  EquipmentRequest,
-  equipmentRequestFromJson,
-  isEquipmentRequest,
-} from './request/equipment-request';
 import { Equipment, equipmentFromJsonObject } from './equipment';
 import { isJsonObject } from 'src/app/utils/is-json-object';
+import { LabEquipmentProvision, labEquipmentProvisionFromJsonObject } from './provision/lab-equipment-provision';
 
-export type EquipmentLike = Equipment | EquipmentRequest | string;
+export type EquipmentLike = Equipment | LabEquipmentProvision | string;
 
 export function equipmentLikeFromJson(obj: unknown): EquipmentLike {
   if (typeof obj === 'string') {
@@ -19,7 +15,7 @@ export function equipmentLikeFromJson(obj: unknown): EquipmentLike {
     try {
       return equipmentFromJsonObject(obj);
     } catch {
-      return equipmentRequestFromJson(obj);
+      return labEquipmentProvisionFromJsonObject(obj);
     }
   } else {
     throw new Error('Expected a json object or uuid');

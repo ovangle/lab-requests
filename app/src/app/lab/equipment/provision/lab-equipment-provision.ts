@@ -1,35 +1,34 @@
 import { Injectable } from "@angular/core";
 import { Model, ModelParams, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
-import { Equipment, LabEquipmentCreateRequest, labEquipmentCreateRequestToJson } from "../equipment";
+import { Equipment, LabEquipmentCreateRequest, labEquipmentCreateRequestToJson, equipmentFromJsonObject } from "../equipment";
 import { RestfulService } from "src/app/common/model/model-service";
 import { ResearchFunding } from "src/app/research/funding/research-funding";
 import { Lab } from "../../lab";
 import { map } from "rxjs";
 
 export interface LabEquipmentProvisionParams extends ModelParams {
-    equipment: Equipment;
-
+    equipmentId: string;
 }
 
 export class LabEquipmentProvision extends Model implements LabEquipmentProvisionParams {
-    equipment: Equipment;
+    equipmentId: string;
     constructor(params: LabEquipmentProvisionParams) {
         super(params);
-        this.equipment = params.equipment;
+        this.equipmentId = params.equipmentId;
     }
 }
 
 export function labEquipmentProvisionFromJsonObject(json: JsonObject): LabEquipmentProvision {
     const baseParams = modelParamsFromJsonObject(json);
 
-    if (!isJsonObject(json[ 'equipment' ])) {
-        throw new Error("Expected a json object 'equipment'")
+    if (typeof json[ 'equipmentId' ] !== 'string') {
+        throw new Error("Expected a string 'equipmentId'")
     }
 
     return new LabEquipmentProvision({
         ...baseParams,
-        equipment
+        equipmentId: json[ 'equipmentId' ],
     });
 }
 
@@ -91,7 +90,7 @@ function labEquipmentProvisionInstallRequestToJsonObject(request: LabEquipmentPr
 }
 
 @Injectable({ providedIn: 'root' })
-export class EquipmentProvisioningService extends RestfulService<LabEquipmentProvision> {
+export class LabEquipmentProvisioningService extends RestfulService<LabEquipmentProvision> {
     override model = LabEquipmentProvision;
     override modelFromJsonObject = labEquipmentProvisionFromJsonObject;
     override path = '/lab/equipments/provisioning';

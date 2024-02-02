@@ -58,9 +58,9 @@ async def lookup_lab(db: LocalSession, ref: LabLookup | UUID):
     return await ref.get(db)
 
 
-class LabIndex(ModelIndex[LabView, Lab]):
+class LabIndex(ModelIndex[LabView]):
     __item_view__ = LabView
 
 
 # TODO: PEP 695 type
-LabIndexPage = ModelIndexPage[LabView, Lab]
+LabIndexPage = ModelIndexPage[LabView]

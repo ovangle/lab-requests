@@ -8,8 +8,8 @@ import {
   Equipment,
   EquipmentService,
 } from 'src/app/lab/equipment/equipment';
-import { EquipmentRequest } from 'src/app/lab/equipment/request/equipment-request';
-import { EquipmentRequestInfoComponent } from 'src/app/lab/equipment/request/equipment-request-info.component';
+import { LabEquipmentProvisionInfoComponent } from '../../equipment/provision/equipment-provision-info.component';
+import { LabEquipmentProvision } from '../../equipment/provision/lab-equipment-provision';
 
 @Component({
   selector: 'lab-equipment-lease-detail',
@@ -18,16 +18,14 @@ import { EquipmentRequestInfoComponent } from 'src/app/lab/equipment/request/equ
     CommonModule,
 
     EquipmentInfoComponent,
-    EquipmentRequestInfoComponent,
+    LabEquipmentProvisionInfoComponent
   ],
   template: `
-    <div class="equipment-or-equipment-request">
-      @if (equipment | async; as equipment) {
-        <lab-equipment-info [equipment]="equipment" />
-      } @else if (equipmentRequest) {
-        <lab-equipment-request-info [equipment]="equipmentRequest" />
-      }
-    </div>
+    @if (equipment | async; as equipment) {
+      <lab-equipment-info [equipment]="equipment" />
+    } @else if (equipmentProvision) {
+      <lab-equipment-provision-info [equipmentProvision]="equipmentProvision" />
+    }
   `,
 })
 export class EquipmentLeaseDetailComponent {
@@ -46,7 +44,7 @@ export class EquipmentLeaseDetailComponent {
       return of(null);
     }
   }
-  get equipmentRequest(): EquipmentRequest | null {
+  get equipmentProvision(): LabEquipmentProvision | null {
     if (
       this.lease!.equipment instanceof Equipment ||
       typeof this.lease!.equipment === 'string'

@@ -11,12 +11,6 @@ import {
 } from '../equipment';
 import { LabEquipmentFormComponent } from '../equipment-form.component';
 
-const equipmentCreateFixture: EquipmentPatch = {
-  name: 'HP Elitebook',
-  description: 'My personal laptop',
-  tags: [ 'laptop' ],
-  trainingDescriptions: [],
-};
 
 @Component({
   selector: 'lab-equipment-create-page',
@@ -40,11 +34,6 @@ export class EquipmentCreatePage {
 
   readonly equipmentService = inject(EquipmentService);
   readonly form = equipmentForm();
-
-  ngOnInit() {
-    this.form.setValue(equipmentCreateFixture);
-    this._cdRef.markForCheck();
-  }
 
   async createEquipment(patch: EquipmentPatch) {
     const equipment = await firstValueFrom(this.equipmentService.create(patch));

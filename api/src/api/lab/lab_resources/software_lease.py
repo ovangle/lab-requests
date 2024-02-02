@@ -9,5 +9,5 @@ class LabSoftwareLeaseView(LabResourceView[SoftwareLease]):
     pass
 
 
-class LabSoftwareLeaseIndex(LabResourceIndex[LabSoftwareLeaseView, SoftwareLease]):
+class LabSoftwareLeaseIndex(LabResourceIndex[LabSoftwareLeaseView]):
     __item_view__ = LabSoftwareLeaseView

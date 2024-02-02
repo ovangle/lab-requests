@@ -63,12 +63,12 @@ class WorkUnitView(ModelView[LabWorkUnit]):
         return instance
 
 
-class WorkUnitIndex(ModelIndex[WorkUnitView, LabWorkUnit]):
+class WorkUnitIndex(ModelIndex[WorkUnitView]):
     __item_view__ = WorkUnitView
 
 
 # TODO: PEP 695
-WorkUnitIndexPage = ModelIndexPage[WorkUnitView, LabWorkUnit]
+WorkUnitIndexPage = ModelIndexPage[WorkUnitView]
 
 
 # class WorkUnitFileAttachment(StoredFile):

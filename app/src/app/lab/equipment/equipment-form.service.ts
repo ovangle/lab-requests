@@ -9,11 +9,11 @@ import {
 import { Observable, map, share, firstValueFrom } from 'rxjs';
 import {
   EquipmentPatch,
-  EquipmentContext,
   Equipment,
   EquipmentService,
 } from './equipment';
 import { HttpParams } from '@angular/common/http';
+import { EquipmentContext } from './equipment-context';
 
 export type EquipmentForm = FormGroup<{
   name: FormControl<string>;

@@ -1,20 +1,25 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { filter, map } from 'rxjs';
+import { filter, map, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BooleanInput } from '@angular/cdk/coercion';
-import { LabEquipmentProvision, LabEquipmentProvisionRequest } from './lab-equipment-provision';
+import { LabEquipmentProvision, LabEquipmentProvisionRequest, LabEquipmentProvisioningService } from './lab-equipment-provision';
 import { ResizeTextareaOnInputDirective } from 'src/app/common/forms/resize-textarea-on-input.directive';
 import { CostEstimateForm, CostEstimateFormComponent, costEstimateForm, costEstimatesFromForm, setCostEstimateFormValue } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { Equipment, LabEquipmentCreateRequest } from '../equipment';
-import { EquipmentRequest } from '../request/equipment-request';
 import { Lab } from '../../lab';
 
 export type EquipmentRequestForm = FormGroup<{
+  /**
+   * The lab for which we are requesting the provision.
+   * `null` is interpreted as `any`
+   */
+  lab: FormControl<Lab | null>;
+  funding: FormControl<ResearchFunding | null>;
   /**
    * Either an equipment, or the name of an equipment to create
    */
@@ -29,6 +34,10 @@ export function equipmentRequestForm(
   equipmentName?: string,
 ): EquipmentRequestForm {
   return new FormGroup({
+    lab: new FormControl<Lab | null>(null),
+    funding: new FormControl<ResearchFunding | null>(null, {
+      validators: Validators.required
+    }),
     equipment: new FormControl<Equipment | string>(
       equipmentName || '', { nonNullable: true }
     ),
@@ -44,9 +53,7 @@ export function equipmentRequestForm(
 }
 
 export function equipmentRequestFromForm(
-  lab: Lab | null,
   form: EquipmentRequestForm,
-  funding: ResearchFunding | null
 ): LabEquipmentProvisionRequest {
   if (!form.valid) {
     throw new Error('Invalid form has no value');
@@ -70,8 +77,8 @@ export function equipmentRequestFromForm(
 
   return {
     equipment: equipment,
-    lab,
-    funding,
+    lab: form.value.lab || null,
+    funding: form.value.funding!,
     reason: form.value.reason!,
     estimatedCost: costEstimates?.perUnitCost || null,
     quantityRequired: costEstimates?.quantityRequired || 1,
@@ -116,28 +123,33 @@ export function equipmentRequestFromForm(
     </form>
   `,
 })
-export class EquipmentProvisioiningRequestFormComponent {
+export class EquipmentProvisionRequestFormComponent {
+  readonly equipmentProvisionService = inject(LabEquipmentProvisioningService);
   readonly form = equipmentRequestForm();
 
+
+  /**
+   * The lab that the equipment should be installed into.
+   * If `null`, then the equipment can be provisioned into any lab.
+   */
   @Input({ required: true })
-  lab: Lab | null = null;
+  get lab(): Lab | null {
+    return this.form.value.lab!;
+  }
+  set lab(lab: Lab | null) {
+    this.form.patchValue({ lab });
+  }
 
   @Input({ required: true })
-  funding: ResearchFunding | undefined = undefined;
+  get funding(): ResearchFunding {
+    return this.form.value.funding!;
+  }
+  set funding(funding: ResearchFunding) {
+    this.form.patchValue({ funding });
+  }
 
   @Output()
-  equipmentRequestChange = new EventEmitter<EquipmentRequest>();
-
-  constructor() {
-    this.form.valueChanges
-      .pipe(
-        takeUntilDestroyed(),
-        filter(() => this.form.valid),
-      )
-      .subscribe((value) =>
-        this.equipmentRequestChange.emit(value as EquipmentRequest),
-      );
-  }
+  readonly save = new EventEmitter<LabEquipmentProvision>();
 
   // Allow binding to name in order to pre-populate the field.
   @Input()
@@ -167,5 +179,13 @@ export class EquipmentProvisioiningRequestFormComponent {
 
   get costErrors() {
     return this.form.controls.cost.errors;
+  }
+
+  _save() {
+    if (!this.form.valid) {
+      throw new Error(``)
+    }
+    const request = equipmentRequestFromForm(this.form);
+    this.equipmentProvisionService.request(request);
   }
 }

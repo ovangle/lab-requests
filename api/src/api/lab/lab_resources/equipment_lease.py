@@ -45,5 +45,5 @@ class LabEquipmentLeaseView(LabResourceView[EquipmentLease]):
         )
 
 
-class LabEquipmentLeaseIndex(LabResourceIndex[LabEquipmentLeaseView, EquipmentLease]):
+class LabEquipmentLeaseIndex(LabResourceIndex[LabEquipmentLeaseView]):
     __item_view__ = LabEquipmentLeaseView

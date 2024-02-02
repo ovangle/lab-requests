@@ -1,7 +1,10 @@
+import { validate as validateIsUUID } from 'uuid';
 import {
   Model,
+  ModelIndexPage,
   ModelParams,
   ModelPatch,
+  modelIndexPageFromJsonObject,
   modelParamsFromJsonObject,
 } from 'src/app/common/model/model';
 import { Injectable, Provider, Type, inject } from '@angular/core';
@@ -13,7 +16,19 @@ import {
   injectModelService,
 } from 'src/app/common/model/model-collection';
 import { defer, firstValueFrom } from 'rxjs';
-import { JsonObject } from 'src/app/utils/is-json-object';
+import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
+import { Lab } from '../lab';
+import { LabEquipmentProvision, labEquipmentProvisionFromJsonObject } from './provision/lab-equipment-provision';
+
+export interface EquipmentParams extends ModelParams {
+  name: string;
+  description: string;
+  tags: string[];
+  trainingDescriptions: string[];
+  installationPage: ModelIndexPage<EquipmentInstallation>;
+  // Provisioining requests for this equipment which are not final.
+  provisionsPage: ModelIndexPage<LabEquipmentProvision>;
+}
 
 export class Equipment extends Model {
   name: string;
@@ -23,21 +38,29 @@ export class Equipment extends Model {
 
   trainingDescriptions: string[];
 
-  constructor(params: EquipmentParams & { readonly id: string }) {
+  /**
+   * A map of lab ids to counts
+   */
+  installationsPage: ModelIndexPage<EquipmentInstallation>;
+  get installations() {
+    return this.installationsPage.items;
+  }
+  provisionsPage: ModelIndexPage<LabEquipmentProvision>;
+  get provisions() {
+    return this.provisionsPage.items;
+  }
+
+  constructor(params: EquipmentParams) {
     super(params);
     this.name = params.name!;
     this.description = params.description!;
     this.tags = Array.from(params.tags!);
     this.trainingDescriptions = Array.from(params.trainingDescriptions!);
+    this.installationsPage = params.installationPage;
+    this.provisionsPage = params.provisionsPage;
   }
 }
 
-export interface EquipmentParams extends ModelParams {
-  name: string;
-  description: string;
-  tags: string[];
-  trainingDescriptions: string[];
-}
 
 export function equipmentFromJsonObject(json: JsonObject): Equipment {
   const baseParams = modelParamsFromJsonObject(json);
@@ -60,6 +83,21 @@ export function equipmentFromJsonObject(json: JsonObject): Equipment {
   ) {
     throw new Error("Expected an array of strings 'trainingDescriptions");
   }
+  if (!isJsonObject(json[ 'installations' ])) {
+    throw new Error("Expected a json object 'installations'")
+  }
+  const installationPage = modelIndexPageFromJsonObject(
+    equipmentInstallationFromJsonObject,
+    json[ 'installations' ]
+  );
+
+  if (!isJsonObject(json[ 'provisions' ])) {
+    throw new Error("Expected a json object 'provisions'");
+  }
+  const provisionsPage = modelIndexPageFromJsonObject(
+    labEquipmentProvisionFromJsonObject,
+    json[ 'provisions' ]
+  );
 
   return new Equipment({
     ...baseParams,
@@ -67,14 +105,42 @@ export function equipmentFromJsonObject(json: JsonObject): Equipment {
     description: json[ 'description' ],
     tags: json[ 'tags' ],
     trainingDescriptions: json[ 'trainingDescriptions' ],
+    installationPage,
+    provisionsPage,
   });
 }
 
-export interface EquipmentPatch extends ModelPatch<Equipment> {
+export interface EquipmentInstallation extends ModelParams {
+  equipmentId: string;
+  labId: string;
+  numInstalled: number;
+}
+
+export function equipmentInstallationFromJsonObject(obj: JsonObject): EquipmentInstallation {
+  const baseParams = modelParamsFromJsonObject(obj);
+  if (typeof obj[ 'equipmentId' ] !== 'string' || !validateIsUUID(obj[ 'equipmentId' ])) {
+    throw new Error("Expected a uuid 'equipmentId")
+  }
+  if (typeof obj[ 'labId' ] !== 'string' || !validateIsUUID(obj[ 'labId' ])) {
+    throw new Error("Expected a uuid 'labId'")
+  }
+  if (typeof obj[ 'numInstalled' ] !== 'number') {
+    throw new Error('Expected a number numInstalled');
+  }
+  return {
+    ...baseParams,
+    equipmentId: obj[ 'equipmentId' ],
+    labId: obj[ 'labId' ],
+    numInstalled: obj[ 'numInstalled' ]
+  }
+}
+
+
+export interface EquipmentPatch {
   name: string;
-  description: string;
-  tags: string[];
-  trainingDescriptions: string[];
+  description?: string;
+  tags?: string[];
+  trainingDescriptions?: string;
 }
 
 export interface LabEquipmentCreateRequest {
@@ -97,12 +163,17 @@ export interface EquipmentInstallRequest {
 
 
 export interface EquipmentQuery {
+  lab?: Lab | null;
   name?: string;
   searchText?: string;
 }
 
 export function equipmentQueryToHttpParams(query: Partial<EquipmentQuery>) {
   let params = new HttpParams();
+  if (query.lab) {
+    params = params.set('lab', query.lab.id);
+  }
+
   if (query.name) {
     params = params.set('name', query.name);
   }
@@ -127,7 +198,6 @@ export class EquipmentCollection
     super(service);
   }
 }
-
 
 export function injectEquipmentService() {
   return injectModelService(EquipmentService, EquipmentCollection);

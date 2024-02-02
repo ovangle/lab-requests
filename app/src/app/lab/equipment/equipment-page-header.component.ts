@@ -5,20 +5,17 @@ import { LabListComponent } from "../lab-list.component";
 import { CommonModule } from "@angular/common";
 
 @Component({
-    selector: 'lab-equipment-detail',
+    selector: 'lab-equipment-page-header',
     standalone: true,
     imports: [
         CommonModule,
         LabListComponent
     ],
-    template: ``
+    template: `
+    <h1>{{equipment!.name}}<h1>
+    `
 })
-export class LabEquipmentDetailComponent {
-    readonly labsService = injectLabService();
-
+export class LabEquipmentPageHeaderComponent {
     @Input({ required: true })
     equipment: Equipment | undefined;
-
-    @Input({ required: true })
-    installedIn: Lab[] = [];
 }

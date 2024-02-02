@@ -20,33 +20,32 @@ import { MatInputModule } from '@angular/material/input';
 import {
   BehaviorSubject,
   Observable,
+  ReplaySubject,
   defer,
   filter,
   map,
   of,
   shareReplay,
+  skipWhile,
   startWith,
   switchMap,
   withLatestFrom,
 } from 'rxjs';
 import { disabledStateToggler } from 'src/app/utils/forms/disable-state-toggler';
-import { EquipmentRequestFormComponent } from './request/equipment-request-form.component';
 import {
   Equipment,
   EquipmentCollection,
-  EquipmentContext,
   EquipmentQuery,
   EquipmentService,
   equipmentQueryToHttpParams,
   injectEquipmentService,
 } from './equipment';
-import {
-  EquipmentRequest,
-  isEquipmentRequest,
-} from './request/equipment-request';
 import { EquipmentLike } from './equipment-like';
 import { isUUID } from 'src/app/utils/is-uuid';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
+import { EquipmentProvisionRequestFormComponent } from './provision/equipment-provision-request-form.component';
+import { Lab } from '../lab';
+import { LabEquipmentProvision, LabEquipmentProvisionRequest } from './provision/lab-equipment-provision';
 
 const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
 
@@ -64,7 +63,7 @@ const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
     MatFormFieldModule,
     MatInputModule,
 
-    EquipmentRequestFormComponent,
+    EquipmentProvisionRequestFormComponent,
   ],
   template: `
     <mat-form-field>
@@ -78,7 +77,7 @@ const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
 
       <mat-autocomplete
         #autocomplete
-        [displayWith]="_displaySearch(_equipmentRequest.value.name)"
+        [displayWith]="_displaySearch"
         (optionSelected)="_optionSelected($event)"
       >
         @if (searchOptions$ | async; as searchOptions) {
@@ -104,13 +103,13 @@ const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
           </button>
         </mat-card-header>
         <mat-card-content>
-          <lab-equipment-request-form
-            [name]="_equipmentRequest.value.name"
+          <lab-equipment-provision-request-form
+            [equipmentName]="prefillName$ | async"
+            [lab]="inLab"
             [disabled]="_disabled"
-            [purchaseFundingModel]="purchaseRequestFundingModel!"
-            (equipmentRequestChange)="_equipmentRequest.next($event)"
-          >
-          </lab-equipment-request-form>
+            [funding]="funding!"
+            (save)="_equipmentRequest.next($event)"
+          />
         </mat-card-content>
         <mat-card-footer #createFormControls> </mat-card-footer>
       </mat-card>
@@ -118,7 +117,6 @@ const _NEW_EQUIPMENT_ = '_NEW_EQUIPMENT_';
   `,
   providers: [
     EquipmentCollection,
-    EquipmentContext,
     {
       provide: NG_VALUE_ACCESSOR,
       multi: true,
@@ -134,26 +132,46 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
     nonNullable: true,
   });
 
+  /**
+   * Show only equipment from the given lab
+   */
+  @Input({ required: true })
+  inLab: Lab | null = null;
+
   readonly isNewEquipment$ = this.searchControl.valueChanges.pipe(
     map((value) => value === this._NEW_EQUIPMENT_),
   );
-  readonly _equipmentRequest = new BehaviorSubject<EquipmentRequest>({
-    name: '',
-    reason: '',
-    cost: null,
-  });
+  readonly prefillName$ = this.searchControl.valueChanges.pipe(
+    skipWhile(value => value == _NEW_EQUIPMENT_),
+    map((value) => {
+      if (value instanceof Equipment) {
+        return value.name;
+      } else {
+        return value;
+      }
+    }),
+    shareReplay(1)
+  );
 
-  readonly searchOptions$ = this._equipmentRequest.pipe(
-    switchMap((request) =>
-      this.equipments.query(equipmentQueryToHttpParams(request)),
-    ),
+  readonly _equipmentRequest = new ReplaySubject<LabEquipmentProvision>(1);
+
+  readonly searchOptions$ = this.searchControl.valueChanges.pipe(
+    switchMap((search) => {
+      if (search instanceof Equipment) {
+        return of([ search ]);
+      }
+      return this.equipments.query(equipmentQueryToHttpParams({
+        lab: this.inLab,
+        name: search
+      }))
+    }),
     shareReplay(1),
   );
 
   @Input({ required: true })
-  purchaseRequestFundingModel: ResearchFunding | undefined = undefined;
+  funding: ResearchFunding | undefined = undefined;
 
-  readonly value$: Observable<Equipment | EquipmentRequest | null> = defer(
+  readonly value$: Observable<Equipment | LabEquipmentProvision | null> = defer(
     () => {
       return this.searchControl.valueChanges.pipe(
         startWith(this.searchControl.value),
@@ -175,34 +193,6 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
       takeUntilDestroyed(),
       map((searchText) => ({ searchText }) as EquipmentQuery),
     );
-
-    // Prefil the value of the equipment request with the value of the search input
-    this.searchControl.valueChanges
-      .pipe(
-        takeUntilDestroyed(),
-        filter(
-          (value): value is Equipment | string => value != _NEW_EQUIPMENT_,
-        ),
-        map((value) => {
-          if (value instanceof Equipment) {
-            return value.name;
-          }
-          return value;
-        }),
-        switchMap((value) => {
-          if (validateIsUUID(value)) {
-            return this.equipments.fetch(value);
-          }
-          return value;
-        }),
-        withLatestFrom(this._equipmentRequest),
-        map(([ searchInput, request ]) => ({
-          name: searchInput as string,
-          reason: request.reason,
-          cost: request.cost,
-        })),
-      )
-      .subscribe((value) => this._equipmentRequest.next(value));
 
     // Dispatch _onChange events
     this.value$.pipe(takeUntilDestroyed()).subscribe((v) => this._onChange(v));
@@ -230,7 +220,7 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
     }
     if (obj instanceof Equipment) {
       this.searchControl.setValue(obj);
-    } else if (isEquipmentRequest(obj)) {
+    } else if (obj instanceof LabEquipmentProvision) {
       this.searchControl.setValue(this._NEW_EQUIPMENT_);
       this._equipmentRequest.next({ ...obj });
     }
@@ -252,15 +242,13 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
     this._disabled = isDisabled;
   }
 
-  _displaySearch(newEquipmentName: string) {
-    return function (search: Equipment | string): string {
-      if (search instanceof Equipment) {
-        return search.name;
-      } else if (search === _NEW_EQUIPMENT_) {
-        return '(new) ' + newEquipmentName;
-      } else {
-        return search;
-      }
-    };
-  }
+  _displaySearch(value: Equipment | string) {
+    if (value instanceof Equipment) {
+      return value.name;
+    } else if (value === _NEW_EQUIPMENT_) {
+      return 'New equipment';
+    } else {
+      return value;
+    }
+  };
 }
