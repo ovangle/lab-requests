@@ -13,7 +13,7 @@ export const EQUIPMENT_ROUTES: Routes = [
   },
 
   {
-    path: 'provisioining',
+    path: 'provision',
     children: [
       {
         path: '',
@@ -30,7 +30,6 @@ export const EQUIPMENT_ROUTES: Routes = [
         path: ':provisioining_id',
         loadComponent: () => import('./equipment-provision-details.page')
           .then(module => module.LabEquipmentProvisionDetailsPage)
-
       }
     ]
   },

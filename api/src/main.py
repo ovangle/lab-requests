@@ -58,12 +58,12 @@ def api_router():
     from api.user.views import users
     from api.uni.views import uni_campuses
     from api.research.views import research
-    from api.lab.views import lab
+    from api.lab.views import labs
 
     api_router = APIRouter(prefix="/api", tags=["api"])
     api_router.include_router(oauth)
     api_router.include_router(users)
-    api_router.include_router(lab)
+    api_router.include_router(labs)
 
     # from api.lab.equipment.views import lab_equipments, lab_equipment_tags
     # api_router.include_router(lab_equipments)

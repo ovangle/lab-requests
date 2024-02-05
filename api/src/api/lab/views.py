@@ -13,14 +13,14 @@ from .work_unit.views import lab_work_units
 
 from .schemas import LabIndex, LabIndexPage, LabView
 
-lab = APIRouter(prefix="/lab", tags=["labs"])
+labs = APIRouter(prefix="/labs", tags=["labs"])
 
-lab.include_router(lab_equipments)
-lab.include_router(lab_equipment_tags)
-lab.include_router(lab_work_units)
+labs.include_router(lab_equipments)
+labs.include_router(lab_equipment_tags)
+labs.include_router(lab_work_units)
 
 
-@lab.get("/")
+@labs.get("/lab")
 async def index_labs(
     search: str | None = None,
     campus: UUID | None = None,
@@ -56,7 +56,7 @@ async def index_labs(
     return await campus_index.load_page(db, page_index=page_index)
 
 
-@lab.get("/{lab_id}")
+@labs.get("/lab/{lab_id}")
 async def read_lab(lab_id: UUID, db=Depends(get_db)):
     lab = await Lab.get_for_id(db, lab_id)
     return await LabView.from_model(lab)

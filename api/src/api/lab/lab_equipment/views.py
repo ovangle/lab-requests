@@ -38,7 +38,7 @@ lab_equipment_tags = APIRouter(
 #     )
 
 
-lab_equipments = APIRouter(prefix="/equipments", tags=["lab-equipments"])
+lab_equipments = APIRouter(prefix="/equipment", tags=["lab-equipments"])
 
 
 @lab_equipments.get("/")
@@ -67,21 +67,21 @@ async def create_equipment(
     return await LabEquipmentView.from_model(model)
 
 
-@lab_equipments.get("/provisioning")
+@lab_equipments.get("/provision")
 async def index_equipment_provisions(
     db=Depends(get_db),
 ) -> LabEquipmentProvisionPage:
     raise NotImplementedError
 
 
-@lab_equipments.post("/provisioning")
+@lab_equipments.post("/provision")
 async def request_equipment_provision(
     request: LabEquipmentProvisionRequest, db=Depends(get_db)
 ) -> LabEquipmentProvisionView:
     raise NotImplemented
 
 
-@lab_equipments.get("/provisioning/{provisioin_id}")
+@lab_equipments.get("/provision/{provisioin_id}")
 async def get_equipment_provisioning(
     provision_id: UUID, db=Depends(get_db)
 ) -> LabEquipmentProvisionView:

@@ -1,3 +1,4 @@
+import { validate as validateIsUUID } from 'uuid';
 import { CommonModule } from '@angular/common';
 import { Component, Injectable, Provider, inject } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
@@ -26,6 +27,9 @@ function equipmentFromDetailRoute(): Observable<Equipment> {
       console.log('equipment id', equipmentId);
       if (!equipmentId) {
         throw new Error('No equipment in route');
+      }
+      if (!validateIsUUID(equipmentId)) {
+        throw new Error('equipment_id must be a uuid')
       }
       return equipments.fetch(equipmentId);
     }),

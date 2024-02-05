@@ -9,18 +9,10 @@ import { ResearchFunding } from '../research-funding';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { CostEstimate } from './cost-estimate';
 import {
-  BehaviorSubject,
-  MonoTypeOperatorFunction,
-  Observable,
-  OperatorFunction,
-  Subscription,
   defer,
   filter,
   map,
-  shareReplay,
   startWith,
-  tap,
-  withLatestFrom,
 } from 'rxjs';
 import { UnitOfMeasurement } from 'src/app/common/measurement/measurement';
 import { MatInputModule } from '@angular/material/input';
@@ -66,7 +58,7 @@ export function costEstimatesFromForm(
 }
 
 function costEstimatesFromFormValue(
-  value: CostEstimateForm[ 'value' ],
+  value: CostEstimateForm['value'],
   unit: UnitOfMeasurement | null,
 ): CostEstimate {
   return {
@@ -221,10 +213,10 @@ export class CostEstimateFormComponent {
 
   ngOnInit() {
     if (this.isFixedPerUnitCost) {
-      this.form!.controls[ 'perUnitCost' ].disable();
+      this.form!.controls['perUnitCost'].disable();
     }
     if (this.isFixedQuantityRequired) {
-      this.form!.controls[ 'quantityRequired' ].disable();
+      this.form!.controls['quantityRequired'].disable();
     }
   }
 }

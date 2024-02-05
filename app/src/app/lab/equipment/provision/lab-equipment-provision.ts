@@ -22,13 +22,13 @@ export class LabEquipmentProvision extends Model implements LabEquipmentProvisio
 export function labEquipmentProvisionFromJsonObject(json: JsonObject): LabEquipmentProvision {
     const baseParams = modelParamsFromJsonObject(json);
 
-    if (typeof json[ 'equipmentId' ] !== 'string') {
+    if (typeof json['equipmentId'] !== 'string') {
         throw new Error("Expected a string 'equipmentId'")
     }
 
     return new LabEquipmentProvision({
         ...baseParams,
-        equipmentId: json[ 'equipmentId' ],
+        equipmentId: json['equipmentId'],
     });
 }
 
@@ -93,7 +93,7 @@ function labEquipmentProvisionInstallRequestToJsonObject(request: LabEquipmentPr
 export class LabEquipmentProvisioningService extends RestfulService<LabEquipmentProvision> {
     override model = LabEquipmentProvision;
     override modelFromJsonObject = labEquipmentProvisionFromJsonObject;
-    override path = '/lab/equipments/provisioning';
+    override path = '/labs/equipment/provision';
 
     request(request: LabEquipmentProvisionRequest) {
         return this._httpClient.post<JsonObject>(

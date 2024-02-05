@@ -46,7 +46,7 @@ import { RouterModule } from '@angular/router';
           mat-raised-button
           class="request-button"
           color="primary"
-          routerLink="./request"
+          routerLink="./provision/request"
         >
           + Request
         </a>
@@ -63,7 +63,7 @@ import { RouterModule } from '@angular/router';
       }
     `,
   ],
-  providers: [ EquipmentCollection ],
+  providers: [EquipmentCollection],
 })
 export class EquipmentIndexPage {
   readonly labProfile = inject(LabProfilePage, { optional: true })

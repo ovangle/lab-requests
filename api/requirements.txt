@@ -1,7 +1,7 @@
 fastapi>=0.108.0
 python-multipart>=0.0.6
 
-pydantic>=2.5
+pydantic>=2.6
 pydantic_core>=2.14
 pydantic-settings>=2.1
 

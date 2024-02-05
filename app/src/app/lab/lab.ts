@@ -40,27 +40,27 @@ export function labFromJsonObject(json: JsonObject): Lab {
   }
   const base = modelParamsFromJsonObject(json);
 
-  if (typeof json[ 'id' ] !== 'string') {
+  if (typeof json['id'] !== 'string') {
     throw new Error("Expected a string 'id'");
   }
-  if (!isDiscipline(json[ 'discipline' ])) {
+  if (!isDiscipline(json['discipline'])) {
     throw new Error("Expected a Discipline 'discipline'");
   }
 
-  if (!isJsonObject(json[ 'campus' ])) {
+  if (!isJsonObject(json['campus'])) {
     throw new Error("Expected a json object 'campus'");
   }
-  const campus = campusFromJsonObject(json[ 'campus' ]);
+  const campus = campusFromJsonObject(json['campus']);
 
-  if (!Array.isArray(json[ 'supervisors' ]) || !json[ 'supervisors' ].every(isJsonObject)) {
+  if (!Array.isArray(json['supervisors']) || !json['supervisors'].every(isJsonObject)) {
     throw new Error("Expected an array of json objects 'supervisors'");
   }
-  const supervisors = json[ 'supervisors' ].map(userFromJsonObject);
+  const supervisors = json['supervisors'].map(userFromJsonObject);
 
   return new Lab({
     ...base,
-    id: json[ 'id' ],
-    discipline: json[ 'discipline' ],
+    id: json['id'],
+    discipline: json['discipline'],
     campus,
     supervisors,
   });
@@ -68,7 +68,7 @@ export function labFromJsonObject(json: JsonObject): Lab {
 
 @Injectable({ providedIn: 'root' })
 export class LabService extends RestfulService<Lab>{
-  override path: string = '/lab';
+  override path: string = '/labs/lab';
   override model: Type<Lab> = Lab;
   override modelFromJsonObject(json: JsonObject): Lab {
     return labFromJsonObject(json);

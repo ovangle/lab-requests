@@ -15,6 +15,7 @@ import { injectMaybeLabFromContext } from "../../lab-context";
         EquipmentProvisionRequestFormComponent
     ],
     template: `
+    <h1>Request new equipment</h1>
     @if (funding$ | async; as funding) {
         @if (lab$ | async; as lab) {
             <lab-equipment-provision-request-form
