@@ -33,6 +33,14 @@ class LabEquipmentProvisioningError(ModelException):
     pass
 
 
+class ProvisionStatus(Enum):
+    REQUESTED = "requested"
+    APPROVED = "approved"
+    PURCHASED = "purchased"
+    INSTALLED = "installed"
+    CANCELLED = "cancelled"
+
+
 class LabEquipment(Base):
     __tablename__ = "lab_equipment"
 
@@ -74,6 +82,9 @@ class LabEquipmentInstallation(Base):
 
     num_installed: Mapped[int] = mapped_column(postgresql.INTEGER, default=1)
 
+    provision_status: Mapped[ProvisionStatus] = mapped_column(
+        postgresql.ENUM(ProvisionStatus)
+    )
     last_provisioned_at: Mapped[action_timestamp]
 
     def update_installation(self, provision: LabEquipmentProvision):
@@ -82,13 +93,6 @@ class LabEquipmentInstallation(Base):
                 "Cannot upgrade installation. Provision not final"
             )
         self.last_provisioned_at = provision.installed_at
-
-
-class LabEquipmentProvisioningStatus(Enum):
-    REQUESTED = "requested"
-    APPROVED = "approved"
-    PURCHASED = "purchased"
-    INSTALLED = "installed"
 
 
 class LabEquipmentProvision(Base):
@@ -100,11 +104,9 @@ class LabEquipmentProvision(Base):
 
     id: Mapped[uuid_pk]
 
-    status: Mapped[LabEquipmentProvisioningStatus] = mapped_column(
-        postgresql.ENUM(
-            LabEquipmentProvisioningStatus, name="equipment_provision_status"
-        ),
-        default=LabEquipmentProvisioningStatus.REQUESTED,
+    status: Mapped[ProvisionStatus] = mapped_column(
+        postgresql.ENUM(ProvisionStatus, name="equipment_provision_status"),
+        default=ProvisionStatus.REQUESTED,
     )
 
     equipment_id: Mapped[UUID] = mapped_column(ForeignKey("lab_equipment.id"))
@@ -173,26 +175,26 @@ class LabEquipmentProvision(Base):
 
     @property
     def is_final(self):
-        return self.status == LabEquipmentProvisioningStatus.INSTALLED
+        return self.status == ProvisionStatus.INSTALLED
 
     def mark_approved(self, approved_by: User):
-        if self.status != LabEquipmentProvisioningStatus.REQUESTED:
+        if self.status != ProvisionStatus.REQUESTED:
             raise LabEquipmentProvisioningError("provision must be requested")
-        self.status = LabEquipmentProvisioningStatus.APPROVED
+        self.status = ProvisionStatus.APPROVED
         self.approved_by_id = approved_by.id
         self.approved_at = datetime.now()
 
     def mark_purchased(self, purchased_by: User, actual_cost: float):
-        if self.status != LabEquipmentProvisioningStatus.APPROVED:
+        if self.status != ProvisionStatus.APPROVED:
             raise LabEquipmentProvisioningError("provision must be approved")
-        self.status = LabEquipmentProvisioningStatus.PURCHASED
+        self.status = ProvisionStatus.PURCHASED
         self.actual_cost = actual_cost
         self.purchased_by_id = purchased_by.id
         self.purchased_at = datetime.now()
 
     def mark_installed(self, installed_by: User):
-        if self.status != LabEquipmentProvisioningStatus.PURCHASED:
+        if self.status != ProvisionStatus.PURCHASED:
             raise LabEquipmentProvisioningError("provision must be purchased")
-        self.status = LabEquipmentProvisioningStatus.INSTALLED
+        self.status = ProvisionStatus.INSTALLED
         self.installed_by_id = installed_by.id
         self.installed_at = datetime.now()

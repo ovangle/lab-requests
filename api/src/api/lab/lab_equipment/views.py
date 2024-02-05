@@ -16,7 +16,7 @@ from .schemas import (
     LabEquipmentLookup,
     LabEquipmentProvisionRequest,
     LabEquipmentProvisionView,
-    LabEquipmentProvisioningPage,
+    LabEquipmentProvisionPage,
     LabEquipmentUpdateRequest,
     LabEquipmentView,
 )
@@ -70,7 +70,7 @@ async def create_equipment(
 @lab_equipments.get("/provisioning")
 async def index_equipment_provisions(
     db=Depends(get_db),
-) -> LabEquipmentProvisioningPage:
+) -> LabEquipmentProvisionPage:
     raise NotImplementedError
 
 

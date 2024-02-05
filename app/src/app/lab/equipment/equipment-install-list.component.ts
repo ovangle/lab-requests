@@ -3,6 +3,7 @@ import { Component, Input, SimpleChanges } from "@angular/core";
 import { Equipment } from "./equipment";
 import { Lab, injectLabService } from "../lab";
 import { LabListComponent, LabListItemComponent } from "../lab-list.component";
+import { ProvisionStatus } from "./provision/provision-status";
 
 
 @Component({
@@ -37,18 +38,17 @@ export class EquipmentInstallListComponent {
 
     @Input({ required: true })
     equipment: Equipment | undefined;
-    _installCounts = new Map<string, number>();
-    _provisionCounts = new Map<string, number>();
+    _provisionInfos = new Map<string, [ ProvisionStatus, number ][]>();
 
     ngOnChanges(changes: SimpleChanges) {
         if (changes[ 'equipment' ]) {
             for (const installation of this.equipment!.installations) {
-                this._installCounts.set(installation.labId, installation.numInstalled);
-            }
-            for (const provision of this.equipment!.provisions) {
-                if (provision.labId) {
-                    this._provisionCounts.set(provision.labId, provision.numRequested);
+
+                if (!this._provisionInfos.has(installation.labId)) {
+                    this._provisionInfos.set(installation.labId, []);
                 }
+                const provisions = this._provisionInfos.get(installation.labId)!;
+                provisions.push([ installation.provisionStatus, installation.numInstalled ]);
             }
         }
     }
@@ -62,11 +62,21 @@ export class EquipmentInstallListComponent {
         });
     }
 
-    _numInstalled(lab: Lab): number {
-        return this._installCounts.get(lab.id) || 0;
+    _provisionInfoForStatus(lab: Lab, status: ProvisionStatus): [ ProvisionStatus, number ] {
+        const provisionInfos = this._provisionInfos.get(lab.id)!;
+        return provisionInfos.filter(([ s ]) => s === status)[ 0 ] || [ status, 0 ];
     }
 
-    _numProvisioned(lab: Lab): number {
-        return this._provisionCounts.get(lab.id) || 0;
+    _numInstalled(lab: Lab): number {
+        return this._provisionInfoForStatus(lab, 'installed')[ 1 ];
     }
+
+    _numPending(lab: Lab): number {
+        const numApproved = this._provisionInfoForStatus(lab, 'approved')[ 1 ]
+        const numRequested = this._provisionInfoForStatus(lab, 'requested')[ 1 ];
+        return numApproved + numRequested;
+
+    }
+
+
 }

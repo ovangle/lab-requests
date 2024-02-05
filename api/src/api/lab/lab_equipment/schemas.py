@@ -12,7 +12,7 @@ from db.models.lab.lab import Lab
 from db.models.lab.lab_equipment import (
     LabEquipmentInstallation,
     LabEquipmentProvision,
-    LabEquipmentProvisioningStatus,
+    ProvisionStatus,
 )
 from db.models.lab import LabEquipment
 from api.base.schemas import (
@@ -40,7 +40,8 @@ class LabEquipmentView(ModelView[LabEquipment]):
         db = local_object_session(equipment)
         installation_index = LabEquipmentInstallationIndex(
             select(LabEquipmentInstallation).where(
-                LabEquipmentInstallation.equipment_id == equipment.id
+                LabEquipmentInstallation.equipment_id == equipment.id,
+                LabEquipmentInstallation.provision_status != ProvisionStatus.CANCELLED,
             )
         )
         installations = await installation_index.load_page(db, 0)
@@ -62,7 +63,7 @@ class LabEquipmentIndex(ModelIndex[LabEquipmentView]):
 
 
 # TODO: type PEP 695
-LabEquipmentIndexPage = ModelIndexPage[LabEquipmentView]
+type LabEquipmentIndexPage = ModelIndexPage[LabEquipmentView]  # type: ignore
 
 
 class LabEquipmentLookup(ModelLookup[LabEquipment]):
@@ -107,6 +108,7 @@ class LabEquipmentInstallationView(ModelView[LabEquipmentInstallation]):
     equipment_id: UUID
     lab_id: UUID
     num_installed: int
+    provision_status: ProvisionStatus
 
     @classmethod
     async def from_model(cls, model: LabEquipmentInstallation):
@@ -114,6 +116,7 @@ class LabEquipmentInstallationView(ModelView[LabEquipmentInstallation]):
             id=model.id,
             equipment_id=model.equipment_id,
             lab_id=model.lab_id,
+            provision_status=model.provision_status,
             num_installed=model.num_installed,
             created_at=model.created_at,
             updated_at=model.updated_at,
@@ -124,7 +127,8 @@ class LabEquipmentInstallationIndex(ModelIndex[LabEquipmentInstallationView]):
     __item_view__ = LabEquipmentInstallationView
 
 
-LabEquipmentInstallationPage = ModelIndexPage[LabEquipmentInstallationView]
+# FIXME: mypy does not support PEP 695
+type LabEquipmentInstallationPage = ModelIndexPage[LabEquipmentInstallationView]  # type: ignore
 
 
 class LabEquipmentInstallRequest(ModelCreateRequest[LabEquipment]):
@@ -160,26 +164,29 @@ class LabEquipmentInstallRequest(ModelCreateRequest[LabEquipment]):
 
 
 class LabEquipmentProvisionView(ModelView[LabEquipmentProvision]):
-    equipment: LabEquipmentView
-    lab: LabView | None
+    equipment_id: UUID
+    installation: LabEquipmentInstallationView | None
 
-    status: LabEquipmentProvisioningStatus
+    status: ProvisionStatus
 
     estimated_cost: float | None
     quantity_required: int
 
     @classmethod
     async def from_model(cls, model: LabEquipmentProvision):
-        equipment = await LabEquipmentView.from_model(
-            await model.awaitable_attrs.equipment
-        )
-        lab = (await model.awaitable_attrs.lab) if model.lab_id else None
+        if model.installation_id:
+            installation_model = await model.awaitable_attrs.installation
+            installation = await LabEquipmentInstallationView.from_model(
+                installation_model
+            )
+        else:
+            installation = None
 
         return cls(
             id=model.id,
             status=model.status,
-            equipment=equipment,
-            lab=lab,
+            equipment_id=model.equipment_id,
+            installation=installation,
             estimated_cost=model.estimated_cost,
             quantity_required=model.quantity_required,
             created_at=model.created_at,
@@ -187,11 +194,12 @@ class LabEquipmentProvisionView(ModelView[LabEquipmentProvision]):
         )
 
 
-class LabEquipmentProvisioningIndex(ModelIndex[LabEquipmentProvisionView]):
+class LabEquipmentProvisionIndex(ModelIndex[LabEquipmentProvisionView]):
     __item_view__ = LabEquipmentProvisionView
 
 
-LabEquipmentProvisioningPage = ModelIndexPage[LabEquipmentProvisionView]
+# TODO: mypy does not support PEP 695
+type LabEquipmentProvisionPage = ModelIndexPage[LabEquipmentProvisionView]  # type: ignore
 
 
 class LabEquipmentProvisionRequest(ModelCreateRequest[LabEquipment]):

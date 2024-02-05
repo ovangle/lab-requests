@@ -19,6 +19,7 @@ import { defer, firstValueFrom } from 'rxjs';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { Lab } from '../lab';
 import { LabEquipmentProvision, labEquipmentProvisionFromJsonObject } from './provision/lab-equipment-provision';
+import { ProvisionStatus, isProvisionStatus } from './provision/provision-status';
 
 export interface EquipmentParams extends ModelParams {
   name: string;
@@ -114,6 +115,7 @@ export interface EquipmentInstallation extends ModelParams {
   equipmentId: string;
   labId: string;
   numInstalled: number;
+  provisionStatus: ProvisionStatus;
 }
 
 export function equipmentInstallationFromJsonObject(obj: JsonObject): EquipmentInstallation {
@@ -127,11 +129,16 @@ export function equipmentInstallationFromJsonObject(obj: JsonObject): EquipmentI
   if (typeof obj[ 'numInstalled' ] !== 'number') {
     throw new Error('Expected a number numInstalled');
   }
+  if (!isProvisionStatus(obj[ 'provisionStatus' ])) {
+    throw new Error("Expected a provision status 'provisionStatus");
+  }
+
   return {
     ...baseParams,
     equipmentId: obj[ 'equipmentId' ],
     labId: obj[ 'labId' ],
-    numInstalled: obj[ 'numInstalled' ]
+    numInstalled: obj[ 'numInstalled' ],
+    provisionStatus: obj[ 'provisionStatus' ]
   }
 }
 
