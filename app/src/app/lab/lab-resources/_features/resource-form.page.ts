@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Observable, Subscription, combineLatest, defer, map, of } from 'rxjs';
+import { Observable, ReplaySubject, Subscription, combineLatest, defer, firstValueFrom, map, of, tap } from 'rxjs';
 
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import {
   ResourceType,
   isResourceType,
 } from 'src/app/lab/lab-resource/resource-type';
-import { ResourceContext } from 'src/app/lab/lab-resource/resource';
+import { Resource } from '../../lab-resource/resource';
+import { ResourceContext } from '../../lab-resource/resource-context';
 import { ScaffoldFormPaneControl } from 'src/app/scaffold/form-pane/form-pane-control';
 import { ResourceFormTitleComponent } from '../../lab-resource/common/resource-form-title.component';
 import { EquipmentLeaseFormComponent } from '../equipment-lease/equipment-lease-form.component';
@@ -16,6 +17,7 @@ import { InputMaterialFormComponent } from '../input-material/input-material-for
 import { SoftwareLeaseFormComponent } from '../software-lease/software-resource-form.component';
 import { OutputMaterialFormComponent } from '../output-material/output-material-form.component';
 import { FormGroup } from '@angular/forms';
+import { ResourceContainerContext, ResourceSplice, resourceContainerAttr } from '../../lab-resource/resource-container';
 
 export function typeIndexFromDetailRoute$(): Observable<
   [ ResourceType, number | 'create' ]
@@ -40,7 +42,7 @@ export function typeIndexFromDetailRoute$(): Observable<
 }
 
 @Component({
-  selector: 'lab-work-unit-resource-form-page',
+  selector: 'lab-resource-form-page',
   standalone: true,
   imports: [
     CommonModule,
@@ -55,30 +57,37 @@ export function typeIndexFromDetailRoute$(): Observable<
       <lab-resource-form-title
         [resourceType]="typeIndex[0]"
         [resourceIndex]="typeIndex[1]"
-        [saveDisabled]="!_form?.valid"
+        [saveDisabled]="saveDisabled"
         (requestClose)="close()"
         (requestSave)="saveAndClose()"
       >
       </lab-resource-form-title>
 
       @if (funding$ | async; as funding) {
-        {{funding | json}}
         @switch (typeIndex[0]) {
           @case ('equipment-lease') {
             <lab-equipment-lease-form 
-              [funding]="funding" />
+              [funding]="funding" 
+              (patchChange)="onPatchChange($event)"
+              (hasError)="onFormHasError($event)"/>
           }
 
           @case ('software-lease') {
-            <lab-software-lease-form />
+            <lab-software-lease-form 
+              (patchChange)="onPatchChange($event)"
+              (hasError)="onFormHasError($event)"/>
           }
 
           @case ('input-material') {
-            <lab-input-material-form />
+            <lab-input-material-form 
+              (patchChange)="onPatchChange($event)"
+              (hasError)="onFormHasError($event)"/>
           }
 
           @case ('output-material') {
-            <lab-output-material-form />
+            <lab-output-material-form 
+              (patchChange)="onPatchChange($event)"
+              (hasError)="onFormHasError($event)" />
           }
         }
       }
@@ -89,28 +98,24 @@ export function typeIndexFromDetailRoute$(): Observable<
 })
 export class LabResourceFormPage {
   readonly _cd = inject(ChangeDetectorRef);
+  readonly _containerContext = inject(ResourceContainerContext);
   readonly _context = inject(ResourceContext);
   _contextConnection: Subscription;
 
   readonly _formPane = inject(ScaffoldFormPaneControl);
-  _form: FormGroup<any> | undefined;
 
   readonly typeIndex$ = defer(() => this._context.committedTypeIndex$);
   readonly resourceType$ = defer(() => this._context.resourceType$);
 
   readonly funding$: Observable<ResearchFunding | null> = this._context.funding$;
 
+  readonly _patchSubject = new ReplaySubject(1);
+  saveDisabled: boolean = true;
+
   constructor() {
     this._contextConnection = this._context.sendTypeIndex(
       typeIndexFromDetailRoute$(),
     );
-  }
-
-  attachForm(form: FormGroup<any>) {
-    if (this._form) {
-      throw new Error('resource form page can only have at most one resource form');
-    }
-    this._form = form;
   }
 
   ngOnDestroy() {
@@ -121,7 +126,35 @@ export class LabResourceFormPage {
     this._formPane.close();
   }
   async saveAndClose() {
-    // await this._formService.save(patch);
+    const [ resourceType, index ] = await firstValueFrom(this._context.committedTypeIndex$);
+    const resourcePatch = await firstValueFrom(this._patchSubject);
+
+    let splice: ResourceSplice<any>;
+    if (index === 'create') {
+      const containerAttr = resourceContainerAttr(resourceType);
+      if (index === 'create') {
+        const len = await this._containerContext.getResourceCount(resourceType);
+        splice = {
+          start: len,
+          items: [ resourcePatch ]
+        }
+      } else {
+        splice = {
+          start: index,
+          end: index + 1,
+          items: [ resourcePatch ]
+        }
+      }
+
+    }
+
     await this.close();
+  }
+
+  onPatchChange(patch: Resource) {
+    this._patchSubject.next(patch);
+  }
+  onFormHasError(hasError: boolean) {
+    this.saveDisabled = !hasError;
   }
 }

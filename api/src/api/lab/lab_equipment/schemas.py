@@ -215,27 +215,43 @@ class LabEquipmentProvisionRequest(ModelCreateRequest[LabEquipment]):
     quantity_required: int = 1
     purchase_url: str = "<<unknown>>"
 
-    async def do_create(self, db: LocalSession):
-        equipment: LabEquipment
+    async def get_lab(self, db: LocalSession) -> Lab | None:
+        if isinstance(self.lab, UUID):
+            self.lab = await Lab.get_for_id(db, self.lab)
+        return cast(Lab | None, self.lab)
+
+    async def get_or_create_equipment(self, db: LocalSession) -> LabEquipment:
         if isinstance(self.equipment, LabEquipment):
-            equipment = self.equipment
+            pass
         elif isinstance(self.equipment, UUID):
-            equipment = await LabEquipment.get_for_id(db, self.equipment)
-        else:
-            equipment = await self.equipment.do_create(db)
-        self.equipment = equipment
+            self.equipment = await LabEquipment.get_for_id(db, self.equipment)
+        elif isinstance(self.equipment, LabEquipmentCreateRequest):
+            self.equipment = await self.equipment.do_create(db)
+        return cast(LabEquipment, self.equipment)
 
-        if isinstance(self.lab, Lab):
-            lab = self.lab
-        elif isinstance(self.lab, UUID):
-            lab = await Lab.get_for_id(db, self.lab)
-        else:
-            raise ValueError("Expected a lab")
-        self.lab = lab
+    async def maybe_create_installation(
+        self, db: LocalSession
+    ) -> LabEquipmentInstallation | None:
+        lab = await self.get_lab(db)
+        if lab is None:
+            return None
+        equipment = await self.get_or_create_equipment(db)
+        print(f"creating installation in {lab.id}")
+        installation = LabEquipmentInstallation(
+            equipment_id=equipment.id,
+            lab_id=lab.id,
+            num_installed=self.quantity_required,
+            provision_status=ProvisionStatus.REQUESTED,
+        )
+        db.add(installation)
+        await db.commit()
+        return installation
 
+    async def do_create(self, db: LocalSession):
+        equipment = await self.get_or_create_equipment(db)
+        installation = await self.maybe_create_installation(db)
         provision = LabEquipmentProvision(
-            equipment_or_install=equipment,
-            lab=lab,
+            equipment_or_install=installation if installation else equipment,
             estimated_cost=self.estimated_cost,
             quantity_required=self.quantity_required,
             purchase_url=self.purchase_url,

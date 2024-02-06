@@ -21,6 +21,13 @@ const routes: Routes = [
           ),
       },
       {
+        path: 'equipment',
+        loadChildren: () =>
+          import('./equipment/_features/equipment.routes').then(
+            (module) => module.EQUIPMENT_ROUTES
+          )
+      },
+      {
         path: 'lab-forms',
         outlet: 'form',
         loadChildren: () =>
@@ -34,7 +41,6 @@ const routes: Routes = [
           import('./research/_features/research-plan.routes').then(
             module => module.RESEARCH_PLAN_ROUTES
           )
-
       },
       {
         path: 'user',

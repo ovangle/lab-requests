@@ -156,6 +156,7 @@ export class EquipmentSearchComponent implements ControlValueAccessor {
   readonly _equipmentRequest = new ReplaySubject<LabEquipmentProvision>(1);
 
   readonly searchOptions$ = this.searchControl.valueChanges.pipe(
+    startWith(''),
     switchMap((search) => {
       if (search instanceof Equipment) {
         return of([ search ]);

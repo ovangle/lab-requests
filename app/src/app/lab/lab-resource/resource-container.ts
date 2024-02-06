@@ -1,5 +1,5 @@
 import { Injectable, ɵɵi18nApply } from '@angular/core';
-import { BehaviorSubject, Observable, ReplaySubject, Subscription, defer, firstValueFrom, map, tap } from 'rxjs';
+import { BehaviorSubject, Observable, ReplaySubject, Subscription, defer, firstValueFrom, map, of, shareReplay, switchMap, tap } from 'rxjs';
 import { ALL_RESOURCE_TYPES, ResourceType } from './resource-type';
 
 import type { Resource } from './resource';
@@ -34,7 +34,7 @@ import {
 import { ResearchPlan } from 'src/app/research/plan/research-plan';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { isThisSecond } from 'date-fns';
-import { ResearchFunding, researchFundingFromJsonObject } from 'src/app/research/funding/research-funding';
+import { ResearchFunding, injectResearchFundingService, researchFundingFromJsonObject } from 'src/app/research/funding/research-funding';
 import { ResourceContainerControl } from './resource-container-control';
 
 export interface ResourceContainerParams {
@@ -141,7 +141,7 @@ export function resourceContainerParamsFromJson(json: JsonObject): ResourceConta
   };
 }
 
-interface ResourceSplice<T> {
+export interface ResourceSplice<T> {
   readonly start: number;
   readonly end?: number;
   readonly items: T[];
@@ -206,8 +206,17 @@ export class ResourceContainerContext {
   _committedSubject = new ReplaySubject<ResourceContainer>(1);
   committed$ = this._committedSubject.asObservable();
 
-  _fundingSubject = new ReplaySubject<ResearchFunding>(1);
-  funding$ = this._fundingSubject.asObservable();
+  readonly fundingService = injectResearchFundingService();
+  _fundingSubject = new ReplaySubject<ResearchFunding | string>(1);
+  funding$ = this._fundingSubject.pipe(
+    switchMap(funding => {
+      if (typeof funding === 'string') {
+        return this.fundingService.fetch(funding)
+      }
+      return of(funding);
+    }),
+    shareReplay(1)
+  )
 
 
   get control(): ResourceContainerControl {
@@ -250,6 +259,11 @@ export class ResourceContainerContext {
   async getResourceAt<T extends Resource>(resourceType: T[ 'type' ], index: number): Promise<T | undefined> {
     const committed = await firstValueFrom(this.control.committed$);
     return committed.getResourceAt(resourceType, index);
+  }
+
+  async getResourceCount(resourceType: ResourceType): Promise<number> {
+    const committed = await firstValueFrom(this.control.committed$);
+    return committed.getResources(resourceType).length;
   }
 
   async commit(patch: ResourceContainerPatch): Promise<ResourceContainer> {

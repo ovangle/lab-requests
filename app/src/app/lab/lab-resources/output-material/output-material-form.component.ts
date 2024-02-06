@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, ViewChild, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ViewChild, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -9,7 +9,7 @@ import {
 } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { OutputMaterial } from './output-material';
+import { OutputMaterial, OutputMaterialParams } from './output-material';
 
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription, first, map } from 'rxjs';
@@ -26,7 +26,7 @@ import {
   resourceStorageForm,
   ResourceStorageFormComponent,
 } from '../../lab-resource/storage/resource-storage-form.component';
-import { ResourceContext } from '../../lab-resource/resource';
+import { ResourceContext } from '../../lab-resource/resource-context';
 
 export type OutputMaterialForm = FormGroup<{
   name: FormControl<string>;
@@ -133,6 +133,12 @@ export class OutputMaterialFormComponent {
   readonly context = inject(ResourceContext<OutputMaterial>);
 
   form: OutputMaterialForm | undefined;
+
+  @Output()
+  patchChange = new EventEmitter<OutputMaterialParams>();
+
+  @Output()
+  hasError = new EventEmitter<boolean>();
 
   ngOnInit() {
     this.context.committed$.pipe(

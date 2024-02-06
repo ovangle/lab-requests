@@ -18,11 +18,10 @@ import {
 import { ModelParams, modelParamsFromJsonObject } from 'src/app/common/model/model';
 import { JsonObject } from 'src/app/utils/is-json-object';
 
-export interface ResourceParams extends ModelParams {
+export interface ResourceParams {
   index: number | 'create';
   type: ResourceType;
-
-  labId: string;
+  id: string | null;
 }
 
 export function resourceParamsFromJsonObject(json: JsonObject): ResourceParams {
@@ -41,14 +40,13 @@ export function resourceParamsFromJsonObject(json: JsonObject): ResourceParams {
     ...baseParams,
     type: json[ 'type' ],
     index: json[ 'index' ],
-    labId: json[ 'labId' ]
   }
 }
 
 export class Resource {
   readonly type: ResourceType;
 
-  readonly id: string;
+  readonly id: string | null;
   readonly index: number | 'create';
 
   constructor(params: ResourceParams) {
@@ -69,45 +67,3 @@ export function isResourceTypeIndex(obj: any): obj is ResourceTypeIndex {
   );
 }
 
-
-@Injectable()
-export class ResourceContext<T extends Resource> {
-  readonly _containerContext = inject(ResourceContainerContext);
-
-  readonly funding$ = this._containerContext.funding$;
-  readonly container$: Observable<ResourceContainer> = this._containerContext.committed$;
-
-  readonly _committedTypeIndexSubject = new ReplaySubject<ResourceTypeIndex>(1);
-  readonly committedTypeIndex$ = this._committedTypeIndexSubject.asObservable();
-
-  readonly resourceType$ = defer(() =>
-    this.committedTypeIndex$.pipe(map(([ type, _ ]) => type)),
-  );
-  readonly isCreate$ = defer(() =>
-    this.committedTypeIndex$.pipe(map(([ _, index ]) => index === 'create')),
-  );
-
-  readonly committed$: Observable<T | null> = combineLatest([
-    this.container$,
-    this.committedTypeIndex$,
-  ]).pipe(
-    map(([ container, typeIndex ]: [ ResourceContainer, ResourceTypeIndex ]) => {
-      const [ resourceType, index ] = typeIndex;
-
-      return index === 'create'
-        ? null
-        : container.getResourceAt<T>(resourceType, index);
-    }),
-    shareReplay(1),
-  );
-
-  sendTypeIndex(typeIndex$: Observable<ResourceTypeIndex>): Subscription {
-    typeIndex$.subscribe((typeIndex) =>
-      this._committedTypeIndexSubject.next(typeIndex),
-    );
-
-    return new Subscription(() => {
-      this._committedTypeIndexSubject.complete();
-    });
-  }
-}

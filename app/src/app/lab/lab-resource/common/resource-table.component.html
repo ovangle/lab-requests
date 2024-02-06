@@ -5,7 +5,7 @@
   </div>
   <div class="table-actions">
     <a mat-button (click)="openResourceCreateForm($event)" [disabled]="isActionsDisabled">
-      + Add {{ dataSource.resourceTitle }}
+      + Add {{ dataSource.resourceType | resourceType }}
     </a>
   </div>
 </div>

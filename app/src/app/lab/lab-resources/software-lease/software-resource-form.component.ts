@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Injectable, Input, ViewChild, inject } from '@angular/core';
+import { Component, EventEmitter, Injectable, Input, Output, ViewChild, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -10,14 +10,14 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { SoftwareLease } from './software-lease';
+import { SoftwareLease, SoftwareLeaseParams } from './software-lease';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import {
   CostEstimateForm,
   costEstimateForm,
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { ProvisionFormComponent } from '../../lab-resource/provision/provision-form.component';
-import { ResourceContext } from '../../lab-resource/resource';
+import { ResourceContext } from '../../lab-resource/resource-context';
 
 export type SoftwareLeaseForm = FormGroup<{
   name: FormControl<string>;
@@ -117,6 +117,12 @@ export class SoftwareLeaseFormComponent {
   readonly context = inject(ResourceContext<SoftwareLease>);
 
   form: SoftwareLeaseForm | undefined;
+
+  @Output()
+  patchChange = new EventEmitter<SoftwareLeaseParams>();
+
+  @Output()
+  hasError = new EventEmitter<boolean>();
 
   ngOnInit() {
     this.context.committed$.subscribe(committed => {

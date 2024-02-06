@@ -27,8 +27,6 @@ export interface EquipmentParams extends ModelParams {
   tags: string[];
   trainingDescriptions: string[];
   installationPage: ModelIndexPage<EquipmentInstallation>;
-  // Provisioining requests for this equipment which are not final.
-  provisionsPage: ModelIndexPage<LabEquipmentProvision>;
 }
 
 export class Equipment extends Model {
@@ -46,10 +44,6 @@ export class Equipment extends Model {
   get installations() {
     return this.installationsPage.items;
   }
-  provisionsPage: ModelIndexPage<LabEquipmentProvision>;
-  get provisions() {
-    return this.provisionsPage.items;
-  }
 
   constructor(params: EquipmentParams) {
     super(params);
@@ -58,7 +52,6 @@ export class Equipment extends Model {
     this.tags = Array.from(params.tags!);
     this.trainingDescriptions = Array.from(params.trainingDescriptions!);
     this.installationsPage = params.installationPage;
-    this.provisionsPage = params.provisionsPage;
   }
 }
 
@@ -66,80 +59,86 @@ export class Equipment extends Model {
 export function equipmentFromJsonObject(json: JsonObject): Equipment {
   const baseParams = modelParamsFromJsonObject(json);
 
-  if (typeof json['name'] !== 'string') {
+  if (typeof json[ 'name' ] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
-  if (typeof json['description'] !== 'string') {
+  if (typeof json[ 'description' ] !== 'string') {
     throw new Error("Expected a string 'description'");
   }
   if (
-    !Array.isArray(json['tags']) ||
-    !json['tags'].every((t) => typeof t === 'string')
+    !Array.isArray(json[ 'tags' ]) ||
+    !json[ 'tags' ].every((t) => typeof t === 'string')
   ) {
     throw new Error("Expected an array of strings 'tags'");
   }
   if (
-    !Array.isArray(json['trainingDescriptions']) ||
-    !json['trainingDescriptions'].every((t) => typeof t === 'string')
+    !Array.isArray(json[ 'trainingDescriptions' ]) ||
+    !json[ 'trainingDescriptions' ].every((t) => typeof t === 'string')
   ) {
     throw new Error("Expected an array of strings 'trainingDescriptions");
   }
-  if (!isJsonObject(json['installations'])) {
+  if (!isJsonObject(json[ 'installations' ])) {
     throw new Error("Expected a json object 'installations'")
   }
   const installationPage = modelIndexPageFromJsonObject(
     equipmentInstallationFromJsonObject,
-    json['installations']
-  );
-
-  if (!isJsonObject(json['provisions'])) {
-    throw new Error("Expected a json object 'provisions'");
-  }
-  const provisionsPage = modelIndexPageFromJsonObject(
-    labEquipmentProvisionFromJsonObject,
-    json['provisions']
+    json[ 'installations' ]
   );
 
   return new Equipment({
     ...baseParams,
-    name: json['name'],
-    description: json['description'],
-    tags: json['tags'],
-    trainingDescriptions: json['trainingDescriptions'],
+    name: json[ 'name' ],
+    description: json[ 'description' ],
+    tags: json[ 'tags' ],
+    trainingDescriptions: json[ 'trainingDescriptions' ],
     installationPage,
-    provisionsPage,
   });
 }
 
-export interface EquipmentInstallation extends ModelParams {
+export interface EquipmentInstallationParams extends ModelParams {
   equipmentId: string;
   labId: string;
   numInstalled: number;
   provisionStatus: ProvisionStatus;
 }
 
+export class EquipmentInstallation extends Model implements EquipmentInstallationParams {
+  equipmentId: string;
+  labId: string;
+  numInstalled: number;
+  provisionStatus: string;
+
+  constructor(params: EquipmentInstallationParams) {
+    super(params);
+    this.equipmentId = params.equipmentId;
+    this.labId = params.labId;
+    this.numInstalled = params.numInstalled;
+    this.provisionStatus = params.provisionStatus;
+  }
+}
+
 export function equipmentInstallationFromJsonObject(obj: JsonObject): EquipmentInstallation {
   const baseParams = modelParamsFromJsonObject(obj);
-  if (typeof obj['equipmentId'] !== 'string' || !validateIsUUID(obj['equipmentId'])) {
+  if (typeof obj[ 'equipmentId' ] !== 'string' || !validateIsUUID(obj[ 'equipmentId' ])) {
     throw new Error("Expected a uuid 'equipmentId")
   }
-  if (typeof obj['labId'] !== 'string' || !validateIsUUID(obj['labId'])) {
+  if (typeof obj[ 'labId' ] !== 'string' || !validateIsUUID(obj[ 'labId' ])) {
     throw new Error("Expected a uuid 'labId'")
   }
-  if (typeof obj['numInstalled'] !== 'number') {
+  if (typeof obj[ 'numInstalled' ] !== 'number') {
     throw new Error('Expected a number numInstalled');
   }
-  if (!isProvisionStatus(obj['provisionStatus'])) {
+  if (!isProvisionStatus(obj[ 'provisionStatus' ])) {
     throw new Error("Expected a provision status 'provisionStatus");
   }
 
-  return {
+  return new EquipmentInstallation({
     ...baseParams,
-    equipmentId: obj['equipmentId'],
-    labId: obj['labId'],
-    numInstalled: obj['numInstalled'],
-    provisionStatus: obj['provisionStatus']
-  }
+    equipmentId: obj[ 'equipmentId' ],
+    labId: obj[ 'labId' ],
+    numInstalled: obj[ 'numInstalled' ],
+    provisionStatus: obj[ 'provisionStatus' ]
+  });
 }
 
 

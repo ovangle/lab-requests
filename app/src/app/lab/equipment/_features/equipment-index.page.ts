@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
-import { Observable, of, shareReplay, switchMap } from 'rxjs';
+import { Observable, of, shareReplay, switchMap, tap } from 'rxjs';
 import { Equipment, EquipmentCollection, injectEquipmentService } from '../equipment';
 import { HttpParams } from '@angular/common/http';
 import { LabEquipmentListComponent } from '../equipment-list.component';
@@ -63,7 +63,7 @@ import { RouterModule } from '@angular/router';
       }
     `,
   ],
-  providers: [EquipmentCollection],
+  providers: [ EquipmentCollection ],
 })
 export class EquipmentIndexPage {
   readonly labProfile = inject(LabProfilePage, { optional: true })
@@ -78,6 +78,9 @@ export class EquipmentIndexPage {
         params = params.set('lab', lab.id);
       }
       return this.equipments.query(params);
+    }),
+    tap(equipments => {
+      console.log('equipments', equipments)
     }),
     shareReplay(1)
   )

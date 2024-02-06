@@ -24,9 +24,7 @@ import { ProvisionStatus } from "./provision/provision-status";
             <lab-list-item [lab]="lab">
                 <div class="extra">
                     installed: {{_numInstalled(lab)}}
-                    @if (_numProvisioned(lab) > 0) {
-                        provisioned: {{_numProvisioned(lab)}}
-                    }
+                    provisioned: {{_numProvisioned(lab)}}
                 </div>
             </lab-list-item>
         </ng-template>
@@ -71,11 +69,10 @@ export class EquipmentInstallListComponent {
         return this._provisionInfoForStatus(lab, 'installed')[ 1 ];
     }
 
-    _numPending(lab: Lab): number {
+    _numProvisioned(lab: Lab): number {
         const numApproved = this._provisionInfoForStatus(lab, 'approved')[ 1 ]
         const numRequested = this._provisionInfoForStatus(lab, 'requested')[ 1 ];
         return numApproved + numRequested;
-
     }
 
 

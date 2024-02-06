@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, ViewChild, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ViewChild, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -9,7 +9,7 @@ import {
 } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { InputMaterial } from './input-material';
+import { InputMaterial, InputMaterialParams } from './input-material';
 
 import { CommonMeasurementUnitInputComponent } from 'src/app/common/measurement/common-measurement-unit-input.component';
 import { MeasurementUnitPipe } from 'src/app/common/measurement/common-measurement-unit.pipe';
@@ -30,7 +30,7 @@ import {
 } from '../../lab-resource/storage/resource-storage-form.component';
 import { WorkUnitContext } from '../../work-unit/common/work-unit';
 import { ResearchPlanContext } from 'src/app/research/plan/research-plan';
-import { ResourceContext } from '../../lab-resource/resource';
+import { ResourceContext } from '../../lab-resource/resource-context';
 
 export type InputMaterialForm = FormGroup<{
   name: FormControl<string>;
@@ -144,6 +144,12 @@ export class InputMaterialFormComponent {
   readonly context = inject(ResourceContext<InputMaterial>);
 
   form: InputMaterialForm | undefined;
+
+  @Output()
+  patchChange = new EventEmitter<InputMaterialParams>();
+
+  @Output()
+  hasError = new EventEmitter<boolean>();
 
   ngOnInit() {
     this.context.committed$.pipe(

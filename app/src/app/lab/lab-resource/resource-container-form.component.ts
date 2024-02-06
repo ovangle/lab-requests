@@ -25,22 +25,18 @@ import { ResearchFunding } from "src/app/research/funding/research-funding";
     template: `
     @if (funding) {
         <div class="equipment-lease-table-container">
-            <h3>Equipment leases</h3>
             <lab-equipment-lease-table />
         </div>
             
         <div class="software-lease-table-container">
-            <h3>Software</h3>
             <lab-software-lease-table />
         </div>
 
         <div class="input-material-table-container">
-            <h3>Input materials</h3>
             <lab-input-material-table />
         </div>
 
         <div class="output-material-table-container">
-            <h3>Output materials</h3>
             <lab-output-material-table />
         </div>
     } @else {

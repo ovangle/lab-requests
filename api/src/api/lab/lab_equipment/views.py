@@ -78,7 +78,8 @@ async def index_equipment_provisions(
 async def request_equipment_provision(
     request: LabEquipmentProvisionRequest, db=Depends(get_db)
 ) -> LabEquipmentProvisionView:
-    raise NotImplemented
+    provision = await request.do_create(db)
+    return await LabEquipmentProvisionView.from_model(provision)
 
 
 @lab_equipments.get("/provision/{provisioin_id}")

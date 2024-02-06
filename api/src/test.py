@@ -1,13 +1,9 @@
-# import asyncio
+import asyncio
 
-# from sqlalchemy import delete, select
-# from api.uni.models import Campus
-# from api.lab.models import Lab_
-# from db import async_sessionmaker
+from sqlalchemy import delete, select
+from db import local_sessionmaker
 
-# from api.lab.models import lab_supervisor
-# from api.user.models import NativeUserCredentials_, User_
-# from api.user.model_fns import login_native_user, get_user_for_email
+from db.models.lab.lab_equipment import LabEquipment, LabEquipmentProvision
 
 
 # async def delete_all_users(db):
@@ -21,7 +17,19 @@
 #     await db.commit()
 
 
-# async def main():
+async def main():
+    async with local_sessionmaker() as db:
+        for e in await db.scalars(select(LabEquipment)):
+            print(e.name)
+            for provision in await db.scalars(
+                select(LabEquipmentProvision).where(
+                    LabEquipmentProvision.equipment_id == e.id
+                )
+            ):
+                print("provisioned", provision.status)
+                print(provision.installation_id)
+
+
 #     async with async_sessionmaker() as db:
 #         await delete_all_users(db)
 #         # user = await User_.get_for_email(db, "t.stephenson@cqu.edu.au")
@@ -47,5 +55,5 @@
 #         #         print("supervisor", supervisor)
 
 
-# if __name__ == "__main__":
-#     asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
