@@ -5,7 +5,6 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { UserMenuComponent } from '../user/common/user-menu.component';
-import { AppRoutes } from '../app-routing.module';
 
 import { ScaffoldStateService } from './scaffold-state.service';
 
@@ -36,7 +35,7 @@ import { ScaffoldStateService } from './scaffold-state.service';
       <div class="spacer"></div>
 
       <user-menu
-        [userFeatureLink]="[_appRoutes.user]"
+        [userFeatureLink]="['/users']"
         [isLoggedIn]="_oauthContext.isLoggedIn"
         [loginDisabled]="scaffoldState.isLoginButtonDisabled$ | async"
         userFullName="Current user"
@@ -67,7 +66,6 @@ import { ScaffoldStateService } from './scaffold-state.service';
     `,
 })
 export class ToolbarComponent {
-  _appRoutes = inject(AppRoutes);
   _oauthContext = inject(LoginContext);
   _activatedRoute = inject(ActivatedRoute);
 

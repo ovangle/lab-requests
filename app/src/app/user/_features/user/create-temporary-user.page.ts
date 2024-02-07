@@ -1,4 +1,4 @@
-import { APP_BASE_HREF, CommonModule } from "@angular/common";
+import { APP_BASE_HREF, CommonModule, Location } from "@angular/common";
 import { CUSTOM_ELEMENTS_SCHEMA, Component, inject } from "@angular/core";
 import { CreateTemporaryUserFormComponent } from "../../temporary-user/user-create-temporary-user-form.component";
 import { CreateTemporaryUserRequest, CreateTemporaryUserResult, TemporaryAccessUser, injectUserService } from "../../common/user";
@@ -7,6 +7,8 @@ import { firstValueFrom } from "rxjs";
 import { CreateTemporaryUserFlowComponent } from "../../temporary-user/user-temporary-user-flow.component";
 import urlJoin from "url-join";
 import { HttpParams } from "@angular/common/http";
+import { APP_BASE_URL } from "src/app/utils/app-base-url";
+import { ShowUrlComponent } from "src/app/common/show-url.component";
 
 
 @Component({
@@ -14,7 +16,8 @@ import { HttpParams } from "@angular/common/http";
     standalone: true,
     imports: [
         CommonModule,
-        CreateTemporaryUserFormComponent
+        CreateTemporaryUserFormComponent,
+        ShowUrlComponent
     ],
     schemas: [
         CUSTOM_ELEMENTS_SCHEMA
@@ -29,7 +32,9 @@ import { HttpParams } from "@angular/common/http";
                 Either: 
                 Instruct the user to navigate to 
                 <div class="redirect-url"> 
-                    {{userRedirectUrl}}
+                    <common-show-url [url]="userRedirectUrl">
+                        <mat-label>Url</mat-label>
+                    </common-show-url>
                 </div>
 
             <p> 
@@ -48,10 +53,18 @@ import { HttpParams } from "@angular/common/http";
 })
 export class CreateTemporaryUserPage {
     readonly _router = inject(Router);
-    readonly appBaseHref = inject(APP_BASE_HREF);
     readonly users = injectUserService();
+    readonly appBaseUrl = inject(APP_BASE_URL);
 
     result: CreateTemporaryUserResult | undefined;
+
+    ngOnInit() {
+        this.result = {
+            token: 'abcdef12345',
+            tokenExpiresAt: new Date(),
+            user: {} as any
+        }
+    }
 
     get userRedirectUrl() {
         const params = new HttpParams({
@@ -60,11 +73,10 @@ export class CreateTemporaryUserPage {
                 token: this.result!.token
             }
         })
-        return `${urlJoin(this.appBaseHref)}?${params}`;
+        return `${urlJoin(this.appBaseUrl, 'create-user')}?${params}`;
     }
 
     _onFormSave(request: CreateTemporaryUserRequest) {
-        debugger;
         this.users.createTemporaryUser(request).subscribe(result => {
             this.result = result
         });

@@ -28,21 +28,7 @@ import {
 } from './app-oauth-provider-params';
 import { ScaffoldLayoutComponent } from './scaffold/scaffold-layout.component';
 import { Platform } from '@angular/cdk/platform';
-
-/**
- * This function is used internal to get a string instance of the `<base href="" />` value from `index.html`.
- * This is an exported function, instead of a private function or inline lambda, to prevent this error:
- *
- * `Error encountered resolving symbol values statically.`
- * `Function calls are not supported.`
- * `Consider replacing the function or lambda with a reference to an exported function.`
- *
- * @param platformLocation an Angular service used to interact with a browser's URL
- * @return a string instance of the `<base href="" />` value from `index.html`
- */
-export function getBaseHref(platformLocation: PlatformLocation): string {
-  return platformLocation.getBaseHrefFromDOM();
-}
+import { provideAppBaseUrl } from './utils/app-base-url';
 
 @NgModule({
   declarations: [ AppComponent ],
@@ -70,6 +56,7 @@ export function getBaseHref(platformLocation: PlatformLocation): string {
       useFactory: (s: PlatformLocation) => s.getBaseHrefFromDOM(),
       deps: [ PlatformLocation ]
     },
+    provideAppBaseUrl(),
     {
       provide: API_BASE_URL,
       useValue: '/api',

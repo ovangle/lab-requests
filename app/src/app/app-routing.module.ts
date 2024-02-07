@@ -74,14 +74,6 @@ const routes: Routes = [
   },
 ];
 
-@Injectable({ providedIn: 'root' })
-export class AppRoutes {
-  readonly public = '/public';
-
-  readonly oauth = '/oauth';
-  readonly user = '/user';
-  readonly lab = '/lab';
-}
 
 @NgModule({
   imports: [ RouterModule.forRoot(routes, { enableTracing: true }) ],
