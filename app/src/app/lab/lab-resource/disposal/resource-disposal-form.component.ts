@@ -18,7 +18,7 @@ import { ProvisionFormComponent } from '../provision/provision-form.component';
 import {
   CostEstimateForm,
   costEstimateForm,
-  costEstimatesFromForm,
+  costEstimatesFromFormValue,
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 
 export type ResourceDisposalForm = FormGroup<{
@@ -50,7 +50,7 @@ export function resourceDisposalFromFormValue(
     form.value.type === 'other' ? form.value.description! : form.value.type!;
 
   const estimatedCost = form.value.hasCostEstimates
-    ? costEstimatesFromForm(form.controls.estimatedCost, 'kg')
+    ? costEstimatesFromFormValue(form.value.estimatedCost!, 'kg')
     : null;
 
   return new ResourceDisposal({

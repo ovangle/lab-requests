@@ -12,13 +12,13 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   Equipment,
-  EquipmentInstallation,
   injectEquipmentService,
 } from '../equipment';
 import { EquipmentInfoComponent } from '../equipment-info.component';
 import { EquipmentTrainingDescriptionsInfoComponent } from '../training/training-descriptions-info.component';
 import { LabEquipmentPageHeaderComponent } from '../equipment-page-header.component';
 import { injectMaybeLabFromContext } from '../../lab-context';
+import { EquipmentInstallation } from '../installation/equipment-installation';
 
 function equipmentFromDetailRoute(): Observable<Equipment> {
   const route = inject(ActivatedRoute);

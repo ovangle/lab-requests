@@ -15,11 +15,9 @@ import {
   ModelCollection,
   injectModelService,
 } from 'src/app/common/model/model-collection';
-import { defer, firstValueFrom } from 'rxjs';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { Lab } from '../lab';
-import { LabEquipmentProvision, labEquipmentProvisionFromJsonObject } from './provision/lab-equipment-provision';
-import { ProvisionStatus, isProvisionStatus } from './provision/provision-status';
+import { EquipmentInstallation, equipmentInstallationFromJsonObject } from './installation/equipment-installation';
 
 export interface EquipmentParams extends ModelParams {
   name: string;
@@ -95,52 +93,6 @@ export function equipmentFromJsonObject(json: JsonObject): Equipment {
   });
 }
 
-export interface EquipmentInstallationParams extends ModelParams {
-  equipmentId: string;
-  labId: string;
-  numInstalled: number;
-  provisionStatus: ProvisionStatus;
-}
-
-export class EquipmentInstallation extends Model implements EquipmentInstallationParams {
-  equipmentId: string;
-  labId: string;
-  numInstalled: number;
-  provisionStatus: string;
-
-  constructor(params: EquipmentInstallationParams) {
-    super(params);
-    this.equipmentId = params.equipmentId;
-    this.labId = params.labId;
-    this.numInstalled = params.numInstalled;
-    this.provisionStatus = params.provisionStatus;
-  }
-}
-
-export function equipmentInstallationFromJsonObject(obj: JsonObject): EquipmentInstallation {
-  const baseParams = modelParamsFromJsonObject(obj);
-  if (typeof obj[ 'equipmentId' ] !== 'string' || !validateIsUUID(obj[ 'equipmentId' ])) {
-    throw new Error("Expected a uuid 'equipmentId")
-  }
-  if (typeof obj[ 'labId' ] !== 'string' || !validateIsUUID(obj[ 'labId' ])) {
-    throw new Error("Expected a uuid 'labId'")
-  }
-  if (typeof obj[ 'numInstalled' ] !== 'number') {
-    throw new Error('Expected a number numInstalled');
-  }
-  if (!isProvisionStatus(obj[ 'provisionStatus' ])) {
-    throw new Error("Expected a provision status 'provisionStatus");
-  }
-
-  return new EquipmentInstallation({
-    ...baseParams,
-    equipmentId: obj[ 'equipmentId' ],
-    labId: obj[ 'labId' ],
-    numInstalled: obj[ 'numInstalled' ],
-    provisionStatus: obj[ 'provisionStatus' ]
-  });
-}
-
 
 export interface EquipmentPatch {
   name: string;
@@ -160,11 +112,6 @@ export function labEquipmentCreateRequestToJson(request: LabEquipmentCreateReque
   return {
     ...request
   };
-}
-
-export interface EquipmentInstallRequest {
-  equipment: LabEquipmentCreateRequest | string;
-  lab: string;
 }
 
 

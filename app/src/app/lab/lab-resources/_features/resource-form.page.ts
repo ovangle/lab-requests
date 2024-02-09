@@ -64,6 +64,7 @@ export function typeIndexFromDetailRoute$(): Observable<
       </lab-resource-form-title>
 
       @if (funding$ | async; as funding) {
+        {{funding | json}}
         @switch (typeIndex[0]) {
           @case ('equipment-lease') {
             <lab-equipment-lease-form 

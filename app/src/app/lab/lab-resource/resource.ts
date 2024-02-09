@@ -20,42 +20,45 @@ import { JsonObject } from 'src/app/utils/is-json-object';
 
 export interface ResourceParams {
   index: number | 'create';
-  type: ResourceType;
   id: string | null;
 }
 
 export function resourceParamsFromJsonObject(json: JsonObject): ResourceParams {
   const baseParams = modelParamsFromJsonObject(json);
 
-  if (typeof json[ 'index' ] !== 'number') {
-    throw new Error('Expected a number \'index\'');
-  }
   if (!isResourceType(json[ 'type' ])) {
     throw new Error("Expected a resource type 'resourceType'")
   }
+
+  if (typeof json[ 'id' ] !== 'number') {
+    throw new Error("Expected a stirng 'id'");
+  }
+
+  if (typeof json[ 'index' ] !== 'number') {
+    throw new Error('Expected a number \'index\'');
+  }
+
   if (typeof json[ 'labId' ] !== 'string' || !validateIsUUID(json[ 'labId' ])) {
     throw new Error("Expected a uuid 'labId'")
   }
   return {
     ...baseParams,
-    type: json[ 'type' ],
     index: json[ 'index' ],
   }
 }
 
-export class Resource {
-  readonly type: ResourceType;
+export abstract class Resource {
+  abstract readonly type: ResourceType;
 
   readonly id: string | null;
   readonly index: number | 'create';
 
   constructor(params: ResourceParams) {
-    this.id = params.id;
-    this.type = params.type;
-
-    this.index = params.index;
+    this.id = params?.id || null;
+    this.index = params.index || 'create';
   }
 }
+
 export type ResourceTypeIndex = [ ResourceType, number | 'create' ];
 
 export function isResourceTypeIndex(obj: any): obj is ResourceTypeIndex {

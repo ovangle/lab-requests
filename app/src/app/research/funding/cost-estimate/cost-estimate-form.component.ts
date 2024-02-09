@@ -47,18 +47,8 @@ export function setCostEstimateFormValue(
   }
 }
 
-export function costEstimatesFromForm(
-  form: CostEstimateForm,
-  unit: UnitOfMeasurement | null,
-): CostEstimate {
-  if (!form.valid) {
-    throw new Error('Invalid form has no value');
-  }
-  return costEstimatesFromFormValue(form.value, unit);
-}
-
-function costEstimatesFromFormValue(
-  value: CostEstimateForm['value'],
+export function costEstimatesFromFormValue(
+  value: CostEstimateForm[ 'value' ],
   unit: UnitOfMeasurement | null,
 ): CostEstimate {
   return {
@@ -213,10 +203,10 @@ export class CostEstimateFormComponent {
 
   ngOnInit() {
     if (this.isFixedPerUnitCost) {
-      this.form!.controls['perUnitCost'].disable();
+      this.form!.controls[ 'perUnitCost' ].disable();
     }
     if (this.isFixedQuantityRequired) {
-      this.form!.controls['quantityRequired'].disable();
+      this.form!.controls[ 'quantityRequired' ].disable();
     }
   }
 }

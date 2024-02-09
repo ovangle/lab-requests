@@ -162,7 +162,6 @@ export class CreateTemporaryUserFormComponent {
     }
 
     _onFormSubmit(evt: Event) {
-        debugger;
         evt.preventDefault();
         const request = createTemporaryUserRequestFromForm(this.form);
         this.save.next(request);

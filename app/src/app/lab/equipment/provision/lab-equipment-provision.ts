@@ -6,29 +6,55 @@ import { RestfulService } from "src/app/common/model/model-service";
 import { ResearchFunding } from "src/app/research/funding/research-funding";
 import { Lab } from "../../lab";
 import { map } from "rxjs";
+import { EquipmentInstallation, equipmentInstallationFromJsonObject } from "../installation/equipment-installation";
 
 export interface LabEquipmentProvisionParams extends ModelParams {
     equipmentId: string;
+    equipmentName: string;
+    install: EquipmentInstallation | null;
+    reason: string;
 }
 
 export class LabEquipmentProvision extends Model implements LabEquipmentProvisionParams {
     equipmentId: string;
+    equipmentName: string;
+    install: EquipmentInstallation | null;
+    reason: string;
+
     constructor(params: LabEquipmentProvisionParams) {
         super(params);
         this.equipmentId = params.equipmentId;
+        this.equipmentName = params.equipmentName;
+        this.install = params.install;
+        this.reason = params.reason;
     }
 }
 
 export function labEquipmentProvisionFromJsonObject(json: JsonObject): LabEquipmentProvision {
     const baseParams = modelParamsFromJsonObject(json);
 
-    if (typeof json['equipmentId'] !== 'string') {
+    if (typeof json[ 'equipmentId' ] !== 'string') {
         throw new Error("Expected a string 'equipmentId'")
+    }
+
+    if (typeof json[ 'equipmentName' ] !== 'string') {
+        throw new Error("Expected a string 'equipmentName'");
+    }
+    if (!isJsonObject(json[ 'install' ]) && json[ 'install' ] !== null) {
+        throw new Error("Expected a json object or null 'install'");
+    }
+    const install = json[ 'install' ] && equipmentInstallationFromJsonObject(json[ 'install' ])
+
+    if (typeof json[ 'reason' ] !== 'string') {
+        throw new Error("Expected a string 'reason'");
     }
 
     return new LabEquipmentProvision({
         ...baseParams,
-        equipmentId: json['equipmentId'],
+        equipmentId: json[ 'equipmentId' ],
+        equipmentName: json[ 'equipmentName' ],
+        install,
+        reason: json[ 'reason' ]
     });
 }
 

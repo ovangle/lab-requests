@@ -27,6 +27,8 @@ import {
   ResourceStorageFormComponent,
 } from '../../lab-resource/storage/resource-storage-form.component';
 import { ResourceContext } from '../../lab-resource/resource-context';
+import { ResourceFormComponent } from '../../lab-resource/abstract-resource-form.component';
+import { ResourceParams } from '../../lab-resource/resource';
 
 export type OutputMaterialForm = FormGroup<{
   name: FormControl<string>;
@@ -38,23 +40,27 @@ export type OutputMaterialForm = FormGroup<{
   hazardClasses: FormControl<HazardClass[]>;
 }>;
 
-export function outputMaterialForm(outputMaterial?: Partial<OutputMaterial>): OutputMaterialForm {
+function outputMaterialForm(outputMaterial: OutputMaterial | null): OutputMaterialForm {
   return new FormGroup({
-    name: new FormControl('', {
+    name: new FormControl<string>(outputMaterial?.name || '', {
       nonNullable: true,
       validators: [ Validators.required ],
     }),
-    baseUnit: new FormControl('', {
+    baseUnit: new FormControl<string>(outputMaterial?.baseUnit || '', {
       nonNullable: true,
       validators: [ Validators.required ],
     }),
-    numUnitsProduced: new FormControl(0, { nonNullable: true }),
+    numUnitsProduced: new FormControl(outputMaterial?.numUnitsProduced || 0, { nonNullable: true }),
 
     storage: resourceStorageForm(),
     disposal: resourceDisposalForm(),
 
     hazardClasses: new FormControl<HazardClass[]>([], { nonNullable: true }),
   });
+}
+
+function outputMaterialPatch(committed: OutputMaterial | null, value: OutputMaterialForm[ 'value' ]) {
+
 }
 
 export function disableDependentControlsWithBaseUnitValidity(
@@ -78,10 +84,6 @@ export function disableDependentControlsWithBaseUnitValidity(
     .subscribe(toggler);
 }
 
-export type OutputMaterialFormErrors = ValidationErrors & {
-  name?: { required: string | null };
-  baseUnit?: { required: string | null };
-};
 @Component({
   selector: 'lab-output-material-form',
   standalone: true,
@@ -129,27 +131,22 @@ export type OutputMaterialFormErrors = ValidationErrors & {
   }
   `,
 })
-export class OutputMaterialFormComponent {
-  readonly context = inject(ResourceContext<OutputMaterial>);
-
-  form: OutputMaterialForm | undefined;
-
-  @Output()
-  patchChange = new EventEmitter<OutputMaterialParams>();
-
-  @Output()
-  hasError = new EventEmitter<boolean>();
-
-  ngOnInit() {
-    this.context.committed$.pipe(
-      first()
-    ).subscribe(committed => {
-      this.form = outputMaterialForm(committed);
-    })
-  }
+export class OutputMaterialFormComponent extends ResourceFormComponent<OutputMaterial, OutputMaterialForm> {
 
 
   get baseUnit(): string {
     return this.form!.value.baseUnit || '';
+  }
+
+  override createForm(committed: OutputMaterial | null): OutputMaterialForm {
+    return outputMaterialForm(committed);
+  }
+  override async getPatch(patchParams: ResourceParams, value: OutputMaterialForm[ 'value' ]): Promise<OutputMaterial> {
+    throw new Error("Method not implemented. ")
+    /*
+    return new OutputMaterial({
+      ...patchParams,
+    });
+    */
   }
 }

@@ -17,6 +17,7 @@ import {
   CostEstimateForm,
   CostEstimateFormComponent,
   costEstimateForm,
+  costEstimatesFromFormValue,
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { BehaviorSubject, first } from 'rxjs';
@@ -27,10 +28,14 @@ import {
   ResourceStorageForm,
   resourceStorageForm,
   ResourceStorageFormComponent,
+  resourceStorageFromFormValue,
 } from '../../lab-resource/storage/resource-storage-form.component';
 import { WorkUnitContext } from '../../work-unit/common/work-unit';
 import { ResearchPlanContext } from 'src/app/research/plan/research-plan';
 import { ResourceContext } from '../../lab-resource/resource-context';
+import { ResourceFormComponent } from '../../lab-resource/abstract-resource-form.component';
+import { CostEstimate } from 'src/app/research/funding/cost-estimate/cost-estimate';
+import { ResourceParams } from '../../lab-resource/resource';
 
 export type InputMaterialForm = FormGroup<{
   name: FormControl<string>;
@@ -45,7 +50,7 @@ export type InputMaterialForm = FormGroup<{
   perUnitCostEstimate: CostEstimateForm;
 }>;
 
-export function inputMaterialForm(inputMaterial?: Partial<InputMaterial>): InputMaterialForm {
+function inputMaterialForm(inputMaterial: InputMaterial | null): InputMaterialForm {
   return new FormGroup({
     name: new FormControl<string>('', {
       nonNullable: true,
@@ -61,6 +66,22 @@ export function inputMaterialForm(inputMaterial?: Partial<InputMaterial>): Input
     storage: resourceStorageForm(),
     hazardClasses: new FormControl<HazardClass[]>([], { nonNullable: true }),
   });
+}
+
+function inputMaterialFromFormValue(patchParams: ResourceParams, value: InputMaterialForm[ 'value' ]): InputMaterial {
+  return new InputMaterial({
+    ...patchParams,
+    name: value.name!,
+    description: value.description || '',
+    baseUnit: value.baseUnit!,
+
+    numUnitsRequired: value.perUnitCostEstimate!.quantityRequired!,
+    perUnitCostEstimate: costEstimatesFromFormValue(value.perUnitCostEstimate!, value.baseUnit!),
+
+    storage: resourceStorageFromFormValue(value.storage!),
+    hazardClasses: value?.hazardClasses || []
+  })
+
 }
 
 export type InputMaterialFormErrors = ValidationErrors & {
@@ -139,29 +160,19 @@ export type InputMaterialFormErrors = ValidationErrors & {
     `,
   ],
 })
-export class InputMaterialFormComponent {
-  readonly _planContext = inject(ResearchPlanContext);
-  readonly context = inject(ResourceContext<InputMaterial>);
-
-  form: InputMaterialForm | undefined;
-
-  @Output()
-  patchChange = new EventEmitter<InputMaterialParams>();
-
-  @Output()
-  hasError = new EventEmitter<boolean>();
-
-  ngOnInit() {
-    this.context.committed$.pipe(
-      first()
-    ).subscribe(inputMaterial => {
-      this.form = inputMaterialForm(inputMaterial);
-    });
+export class InputMaterialFormComponent extends ResourceFormComponent<InputMaterial, InputMaterialForm> {
+  override createForm(committed: InputMaterial | null): InputMaterialForm {
+    return inputMaterialForm(committed);
   }
+  override async getPatch(patchParams: ResourceParams, value: InputMaterialForm[ 'value' ]): Promise<InputMaterial> {
+    return inputMaterialFromFormValue(patchParams, value);
+  }
+  readonly _planContext = inject(ResearchPlanContext);
 
-  ngOnDestroy() {
+  override ngOnDestroy() {
     this._fundingModelSubject.complete();
     this._durationSubject.complete();
+    super.ngOnDestroy();
   }
 
   get baseUnit(): string {

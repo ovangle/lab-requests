@@ -24,7 +24,7 @@ import { LabEquipmentProvision } from '../../equipment/provision/lab-equipment-p
     @if (equipment | async; as equipment) {
       <lab-equipment-info [equipment]="equipment" />
     } @else if (equipmentProvision) {
-      <lab-equipment-provision-info [equipmentProvision]="equipmentProvision" />
+      <lab-equipment-provision-info [provision]="equipmentProvision" />
     }
   `,
 })

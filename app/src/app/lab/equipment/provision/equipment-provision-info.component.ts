@@ -13,5 +13,5 @@ import { LabEquipmentProvision } from "./lab-equipment-provision";
 })
 export class LabEquipmentProvisionInfoComponent {
     @Input({ required: true })
-    equipmentProvision: LabEquipmentProvision | undefined;
+    provision: LabEquipmentProvision | undefined;
 }

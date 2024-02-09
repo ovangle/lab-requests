@@ -10,7 +10,7 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { EquipmentLease, EquipmentLeaseParams } from './equipment-lease';
-import { Observable, defer, filter, firstValueFrom, map, startWith, switchMap } from 'rxjs';
+import { BehaviorSubject, Observable, combineLatest, defer, filter, firstValueFrom, map, of, startWith, switchMap } from 'rxjs';
 import { EquipmentSearchComponent } from 'src/app/lab/equipment/equipment-search.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { EquipmentTrainingAcknowlegementComponent } from 'src/app/lab/equipment/training/training-acknowlegment-input.component';
@@ -20,17 +20,18 @@ import {
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { EquipmentRiskAssessmentFileInputComponent } from './risk-assessment-file-input.component';
 import { EquipmentLike } from 'src/app/lab/equipment/equipment-like';
-import { Equipment, EquipmentInstallation, injectEquipmentService } from 'src/app/lab/equipment/equipment';
-import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
+import { Equipment, injectEquipmentService } from 'src/app/lab/equipment/equipment';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
-import { ResourceContext } from '../../lab-resource/resource-context';
 import { injectMaybeLabFromContext } from '../../lab-context';
 import { Lab } from '../../lab';
 import { LabEquipmentProvision } from '../../equipment/provision/lab-equipment-provision';
 import { CostEstimate } from 'src/app/research/funding/cost-estimate/cost-estimate';
+import { ResourceFormComponent } from '../../lab-resource/abstract-resource-form.component';
+import { ResourceParams } from '../../lab-resource/resource';
+import { NotFoundValue } from 'src/app/common/model/search/search-control';
 
 export type EquipmentLeaseForm = FormGroup<{
-  equipment: FormControl<EquipmentLike | null>;
+  equipment: FormControl<Equipment | NotFoundValue | null>;
   equipmentTrainingCompleted: FormControl<string[]>;
   requireSupervision: FormControl<boolean>;
 
@@ -39,10 +40,10 @@ export type EquipmentLeaseForm = FormGroup<{
 }>;
 
 function equipmentLeaseForm(
-  lease?: Partial<EquipmentLease>,
+  lease: EquipmentLease | null,
 ): EquipmentLeaseForm {
   return new FormGroup({
-    equipment: new FormControl<EquipmentLike | null>(
+    equipment: new FormControl<Equipment | NotFoundValue | null>(
       lease?.equipment || (null as any),
       { validators: [ Validators.required ] },
     ),
@@ -79,14 +80,12 @@ function equipmentLeaseForm(
   template: `
   @if (form) {
     <form [formGroup]="form">
-      <lab-equipment-search
-        formControlName="equipment"
-        [funding]="funding"
+      <lab-equipment-search formControlName="equipment" allowNotFound
         [inLab]="lab$ | async"
       >
         <mat-label>Equipment</mat-label>
       </lab-equipment-search>
-
+      
       @if (
         selectedEquipmentTrainingDescriptions$ | async;
         as trainingDescriptions
@@ -110,97 +109,67 @@ function equipmentLeaseForm(
   }
   `,
 })
-export class EquipmentLeaseFormComponent {
+export class EquipmentLeaseFormComponent extends ResourceFormComponent<EquipmentLease, EquipmentLeaseForm> {
   readonly lab$: Observable<Lab | null> = injectMaybeLabFromContext();
-  readonly context = inject(ResourceContext<EquipmentLease>);
   readonly _equipments = injectEquipmentService();
-
-  form: EquipmentLeaseForm | undefined;
 
   @Input({ required: true })
   funding: ResearchFunding | undefined = undefined;
 
-  get equipmentControl(): FormControl<EquipmentLike | null> {
+  get equipmentControl(): FormControl<Equipment | NotFoundValue | null> {
     return this.form!.controls.equipment;
   }
 
-  @Output()
-  patchChange = new EventEmitter<EquipmentLease>();
-
-  @Output()
-  hasError = new EventEmitter<boolean>();
-
-  ngOnInit() {
-    this.context.committed$.subscribe(committed => {
-      this.form = equipmentLeaseForm(committed);
-      this.form.valueChanges.subscribe(value => {
-        this.hasError.emit(this.form!.valid);
-      })
-      this.form.valueChanges.pipe(
-        filter(() => this.form!.valid),
-        switchMap(() => this._getFormValue(committed)),
-      ).subscribe(equipmentLease => {
-        this.patchChange.emit(equipmentLease);
-      })
-    })
+  createForm(committed: EquipmentLease | null) {
+    return equipmentLeaseForm(committed);
   }
 
-  async _getFormValue(committed: EquipmentLease | null) {
-    if (!this.form) {
-      throw new Error('Resource form not initialized');
-    }
-    if (!this.form.valid) {
-      throw new Error('Invalid form has no value');
-    }
-
-    let [ type, index ] = await firstValueFrom(this.context.committedTypeIndex$);
-    const equipment_ = this.form.value.equipment!;
-    let equipment: Equipment;
-    let equipmentProvision: LabEquipmentProvision | null;
-    if (equipment_ instanceof Equipment) {
-      equipment = equipment_;
-      equipmentProvision = null;
-    } else if (equipment_ instanceof EquipmentInstallation) {
-      equipment = await firstValueFrom(this._equipments.fetch(equipment_.equipmentId));
-      equipmentProvision = null;
-    } else if (equipment_ instanceof LabEquipmentProvision) {
-      equipment = await firstValueFrom(this._equipments.fetch(equipment_.equipmentId));
-      equipmentProvision = equipment_;
-    } else {
-      throw new Error('Expected an equipment-like value');
-    }
+  async getPatch(patchParams: ResourceParams, value: EquipmentLeaseForm[ 'value' ]): Promise<EquipmentLease> {
+    const equipment = await firstValueFrom(this.selectedEquipment$);
+    const equipmentProvision = this._createdProvisionSubject.value;
 
     return new EquipmentLease({
-      id: committed?.id || null,
-      type,
-      index,
+      ...patchParams,
       equipment,
       equipmentProvision,
-      equipmentTrainingCompleted: new Set(this.form.value.equipmentTrainingCompleted!),
-      requireSupervision: this.form.value.requireSupervision!,
-      setupInstructions: this.form.value.setupInstructions!,
+      equipmentTrainingCompleted: new Set(value.equipmentTrainingCompleted!),
+      requireSupervision: value.requireSupervision!,
+      setupInstructions: value.setupInstructions!,
       usageCostEstimate: {
         unit: 'hour',
-        ...this.form.value.usageCostEstimate
+        ...value.usageCostEstimate
       } as CostEstimate
     });
   }
 
-  readonly selectedEquipment$: Observable<EquipmentLike | null> = defer(() =>
-    this.equipmentControl.valueChanges.pipe(
-      startWith(this.equipmentControl.value),
-      map((value) => {
-        if (!this.equipmentControl.valid) {
-          return null;
-        }
-        return value;
-      }),
-    ),
+  readonly isNewEquipment$ = this.equipmentControl.valueChanges.pipe(
+    map(value => value instanceof NotFoundValue)
   );
+
+  readonly prefillEquipmentName$ = this.equipmentControl.valueChanges.pipe(
+    map(value => {
+      if (value == null) {
+        return '';
+      } else if (value instanceof Equipment) {
+        return value.name
+      } else {
+        return value.searchInput
+      }
+    })
+  );
+
+  readonly _createdProvisionSubject = new BehaviorSubject<LabEquipmentProvision | null>(null);
+  readonly createdProvision$ = this._createdProvisionSubject.pipe(
+    filter((p): p is LabEquipmentProvision => p != null),
+  )
+  readonly createdProvisionEquipment$ = this.createdProvision$.pipe(
+    switchMap(provision => this._equipments.fetch(provision.equipmentId))
+  );
+
 
   readonly selectedEquipmentTrainingDescriptions$: Observable<string[] | null> =
     defer(() =>
-      this.selectedEquipment$.pipe(
+      this.equipmentControl.valueChanges.pipe(
         map((equipment) => {
           if (equipment instanceof Equipment) {
             return equipment.trainingDescriptions;
@@ -209,4 +178,14 @@ export class EquipmentLeaseFormComponent {
         }),
       ),
     );
+
+  readonly selectedEquipment$: Observable<Equipment> = this.equipmentControl.valueChanges.pipe(
+    switchMap(equipment => {
+      if (equipment instanceof Equipment) {
+        return of(equipment);
+      } else {
+        return this.createdProvisionEquipment$
+      }
+    })
+  )
 }

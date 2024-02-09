@@ -30,7 +30,7 @@ import {
   CostEstimateForm,
   CostEstimateFormComponent,
   costEstimateForm,
-  costEstimatesFromForm,
+  costEstimatesFromFormValue,
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { differenceInCalendarWeeks } from 'date-fns';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
@@ -58,16 +58,13 @@ export function resourceStorageForm(): ResourceStorageForm {
 }
 
 export function resourceStorageFromFormValue(
-  form: ResourceStorageForm,
+  value: ResourceStorageForm[ 'value' ],
 ): ResourceStorage {
-  if (!form.valid) {
-    throw new Error('Invalid form has no value');
-  }
   const description =
-    form.value.type === 'other' ? form.value.description : form.value.type!;
+    value.type === 'other' ? value.description : value.type!;
 
-  const estimatedCost = form.value.hasCostEstimates
-    ? costEstimatesFromForm(form.controls.estimatedCost, 'week')
+  const estimatedCost = value.hasCostEstimates
+    ? costEstimatesFromFormValue(value.estimatedCost!, 'week')
     : null;
 
   return new ResourceStorage({

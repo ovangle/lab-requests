@@ -18,9 +18,12 @@ import {
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { ProvisionFormComponent } from '../../lab-resource/provision/provision-form.component';
 import { ResourceContext } from '../../lab-resource/resource-context';
+import { ResourceFormComponent } from '../../lab-resource/abstract-resource-form.component';
+import { ResourceParams } from '../../lab-resource/resource';
+import { SoftwareLike } from '../../software/software-like';
 
 export type SoftwareLeaseForm = FormGroup<{
-  name: FormControl<string>;
+  software: FormControl<SoftwareLike | null>;
   description: FormControl<string>;
   minVersion: FormControl<string>;
 
@@ -29,10 +32,9 @@ export type SoftwareLeaseForm = FormGroup<{
   estimatedCost: CostEstimateForm;
 }>;
 
-export function softwareLeaseForm(lease?: Partial<SoftwareLease>): SoftwareLeaseForm {
+export function softwareLeaseForm(committed: SoftwareLease | null): SoftwareLeaseForm {
   return new FormGroup({
-    name: new FormControl('', {
-      nonNullable: true,
+    software: new FormControl<SoftwareLike | null>(committed?.software || null, {
       validators: [ Validators.required ],
     }),
     description: new FormControl('', { nonNullable: true }),
@@ -63,7 +65,8 @@ export type SoftwareLeaseFormErrors = ValidationErrors & {
     ProvisionFormComponent,
   ],
   template: `
-    <form [formGroup]="form!">
+  @if (form) {
+    <form [formGroup]="form">
       <mat-form-field>
         <mat-label>Name</mat-label>
         <input matInput id="software-name" formControlName="name" />
@@ -103,6 +106,7 @@ export type SoftwareLeaseFormErrors = ValidationErrors & {
         </lab-resource-provision-form>
       }
     </form>
+  }
   `,
   styles: [
     `
@@ -113,24 +117,17 @@ export type SoftwareLeaseFormErrors = ValidationErrors & {
     `,
   ],
 })
-export class SoftwareLeaseFormComponent {
-  readonly context = inject(ResourceContext<SoftwareLease>);
+export class SoftwareLeaseFormComponent extends ResourceFormComponent<SoftwareLease, SoftwareLeaseForm> {
 
-  form: SoftwareLeaseForm | undefined;
-
-  @Output()
-  patchChange = new EventEmitter<SoftwareLeaseParams>();
-
-  @Output()
-  hasError = new EventEmitter<boolean>();
-
-  ngOnInit() {
-    this.context.committed$.subscribe(committed => {
-      this.form = softwareLeaseForm(committed);
-    });
-  }
 
   get isLicenseRequired() {
     return !!this.form!.value.isLicenseRequired;
+  }
+
+  override createForm(committed: SoftwareLease | null): SoftwareLeaseForm {
+    return softwareLeaseForm(committed);
+  }
+  override async getPatch(patchParams: ResourceParams, value: Partial<{ name: string; description: string; minVersion: string; isLicenseRequired: boolean; hasCostEstimates: boolean; estimatedCost: Partial<{ isUniversitySupplied: boolean; perUnitCost: number; quantityRequired: number; }>; }>): Promise<SoftwareLease> {
+    throw new Error('Not implemented');
   }
 }

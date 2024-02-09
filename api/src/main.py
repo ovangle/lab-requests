@@ -1,10 +1,12 @@
 import os
 from typing import Type, cast
-from fastapi import APIRouter, FastAPI, Request, Response
+from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from uuid import UUID
 
 from fastapi.responses import JSONResponse
+
+from db.models.base.errors import DoesNotExist
 
 API_DEBUG = os.environ.get("API_DEBUG", "no") == "yes"
 
@@ -21,6 +23,9 @@ async def default_exception_middleware(request: Request, call_next):
     # containing the python exception.
     try:
         return await call_next(request)
+    except DoesNotExist as dne:
+        raise HTTPException(404, detail=str(dne))
+
     except Exception as e:
         import traceback
 

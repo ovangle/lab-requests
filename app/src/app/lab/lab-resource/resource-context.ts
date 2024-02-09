@@ -45,6 +45,5 @@ export class ResourceContext<T extends Resource> {
     }
 
     async commit(resource: T) {
-        throw new Error('not implemented');
     }
 }

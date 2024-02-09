@@ -1,7 +1,8 @@
 import { validate as validateIsUUID } from 'uuid';
-import { Equipment, EquipmentInstallation, equipmentFromJsonObject } from './equipment';
+import { Equipment, equipmentFromJsonObject } from './equipment';
 import { isJsonObject } from 'src/app/utils/is-json-object';
 import { LabEquipmentProvision, labEquipmentProvisionFromJsonObject } from './provision/lab-equipment-provision';
+import { EquipmentInstallation } from './installation/equipment-installation';
 
 export type EquipmentLike = Equipment | EquipmentInstallation | LabEquipmentProvision;
 

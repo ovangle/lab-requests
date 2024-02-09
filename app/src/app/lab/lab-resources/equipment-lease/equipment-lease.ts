@@ -51,14 +51,6 @@ export class EquipmentLease extends Resource {
   constructor(params: EquipmentLeaseParams) {
     super(params);
 
-    if (typeof params.equipment === 'string') {
-      validateIsUUID(params.equipment);
-    } else if (
-      typeof params.equipment !== 'object' ||
-      params.equipment == null
-    ) {
-      throw new Error('Equipment must be an object or uuid');
-    }
     this.equipment = params.equipment;
     this.equipmentProvision = params.equipmentProvision;
 

@@ -4,6 +4,10 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 
+/**
+ * Displays a copyable url inside a disabled input component, 
+ * with a 'copy to clipboard' button. 
+ */
 @Component({
     selector: 'common-show-url',
     standalone: true,
@@ -19,11 +23,10 @@ import { MatInputModule } from "@angular/material/input";
 
         <input matInput type="text" disabled [value]="url!"/>
 
-        <button matIconSuffix mat-icon-button (click)="copyUrlToClipboard()">>
-            <mat-icon>clipboard</mat-icon>
+        <button matIconSuffix mat-icon-button (click)="copyUrlToClipboard()">
+            <mat-icon>content_paste_go</mat-icon>
         </button>
     </mat-form-field>
-    
     `
 })
 export class ShowUrlComponent {
@@ -33,5 +36,4 @@ export class ShowUrlComponent {
     copyUrlToClipboard() {
         navigator.clipboard.writeText(this.url!);
     }
-
 }

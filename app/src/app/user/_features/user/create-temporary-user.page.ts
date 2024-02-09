@@ -9,6 +9,10 @@ import urlJoin from "url-join";
 import { HttpParams } from "@angular/common/http";
 import { APP_BASE_URL } from "src/app/utils/app-base-url";
 import { ShowUrlComponent } from "src/app/common/show-url.component";
+import { MatButtonModule } from "@angular/material/button";
+// @ts-ignore
+import QRCode from 'qrjs';
+import { MatIconModule } from "@angular/material/icon";
 
 
 @Component({
@@ -17,7 +21,9 @@ import { ShowUrlComponent } from "src/app/common/show-url.component";
     imports: [
         CommonModule,
         CreateTemporaryUserFormComponent,
-        ShowUrlComponent
+        ShowUrlComponent,
+        MatButtonModule,
+        MatIconModule
     ],
     schemas: [
         CUSTOM_ELEMENTS_SCHEMA
@@ -41,7 +47,11 @@ import { ShowUrlComponent } from "src/app/common/show-url.component";
                 Or save and share the QR code:
 
                 <div class="redirect-qr">
-                    <ext-qr-code data="{{userRedirectUrl}}" />
+                    <img [attr.src]="qrcodeImgSrc" />
+
+                    <button mat-raised-button (click)="copyImageToClipboard()">
+                        <mat-icon>content_paste_go</mat-icon> Copy to clipboard
+                    </button>
                 </div>
 
             <p>to set their password and finalize their account.
@@ -58,13 +68,6 @@ export class CreateTemporaryUserPage {
 
     result: CreateTemporaryUserResult | undefined;
 
-    ngOnInit() {
-        this.result = {
-            token: 'abcdef12345',
-            tokenExpiresAt: new Date(),
-            user: {} as any
-        }
-    }
 
     get userRedirectUrl() {
         const params = new HttpParams({
@@ -76,10 +79,32 @@ export class CreateTemporaryUserPage {
         return `${urlJoin(this.appBaseUrl, 'create-user')}?${params}`;
     }
 
+    get qrcodeImgSrc() {
+        const options = { modulesize: 5, margin: 4, unit: 'px', ratio: 1 };
+        return QRCode.generatePNG(this.userRedirectUrl, options);
+    }
+
     _onFormSave(request: CreateTemporaryUserRequest) {
         this.users.createTemporaryUser(request).subscribe(result => {
             this.result = result
         });
+    }
+
+    copyImageToClipboard() {
+        const qrcodeData = atob(this.qrcodeImgSrc.split(',')[ 1 ]);
+        const blobParts: Uint8Array[] = [];
+        for (let offset = 0; offset < qrcodeData.length; offset += 512) {
+            const slice = qrcodeData.slice(offset, offset + 512);
+            const bytes = new Uint8Array(slice.length);
+            for (let i = 0; i < slice.length; i++) {
+                bytes[ i ] = slice.charCodeAt(i);
+            }
+            blobParts.push(bytes);
+        }
+        const blob = new Blob(blobParts, { type: 'image/png' });
+        navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob })
+        ])
     }
 
 }
