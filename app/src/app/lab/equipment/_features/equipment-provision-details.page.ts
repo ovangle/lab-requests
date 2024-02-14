@@ -1,11 +1,10 @@
 import { CommonModule } from "@angular/common";
 import { Component, inject } from "@angular/core";
-import { LabEquipmentProvisioningService } from "../provision/lab-equipment-provision";
+import { LabEquipmentProvisioningService } from "src/app/equipment/provision/equipment-provision";
 import { ActivatedRoute } from "@angular/router";
 import { shareReplay, switchMap } from "rxjs";
-import { LabEquipmentPageHeaderComponent } from "../equipment-page-header.component";
-import { injectEquipmentService } from "../equipment";
-import { EquipmentContext } from "../equipment-context";
+import { injectEquipmentService } from "../../../equipment/equipment";
+import { EquipmentContext } from "../../../equipment/equipment-context";
 
 function equipmentProvisionFromActivatedRoute() {
     const activatedRoute = inject(ActivatedRoute);
@@ -27,13 +26,14 @@ function equipmentProvisionFromActivatedRoute() {
     standalone: true,
     imports: [
         CommonModule,
-        LabEquipmentPageHeaderComponent,
     ],
     template: `
     @if (provision$ | async; as provision) {
         @if (equipment$ | async; as equipment) {
+            <!--
             <lab-equipment-page-header [equipment]="equipment">
             </lab-equipment-page-header>
+            -->
         }
     }
     `,
@@ -47,7 +47,7 @@ export class LabEquipmentProvisionDetailsPage {
     readonly provision$ = equipmentProvisionFromActivatedRoute()
 
     readonly equipment$ = this.provision$.pipe(
-        switchMap(provision => this.equipmentService.fetch(provision.equipmentId)),
+        switchMap(provision => this.equipmentService.fetch(provision.equipment.id)),
         shareReplay(1)
     );
 

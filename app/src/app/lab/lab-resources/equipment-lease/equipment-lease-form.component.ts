@@ -11,7 +11,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { EquipmentLease, EquipmentLeaseParams } from './equipment-lease';
 import { BehaviorSubject, Observable, combineLatest, defer, filter, firstValueFrom, map, of, startWith, switchMap } from 'rxjs';
-import { EquipmentSearchComponent } from 'src/app/lab/equipment/equipment-search.component';
+import { EquipmentSearchComponent } from 'src/app/equipment/equipment-search.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { EquipmentTrainingAcknowlegementComponent } from 'src/app/lab/equipment/training/training-acknowlegment-input.component';
 import {
@@ -19,12 +19,11 @@ import {
   costEstimateForm,
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { EquipmentRiskAssessmentFileInputComponent } from './risk-assessment-file-input.component';
-import { EquipmentLike } from 'src/app/lab/equipment/equipment-like';
-import { Equipment, injectEquipmentService } from 'src/app/lab/equipment/equipment';
+import { Equipment, injectEquipmentService } from 'src/app/equipment/equipment';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { injectMaybeLabFromContext } from '../../lab-context';
 import { Lab } from '../../lab';
-import { LabEquipmentProvision } from '../../equipment/provision/lab-equipment-provision';
+import { LabEquipmentProvision } from '../../../equipment/provision/equipment-provision';
 import { CostEstimate } from 'src/app/research/funding/cost-estimate/cost-estimate';
 import { ResourceFormComponent } from '../../lab-resource/abstract-resource-form.component';
 import { ResourceParams } from '../../lab-resource/resource';
@@ -163,7 +162,7 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
     filter((p): p is LabEquipmentProvision => p != null),
   )
   readonly createdProvisionEquipment$ = this.createdProvision$.pipe(
-    switchMap(provision => this._equipments.fetch(provision.equipmentId))
+    switchMap(provision => this._equipments.fetch(provision.equipment.id))
   );
 
 

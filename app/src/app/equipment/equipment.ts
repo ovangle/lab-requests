@@ -16,7 +16,7 @@ import {
   injectModelService,
 } from 'src/app/common/model/model-collection';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
-import { Lab } from '../lab';
+import { Lab } from '../lab/lab';
 import { EquipmentInstallation, equipmentInstallationFromJsonObject } from './installation/equipment-installation';
 
 export interface EquipmentParams extends ModelParams {
@@ -116,15 +116,15 @@ export function labEquipmentCreateRequestToJson(request: LabEquipmentCreateReque
 
 
 export interface EquipmentQuery {
-  lab?: Lab | null;
+  installedInLab?: Lab | null;
   name?: string;
   searchText?: string;
 }
 
 export function equipmentQueryToHttpParams(query: Partial<EquipmentQuery>) {
   let params = new HttpParams();
-  if (query.lab) {
-    params = params.set('lab', query.lab.id);
+  if (query.installedInLab) {
+    params = params.set('installed_in_lab', query.installedInLab.id);
   }
 
   if (query.name) {

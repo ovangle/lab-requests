@@ -29,6 +29,10 @@ export abstract class ModelContext<
 
   abstract _doUpdate(id: string, patch: TUpdate): Promise<T>;
 
+  nextCommitted(value: T) {
+    this.committedSubject.next(value);
+  }
+
   sendCommitted(source: Observable<T>): Subscription {
     return source.subscribe((committed) => {
       // console.log('sending committed', this,committed)

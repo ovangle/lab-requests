@@ -7,9 +7,9 @@ import { Observable, of } from 'rxjs';
 import {
   Equipment,
   EquipmentService,
-} from 'src/app/lab/equipment/equipment';
+} from 'src/app/equipment/equipment';
 import { LabEquipmentProvisionInfoComponent } from '../../equipment/provision/equipment-provision-info.component';
-import { LabEquipmentProvision } from '../../equipment/provision/lab-equipment-provision';
+import { LabEquipmentProvision } from '../../../equipment/provision/equipment-provision';
 
 @Component({
   selector: 'lab-equipment-lease-detail',

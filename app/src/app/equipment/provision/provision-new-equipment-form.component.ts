@@ -6,16 +6,16 @@ import { MatInputModule } from '@angular/material/input';
 import { filter, firstValueFrom, map, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BooleanInput } from '@angular/cdk/coercion';
-import { LabEquipmentProvision, LabEquipmentProvisionRequest, LabEquipmentProvisioningService } from './lab-equipment-provision';
+import { LabEquipmentProvision, LabEquipmentProvisionRequest, LabEquipmentProvisioningService } from './equipment-provision';
 import { ResizeTextareaOnInputDirective } from 'src/app/common/forms/resize-textarea-on-input.directive';
 import { CostEstimateForm, CostEstimateFormComponent, costEstimateForm, costEstimatesFromFormValue, setCostEstimateFormValue } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { Equipment, LabEquipmentCreateRequest } from '../equipment';
-import { Lab } from '../../lab';
+import { Lab } from '../../lab/lab';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
-export type LabEquipmentProvisionRequestForm = FormGroup<{
+export type NewEquipmentRequestForm = FormGroup<{
   equipmentName: FormControl<string>;
   reason: FormControl<string>;
   hasCostEstimates: FormControl<boolean>;
@@ -25,7 +25,7 @@ export type LabEquipmentProvisionRequestForm = FormGroup<{
 
 
 @Component({
-  selector: 'lab-equipment-provision-request-form',
+  selector: 'equipment-provision-new-equipment-form',
   standalone: true,
   imports: [
     CommonModule,
@@ -80,9 +80,9 @@ export type LabEquipmentProvisionRequestForm = FormGroup<{
     </form>
   `,
 })
-export class EquipmentProvisionRequestFormComponent {
+export class NewEquipmentRequestFormComponent {
   readonly equipmentProvisionService = inject(LabEquipmentProvisioningService);
-  readonly form: LabEquipmentProvisionRequestForm = new FormGroup({
+  readonly form: NewEquipmentRequestForm = new FormGroup({
     equipmentName: new FormControl<string>('', {
       nonNullable: true,
       validators: [

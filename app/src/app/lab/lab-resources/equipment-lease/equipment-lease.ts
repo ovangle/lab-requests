@@ -9,16 +9,11 @@ import {
   Equipment,
   equipmentFromJsonObject,
   EquipmentService,
-} from 'src/app/lab/equipment/equipment';
+} from 'src/app/equipment/equipment';
 import {
   LabEquipmentProvision,
   labEquipmentProvisionFromJsonObject
-} from 'src/app/lab/equipment/provision/lab-equipment-provision';
-import {
-  EquipmentLike,
-  equipmentLikeFromJson,
-  equipmentLikeToJson,
-} from 'src/app/lab/equipment/equipment-like';
+} from 'src/app/equipment/provision/equipment-provision';
 import { Resource, ResourceParams, resourceParamsFromJsonObject } from '../../lab-resource/resource';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 
@@ -113,7 +108,7 @@ export function equipmentLeaseParamsToJson(lease: EquipmentLeaseParams): {
   return {
     id: lease.id,
     index: lease.index,
-    equipment: equipmentLikeToJson(lease.equipment),
+    equipment: (lease.equipment),
     equipmentTrainingCompleted: lease.equipmentTrainingCompleted,
     requireSupervision: lease.requireSupervision,
     setupInstructions: lease.setupInstructions,

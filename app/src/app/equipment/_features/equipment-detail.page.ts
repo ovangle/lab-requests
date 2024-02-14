@@ -1,9 +1,13 @@
 import { CommonModule } from "@angular/common";
 import { Component, inject } from "@angular/core";
-import { ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, RouterModule } from "@angular/router";
 import { Observable, shareReplay, switchMap } from "rxjs";
-import { Equipment, injectEquipmentService } from "src/app/lab/equipment/equipment";
-import { EquipmentContext } from "src/app/lab/equipment/equipment-context";
+import { Equipment, injectEquipmentService } from "../equipment";
+import { EquipmentContext } from "../equipment-context";
+import { LabEquipmentPageHeaderComponent } from "src/app/lab/equipment/equipment-page-header.component";
+import { EquipmentInstallationListComponent } from "../installation/installation-list.component";
+import { EquipmentTrainingDescriptionsInfoComponent } from "src/app/lab/equipment/training/training-descriptions-info.component";
+import { MatButtonModule } from "@angular/material/button";
 
 
 export function equipmentFromActivatedRoute(): Observable<Equipment> {
@@ -37,9 +41,41 @@ export function equipmentFromActivatedRoute(): Observable<Equipment> {
     selector: '',
     standalone: true,
     imports: [
-        CommonModule
+        CommonModule,
+        RouterModule,
+        MatButtonModule,
+        EquipmentInstallationListComponent,
+        EquipmentTrainingDescriptionsInfoComponent
     ],
-    template: ``,
+    template: `
+    @if (equipment$ | async; as equipment) {
+      <h1>
+        {{equipment.name}}
+        
+        <div class="edit-button">
+            <button mat-raised-button routerLink="./edit">
+                Edit
+            </button>
+        </div>
+     </h1>
+    
+      <h3>Description</h3>
+      <p>{{ equipment.description }}</p>
+
+      <h3>Installations</h3>  
+      <equipment-installation-list [equipment]="equipment" /> 
+
+      <lab-equipment-training-descriptions-info
+        [trainingDescriptions]="equipment.trainingDescriptions"
+      >
+      </lab-equipment-training-descriptions-info>
+    }
+    `,
+    styles: `
+    .edit-button {
+        float: right;
+    }
+    `,
     providers: [
         EquipmentContext
     ]

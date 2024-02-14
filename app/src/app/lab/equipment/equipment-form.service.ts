@@ -11,9 +11,9 @@ import {
   EquipmentPatch,
   Equipment,
   EquipmentService,
-} from './equipment';
+} from '../../equipment/equipment';
 import { HttpParams } from '@angular/common/http';
-import { EquipmentContext } from './equipment-context';
+import { EquipmentContext } from '../../equipment/equipment-context';
 
 export type EquipmentForm = FormGroup<{
   name: FormControl<string>;

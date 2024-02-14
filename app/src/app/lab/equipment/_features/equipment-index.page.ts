@@ -1,9 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Observable, of, shareReplay, switchMap, tap } from 'rxjs';
-import { Equipment, EquipmentCollection, injectEquipmentService } from '../equipment';
+import { Equipment, EquipmentCollection, injectEquipmentService } from '../../../equipment/equipment';
 import { HttpParams } from '@angular/common/http';
-import { LabEquipmentListComponent } from '../equipment-list.component';
+import { LabEquipmentListComponent } from '../lab-equipment-list.component';
 import { LabProfilePage } from '../../_features/lab-profile.page';
 import { Lab } from '../../lab';
 import { MatButtonModule } from '@angular/material/button';
@@ -22,15 +22,19 @@ import { RouterModule } from '@angular/router';
     @if (lab$ | async; as lab) {
       <h2>
         Equipment
-        <ng-container *ngTemplateOutlet="controls" /> 
+        <div class="equipment-index-controls">
+          <a mat-raised-button
+             color="primary"
+             routerLink="./request">
+             Request
+          </a>
+        </div>
       </h2>
     } @else {
       <h1>All equipment</h1>
     }
 
-    @if (equipments$ | async; as equipments) {
-      <lab-equipment-list [equipments]="equipments"> </lab-equipment-list>
-    }
+    <lab-equipment-list />
 
     <ng-template #controls>
       <div class="equipment-list-controls">

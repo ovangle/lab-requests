@@ -3,7 +3,7 @@ import { Component, inject } from "@angular/core";
 import { LabProfilePage } from "../../_features/lab-profile.page";
 import { ResearchFunding, injectResearchFundingService } from "src/app/research/funding/research-funding";
 import { Observable, filter, map, of, shareReplay } from "rxjs";
-import { EquipmentProvisionRequestFormComponent } from "../provision/equipment-provision-request-form.component";
+import { NewEquipmentRequestFormComponent } from "../../../equipment/provision/provision-new-equipment-form.component";
 import { Lab } from "../../lab";
 import { injectMaybeLabFromContext } from "../../lab-context";
 
@@ -12,13 +12,13 @@ import { injectMaybeLabFromContext } from "../../lab-context";
     standalone: true,
     imports: [
         CommonModule,
-        EquipmentProvisionRequestFormComponent
+        NewEquipmentRequestFormComponent
     ],
     template: `
     <h1>Request new equipment</h1>
     @if (funding$ | async; as funding) {
         @if (lab$ | async; as lab) {
-            <lab-equipment-provision-request-form
+            <equipment-provision-new-equipment-form
                 [lab]="lab"
                 [funding]="funding" />
         }

@@ -33,9 +33,4 @@ export const EQUIPMENT_ROUTES: Routes = [
       }
     ]
   },
-  {
-    path: ':equipment_id',
-    loadComponent: () => import('./equipment-detail.page')
-      .then(module => module.EquipmentDetailPage)
-  },
 ];

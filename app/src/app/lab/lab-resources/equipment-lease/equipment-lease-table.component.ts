@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { CollectionViewer } from '@angular/cdk/collections';
 import { Observable, forkJoin, switchMap } from 'rxjs';
 import { EquipmentLeaseDetailComponent } from './equipment-lease-detail.component';
-import { EquipmentService, injectEquipmentService } from 'src/app/lab/equipment/equipment';
+import { EquipmentService, injectEquipmentService } from 'src/app/equipment/equipment';
 import { ResourceTableInfoHeaderComponent } from '../../lab-resource/common/resource-table-info-header.component';
 import {
   ResourceTableDataSource,

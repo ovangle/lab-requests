@@ -6,11 +6,14 @@ import {
   Output,
   TemplateRef,
   ViewChild,
+  inject,
 } from '@angular/core';
 import {
   FormControl,
+  FormGroup,
   ReactiveFormsModule,
   ValidationErrors,
+  Validators,
 } from '@angular/forms';
 
 import { MatButtonModule } from '@angular/material/button';
@@ -18,19 +21,64 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import {
-  EquipmentForm,
-  equipmentPatchFromForm,
-} from './equipment-form.service';
-import { EquipmentTagInputComponent } from './tag/equipment-tag-input.component';
-import { EquipmentTrainingDescriptionsInputComponent } from './training/training-descriptions-input.component';
-import { Equipment, EquipmentPatch } from './equipment';
+import { EquipmentTagInputComponent } from '../lab/equipment/tag/equipment-tag-input.component';
+import { EquipmentTrainingDescriptionsInputComponent } from '../lab/equipment/training/training-descriptions-input.component';
+import { Equipment, EquipmentPatch, EquipmentService } from './equipment';
 import { ResizeTextareaOnInputDirective } from 'src/app/common/forms/resize-textarea-on-input.directive';
+import { EquipmentContext } from 'src/app/equipment/equipment-context';
+import { HttpParams } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
 
 export const equipmentFixtures: Equipment[] = [];
 
+export type EquipmentForm = FormGroup<{
+  name: FormControl<string>;
+  description: FormControl<string>;
+  tags: FormControl<string[]>;
+  trainingDescriptions: FormControl<string[]>;
+}>;
+
+export function equipmentPatchFromForm(form: EquipmentForm): EquipmentPatch {
+  if (!form.valid) {
+    throw new Error('Invalid form has no patch');
+  }
+  return form.value as EquipmentPatch;
+}
+
+export function equipmentForm(): EquipmentForm {
+  const equipments = inject(EquipmentService);
+  const context = inject(EquipmentContext, { optional: true });
+
+  return new FormGroup({
+    name: new FormControl<string>('', {
+      nonNullable: true,
+      validators: [ Validators.required ],
+      asyncValidators: [
+        (c) => equipmentNameUniqueValidator(c as FormControl<string>),
+      ],
+    }),
+    description: new FormControl<string>('', { nonNullable: true }),
+    tags: new FormControl<string[]>([], { nonNullable: true }),
+    trainingDescriptions: new FormControl<string[]>([], { nonNullable: true }),
+  });
+
+  function equipmentNameUniqueValidator(
+    control: FormControl<string>,
+  ): Observable<{ notUnique: string } | null> {
+    const name = control.value;
+
+    return equipments
+      .query(new HttpParams({ fromObject: { name: name } }))
+      .pipe(
+        map((names) =>
+          names.length > 0 ? { notUnique: 'Name is not unique' } : null,
+        ),
+      );
+  }
+}
+
 @Component({
-  selector: 'lab-equipment-form',
+  selector: 'equipment-form',
   standalone: true,
   imports: [
     CommonModule,
@@ -103,9 +151,6 @@ export class LabEquipmentFormComponent {
     return this.committed == null;
   }
 
-  @Input({ required: true })
-  form: EquipmentForm | undefined;
-
   @Output()
   requestCommit = new EventEmitter<EquipmentPatch>();
 
@@ -114,6 +159,8 @@ export class LabEquipmentFormComponent {
 
   @ViewChild('formActionControls', { static: true })
   formActionControls: TemplateRef<any> | undefined;
+
+  readonly form = equipmentForm();
 
   get nameErrors(): ValidationErrors | null {
     return this.form!.controls.name.errors;
