@@ -4,7 +4,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatListModule } from '@angular/material/list';
 import { EquipmentTagChipsComponent } from './tag/equipment-tag-chips.component';
 import { RouterModule } from '@angular/router';
-import { Equipment, EquipmentService, injectEquipmentService } from '../../equipment/equipment';
+import { Equipment, EquipmentService } from '../../equipment/equipment';
 import { Lab } from '../lab';
 import { LabEquipmentService } from './lab-equipment.service';
 import { HttpParams } from '@angular/common/http';
@@ -67,7 +67,7 @@ import { EquipmentInstallation } from 'src/app/equipment/installation/equipment-
   ]
 })
 export class LabEquipmentListComponent {
-  _equipments = injectEquipmentService();
+  _equipments = inject(EquipmentService);
   labContext = inject(LabContext);
 
   readonly lab$ = this.labContext.committed$;

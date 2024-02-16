@@ -3,8 +3,8 @@ import { Component, inject } from "@angular/core";
 import { LabEquipmentProvisioningService } from "src/app/equipment/provision/equipment-provision";
 import { ActivatedRoute } from "@angular/router";
 import { shareReplay, switchMap } from "rxjs";
-import { injectEquipmentService } from "../../../equipment/equipment";
 import { EquipmentContext } from "../../../equipment/equipment-context";
+import { EquipmentService } from "src/app/equipment/equipment";
 
 function equipmentProvisionFromActivatedRoute() {
     const activatedRoute = inject(ActivatedRoute);
@@ -42,7 +42,7 @@ function equipmentProvisionFromActivatedRoute() {
     ]
 })
 export class LabEquipmentProvisionDetailsPage {
-    readonly equipmentService = injectEquipmentService();
+    readonly equipmentService = inject(EquipmentService);
     readonly equipmentContext = inject(EquipmentContext);
     readonly provision$ = equipmentProvisionFromActivatedRoute()
 

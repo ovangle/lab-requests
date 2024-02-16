@@ -1,5 +1,5 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, EventEmitter, Input, Output, inject } from "@angular/core";
-import { CreateTemporaryUserRequest, CreateTemporaryUserResult, User, injectUserService } from "../common/user";
+import { CreateTemporaryUserRequest, CreateTemporaryUserResult, User, UserService } from "../common/user";
 import { APP_BASE_HREF } from "@angular/common";
 import { CreateTemporaryUserFormComponent } from "./user-create-temporary-user-form.component";
 import { firstValueFrom } from "rxjs";
@@ -44,7 +44,7 @@ import urlJoin from "url-join";
     `
 })
 export class CreateTemporaryUserFlowComponent {
-    readonly _userService = injectUserService();
+    readonly _userService = inject(UserService);
     readonly appBaseHref = inject(APP_BASE_HREF);
 
     result: CreateTemporaryUserResult | undefined;

@@ -1,4 +1,4 @@
-import { Injectable, ɵɵi18nApply } from '@angular/core';
+import { Injectable, inject, ɵɵi18nApply } from '@angular/core';
 import { BehaviorSubject, Observable, ReplaySubject, Subscription, defer, firstValueFrom, map, of, shareReplay, switchMap, tap } from 'rxjs';
 import { ALL_RESOURCE_TYPES, ResourceType } from './resource-type';
 
@@ -34,7 +34,7 @@ import {
 import { ResearchPlan } from 'src/app/research/plan/research-plan';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { isThisSecond } from 'date-fns';
-import { ResearchFunding, injectResearchFundingService, researchFundingFromJsonObject } from 'src/app/research/funding/research-funding';
+import { ResearchFunding, ResearchFundingService, researchFundingFromJsonObject } from 'src/app/research/funding/research-funding';
 import { ResourceContainerControl } from './resource-container-control';
 
 export interface ResourceContainerParams {
@@ -59,8 +59,8 @@ export class ResourceContainer implements ResourceContainerParams {
     this.outputMaterials = params.outputMaterials;
   }
 
-  getResources<T extends Resource>(t: ResourceType & T[ 'type' ]): readonly T[] {
-    return this[ resourceContainerAttr(t) ] as any[];
+  getResources<T extends Resource>(t: ResourceType & T['type']): readonly T[] {
+    return this[resourceContainerAttr(t)] as any[];
   }
 
   countResources(t: ResourceType): number {
@@ -68,21 +68,21 @@ export class ResourceContainer implements ResourceContainerParams {
   }
 
   getResourceAt<T extends Resource>(
-    t: ResourceType & T[ 'type' ],
+    t: ResourceType & T['type'],
     index: number,
   ): T {
     const resources = this.getResources(t);
     if (index < 0 || index >= resources.length) {
       throw new Error(`No resource at ${index}`);
     }
-    return resources[ index ];
+    return resources[index];
   }
   apply(patch: ResourceContainerPatch) {
     for (const resourceType of ALL_RESOURCE_TYPES) {
       const attr = resourceContainerAttr(resourceType);
       if (patch.hasOwnProperty(attr)) {
-        const resources = this[ attr ];
-        for (const s of (patch[ attr ] as Array<ResourceSplice<any>>)) {
+        const resources = this[attr];
+        for (const s of (patch[attr] as Array<ResourceSplice<any>>)) {
           resources.splice(s.start, resources.length, ...s.items);
         }
       }
@@ -110,25 +110,25 @@ export function resourceContainerAttr(
 export function resourceContainerParamsFromJson(json: JsonObject): ResourceContainerParams {
   const baseParams = modelParamsFromJsonObject(json);
 
-  if (!Array.isArray(json[ 'equipments' ]) || !json[ 'equipments' ].every(isJsonObject)) {
+  if (!Array.isArray(json['equipments']) || !json['equipments'].every(isJsonObject)) {
     throw new Error("Expected a list of json objects 'equipments'")
   }
-  const equipments = json[ 'equipments' ].map(equipmentLeaseFromJson);
+  const equipments = json['equipments'].map(equipmentLeaseFromJson);
 
-  if (!Array.isArray(json[ 'softwares' ]) || !json[ 'softwares' ].every(isJsonObject)) {
+  if (!Array.isArray(json['softwares']) || !json['softwares'].every(isJsonObject)) {
     throw new Error("Expected a list of json objects 'softwares'")
   }
-  const softwares = json[ 'softwares' ].map(softwareLeaseFromJsonObject);
+  const softwares = json['softwares'].map(softwareLeaseFromJsonObject);
 
-  if (!Array.isArray(json[ 'inputMaterials' ]) || !json[ 'inputMaterials' ].every(isJsonObject)) {
+  if (!Array.isArray(json['inputMaterials']) || !json['inputMaterials'].every(isJsonObject)) {
     throw new Error("Expected a list of json objects 'inputMaterials'")
   }
-  const inputMaterials = json[ 'inputMaterials' ].map(inputMaterialFromJson);
+  const inputMaterials = json['inputMaterials'].map(inputMaterialFromJson);
 
-  if (!Array.isArray(json[ 'outputMaterials' ]) || !json[ 'outputMaterials' ].every(isJsonObject)) {
+  if (!Array.isArray(json['outputMaterials']) || !json['outputMaterials'].every(isJsonObject)) {
     throw new Error("Expected a list of json objects 'outputMaterials'")
   }
-  const outputMaterials = json[ 'outputMaterials' ].map(outputMaterialFromJson);
+  const outputMaterials = json['outputMaterials'].map(outputMaterialFromJson);
 
 
   return {
@@ -161,9 +161,9 @@ export function resourceContainerPatchToJson(
   for (const resourceType of ALL_RESOURCE_TYPES) {
     const resourceToJson = resourceSerializer(resourceType);
 
-    const slices = patch[ resourceContainerAttr(resourceType) ];
+    const slices = patch[resourceContainerAttr(resourceType)];
 
-    json[ resourceContainerAttr(resourceType) ] = slices.map((slice) => ({
+    json[resourceContainerAttr(resourceType)] = slices.map((slice) => ({
       ...slice,
       items: slice.items.map((item) => resourceToJson(item as any)),
     }));
@@ -185,11 +185,11 @@ export function resourceContainerPatchToJson(
 }
 
 function delResourcePatch<T extends Resource>(
-  resourceType: T[ 'type' ] & ResourceType,
+  resourceType: T['type'] & ResourceType,
   toDel: number[],
 ): Partial<ResourceContainerPatch> {
   return {
-    [ resourceContainerAttr(resourceType) ]: toDel.map((toDel) => ({
+    [resourceContainerAttr(resourceType)]: toDel.map((toDel) => ({
       start: toDel,
       end: toDel + 1,
       items: [],
@@ -206,7 +206,7 @@ export class ResourceContainerContext {
   _committedSubject = new ReplaySubject<ResourceContainer>(1);
   committed$ = this._committedSubject.asObservable();
 
-  readonly fundingService = injectResearchFundingService();
+  readonly fundingService = inject(ResearchFundingService);
   _fundingSubject = new ReplaySubject<ResearchFunding | string>(1);
   funding$ = this._fundingSubject.pipe(
     switchMap(funding => {
@@ -256,7 +256,7 @@ export class ResourceContainerContext {
     );
   }
 
-  async getResourceAt<T extends Resource>(resourceType: T[ 'type' ], index: number): Promise<T | undefined> {
+  async getResourceAt<T extends Resource>(resourceType: T['type'], index: number): Promise<T | undefined> {
     const committed = await firstValueFrom(this.control.committed$);
     return committed.getResourceAt(resourceType, index);
   }
@@ -280,7 +280,7 @@ export class ResourceContainerContext {
     if (committed == null) {
       throw new Error('Cannot delete resources until container');
     }
-    const patch = delResourcePatch(resourceType, [ index ]);
+    const patch = delResourcePatch(resourceType, [index]);
     return this.control.commit(patch as ResourceContainerPatch);
   }
 }

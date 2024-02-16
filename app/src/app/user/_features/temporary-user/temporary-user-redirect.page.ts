@@ -1,28 +1,28 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, inject } from "@angular/core";
-import { TemporaryAccessUser, injectUserService } from "../../common/user";
+import { TemporaryAccessUser, UserService } from "../../common/user";
 import { Observable, defer, first, firstValueFrom, map, shareReplay, switchMap } from "rxjs";
 import { ActivatedRoute, Router, RouterModule } from "@angular/router";
 import { AlterPasswordFormComponent, AlterPasswordRequest } from "../../common/alter-password-form.component";
 import { CommonModule } from "@angular/common";
 
 
-function temporaryUserInfoFromRoute(): Observable<[ TemporaryAccessUser, string ]> {
-    const users = injectUserService();
+function temporaryUserInfoFromRoute(): Observable<[TemporaryAccessUser, string]> {
+    const users = inject(UserService);
     const route = inject(ActivatedRoute);
 
     return route.queryParams.pipe(
         first(),
         switchMap(params => {
-            const userId = params[ 'id' ];
+            const userId = params['id'];
             if (!userId) {
                 throw new Error('No id in route params');
             }
-            const token = params[ 'token' ];
+            const token = params['token'];
             if (!token) {
                 throw new Error('No token in route params');
             }
             return users.fetchTemporaryUser(userId, token).pipe(
-                map(temporaryUser => [ temporaryUser, token ] as [ TemporaryAccessUser, string ]),
+                map(temporaryUser => [temporaryUser, token] as [TemporaryAccessUser, string]),
                 shareReplay(1)
             )
         })
@@ -60,19 +60,19 @@ function temporaryUserInfoFromRoute(): Observable<[ TemporaryAccessUser, string 
 })
 export class TemporaryUserRedirectPage {
     readonly _router = inject(Router);
-    readonly _userService = injectUserService()
+    readonly _userService = inject(UserService)
     readonly _userInfo = temporaryUserInfoFromRoute();
 
     readonly user$ = defer(() => this._userInfo.pipe(
-        map(([ user ]) => user)
+        map(([user]) => user)
     ));
 
     readonly accessToken$ = defer(() => this._userInfo.pipe(
-        map(([ , token ]) => token)
+        map(([, token]) => token)
     ))
 
     ngOnInit() {
-        this._userInfo.subscribe(([ user, token ]) => {
+        this._userInfo.subscribe(([user, token]) => {
             console.log('user', user, 'token', token);
         })
     }
@@ -87,6 +87,6 @@ export class TemporaryUserRedirectPage {
             password: request.newValue
         }));
 
-        return await this._router.navigate([ 'user', 'login' ])
+        return await this._router.navigate(['user', 'login'])
     }
 }

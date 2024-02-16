@@ -3,8 +3,6 @@ import { ModelContext } from '../common/model/context';
 import {
   User,
   UserService,
-  UserCollection,
-  injectUserService,
   CurrentUser,
 } from './common/user';
 import {
@@ -20,18 +18,11 @@ import {
 } from 'rxjs';
 import { LoginContext } from '../oauth/login-context';
 import { Role } from './common/role';
-import { ResearchPlan } from '../research/plan/research-plan';
-import { Lab } from '../lab/lab';
-import { ModelPatch } from '../common/model/model';
 
 @Injectable({ providedIn: 'root' })
 export class UserContext extends ModelContext<User> {
-  readonly userService = injectUserService();
+  readonly service = inject(UserService);
   readonly loginContext = inject(LoginContext);
-
-  override _doUpdate(id: string, patch: ModelPatch<User>): Promise<User> {
-    return firstValueFrom(this.userService.update(id, patch));
-  }
 
   readonly user = new BehaviorSubject<CurrentUser | null>(null);
 
@@ -42,7 +33,7 @@ export class UserContext extends ModelContext<User> {
       .pipe(
         startWith(this.loginContext.currentAccessTokenData),
         switchMap((tokenData) =>
-          tokenData != null ? this.userService.me() : of(null),
+          tokenData != null ? this.service.me() : of(null),
         ),
       )
       .subscribe(this.user);

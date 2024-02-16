@@ -14,7 +14,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import {
   ResearchPlanContext,
   CreateResearchPlan,
-  injectResearchPlanService,
+  ResearchPlanService,
+
 } from '../plan/research-plan';
 import { CurrentUser, User } from 'src/app/user/common/user';
 import { Campus } from 'src/app/uni/campus/campus';
@@ -39,7 +40,7 @@ const experimentalPlanCreateFixture: Partial<CreateResearchPlan> = {
     email: 'help@me',
     name: 'Help me',
     baseCampus: melCampusFixture,
-    disciplines: new Set([ 'ict' ]),
+    disciplines: new Set(['ict']),
     roles: new Set(),
     createdAt: new Date(),
     updatedAt: new Date()
@@ -49,7 +50,7 @@ const experimentalPlanCreateFixture: Partial<CreateResearchPlan> = {
     email: 'a@technician',
     name: 'a technician',
     baseCampus: melCampusFixture,
-    disciplines: new Set([ 'electrical' ]),
+    disciplines: new Set(['electrical']),
     roles: new Set(),
     createdAt: new Date(),
     updatedAt: new Date()
@@ -83,7 +84,7 @@ const experimentalPlanCreateFixture: Partial<CreateResearchPlan> = {
       
     `,
   ],
-  providers: [ ResearchPlanContext ],
+  providers: [ResearchPlanContext],
 })
 export class ResearchPlanCreatePage {
   readonly _cdRef = inject(ChangeDetectorRef);
@@ -91,7 +92,7 @@ export class ResearchPlanCreatePage {
   readonly _router = inject(Router);
   readonly _activatedRoute = inject(ActivatedRoute);
 
-  readonly plans = injectResearchPlanService();
+  readonly plans = inject(ResearchPlanService);
   readonly _context: ResearchPlanContext = inject(ResearchPlanContext);
 
   readonly _user = inject(UserContext);
@@ -101,6 +102,6 @@ export class ResearchPlanCreatePage {
 
   async onSave(patch: CreateResearchPlan) {
     const created = await firstValueFrom(this.plans.create(patch));
-    await this._router.navigate([ 'research', 'plans', created.id ]);
+    await this._router.navigate(['research', 'plans', created.id]);
   }
 }

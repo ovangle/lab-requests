@@ -8,7 +8,7 @@ import { Observable } from "rxjs";
 import { ModelSearchAutocompleteComponent } from "src/app/common/model/search/search-autocomplete.component";
 import { ModelSearchComponent, ModelSearchControl, provideValueAccessor } from "src/app/common/model/search/search-control";
 import { ModelSearchInputComponent } from "src/app/common/model/search/search-input-field.component";
-import { User, injectUserService } from "./user";
+import { User, UserService } from "./user";
 
 
 @Component({
@@ -42,7 +42,7 @@ import { User, injectUserService } from "./user";
     ]
 })
 export class UserSearchComponent implements ModelSearchComponent<User> {
-    readonly _userService = injectUserService();
+    readonly _userService = inject(UserService);
 
     readonly searchControl = new ModelSearchControl<User>(
         (searchInput) => this.getSearchOptions(searchInput),

@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { CollectionViewer } from '@angular/cdk/collections';
 import { Observable, forkJoin, switchMap } from 'rxjs';
 import { EquipmentLeaseDetailComponent } from './equipment-lease-detail.component';
-import { EquipmentService, injectEquipmentService } from 'src/app/equipment/equipment';
+import { EquipmentService } from 'src/app/equipment/equipment';
 import { ResourceTableInfoHeaderComponent } from '../../lab-resource/common/resource-table-info-header.component';
 import {
   ResourceTableDataSource,
@@ -17,7 +17,7 @@ export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<Equip
   override readonly resourceType = 'equipment-lease';
   override readonly resourceTitle = 'Equipment';
 
-  readonly equipments = injectEquipmentService();
+  readonly equipments = inject(EquipmentService);
 }
 
 @Component({

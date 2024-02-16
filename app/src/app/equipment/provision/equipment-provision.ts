@@ -11,6 +11,7 @@ import { Injectable, inject } from "@angular/core";
 import { ModelService } from "src/app/common/model/model-service";
 import urlJoin from "url-join";
 import { EquipmentContext } from "../equipment-context";
+import { RelatedModelService } from "src/app/common/model/context";
 
 export interface LabEquipmentProvisionParams extends ModelParams {
     status: ProvisionStatus;
@@ -37,30 +38,30 @@ export class LabEquipmentProvision extends Model implements LabEquipmentProvisio
 export function labEquipmentProvisionFromJsonObject(json: JsonObject): LabEquipmentProvision {
     const baseParams = modelParamsFromJsonObject(json);
 
-    if (!isProvisionStatus(json[ 'status' ])) {
+    if (!isProvisionStatus(json['status'])) {
         throw new Error("Expected a provision status 'status'");
     }
 
-    if (!isJsonObject(json[ 'equipment' ])) {
+    if (!isJsonObject(json['equipment'])) {
         throw new Error("Expected a json object 'equipment'");
     }
-    const equipment = equipmentFromJsonObject(json[ 'equipment' ]);
+    const equipment = equipmentFromJsonObject(json['equipment']);
 
-    if (!isJsonObject(json[ 'install' ]) && json[ 'install' ] !== null) {
+    if (!isJsonObject(json['install']) && json['install'] !== null) {
         throw new Error("Expected a json object or null 'install'");
     }
-    const install = json[ 'install' ] && equipmentInstallationFromJsonObject(json[ 'install' ])
+    const install = json['install'] && equipmentInstallationFromJsonObject(json['install'])
 
-    if (typeof json[ 'reason' ] !== 'string') {
+    if (typeof json['reason'] !== 'string') {
         throw new Error("Expected a string 'reason'");
     }
 
     return new LabEquipmentProvision({
         ...baseParams,
-        status: json[ 'status' ],
+        status: json['status'],
         equipment,
         install,
-        reason: json[ 'reason' ]
+        reason: json['reason']
     });
 }
 
@@ -128,44 +129,12 @@ export function labEquipmentProvisionInstallRequestToJsonObject(request: LabEqui
 
 
 @Injectable()
-export class LabEquipmentProvisioningService extends ModelService<LabEquipmentProvision> {
+export class LabEquipmentProvisioningService extends RelatedModelService<Equipment, LabEquipmentProvision> {
 
-    readonly _equipments = inject(EquipmentService);
-    readonly equipmentContext = inject(EquipmentContext);
+    override readonly context = inject(EquipmentContext);
 
-    override model = LabEquipmentProvision;
     override modelFromJsonObject = labEquipmentProvisionFromJsonObject;
 
-    readonly indexUrl$ = this.equipmentContext.committed$.pipe(
-        map(equipment => urlJoin(this._equipments.resourceUrl(equipment.id), 'provisions')),
-        shareReplay(1)
-    );
-
-    resourceUrl(id: string): Observable<string> {
-        return this.indexUrl$.pipe(
-            map(indexUrl => urlJoin(indexUrl, id))
-        );
-    }
-    override fetch(id: string): Observable<LabEquipmentProvision> {
-        return this.resourceUrl(id).pipe(
-            first(),
-            switchMap(resourceUrl => this._httpClient.get<JsonObject>(resourceUrl)),
-            map(response => this.modelFromJsonObject(response))
-        );
-    }
-    override queryPage(params: HttpParams | { [ k: string ]: string | number | string[]; }): Observable<ModelIndexPage<LabEquipmentProvision>> {
-        return this.indexUrl$.pipe(
-            first(),
-            switchMap(indexUrl => this._httpClient.get<JsonObject>(indexUrl)),
-            map(response => this.modelIndexPageFromJsonObject(response))
-        );
-    }
-    override create(request: ModelPatch<LabEquipmentProvision>): Observable<LabEquipmentProvision> {
-        throw new Error("Method not implemented.");
-    }
-    override update(model: string | LabEquipmentProvision, request: ModelPatch<LabEquipmentProvision>): Observable<LabEquipmentProvision> {
-        throw new Error("Method not implemented.");
-    }
     request(request: LabEquipmentProvisionRequest) {
         return this.indexUrl$.pipe(
             first(),

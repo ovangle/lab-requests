@@ -19,7 +19,7 @@ import {
   costEstimateForm,
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { EquipmentRiskAssessmentFileInputComponent } from './risk-assessment-file-input.component';
-import { Equipment, injectEquipmentService } from 'src/app/equipment/equipment';
+import { Equipment, EquipmentService } from 'src/app/equipment/equipment';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { injectMaybeLabFromContext } from '../../lab-context';
 import { Lab } from '../../lab';
@@ -44,7 +44,7 @@ function equipmentLeaseForm(
   return new FormGroup({
     equipment: new FormControl<Equipment | NotFoundValue | null>(
       lease?.equipment || (null as any),
-      { validators: [ Validators.required ] },
+      { validators: [Validators.required] },
     ),
     equipmentTrainingCompleted: new FormControl<string[]>(
       lease?.equipmentTrainingCompleted || [],
@@ -110,7 +110,7 @@ function equipmentLeaseForm(
 })
 export class EquipmentLeaseFormComponent extends ResourceFormComponent<EquipmentLease, EquipmentLeaseForm> {
   readonly lab$: Observable<Lab | null> = injectMaybeLabFromContext();
-  readonly _equipments = injectEquipmentService();
+  readonly _equipments = inject(EquipmentService);
 
   @Input({ required: true })
   funding: ResearchFunding | undefined = undefined;
@@ -123,7 +123,7 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
     return equipmentLeaseForm(committed);
   }
 
-  async getPatch(patchParams: ResourceParams, value: EquipmentLeaseForm[ 'value' ]): Promise<EquipmentLease> {
+  async getPatch(patchParams: ResourceParams, value: EquipmentLeaseForm['value']): Promise<EquipmentLease> {
     const equipment = await firstValueFrom(this.selectedEquipment$);
     const equipmentProvision = this._createdProvisionSubject.value;
 

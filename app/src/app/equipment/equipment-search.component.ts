@@ -1,14 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 import {
   ReactiveFormsModule,
 } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import {
   Equipment,
-  EquipmentCollection,
+  EquipmentService,
   equipmentQueryToHttpParams,
-  injectEquipmentService,
 } from './equipment';
 import { Lab } from '../lab/lab';
 import { ModelSearchAutocompleteComponent } from 'src/app/common/model/search/search-autocomplete.component';
@@ -36,13 +35,12 @@ import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
     </common-model-search-input-field>
   `,
   providers: [
-    EquipmentCollection,
     provideValueAccessor(EquipmentSearchComponent)
   ],
 })
 export class EquipmentSearchComponent implements ModelSearchComponent<Equipment> {
 
-  readonly equipments = injectEquipmentService();
+  readonly equipments = inject(EquipmentService);
 
   readonly searchControl = new ModelSearchControl<Equipment>(
     (search) => this.getModelOptions(search),

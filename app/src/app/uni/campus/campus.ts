@@ -9,10 +9,6 @@ import { RestfulService } from 'src/app/common/model/model-service';
 import { HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { JsonObject } from 'src/app/utils/is-json-object';
-import {
-  ModelCollection,
-  injectModelService,
-} from 'src/app/common/model/model-collection';
 
 export type CampusCode = string;
 export function isCampusCode(obj: any): obj is CampusCode {
@@ -31,18 +27,18 @@ export function campusFromJsonObject(json: JsonObject): Campus {
   if (typeof json !== 'object' || json == null) {
     throw new Error('Expected a campus');
   }
-  const obj: { [ k: string ]: unknown } = json as any;
+  const obj: { [k: string]: unknown } = json as any;
 
   const baseParams = modelParamsFromJsonObject(obj);
 
-  if (!isCampusCode(obj[ 'code' ])) {
+  if (!isCampusCode(obj['code'])) {
     throw new Error('Expected a campus code');
   }
 
   return new Campus({
     ...baseParams,
-    code: obj[ 'code' ],
-    name: obj[ 'name' ] as string,
+    code: obj['code'],
+    name: obj['name'] as string,
   });
 }
 
@@ -125,8 +121,9 @@ export function campusQueryToHttpParams(
 
 @Injectable({ providedIn: 'root' })
 export class CampusService extends RestfulService<Campus> {
-  override model = Campus;
   override modelFromJsonObject = campusFromJsonObject;
+  override readonly createRequestToJsonObject = undefined;
+  override readonly updateRequestToJsonObject = undefined;
   override path = '/uni/campuses';
 
   lookup(lookup: string | CampusLookup): Observable<Campus | null> {
@@ -137,27 +134,4 @@ export class CampusService extends RestfulService<Campus> {
     }
   }
 
-}
-
-@Injectable({ providedIn: 'root' })
-export class CampusCollection
-  extends ModelCollection<Campus, CampusService>
-  implements CampusService {
-  constructor(service: CampusService) {
-    super(service);
-  }
-
-
-  lookup(lookup: string | CampusLookup): Observable<Campus | null> {
-    if (typeof lookup === 'string' && this._cache.has(lookup)) {
-      return of(this._cache.get(lookup)!);
-    }
-    return this.service.lookup(lookup).pipe(
-      this._maybeCacheResult
-    );
-  }
-}
-
-export function injectCampusService() {
-  return injectModelService(CampusService, CampusCollection);
 }

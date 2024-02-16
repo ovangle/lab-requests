@@ -22,10 +22,6 @@ import {
   modelIndexPageFromJsonObject,
   modelParamsFromJsonObject,
 } from '../../common/model/model';
-import {
-  ModelCollection,
-  injectModelService,
-} from '../../common/model/model-collection';
 import { RestfulService } from '../../common/model/model-service';
 import { Actor } from '../actor';
 import { Role, roleFromJson } from './role';
@@ -72,37 +68,37 @@ export class User extends Model implements UserParams {
 
 function userParamsFromJsonObject(json: JsonObject): UserParams {
   const baseParams = modelParamsFromJsonObject(json);
-  if (typeof json[ 'email' ] !== 'string') {
+  if (typeof json['email'] !== 'string') {
     throw new Error("Expected a string 'email'");
   }
 
-  if (typeof json[ 'name' ] !== 'string') {
+  if (typeof json['name'] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
 
-  if (!isJsonObject(json[ 'baseCampus' ])) {
+  if (!isJsonObject(json['baseCampus'])) {
     throw new Error("Expected a json object 'baseCampus'");
   }
-  const baseCampus = campusFromJsonObject(json[ 'baseCampus' ]);
+  const baseCampus = campusFromJsonObject(json['baseCampus']);
 
   // if (!isDiscipline(json[ 'discipline' ])) {
   //   throw new Error('Expected a valid discipline');
   // }
 
   let roles: ReadonlySet<Role> = new Set();
-  if (Array.isArray(json[ 'roles' ])) {
-    roles = new Set(json[ 'roles' ].map(roleFromJson));
+  if (Array.isArray(json['roles'])) {
+    roles = new Set(json['roles'].map(roleFromJson));
   }
 
-  if (!Array.isArray(json[ 'disciplines' ]) || !json[ 'disciplines' ].every(isDiscipline)) {
+  if (!Array.isArray(json['disciplines']) || !json['disciplines'].every(isDiscipline)) {
     throw new Error("Expected an array of Disciplines 'disciplines'")
   }
-  const disciplines = new Set(json[ 'disciplines' ]);
+  const disciplines = new Set(json['disciplines']);
 
   return {
     ...baseParams,
-    name: json[ 'name' ],
-    email: json[ 'email' ],
+    name: json['name'],
+    email: json['email'],
     baseCampus,
 
     roles,
@@ -148,15 +144,15 @@ export class CurrentUser extends User implements CurrentUserParams {
 function currentUserFromJsonObject(json: JsonObject): CurrentUser {
   const userParams = userParamsFromJsonObject(json);
 
-  if (!isJsonObject(json[ 'labs' ])) {
+  if (!isJsonObject(json['labs'])) {
     throw new Error("Expected a json object 'labs'")
   }
-  const labs = modelIndexPageFromJsonObject(labFromJsonObject, json[ 'labs' ]);
+  const labs = modelIndexPageFromJsonObject(labFromJsonObject, json['labs']);
 
-  if (!isJsonObject(json[ 'plans' ])) {
+  if (!isJsonObject(json['plans'])) {
     throw new Error("Expected a json object 'plans'");
   }
-  const plans = modelIndexPageFromJsonObject(researchPlanFromJsonObject, json[ 'plans' ]);
+  const plans = modelIndexPageFromJsonObject(researchPlanFromJsonObject, json['plans']);
 
   return new CurrentUser({
     ...userParams,
@@ -191,25 +187,25 @@ export class TemporaryAccessUser extends User implements TemporaryAccessUserPara
 function temporaryAccessUserFromJsonObject(json: JsonObject) {
   const userParams = userParamsFromJsonObject(json);
 
-  if (typeof json[ 'tokenExpiresAt' ] !== 'string') {
+  if (typeof json['tokenExpiresAt'] !== 'string') {
     throw new Error("Expected a string 'tokenExpiresAt'")
   }
-  if (typeof json[ 'tokenExpired' ] !== 'boolean') {
+  if (typeof json['tokenExpired'] !== 'boolean') {
     throw new Error("Expected a boolean 'tokenExpired'")
   }
-  if (typeof json[ 'tokenConsumedAt' ] !== 'string' && json[ 'tokenConsumedAt' ] !== null) {
+  if (typeof json['tokenConsumedAt'] !== 'string' && json['tokenConsumedAt'] !== null) {
     throw new Error("Expected a string or null 'tokenConsumedAt'");
   }
-  if (typeof json[ 'tokenConsumed' ] !== 'boolean') {
+  if (typeof json['tokenConsumed'] !== 'boolean') {
     throw new Error("Expected a boolean 'tokenConsumed'");
   }
 
   return new TemporaryAccessUser({
     ...userParams,
-    tokenExpiresAt: parseISO(json[ 'tokenExpiresAt' ]),
-    tokenIsExpired: json[ 'tokenExpired' ],
-    tokenConsumedAt: json[ 'tokenConsumedAt' ] ? parseISO(json[ 'tokenConsumedAt' ]) : null,
-    tokenIsConsumed: json[ 'tokenConsumed' ]
+    tokenExpiresAt: parseISO(json['tokenExpiresAt']),
+    tokenIsExpired: json['tokenExpired'],
+    tokenConsumedAt: json['tokenConsumedAt'] ? parseISO(json['tokenConsumedAt']) : null,
+    tokenIsConsumed: json['tokenConsumed']
   });
 }
 
@@ -236,19 +232,19 @@ export interface CreateTemporaryUserResult {
 }
 
 function createTemporaryUserResultFromJsonObject(json: JsonObject): CreateTemporaryUserResult {
-  if (typeof json[ 'token' ] !== 'string') {
+  if (typeof json['token'] !== 'string') {
     throw new Error("Expected a string 'token'");
   }
-  if (typeof json[ 'tokenExpiresAt' ] !== 'string') {
+  if (typeof json['tokenExpiresAt'] !== 'string') {
     throw new Error("Expected a string 'tokenExpiresAt'")
   }
-  if (!isJsonObject(json[ 'user' ])) {
+  if (!isJsonObject(json['user'])) {
     throw new Error("Expected a json object 'user'");
   }
   return {
-    token: json[ 'token' ],
-    tokenExpiresAt: parseISO(json[ 'tokenExpiresAt' ]),
-    user: userFromJsonObject(json[ 'user' ])
+    token: json['token'],
+    tokenExpiresAt: parseISO(json['tokenExpiresAt']),
+    user: userFromJsonObject(json['user'])
   };
 }
 
@@ -260,10 +256,11 @@ export interface FinalizeTemporaryUserRequest {
 
 @Injectable({ providedIn: 'root' })
 export class UserService extends RestfulService<User> {
-  override readonly model = User;
   override readonly path: string = '/users';
 
   override readonly modelFromJsonObject = userFromJsonObject;
+  override createRequestToJsonObject = undefined;
+  override updateRequestToJsonObject = undefined;
 
   me(): Observable<CurrentUser> {
     return this._httpClient
@@ -327,64 +324,4 @@ export class UserService extends RestfulService<User> {
         map((result) => this.modelFromJsonObject(result))
       );
   }
-}
-
-@Injectable({ providedIn: 'root' })
-export class UserCollection extends ModelCollection<User, UserService> implements UserService {
-  private _currentUserId: string | null = null;
-
-  protected _cacheCurrentUser(user: CurrentUser) {
-    this._currentUserId = user.id;
-    this._cache.set(user.id, user);
-  }
-
-  constructor(service: UserService) {
-    super(service);
-  }
-  get _userService() {
-    return this.service as UserService;
-  }
-
-  alterPassword(alterPasswordRequest: AlterPassword): Observable<User> {
-    return this._userService.alterPassword(alterPasswordRequest);
-  }
-
-  me(): Observable<CurrentUser> {
-    if (this._currentUserId != null) {
-      return this.fetch(this._currentUserId) as Observable<CurrentUser>;
-    }
-    return (this.service as UserService).me().pipe(
-      tap((result) => {
-        this._cacheCurrentUser(result)
-      }),
-    );
-  }
-
-  lookup(lookup: string | UserLookup) {
-    return this.service.lookup(lookup).pipe(
-      this._maybeCacheResult
-    );
-  }
-
-  createTemporaryUser(request: CreateTemporaryUserRequest) {
-    return this.service.createTemporaryUser(request).pipe(
-      tap(result => {
-        this._cache.set(result.user.id, result.user);
-      })
-    )
-  }
-
-  fetchTemporaryUser(id: string, accessToken: string) {
-    return this.service.fetchTemporaryUser(id, accessToken);
-  }
-
-  finalizeTemporaryUser(request: FinalizeTemporaryUserRequest): Observable<User> {
-    return this.service.finalizeTemporaryUser(request).pipe(
-      this._cacheResult
-    )
-  }
-}
-
-export function injectUserService(): UserService {
-  return injectModelService(UserService, UserCollection);
 }

@@ -2,9 +2,8 @@ import { Component, OnInit, inject } from '@angular/core';
 import {
   FUNDING_MODEL_NAMES,
   ResearchFunding,
-  ResearchFundingCollection,
   ResearchFundingLookup,
-  injectResearchFundingService,
+  ResearchFundingService,
   researchFundingIdFromLookup,
 } from './research-funding';
 import { Observable, map, of, shareReplay } from 'rxjs';
@@ -56,7 +55,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 export class ResearchFundingSelectComponent implements ControlValueAccessor {
   readonly userContext = inject(UserContext);
 
-  readonly researchFundings = injectResearchFundingService();
+  readonly researchFundings = inject(ResearchFundingService);
   readonly options$: Observable<ResearchFunding[]> = this.researchFundings.all().pipe(
     shareReplay(1)
   );

@@ -6,46 +6,13 @@ import { ModelService } from "src/app/common/model/model-service";
 import { EquipmentInstallation, equipmentInstallationFromJsonObject } from "src/app/equipment/installation/equipment-installation";
 import { JsonObject } from "src/app/utils/is-json-object";
 import { LabContext } from "../lab-context";
-import { injectLabService } from "../lab";
 import urlJoin from "url-join";
+import { RelatedModelService } from "src/app/common/model/context";
+import { Lab } from "../lab";
 
 
 @Injectable()
-export class LabEquipmentService extends ModelService<EquipmentInstallation> {
-    override model = EquipmentInstallation;
-    readonly _labs = injectLabService();
-    readonly labContext = inject(LabContext);
-
-    readonly indexUrl$ = this.labContext.committed$.pipe(
-        map(lab => urlJoin(this._labs.resourceUrl(lab.id), 'equipments')),
-        shareReplay(1)
-    );
-
-    resourceUrl(id: string) {
-        return this.indexUrl$.pipe(
-            map(indexUrl => urlJoin(indexUrl, id))
-        )
-    }
-
+export class LabEquipmentService extends RelatedModelService<Lab, EquipmentInstallation> {
+    override readonly context = inject(LabContext);
     override readonly modelFromJsonObject = equipmentInstallationFromJsonObject;
-    override fetch(id: string): Observable<EquipmentInstallation> {
-        return this.resourceUrl(id).pipe(
-            first(),
-            switchMap(resourceUrl => this._httpClient.get<JsonObject>(resourceUrl)),
-            map(response => this.modelFromJsonObject(response))
-        );
-    }
-    override queryPage(params: HttpParams | { [ k: string ]: string | number | string[]; }): Observable<ModelIndexPage<EquipmentInstallation>> {
-        return this.indexUrl$.pipe(
-            first(),
-            switchMap(indexUrl => this._httpClient.get<JsonObject>(indexUrl)),
-            map(response => this.modelIndexPageFromJsonObject(response))
-        );
-    }
-    override create(request: ModelPatch<EquipmentInstallation>): Observable<EquipmentInstallation> {
-        throw new Error("Method not implemented.");
-    }
-    override update(model: string | EquipmentInstallation, request: ModelPatch<EquipmentInstallation>): Observable<EquipmentInstallation> {
-        throw new Error("Method not implemented.");
-    }
 }

@@ -20,13 +20,13 @@ import { FormGroup } from '@angular/forms';
 import { ResourceContainerContext, ResourceSplice, resourceContainerAttr } from '../../lab-resource/resource-container';
 
 export function typeIndexFromDetailRoute$(): Observable<
-  [ ResourceType, number | 'create' ]
+  [ResourceType, number | 'create']
 > {
   const activatedRoute = inject(ActivatedRoute);
 
-  return combineLatest([ activatedRoute.paramMap, activatedRoute.data ]).pipe(
-    map(([ paramMap, data ]) => {
-      const resourceType = data[ 'resourceType' ];
+  return combineLatest([activatedRoute.paramMap, activatedRoute.data]).pipe(
+    map(([paramMap, data]) => {
+      const resourceType = data['resourceType'];
       if (!isResourceType(resourceType)) {
         throw new Error('No resource type in route data');
       }
@@ -36,7 +36,7 @@ export function typeIndexFromDetailRoute$(): Observable<
       if (Number.isNaN(index)) {
         index = 'create';
       }
-      return [ resourceType, index ];
+      return [resourceType, index];
     }),
   );
 }
@@ -94,7 +94,7 @@ export function typeIndexFromDetailRoute$(): Observable<
       }
     }
   `,
-  providers: [ ResourceContext ],
+  providers: [ResourceContext],
   //changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LabResourceFormPage {
@@ -108,7 +108,7 @@ export class LabResourceFormPage {
   readonly typeIndex$ = defer(() => this._context.committedTypeIndex$);
   readonly resourceType$ = defer(() => this._context.resourceType$);
 
-  readonly funding$: Observable<ResearchFunding | null> = this._context.funding$;
+  readonly funding$: Observable<ResearchFunding | null> = this._context.committed$;
 
   readonly _patchSubject = new ReplaySubject(1);
   saveDisabled: boolean = true;
@@ -127,7 +127,7 @@ export class LabResourceFormPage {
     this._formPane.close();
   }
   async saveAndClose() {
-    const [ resourceType, index ] = await firstValueFrom(this._context.committedTypeIndex$);
+    const [resourceType, index] = await firstValueFrom(this._context.committedTypeIndex$);
     const resourcePatch = await firstValueFrom(this._patchSubject);
 
     let splice: ResourceSplice<any>;
@@ -137,13 +137,13 @@ export class LabResourceFormPage {
         const len = await this._containerContext.getResourceCount(resourceType);
         splice = {
           start: len,
-          items: [ resourcePatch ]
+          items: [resourcePatch]
         }
       } else {
         splice = {
           start: index,
           end: index + 1,
-          items: [ resourcePatch ]
+          items: [resourcePatch]
         }
       }
 

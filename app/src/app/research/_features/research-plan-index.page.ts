@@ -1,10 +1,10 @@
 import { Component, inject } from '@angular/core';
 import { BehaviorSubject, Subject, shareReplay, switchMap, tap } from 'rxjs';
-import { injectResearchPlanService } from '../plan/research-plan';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatListModule } from '@angular/material/list';
 import { RouterModule } from '@angular/router';
+import { ResearchPlanService } from '../plan/research-plan';
 
 interface Actor {
   readonly role: string;
@@ -45,7 +45,7 @@ const researcherFixture = {
   `,
 })
 export class ResearchPlanIndexPage {
-  readonly _models = injectResearchPlanService();
+  readonly _models = inject(ResearchPlanService);
 
   readonly actorSubject = new BehaviorSubject<Actor>(researcherFixture);
 

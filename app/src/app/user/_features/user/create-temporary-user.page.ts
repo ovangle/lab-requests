@@ -1,7 +1,7 @@
 import { APP_BASE_HREF, CommonModule, Location } from "@angular/common";
 import { CUSTOM_ELEMENTS_SCHEMA, Component, inject } from "@angular/core";
 import { CreateTemporaryUserFormComponent } from "../../temporary-user/user-create-temporary-user-form.component";
-import { CreateTemporaryUserRequest, CreateTemporaryUserResult, TemporaryAccessUser, injectUserService } from "../../common/user";
+import { CreateTemporaryUserRequest, CreateTemporaryUserResult, TemporaryAccessUser, User, UserService } from "../../common/user";
 import { Router } from "@angular/router";
 import { firstValueFrom } from "rxjs";
 import { CreateTemporaryUserFlowComponent } from "../../temporary-user/user-temporary-user-flow.component";
@@ -63,7 +63,7 @@ import { MatIconModule } from "@angular/material/icon";
 })
 export class CreateTemporaryUserPage {
     readonly _router = inject(Router);
-    readonly users = injectUserService();
+    readonly users = inject(UserService);
     readonly appBaseUrl = inject(APP_BASE_URL);
 
     result: CreateTemporaryUserResult | undefined;
@@ -91,13 +91,13 @@ export class CreateTemporaryUserPage {
     }
 
     copyImageToClipboard() {
-        const qrcodeData = atob(this.qrcodeImgSrc.split(',')[ 1 ]);
+        const qrcodeData = atob(this.qrcodeImgSrc.split(',')[1]);
         const blobParts: Uint8Array[] = [];
         for (let offset = 0; offset < qrcodeData.length; offset += 512) {
             const slice = qrcodeData.slice(offset, offset + 512);
             const bytes = new Uint8Array(slice.length);
             for (let i = 0; i < slice.length; i++) {
-                bytes[ i ] = slice.charCodeAt(i);
+                bytes[i] = slice.charCodeAt(i);
             }
             blobParts.push(bytes);
         }

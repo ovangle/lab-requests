@@ -4,7 +4,7 @@ import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, ReactiveFormsModu
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { Observable, debounceTime, firstValueFrom, of, shareReplay, startWith, switchMap } from "rxjs";
-import { Lab, injectLabService } from "./lab";
+import { Lab, LabService } from "./lab";
 import { disabledStateToggler } from "../utils/forms/disable-state-toggler";
 import { MatInputModule } from "@angular/material/input";
 import { DisciplinePipe } from "../uni/discipline/discipline.pipe";
@@ -60,7 +60,7 @@ import { HttpParams } from "@angular/common/http";
     ]
 })
 export class LabSearchComponent implements ControlValueAccessor {
-    readonly labs = injectLabService();
+    readonly labs = inject(LabService);
 
     readonly _destroyRef = inject(DestroyRef);
     readonly _control = new FormControl<Lab | string | null>(null);
@@ -77,7 +77,7 @@ export class LabSearchComponent implements ControlValueAccessor {
         startWith(null),
         switchMap(searchValue => {
             if (searchValue instanceof Lab) {
-                return of([ searchValue ]);
+                return of([searchValue]);
             } else {
                 let params = new HttpParams({
                     fromObject: { search: searchValue || '' }

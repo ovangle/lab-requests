@@ -14,18 +14,18 @@ export class ResourceContext<T extends Resource> {
     readonly committedTypeIndex$ = this._committedTypeIndexSubject.asObservable();
 
     readonly resourceType$ = defer(() =>
-        this.committedTypeIndex$.pipe(map(([ type, _ ]) => type)),
+        this.committedTypeIndex$.pipe(map(([type, _]) => type)),
     );
     readonly isCreate$ = defer(() =>
-        this.committedTypeIndex$.pipe(map(([ _, index ]) => index === 'create')),
+        this.committedTypeIndex$.pipe(map(([_, index]) => index === 'create')),
     );
 
     readonly committed$: Observable<T | null> = combineLatest([
         this.container$,
         this.committedTypeIndex$,
     ]).pipe(
-        map(([ container, typeIndex ]: [ ResourceContainer, ResourceTypeIndex ]) => {
-            const [ resourceType, index ] = typeIndex;
+        map(([container, typeIndex]: [ResourceContainer, ResourceTypeIndex]) => {
+            const [resourceType, index] = typeIndex;
 
             return index === 'create'
                 ? null

@@ -12,7 +12,6 @@ import {
 } from 'src/app/common/model/model-service';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { ModelContext } from 'src/app/common/model/context';
-import { ModelCollection, injectModelService } from 'src/app/common/model/model-collection';
 
 export interface SoftwareParams extends ModelParams {
   readonly id: string;
@@ -23,13 +22,13 @@ export interface SoftwareParams extends ModelParams {
 export function softwareFromJsonObject(json: JsonObject) {
   const baseParams = modelParamsFromJsonObject(json);
 
-  if (typeof json[ 'name' ] !== 'string') {
+  if (typeof json['name'] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
 
   return new Software({
     ...baseParams,
-    name: json[ 'name' ],
+    name: json['name'],
   });
 }
 
@@ -86,31 +85,17 @@ export function softwareQueryToHttpParams(lookup: Partial<SoftwareQuery>) {
 
 @Injectable({ providedIn: 'root' })
 export class SoftwareService extends RestfulService<Software> {
-  override model = Software;
   override modelFromJsonObject = softwareFromJsonObject;
+  override readonly createRequestToJsonObject = undefined;
+  override readonly updateRequestToJsonObject = undefined;
 
   override path: string = '/lab/softwares';
 }
 
-@Injectable()
-export class SoftwareCollection extends ModelCollection<Software, SoftwareService> implements SoftwareService {
-  constructor(service: SoftwareService) {
-    super(service);
-  }
-}
+
 
 @Injectable()
-export class SoftwareContext extends ModelContext<Software, SoftwarePatch> {
-  readonly software$ = this.committed$;
+export class SoftwareContext extends ModelContext<Software> {
+  override readonly service = inject(SoftwareService);
 
-  override _doUpdate(
-    identifier: string,
-    patch: SoftwarePatch,
-  ): Promise<Software> {
-    throw new Error('Not implemented');
-  }
-}
-
-export function injectSoftwareService() {
-  return injectModelService(SoftwareService, SoftwareCollection);
 }

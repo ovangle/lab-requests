@@ -19,17 +19,13 @@ import { RestfulService } from 'src/app/common/model/model-service';
 import { FileUploadService } from 'src/app/common/file/file-upload.service';
 
 import urlJoin from 'url-join';
-import { ModelContext } from 'src/app/common/model/context';
-import {
-  ModelCollection,
-  injectModelService,
-} from 'src/app/common/model/model-collection';
+import { ModelContext, RelatedModelService } from 'src/app/common/model/context';
+
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import {
   ResearchPlan,
   ResearchPlanContext,
   ResearchPlanService,
-  injectResearchPlanService,
 } from 'src/app/research/plan/research-plan';
 import {
   ResourceContainer,
@@ -42,6 +38,8 @@ import { ResourceType } from '../../lab-resource/resource-type';
 import { StoredFile } from 'src/app/common/file/stored-file';
 import { Discipline, formatDiscipline, isDiscipline } from 'src/app/uni/discipline/discipline';
 import { Model, ModelParams, modelParamsFromJsonObject } from 'src/app/common/model/model';
+import { LabContext } from '../../lab-context';
+import { Lab } from '../../lab';
 
 export interface WorkUnitParams extends ResourceContainerParams, ModelParams {
   planId: string;
@@ -129,188 +127,75 @@ export function formatWorkUnit(
 export function workUnitFromJsonObject(json: JsonObject): WorkUnit {
   const baseParams = modelParamsFromJsonObject(json);
   const containerParams = resourceContainerParamsFromJson(json);
-  if (typeof json[ 'name' ] !== 'string') {
+  if (typeof json['name'] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
-  if (typeof json[ 'planId' ] !== 'string') {
+  if (typeof json['planId'] !== 'string') {
     throw new Error("Expected a string 'planId'");
   }
-  if (typeof json[ 'index' ] !== 'number') {
+  if (typeof json['index'] !== 'number') {
     throw new Error("Expected a number 'index'");
   }
 
-  if (typeof json[ 'labId' ] !== 'string' || !validateIsUUID(json[ 'labId' ])) {
+  if (typeof json['labId'] !== 'string' || !validateIsUUID(json['labId'])) {
     throw new Error("Expected a UUID 'labType'");
   }
 
-  if (typeof json[ 'supervisorId' ] !== 'string' || !validateIsUUID(json[ 'supervisorId' ])) {
+  if (typeof json['supervisorId'] !== 'string' || !validateIsUUID(json['supervisorId'])) {
     throw new Error("Expected a UUID 'supervisorId'");
   }
 
-  if (!isDiscipline(json[ 'discipline' ])) {
+  if (!isDiscipline(json['discipline'])) {
     throw new Error("Expected a Discipline 'discipline'");
   }
 
 
-  if (typeof json[ 'processSummary' ] != 'string') {
+  if (typeof json['processSummary'] != 'string') {
     throw new Error("Expected a string 'processSummary'");
   }
 
-  if (typeof json[ 'startDate' ] !== 'string' && json[ 'startDate' ] != null) {
+  if (typeof json['startDate'] !== 'string' && json['startDate'] != null) {
     throw new Error("Expected either a string or null 'startDate'");
   }
   const startDate =
-    json[ 'startDate' ] != null ? parseISO(json[ 'startDate' ]) : null;
-  if (typeof json[ 'endDate' ] !== 'string' && json[ 'endDate' ] != null) {
+    json['startDate'] != null ? parseISO(json['startDate']) : null;
+  if (typeof json['endDate'] !== 'string' && json['endDate'] != null) {
     throw new Error("Expected either a string or null 'endDate'");
   }
-  const endDate = json[ 'endDate' ] != null ? parseISO(json[ 'endDate' ]) : null;
+  const endDate = json['endDate'] != null ? parseISO(json['endDate']) : null;
 
-  if (!isJsonObject(json[ 'campus' ])) {
+  if (!isJsonObject(json['campus'])) {
     throw new Error("Expected a json object 'campus'");
   }
 
   return new WorkUnit({
     ...baseParams,
     ...containerParams,
-    name: json[ 'name' ],
-    planId: json[ 'planId' ],
-    labId: json[ 'labId' ],
-    supervisorId: json[ 'supervisorId' ],
-    campus: campusFromJsonObject(json[ 'campus' ]),
-    discipline: json[ 'discipline' ],
-    processSummary: json[ 'processSummary' ],
+    name: json['name'],
+    planId: json['planId'],
+    labId: json['labId'],
+    supervisorId: json['supervisorId'],
+    campus: campusFromJsonObject(json['campus']),
+    discipline: json['discipline'],
+    processSummary: json['processSummary'],
 
     startDate,
     endDate,
   });
 }
 
-export interface WorkUnitPatch extends ResourceContainerPatch {
-  readonly planId?: string;
-  readonly campus: Campus | string;
-  readonly discipline: Discipline;
-  readonly name: string;
-  readonly technician: string;
-
-  readonly processSummary: string;
-
-  readonly startDate: Date | null;
-  readonly endDate: Date | null;
-}
-
-
-export function workUnitPatchToJsonObject(patch: WorkUnitPatch): {
-  [ k: string ]: any;
-} {
-  let base: JsonObject = {};
-  if (patch.planId) {
-    base[ 'planId' ] = patch.planId;
-  }
-
-  return {
-    ...base,
-    name: patch.name,
-    campus: patch.campus instanceof Campus ? patch.campus.id : patch.campus,
-    discipline: patch.discipline,
-    technician: patch.technician,
-    processSummary: patch.processSummary,
-    startDate: patch.startDate && formatISO(patch.startDate),
-    endDate: patch.endDate && formatISO(patch.endDate),
-    ...resourceContainerPatchToJson(patch),
-  };
-}
-
-export interface CreateWorkUnitAttachment {
-  resourceType: ResourceType | null;
-  resourceIndex?: number;
-  resourceId?: string;
-}
-
-export function createWorkUnitAttachmentToJson(
-  createAttachment: CreateWorkUnitAttachment,
-) {
-  const json: { [ k: string ]: any } = {
-    resourceType: createAttachment.resourceType,
-  };
-  if (createAttachment.resourceId) {
-    json[ 'resourceId' ] = createAttachment.resourceId;
-  }
-  if (createAttachment.resourceIndex) {
-    json[ 'resourceIndex' ] = createAttachment.resourceIndex;
-  }
-  return json;
-}
-
-@Injectable({ providedIn: 'root' })
-export class WorkUnitService extends RestfulService<WorkUnit> {
+@Injectable()
+export class WorkUnitService extends RelatedModelService<Lab, WorkUnit> {
+  readonly context = inject(LabContext);
   readonly _planModels = inject(ResearchPlanService);
-  readonly _files = inject(FileUploadService);
 
-  override readonly model = WorkUnit;
+  readonly _files = inject(FileUploadService);
   override readonly modelFromJsonObject = workUnitFromJsonObject;
-  override path = '/lab/work-units';
-
-  resourcePathFromPlan(plan: ResearchPlan) {
-    return urlJoin(this._planModels.path, plan.id, 'work-units');
-  }
-
-  resourceAttachmentPath(workUnit: WorkUnit | string) {
-    const workUnitId = typeof workUnit === 'string' ? workUnit : workUnit.id;
-    return `/ lab / work - units / ${workUnitId} /files`;
-  }
-
-  readById(id: string) {
-    return this.fetch(id);
-  }
-
-  addAttachment(
-    workUnit: WorkUnit | string,
-    request: CreateWorkUnitAttachment,
-    file: File,
-  ) {
-    return this._files.sendFile(
-      this.resourceAttachmentPath(workUnit),
-      file,
-      createWorkUnitAttachmentToJson(request),
-    );
-  }
-}
-
-@Injectable({ providedIn: 'root' })
-export class WorkUnitCollection extends ModelCollection<WorkUnit, WorkUnitService> implements WorkUnitService {
-  readonly _planModels = injectResearchPlanService();
-  readonly _files = inject(FileUploadService);
-
-  constructor(service: WorkUnitService) {
-    super(service);
-  }
-  resourcePathFromPlan(plan: ResearchPlan): string {
-    return this.service.resourcePathFromPlan(plan);
-  }
-  resourceAttachmentPath(workUnit: string | WorkUnit): string {
-    return this.service.resourceAttachmentPath(workUnit);
-  }
-  readById(id: string): Observable<WorkUnit> {
-    return this.readById(id).pipe(
-      this._cacheResult
-    );
-  }
-  addAttachment(workUnit: string | WorkUnit, request: CreateWorkUnitAttachment, file: File): Observable<StoredFile> {
-    return this.service.addAttachment(workUnit, request, file);
-  }
-}
-
-export function injectWorkUnitService() {
-  return injectModelService(WorkUnitService, WorkUnitCollection);
 }
 
 @Injectable()
-export class WorkUnitContext extends ModelContext<WorkUnit, WorkUnitPatch> {
-  readonly service = injectWorkUnitService();
-  override _doUpdate(id: string, patch: WorkUnitPatch): Promise<WorkUnit> {
-    return firstValueFrom(this.service.update(id, patch));
-  }
+export class WorkUnitContext extends ModelContext<WorkUnit> {
+  readonly service = inject(WorkUnitService);
 
   _planContext = inject(ResearchPlanContext);
   readonly plan$ = this._planContext.committed$.pipe(

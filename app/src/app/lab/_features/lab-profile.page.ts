@@ -1,6 +1,6 @@
 import { Component, Injectable, inject } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { Lab, injectLabService } from '../lab';
+import { Lab, LabService } from '../lab';
 import { Observable, ReplaySubject, shareReplay, switchMap } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { DisciplinePipe } from 'src/app/uni/discipline/discipline.pipe';
@@ -8,7 +8,7 @@ import { LabContext } from '../lab-context';
 
 export function labFromActivatedRoute(): Observable<Lab> {
   const route = inject(ActivatedRoute);
-  const labs = injectLabService();
+  const labs = inject(LabService);
 
   return route.paramMap.pipe(
     switchMap(params => {

@@ -4,7 +4,6 @@ import { Subscription, firstValueFrom, of } from 'rxjs';
 import { Router } from '@angular/router';
 import {
   Equipment,
-  EquipmentCollection,
   EquipmentPatch,
   EquipmentService,
 } from '../../../equipment/equipment';
@@ -34,6 +33,6 @@ export class EquipmentCreatePage {
 
   async createEquipment(patch: EquipmentPatch) {
     const equipment = await firstValueFrom(this.equipmentService.create(patch));
-    await this._router.navigate([ 'lab', 'equipments', equipment.id ]);
+    await this._router.navigate(['lab', 'equipments', equipment.id]);
   }
 }

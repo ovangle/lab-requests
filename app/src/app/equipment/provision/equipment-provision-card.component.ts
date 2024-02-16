@@ -3,14 +3,14 @@ import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { MatCardModule } from "@angular/material/card";
 import { LabEquipmentProvision } from "./equipment-provision";
 import { NewEquipmentRequestFormComponent } from "./provision-new-equipment-form.component";
-import { LabEquipmentProvisionInfoComponent } from "../../lab/equipment/provision/equipment-provision-info.component";
+import { LabEquipmentProvisionInfoComponent } from "../../lab/equipment/provision/equipment-provision-card.component";
 import { MatIconModule } from "@angular/material/icon";
 import { Equipment } from "../equipment";
 import { Lab } from "../../lab/lab";
 import { ResearchFunding } from "src/app/research/funding/research-funding";
 
 @Component({
-    selector: 'lab-equipment-provision-flow-card',
+    selector: 'lab-equipment-provision-card',
     standalone: true,
     imports: [
         CommonModule,
