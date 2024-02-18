@@ -1,6 +1,6 @@
 import { CommonModule } from "@angular/common";
 import { Component, inject } from "@angular/core";
-import { LabEquipmentProvisioningService } from "src/app/equipment/provision/equipment-provision";
+import { EquipmentProvisionService } from "src/app/equipment/provision/equipment-provision";
 import { ActivatedRoute } from "@angular/router";
 import { shareReplay, switchMap } from "rxjs";
 import { EquipmentContext } from "../../../equipment/equipment-context";
@@ -8,7 +8,7 @@ import { EquipmentService } from "src/app/equipment/equipment";
 
 function equipmentProvisionFromActivatedRoute() {
     const activatedRoute = inject(ActivatedRoute);
-    const equipmentProvisions = inject(LabEquipmentProvisioningService);
+    const equipmentProvisions = inject(EquipmentProvisionService);
 
     return activatedRoute.paramMap.pipe(
         switchMap(params => {

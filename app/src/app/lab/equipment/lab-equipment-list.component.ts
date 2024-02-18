@@ -10,7 +10,7 @@ import { LabEquipmentService } from './lab-equipment.service';
 import { HttpParams } from '@angular/common/http';
 import { ModelSearchControl } from 'src/app/common/model/search/search-control';
 import { LabContext } from '../lab-context';
-import { Observable, combineLatest, first, firstValueFrom, map, switchMap } from 'rxjs';
+import { Observable, combineLatest, first, firstValueFrom, map, of, switchMap } from 'rxjs';
 import { EquipmentInstallation } from 'src/app/equipment/installation/equipment-installation';
 
 @Component({
@@ -72,6 +72,9 @@ export class LabEquipmentListComponent {
 
   readonly lab$ = this.labContext.committed$;
 
+  @Input()
+  equipment: Equipment | null = null;
+
   equipmentSearch = new ModelSearchControl<Equipment>(
     (search: string) => this.getEquipments(search),
     (equipment: Equipment) => equipment.name
@@ -81,6 +84,10 @@ export class LabEquipmentListComponent {
     return this.lab$.pipe(
       first(),
       switchMap(lab => {
+        if (this.equipment) {
+          return of([this.equipment]);
+        }
+
         const params = new HttpParams({
           fromObject: {
             has_install_in: lab.id,

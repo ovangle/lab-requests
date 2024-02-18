@@ -1,6 +1,6 @@
 import { Model, ModelIndexPage, ModelParams, ModelPatch, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
-import { Equipment, LabEquipmentCreateRequest, labEquipmentCreateRequestToJson, equipmentFromJsonObject, EquipmentPatch, EquipmentService } from "../equipment";
+import { Equipment, EquipmentCreateRequest, labEquipmentCreateRequestToJson, equipmentFromJsonObject, EquipmentPatch, EquipmentService } from "../equipment";
 import { ResearchFunding } from "src/app/research/funding/research-funding";
 import { Lab } from "../../lab/lab";
 import { Observable, first, firstValueFrom, map, shareReplay, switchMap } from "rxjs";
@@ -12,6 +12,7 @@ import { ModelService } from "src/app/common/model/model-service";
 import urlJoin from "url-join";
 import { EquipmentContext } from "../equipment-context";
 import { RelatedModelService } from "src/app/common/model/context";
+import { Discipline } from "src/app/uni/discipline/discipline";
 
 export interface LabEquipmentProvisionParams extends ModelParams {
     status: ProvisionStatus;
@@ -32,6 +33,10 @@ export class LabEquipmentProvision extends Model implements LabEquipmentProvisio
         this.equipment = params.equipment;
         this.install = params.install;
         this.reason = params.reason;
+    }
+
+    get isActive() {
+        return !['installed', 'cancelled'].includes(this.status);
     }
 }
 
@@ -65,106 +70,137 @@ export function labEquipmentProvisionFromJsonObject(json: JsonObject): LabEquipm
     });
 }
 
-export interface LabEquipmentProvisionRequest {
-    equipment: Equipment | LabEquipmentCreateRequest | string;
-    reason: string;
-    lab: Lab | string | null;
-    funding: ResearchFunding | string | null;
-    estimatedCost: number | null;
+export interface CreateEquipmentProvisionRequest {
+    // The status of the newly created request.
+    // It is possible for a newly created provision to skip previous steps
+    // if conditions are met for them.
+    status?: ProvisionStatus;
+
+    // The number of equipments required 
     quantityRequired: number;
+
+    // The reason that the equipment is needed.
+    reason: string;
+
+    // The lab to install the equipment into.
+    // `null` if it can be installed into any lab.
+    lab: Lab | null;
+
+    // The funding source that will provide the project budget, if known
+    funding: ResearchFunding | null;
+
+    // The estimated cost of the equipment, if known.
+    estimatedCost?: number | null;
+
+
+    // A url from which the equipment purchase can be arranged.
     purchaseUrl: string;
 }
 
-
-
-export function equipmentProvisionRequestToJson(request: LabEquipmentProvisionRequest) {
-    let equipment: JsonObject | string;
-    if (request.equipment instanceof Equipment) {
-        equipment = request.equipment.id;
-    } else if (typeof request.equipment === 'string') {
-        equipment = request.equipment;
-    } else {
-        equipment = labEquipmentCreateRequestToJson(request.equipment);
-    }
-
-    let funding: string | null;
-    if (request.funding instanceof ResearchFunding) {
-        funding = request.funding.id;
-    } else {
-        funding = request.funding;
-    }
-
+export function createEquipmentProvisionRequestToJson(request: CreateEquipmentProvisionRequest) {
     return {
-        equipment,
-        funding,
+        status: request.status || 'requested',
         reason: request.reason,
-        lab: request.lab,
+
+        lab: request.lab?.id || null,
+        funding: request.funding?.id || null,
+
         estimatedCost: request.estimatedCost,
         quantitytRequired: request.quantityRequired,
         purchaseUrl: request.purchaseUrl
     };
 }
-export interface LabEquipmentProvisionApprovalRequest {
-    // Optionally update the equipment
-    equipment?: EquipmentPatch;
 
-    labId?: string;
+export interface EquipmentProvisionApprovalRequest {
+    // After approval, the lab must be known.
+    lab: Lab;
 
-    // approved for purchase at this cost.
-    actualCost: number;
-    // From this url. 
-    purchaseUrl: string;
+    // After approval, the funding must be known
+    funding: ResearchFunding;
+
+    // After approval, the quantity to purchase and install is set.
+    quantityApproved: number;
 }
 
-export function labEquipmentProvisionApprovalRequestToJsonObject(request: LabEquipmentProvisionApprovalRequest) {
+export function equipmentProvisionApprovalRequestToJsonObject(request: EquipmentProvisionApprovalRequest) {
     return request;
 }
 
-export interface LabEquipmentProvisionInstallRequest {
+export interface EquipmentProvisionPurchasedRequest {
+    readonly provisionStatus: 'purchased';
 }
 
-export function labEquipmentProvisionInstallRequestToJsonObject(request: LabEquipmentProvisionInstallRequest) {
+export function equipmentProvisionPurchasedRequestToJsonObject(request: EquipmentProvisionPurchasedRequest) {
+    return request;
+}
+
+export interface EquipmentProvisionInstalledRequest {
+    readonly provisionStatus: 'installed';
+    readonly lab: Lab;
+    readonly notes: string[];
+}
+
+export function equipmentProvisionInstalledRequestToJsonObject(request: EquipmentProvisionInstalledRequest) {
     return request;
 }
 
 
 @Injectable()
-export class LabEquipmentProvisioningService extends RelatedModelService<Equipment, LabEquipmentProvision> {
-
+export class EquipmentProvisionService extends RelatedModelService<Equipment, LabEquipmentProvision> {
     override readonly context = inject(EquipmentContext);
-
     override modelFromJsonObject = labEquipmentProvisionFromJsonObject;
 
-    request(request: LabEquipmentProvisionRequest) {
+    create(request: CreateEquipmentProvisionRequest) {
         return this.indexUrl$.pipe(
             first(),
             switchMap(indexUrl => this._httpClient.post<JsonObject>(
                 indexUrl,
-                equipmentProvisionRequestToJson(request)
+                createEquipmentProvisionRequestToJson(request)
             )),
-            map((response) => this.modelFromJsonObject(response))
+            map((response) => this.modelFromJsonObject(response)),
+            this._cacheOne
         );
     }
 
-    approve(provision: LabEquipmentProvision, request: LabEquipmentProvisionApprovalRequest) {
+    /**
+     * Resets the provision request, overriding it with the newly created request
+     * @param provision 
+     * @param request 
+     */
+    reset(provision: LabEquipmentProvision, request: CreateEquipmentProvisionRequest) {
+        throw new Error('not implemented');
+    }
+
+    approve(provision: LabEquipmentProvision, request: EquipmentProvisionApprovalRequest) {
         return this.resourceUrl(provision.id).pipe(
-            first(),
             switchMap(resourceUrl =>
                 this._httpClient.post<JsonObject>(
                     resourceUrl,
-                    labEquipmentProvisionApprovalRequestToJsonObject(request)
+                    equipmentProvisionApprovalRequestToJsonObject(request)
                 )
             ),
-            map(response => this.modelFromJsonObject(response))
+            map(response => this.modelFromJsonObject(response)),
+            this._cacheOne
         );
     }
 
-    install(provision: LabEquipmentProvision, request: LabEquipmentProvisionInstallRequest) {
+    purchase(provision: LabEquipmentProvision, request: EquipmentProvisionPurchasedRequest) {
+        return this.resourceUrl(provision.id).pipe(
+            switchMap(resourceUrl => this._httpClient.put<JsonObject>(
+                resourceUrl,
+                equipmentProvisionPurchasedRequestToJsonObject(request)
+            )),
+            map(response => this.modelFromJsonObject(response)),
+            this._cacheOne
+        );
+    }
+
+    install(provision: LabEquipmentProvision, request: EquipmentProvisionInstalledRequest) {
         return this.resourceUrl(provision.id).pipe(
             first(),
             switchMap(resourceUrl => this._httpClient.post<JsonObject>(
                 resourceUrl,
-                labEquipmentProvisionInstallRequestToJsonObject(request)
+                equipmentProvisionInstalledRequestToJsonObject(request)
             )),
             map(response => this.modelFromJsonObject(response))
         )

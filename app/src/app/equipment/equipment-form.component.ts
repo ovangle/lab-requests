@@ -9,6 +9,7 @@ import {
   inject,
 } from '@angular/core';
 import {
+  AbstractControl,
   FormControl,
   FormGroup,
   ReactiveFormsModule,
@@ -27,55 +28,16 @@ import { Equipment, EquipmentPatch, EquipmentService } from './equipment';
 import { ResizeTextareaOnInputDirective } from 'src/app/common/forms/resize-textarea-on-input.directive';
 import { EquipmentContext } from 'src/app/equipment/equipment-context';
 import { HttpParams } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, firstValueFrom, map } from 'rxjs';
+import { EquipmentSearchComponent } from './equipment-search.component';
+import { NotFoundValue } from '../common/model/search/search-control';
 
-export const equipmentFixtures: Equipment[] = [];
-
-export type EquipmentForm = FormGroup<{
-  name: FormControl<string>;
+export interface EquipmentFormControls {
+  name: FormControl<Equipment | NotFoundValue | null>;
   description: FormControl<string>;
   tags: FormControl<string[]>;
   trainingDescriptions: FormControl<string[]>;
-}>;
-
-export function equipmentPatchFromForm(form: EquipmentForm): EquipmentPatch {
-  if (!form.valid) {
-    throw new Error('Invalid form has no patch');
-  }
-  return form.value as EquipmentPatch;
-}
-
-export function equipmentForm(): EquipmentForm {
-  const equipments = inject(EquipmentService);
-  const context = inject(EquipmentContext, { optional: true });
-
-  return new FormGroup({
-    name: new FormControl<string>('', {
-      nonNullable: true,
-      validators: [ Validators.required ],
-      asyncValidators: [
-        (c) => equipmentNameUniqueValidator(c as FormControl<string>),
-      ],
-    }),
-    description: new FormControl<string>('', { nonNullable: true }),
-    tags: new FormControl<string[]>([], { nonNullable: true }),
-    trainingDescriptions: new FormControl<string[]>([], { nonNullable: true }),
-  });
-
-  function equipmentNameUniqueValidator(
-    control: FormControl<string>,
-  ): Observable<{ notUnique: string } | null> {
-    const name = control.value;
-
-    return equipments
-      .query(new HttpParams({ fromObject: { name: name } }))
-      .pipe(
-        map((names) =>
-          names.length > 0 ? { notUnique: 'Name is not unique' } : null,
-        ),
-      );
-  }
-}
+};
 
 @Component({
   selector: 'equipment-form',
@@ -91,22 +53,25 @@ export function equipmentForm(): EquipmentForm {
     MatInputModule,
 
     ResizeTextareaOnInputDirective,
+    EquipmentSearchComponent,
     EquipmentTagInputComponent,
     EquipmentTrainingDescriptionsInputComponent,
   ],
   template: `
     <form [formGroup]="form!" (ngSubmit)="commitForm($event)">
-      <mat-form-field>
-        <mat-label>Name</mat-label>
-        <input matInput id="equipment-name" formControlName="name" />
-        @if (nameErrors && nameErrors['required']) {
-          <mat-error>A value is required </mat-error>
-        }
-        @if (nameErrors && nameErrors['notUnique']) {
-          <mat-error>An equipment already exists with that name</mat-error>
-        }
-      </mat-form-field>
+      @if (!equipment) {
+        <equipment-search [inLab]="null" 
+          required
+          allowNotFound 
+          formControlName="equipment">
+          <mat-label>Name</mat-label>
 
+          @if (nameErrors && nameErrors['required']) {
+            <mat-error>A value is required</mat-error>
+          }
+
+        </equipment-search>
+      }
       <mat-form-field>
         <mat-label>Description</mat-label>
         <textarea matInput formControlName="description" resizeOnInput>
@@ -143,48 +108,107 @@ export function equipmentForm(): EquipmentForm {
   ],
   exportAs: 'form',
 })
-export class LabEquipmentFormComponent {
-  @Input()
-  committed: Equipment | null = null;
+export class EquipmentForm {
+  readonly equipmentService = inject(EquipmentService);
 
-  get isCreate() {
-    return this.committed == null;
+  @Input()
+  get equipment() {
+    if (this.form.value.equipment instanceof Equipment) {
+      return this.form.value.equipment;
+    }
+    return null;
+  }
+  set equipment(equipment: Equipment | null) {
+    if (equipment) {
+      this.form.patchValue({ equipment });
+    }
+  }
+
+  get isNewEquipment() {
+    return this.form.value.equipment instanceof NotFoundValue;
   }
 
   @Output()
-  requestCommit = new EventEmitter<EquipmentPatch>();
+  save = new EventEmitter<Equipment>();
 
-  @Output()
-  requestReset = new EventEmitter<void>();
+  readonly form = new FormGroup({
+    equipment: new FormControl<Equipment | NotFoundValue | null>(null, {
+      validators: [Validators.required, equipmentNameRequiredValidator],
+    }),
+    description: new FormControl<string>('', { nonNullable: true }),
+    tags: new FormControl<string[]>([], { nonNullable: true }),
+    trainingDescriptions: new FormControl<string[]>([], { nonNullable: true }),
+  });
 
-  @ViewChild('formActionControls', { static: true })
-  formActionControls: TemplateRef<any> | undefined;
-
-  readonly form = equipmentForm();
+  get currentPatch(): EquipmentPatch | null {
+    if (!this.form.valid) {
+      return null;
+    }
+    return {
+      description: this.form.value.description!,
+      tags: this.form.value.tags!,
+      trainingDescriptions: this.form.value.trainingDescriptions!
+    }
+  }
 
   get nameErrors(): ValidationErrors | null {
-    return this.form!.controls.name.errors;
-  }
-
-  get committedTrainingDescriptions(): string[] {
-    return this.committed?.trainingDescriptions || [];
+    return this.form!.controls.equipment.errors;
   }
 
   get trainingDescripionsFormArr(): FormControl<string[]> {
     return this.form!.controls.trainingDescriptions;
   }
 
-  commitForm(evt: Event) {
-    const patch = equipmentPatchFromForm(this.form!);
-    this.requestCommit.emit(patch);
-    evt.preventDefault();
+  async _doCreateEquipment(name: string): Promise<Equipment> {
+    if (!this.form.valid) {
+      throw new Error('Invalid form has no value');
+    }
+    const value = this.form.value;
+    const create = this.equipmentService.create({
+      name: name,
+      description: value.description!,
+      tags: value.tags!,
+      trainingDescriptions: value.trainingDescriptions!
+    });
+
+    return firstValueFrom(create);
   }
-  resetForm() {
-    this.requestReset.emit();
+
+  async _doUpdateEquipment(equipment: Equipment): Promise<Equipment> {
+    const value = this.form.value;
+    const update = this.equipmentService.update(equipment, {
+      description: value.description!,
+      tags: value.tags!,
+      trainingDescriptions: value.trainingDescriptions!
+    });
+    return firstValueFrom(update);
+  }
+
+  async commitForm(evt: Event) {
+    const formEquipment = this.form.value.equipment;
+    let equipment: Equipment;
+    if (formEquipment instanceof NotFoundValue) {
+      const equipmentName = formEquipment.searchInput;
+      equipment = await this._doCreateEquipment(equipmentName);
+    } else if (formEquipment instanceof Equipment) {
+      equipment = await this._doUpdateEquipment(formEquipment);
+    } else {
+      throw new Error('Expected an Equipment or NotFoundValue');
+    }
+    this.save.emit(equipment);
   }
 
   _descriptionTextareaHeightPx = 60;
   _onDescriptionInput(evt: Event) {
     this._descriptionTextareaHeightPx = (evt.target as Element).scrollHeight;
   }
+}
+
+function equipmentNameRequiredValidator(control: AbstractControl<Equipment | NotFoundValue | null>) {
+  if (control.value instanceof NotFoundValue) {
+    if (control.value.searchInput.trim() == '') {
+      return { 'required': true };
+    }
+  }
+  return null;
 }

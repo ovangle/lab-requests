@@ -1,8 +1,9 @@
-import { Injectable, inject } from "@angular/core";
-import { ModelContext } from "src/app/common/model/context";
+import { Directive, EmbeddedViewRef, HostBinding, Injectable, Injector, Input, TemplateRef, ViewContainerRef, inject } from "@angular/core";
+import { AbstractModelContextDirective, ModelContext } from "src/app/common/model/context";
 import { Lab, LabService } from "./lab";
 import { ModelPatch } from "src/app/common/model/model";
-import { Observable, of } from "rxjs";
+import { BehaviorSubject, Observable, ReplaySubject, combineLatest, distinctUntilChanged, filter, map, of, switchMap, withLatestFrom } from "rxjs";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 @Injectable()
 export class LabContext extends ModelContext<Lab> {
@@ -17,4 +18,23 @@ export function injectMaybeLabFromContext(): Observable<Lab | null> {
     } else {
         return of(null);
     }
+}
+
+@Directive({
+    selector: 'ng-template[labContext]',
+    standalone: true,
+})
+export class LabContextDirective extends AbstractModelContextDirective<Lab> {
+    constructor() {
+        super(LabContext);
+    }
+
+    @Input({ required: true })
+    get labContext(): Lab | null {
+        return this.modelSubject.value;
+    }
+    set labContext(lab: Lab | null) {
+        this.modelSubject.next(lab);
+    }
+
 }

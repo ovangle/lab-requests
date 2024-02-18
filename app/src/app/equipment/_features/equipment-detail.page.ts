@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, inject } from "@angular/core";
+import { Component, ViewChild, inject } from "@angular/core";
 import { ActivatedRoute, RouterModule } from "@angular/router";
 import { Observable, shareReplay, switchMap } from "rxjs";
 import { Equipment, EquipmentService } from "../equipment";
@@ -7,6 +7,7 @@ import { EquipmentContext } from "../equipment-context";
 import { EquipmentInstallationListComponent } from "../installation/installation-list.component";
 import { EquipmentTrainingDescriptionsInfoComponent } from "src/app/lab/equipment/training/training-descriptions-info.component";
 import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
 
 
 export function equipmentFromActivatedRoute(): Observable<Equipment> {
@@ -37,12 +38,13 @@ export function equipmentFromActivatedRoute(): Observable<Equipment> {
 }
 
 @Component({
-    selector: '',
+    selector: 'equipment-detail-page',
     standalone: true,
     imports: [
         CommonModule,
         RouterModule,
         MatButtonModule,
+        MatIconModule,
         EquipmentInstallationListComponent,
         EquipmentTrainingDescriptionsInfoComponent
     ],
@@ -50,24 +52,32 @@ export function equipmentFromActivatedRoute(): Observable<Equipment> {
     @if (equipment$ | async; as equipment) {
       <h1>
         {{equipment.name}}
-        
-        <div class="edit-button">
-            <button mat-raised-button routerLink="./edit">
-                Edit
-            </button>
+        <a mat-icon-button routerLink="./update">
+            <mat-icon>pencil</mat-icon>Edit
+        </a>
+      </h1>
+
+      <router-outlet />
+
+      @if (showDetail) {
+        <h3>Description</h3>
+        <p>{{ equipment.description }}</p>
+
+        <div class="installations">
+            <h3>
+                Installations
+                <button mat-button (click)="_onCreateProvisionButtonClick()">
+                    <mat-icon>plus</mat-icon>create
+                </button> 
+            </h3>  
+            <equipment-installation-list /> 
         </div>
-     </h1>
-    
-      <h3>Description</h3>
-      <p>{{ equipment.description }}</p>
 
-      <h3>Installations</h3>  
-      <equipment-installation-list /> 
-
-      <lab-equipment-training-descriptions-info
-        [trainingDescriptions]="equipment.trainingDescriptions"
-      >
-      </lab-equipment-training-descriptions-info>
+        <lab-equipment-training-descriptions-info
+            [trainingDescriptions]="equipment.trainingDescriptions"
+        >
+        </lab-equipment-training-descriptions-info>
+        }
     }
     `,
     styles: `
@@ -83,7 +93,15 @@ export class EquipmentDetailPage {
     readonly equipment$ = equipmentFromActivatedRoute();
     readonly _context = inject(EquipmentContext);
 
+    readonly activatedRoute = inject(ActivatedRoute);
+
+    showDetail: boolean = false;
+
     ngOnInit() {
+        debugger;
         this._context.sendCommitted(this.equipment$);
+    }
+
+    _onCreateProvisionButtonClick() {
     }
 }

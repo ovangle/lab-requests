@@ -7,12 +7,6 @@ export const EQUIPMENT_ROUTES: Routes = [
       .then(module => module.EquipmentIndexPage),
   },
   {
-    path: 'create',
-    loadComponent: () => import('./equipment-create.page')
-      .then(module => module.EquipmentCreatePage),
-  },
-
-  {
     path: 'provision',
     children: [
       {
@@ -20,11 +14,6 @@ export const EQUIPMENT_ROUTES: Routes = [
         pathMatch: 'full',
         loadComponent: () => import('./equipment-provision-index.page')
           .then(module => module.EquipmentProvisionIndexPage)
-      },
-      {
-        path: 'request',
-        loadComponent: () => import('./equipment-provision-request.page')
-          .then(module => module.EquipmentRequestPage)
       },
       {
         path: ':provisioining_id',

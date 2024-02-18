@@ -16,7 +16,7 @@ import { ModelSearchInputComponent } from 'src/app/common/model/search/search-in
 import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
 
 @Component({
-  selector: 'lab-equipment-search',
+  selector: 'equipment-search',
   standalone: true,
   imports: [
     CommonModule,
@@ -48,9 +48,9 @@ export class EquipmentSearchComponent implements ModelSearchComponent<Equipment>
   );
 
   /**
-   * Show only equipment installed into the given lab.
+   * Show only equipment which has an installation in the given lab.
    */
-  @Input({ required: true })
+  @Input()
   inLab: Lab | null = null;
 
   @Input()

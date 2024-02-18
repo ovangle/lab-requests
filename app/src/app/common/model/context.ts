@@ -1,37 +1,57 @@
 import {
   DestroyRef,
+  Directive,
+  EmbeddedViewRef,
   Inject,
   Injectable,
   InjectionToken,
+  Injector,
   Optional,
   Provider,
+  TemplateRef,
   Type,
+  ViewContainerRef,
+  ViewRef,
   inject,
 } from '@angular/core';
 import { Model, ModelIndexPage, ModelParams, ModelPatch } from './model';
 import {
+  BehaviorSubject,
   Connectable,
   Observable,
   ReplaySubject,
   Subscription,
+  combineLatest,
   connectable,
   defer,
+  filter,
   first,
   firstValueFrom,
   map,
   shareReplay,
   switchMap,
+  tap,
 } from 'rxjs';
 import { ModelService } from './model-service';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { JsonObject } from 'src/app/utils/is-json-object';
 import urlJoin from 'url-join';
+import { TemplateBindingParseResult } from '@angular/compiler';
 
 @Injectable()
 export abstract class ModelContext<
   T extends Model
 > {
   abstract readonly service: ModelService<T>;
+  readonly _destroyRef = inject(DestroyRef, { optional: true });
+
+  constructor() {
+    if (this._destroyRef != null) {
+      this._destroyRef.onDestroy(() => {
+        this.committedSubject.complete()
+      });
+    }
+  }
 
   readonly committedSubject = new ReplaySubject<T>(1);
   readonly committed$: Observable<T> = this.committedSubject.asObservable();
@@ -55,6 +75,14 @@ export abstract class ModelContext<
       // console.log('sending committed', this,committed)
       this.committedSubject.next(committed);
     });
+  }
+
+  async refresh(): Promise<void> {
+    const refreshed = firstValueFrom(this.committed$.pipe(
+      first(),
+      switchMap(committed => this.service.fetch(committed.id, { useCache: false })),
+      tap(refreshed => this.nextCommitted(refreshed))
+    ));
   }
 
   /*
@@ -98,3 +126,62 @@ export abstract class RelatedModelService<TContextModel extends Model, T extends
     );
   }
 }
+
+@Directive()
+export abstract class AbstractModelContextDirective<T extends Model> {
+
+  protected readonly modelSubject = new BehaviorSubject<T | null>(null);
+  readonly currentModel$ = this.modelSubject.asObservable();
+
+  protected nextModel(model: T | null) {
+    this.modelSubject.next(model);
+  }
+
+  protected readonly currentViewSubject = new BehaviorSubject<EmbeddedViewRef<unknown> | null>(null);
+  readonly currentView$ = this.currentViewSubject.asObservable();
+
+  constructor(readonly contextType: Type<ModelContext<T>>) {
+    const context = new (contextType)();
+
+    context.sendCommitted(
+      this.currentModel$.pipe(filter((m): m is T => m != null))
+    );
+
+    const viewContainer = inject(ViewContainerRef);
+    const templateRef = inject(TemplateRef<unknown>);
+
+    const viewInjector = Injector.create({
+      providers: [
+        { provide: contextType, useValue: context }
+      ],
+      parent: inject(Injector)
+    });
+
+    combineLatest([
+      this.modelSubject,
+      this.currentViewSubject,
+    ]).pipe(
+      map(([model, currentView]) => {
+        if (model != null && currentView == null) {
+          currentView = viewContainer.createEmbeddedView(
+            templateRef,
+            { injector: viewInjector }
+          );
+        }
+        if (model == null && currentView != null) {
+          viewContainer.clear();
+          currentView = null
+        }
+        return currentView;
+      })
+    ).subscribe(this.currentViewSubject);
+
+    inject(DestroyRef).onDestroy(() => {
+      this.modelSubject.complete();
+      if (this.currentViewSubject.value) {
+        viewContainer.clear();
+      }
+      this.currentViewSubject.complete();
+    });
+  }
+} 

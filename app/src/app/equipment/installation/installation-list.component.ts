@@ -11,7 +11,7 @@ import { ModelSearchInputComponent } from "src/app/common/model/search/search-in
 import { Equipment } from "../equipment";
 import { EquipmentContext } from "../equipment-context";
 import { EquipmentInstallation, EquipmentInstallationService } from "./equipment-installation";
-import { Lab, injectLabService } from "src/app/lab/lab";
+import { Lab, LabService } from "src/app/lab/lab";
 import { LabSearchComponent } from "src/app/lab/lab-search.component";
 
 
@@ -61,7 +61,7 @@ import { LabSearchComponent } from "src/app/lab/lab-search.component";
 export class EquipmentInstallationListComponent {
     _equipmentContext = inject(EquipmentContext);
     _equipments = inject(EquipmentInstallationService);
-    _labs = injectLabService();
+    _labs = inject(LabService);
 
     readonly equipment$ = this._equipmentContext.committed$;
 
@@ -74,7 +74,7 @@ export class EquipmentInstallationListComponent {
         this.equipment$,
         this.labSearch.modelOptions$
     ]).pipe(
-        map(([ equipment, labs ]) => {
+        map(([equipment, labs]) => {
             return equipment.installations.filter(
                 installation => labs.some((l) => l.id === installation.labId)
             );

@@ -79,11 +79,11 @@ function equipmentLeaseForm(
   template: `
   @if (form) {
     <form [formGroup]="form">
-      <lab-equipment-search formControlName="equipment" allowNotFound
+      <equipment-search formControlName="equipment" allowNotFound
         [inLab]="lab$ | async"
       >
         <mat-label>Equipment</mat-label>
-      </lab-equipment-search>
+      </equipment-search>
       
       @if (
         selectedEquipmentTrainingDescriptions$ | async;

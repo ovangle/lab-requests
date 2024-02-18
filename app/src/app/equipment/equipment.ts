@@ -14,12 +14,14 @@ import { ModelContext } from 'src/app/common/model/context';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { Lab } from '../lab/lab';
 import { EquipmentInstallation, equipmentInstallationFromJsonObject } from './installation/equipment-installation';
+import { CreateEquipmentProvisionRequest, LabEquipmentProvision, labEquipmentProvisionFromJsonObject } from './provision/equipment-provision';
 
 export interface EquipmentParams extends ModelParams {
   name: string;
   description: string;
   tags: string[];
   trainingDescriptions: string[];
+  activeProvisionsPage: ModelIndexPage<LabEquipmentProvision>;
   installationPage: ModelIndexPage<EquipmentInstallation>;
 }
 
@@ -39,13 +41,47 @@ export class Equipment extends Model {
     return this.installationsPage.items;
   }
 
+  activeProvisionsPage: ModelIndexPage<LabEquipmentProvision>;
+  get activeProvisions() {
+    return this.activeProvisionsPage.items;
+  }
+
   constructor(params: EquipmentParams) {
     super(params);
     this.name = params.name!;
     this.description = params.description!;
     this.tags = Array.from(params.tags!);
     this.trainingDescriptions = Array.from(params.trainingDescriptions!);
+    this.activeProvisionsPage = params.activeProvisionsPage;
     this.installationsPage = params.installationPage;
+  }
+
+  labInstallations(lab: Lab): EquipmentInstallation[] {
+    return this.installations.filter(
+      install => install.labId === lab.id
+    );
+  }
+
+  currentLabInstallation(lab: Lab): EquipmentInstallation | null {
+    return this.labInstallations(lab)
+      .find(install => install.isInstalled) || null;
+  }
+
+  pendingLabInstallation(lab: Lab): EquipmentInstallation | null {
+    return this.labInstallations(lab)
+      .find(install => install.isPendingInstallation) || null;
+  }
+
+  activeUnallocatedProvisions(): LabEquipmentProvision[] {
+    return this.activeProvisions.filter(
+      provision => provision.install == null
+    );
+  }
+
+  activeProvision(lab: Lab): LabEquipmentProvision | null {
+    return this.activeProvisions.find(
+      provision => provision.install?.labId === lab.id && provision.isActive
+    ) || null;
   }
 }
 
@@ -79,32 +115,42 @@ export function equipmentFromJsonObject(json: JsonObject): Equipment {
     json['installations']
   );
 
+  if (!isJsonObject(json['activeProvisions'])) {
+    throw new Error("Expected a json object 'activeProvisions'");
+  }
+  const activeProvisionsPage = modelIndexPageFromJsonObject(
+    labEquipmentProvisionFromJsonObject,
+    json['activeProvisions']
+  );
+
   return new Equipment({
     ...baseParams,
     name: json['name'],
     description: json['description'],
     tags: json['tags'],
     trainingDescriptions: json['trainingDescriptions'],
+    activeProvisionsPage: activeProvisionsPage,
     installationPage,
   });
 }
 
 
 export interface EquipmentPatch {
-  name: string;
   description?: string;
   tags?: string[];
-  trainingDescriptions?: string;
+  trainingDescriptions?: string[];
 }
 
-export interface LabEquipmentCreateRequest {
+export interface EquipmentCreateRequest {
   name: string;
-  description?: string;
-  tags?: string[];
-  trainingDescriptions?: string;
+  description: string;
+  tags: string[];
+  trainingDescriptions: string[];
+
+  initialProvisions?: CreateEquipmentProvisionRequest[];
 }
 
-export function labEquipmentCreateRequestToJson(request: LabEquipmentCreateRequest): JsonObject {
+export function labEquipmentCreateRequestToJson(request: EquipmentCreateRequest): JsonObject {
   return {
     ...request
   };
@@ -133,7 +179,7 @@ export function equipmentQueryToHttpParams(query: Partial<EquipmentQuery>) {
 }
 
 @Injectable({ providedIn: 'root' })
-export class EquipmentService extends RestfulService<Equipment> {
+export class EquipmentService extends RestfulService<Equipment, EquipmentCreateRequest, EquipmentPatch> {
   override path = '/labs/equipment';
   override modelFromJsonObject = equipmentFromJsonObject;
   override readonly createRequestToJsonObject = undefined;
