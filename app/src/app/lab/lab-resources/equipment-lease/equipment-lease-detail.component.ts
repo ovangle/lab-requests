@@ -1,15 +1,15 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, inject } from '@angular/core';
 
-import { EquipmentInfoComponent } from 'src/app/lab/equipment/equipment-info.component';
 import { EquipmentLease } from './equipment-lease';
 import { Observable, of } from 'rxjs';
 import {
   Equipment,
   EquipmentService,
 } from 'src/app/equipment/equipment';
-import { LabEquipmentProvisionInfoComponent } from '../../equipment/provision/equipment-provision-card.component';
+import { LabEquipmentProvisionInfoComponent } from '../../equipment/equipment-provision-card.component';
 import { LabEquipmentProvision } from '../../../equipment/provision/equipment-provision';
+import { EquipmentInfoComponent } from 'src/app/equipment/equipment-info.component';
 
 @Component({
   selector: 'lab-equipment-lease-detail',

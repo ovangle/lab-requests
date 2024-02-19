@@ -127,57 +127,57 @@ export function formatWorkUnit(
 export function workUnitFromJsonObject(json: JsonObject): WorkUnit {
   const baseParams = modelParamsFromJsonObject(json);
   const containerParams = resourceContainerParamsFromJson(json);
-  if (typeof json['name'] !== 'string') {
+  if (typeof json[ 'name' ] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
-  if (typeof json['planId'] !== 'string') {
+  if (typeof json[ 'planId' ] !== 'string') {
     throw new Error("Expected a string 'planId'");
   }
-  if (typeof json['index'] !== 'number') {
+  if (typeof json[ 'index' ] !== 'number') {
     throw new Error("Expected a number 'index'");
   }
 
-  if (typeof json['labId'] !== 'string' || !validateIsUUID(json['labId'])) {
+  if (typeof json[ 'labId' ] !== 'string' || !validateIsUUID(json[ 'labId' ])) {
     throw new Error("Expected a UUID 'labType'");
   }
 
-  if (typeof json['supervisorId'] !== 'string' || !validateIsUUID(json['supervisorId'])) {
+  if (typeof json[ 'supervisorId' ] !== 'string' || !validateIsUUID(json[ 'supervisorId' ])) {
     throw new Error("Expected a UUID 'supervisorId'");
   }
 
-  if (!isDiscipline(json['discipline'])) {
+  if (!isDiscipline(json[ 'discipline' ])) {
     throw new Error("Expected a Discipline 'discipline'");
   }
 
 
-  if (typeof json['processSummary'] != 'string') {
+  if (typeof json[ 'processSummary' ] != 'string') {
     throw new Error("Expected a string 'processSummary'");
   }
 
-  if (typeof json['startDate'] !== 'string' && json['startDate'] != null) {
+  if (typeof json[ 'startDate' ] !== 'string' && json[ 'startDate' ] != null) {
     throw new Error("Expected either a string or null 'startDate'");
   }
   const startDate =
-    json['startDate'] != null ? parseISO(json['startDate']) : null;
-  if (typeof json['endDate'] !== 'string' && json['endDate'] != null) {
+    json[ 'startDate' ] != null ? parseISO(json[ 'startDate' ]) : null;
+  if (typeof json[ 'endDate' ] !== 'string' && json[ 'endDate' ] != null) {
     throw new Error("Expected either a string or null 'endDate'");
   }
-  const endDate = json['endDate'] != null ? parseISO(json['endDate']) : null;
+  const endDate = json[ 'endDate' ] != null ? parseISO(json[ 'endDate' ]) : null;
 
-  if (!isJsonObject(json['campus'])) {
+  if (!isJsonObject(json[ 'campus' ])) {
     throw new Error("Expected a json object 'campus'");
   }
 
   return new WorkUnit({
     ...baseParams,
     ...containerParams,
-    name: json['name'],
-    planId: json['planId'],
-    labId: json['labId'],
-    supervisorId: json['supervisorId'],
-    campus: campusFromJsonObject(json['campus']),
-    discipline: json['discipline'],
-    processSummary: json['processSummary'],
+    name: json[ 'name' ],
+    planId: json[ 'planId' ],
+    labId: json[ 'labId' ],
+    supervisorId: json[ 'supervisorId' ],
+    campus: campusFromJsonObject(json[ 'campus' ]),
+    discipline: json[ 'discipline' ],
+    processSummary: json[ 'processSummary' ],
 
     startDate,
     endDate,
@@ -191,6 +191,7 @@ export class WorkUnitService extends RelatedModelService<Lab, WorkUnit> {
 
   readonly _files = inject(FileUploadService);
   override readonly modelFromJsonObject = workUnitFromJsonObject;
+  override readonly path = 'work-units';
 }
 
 @Injectable()

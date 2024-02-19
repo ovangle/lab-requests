@@ -4,6 +4,13 @@ import { EquipmentContext, provideEquipmentDetailRouteContext } from "../equipme
 
 export const EQUIPMENT_ROUTES: Routes = [
   {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () => import('./equipment-index.page')
+      .then(module => module.EquipmentIndexPage)
+  },
+
+  {
     path: 'create',
     loadComponent: () => import('./equipment-create.page')
       .then(module => module.EquipmentCreatePage)

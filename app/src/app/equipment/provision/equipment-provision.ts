@@ -5,7 +5,7 @@ import { ResearchFunding } from "src/app/research/funding/research-funding";
 import { Lab } from "../../lab/lab";
 import { Observable, first, firstValueFrom, map, shareReplay, switchMap } from "rxjs";
 import { EquipmentInstallation, equipmentInstallationFromJsonObject } from "../installation/equipment-installation";
-import { ProvisionStatus, isProvisionStatus } from "../../lab/equipment/provision/provision-status";
+import { ProvisionStatus, isProvisionStatus } from "./provision-status";
 import { HttpParams } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { ModelService } from "src/app/common/model/model-service";
@@ -16,57 +16,75 @@ import { Discipline } from "src/app/uni/discipline/discipline";
 
 export interface LabEquipmentProvisionParams extends ModelParams {
     status: ProvisionStatus;
-    equipment: Equipment;
-    install: EquipmentInstallation | null;
+    equipmentId: string;
+    equipment: Equipment | null;
+    installation: EquipmentInstallation | null;
     reason: string;
 }
 
 export class LabEquipmentProvision extends Model implements LabEquipmentProvisionParams {
     status: ProvisionStatus;
-    equipment: Equipment;
-    install: EquipmentInstallation | null;
+    equipmentId: string;
+    equipment: Equipment | null;
+    installation: EquipmentInstallation | null;
     reason: string;
 
     constructor(params: LabEquipmentProvisionParams) {
         super(params);
         this.status = params.status;
+        this.equipmentId = params.equipmentId;
         this.equipment = params.equipment;
-        this.install = params.install;
+        this.installation = params.installation;
         this.reason = params.reason;
     }
 
     get isActive() {
-        return !['installed', 'cancelled'].includes(this.status);
+        return ![ 'installed', 'cancelled' ].includes(this.status);
+    }
+
+    async resolveEquipment(service: EquipmentService): Promise<Equipment> {
+        if (!(this.equipment instanceof Equipment)) {
+            this.equipment = await firstValueFrom(service.fetch(this.equipmentId));
+        }
+        return this.equipment;
     }
 }
 
 export function labEquipmentProvisionFromJsonObject(json: JsonObject): LabEquipmentProvision {
     const baseParams = modelParamsFromJsonObject(json);
 
-    if (!isProvisionStatus(json['status'])) {
+    if (!isProvisionStatus(json[ 'status' ])) {
         throw new Error("Expected a provision status 'status'");
     }
 
-    if (!isJsonObject(json['equipment'])) {
-        throw new Error("Expected a json object 'equipment'");
+    let equipment: Equipment | null;
+    let equipmentId: string;
+    if (isJsonObject(json[ 'equipment' ])) {
+        equipment = equipmentFromJsonObject(json[ 'equipment' ]);
+        equipmentId = equipment.id;
+    } else if (typeof json[ 'equipment' ] === 'string') {
+        equipment = null;
+        equipmentId = json[ 'equipment' ];
+    } else {
+        throw new Error('Expected a json object or string \'equipment\'')
     }
-    const equipment = equipmentFromJsonObject(json['equipment']);
 
-    if (!isJsonObject(json['install']) && json['install'] !== null) {
+    if (!isJsonObject(json[ 'installation' ]) && json[ 'installation' ] !== null) {
         throw new Error("Expected a json object or null 'install'");
     }
-    const install = json['install'] && equipmentInstallationFromJsonObject(json['install'])
+    const installation = json[ 'installation' ] && equipmentInstallationFromJsonObject(json[ 'installation' ])
 
-    if (typeof json['reason'] !== 'string') {
+    if (typeof json[ 'reason' ] !== 'string') {
         throw new Error("Expected a string 'reason'");
     }
 
     return new LabEquipmentProvision({
         ...baseParams,
-        status: json['status'],
+        status: json[ 'status' ],
+        equipmentId,
         equipment,
-        install,
-        reason: json['reason']
+        installation: installation,
+        reason: json[ 'reason' ]
     });
 }
 
@@ -149,6 +167,7 @@ export function equipmentProvisionInstalledRequestToJsonObject(request: Equipmen
 export class EquipmentProvisionService extends RelatedModelService<Equipment, LabEquipmentProvision> {
     override readonly context = inject(EquipmentContext);
     override modelFromJsonObject = labEquipmentProvisionFromJsonObject;
+    override readonly path = 'provisions';
 
     create(request: CreateEquipmentProvisionRequest) {
         return this.indexUrl$.pipe(

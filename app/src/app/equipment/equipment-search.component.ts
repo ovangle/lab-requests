@@ -11,7 +11,7 @@ import {
 } from './equipment';
 import { Lab } from '../lab/lab';
 import { ModelSearchAutocompleteComponent } from 'src/app/common/model/search/search-autocomplete.component';
-import { ModelSearchComponent, ModelSearchControl, provideValueAccessor } from 'src/app/common/model/search/search-control';
+import { ModelSearchComponent, ModelSearchControl, provideModelSearchValueAccessor } from 'src/app/common/model/search/search-control';
 import { ModelSearchInputComponent } from 'src/app/common/model/search/search-input-field.component';
 import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
 
@@ -31,11 +31,11 @@ import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
     <common-model-search-input-field [search]="searchControl">
       <mat-label><ng-content select="mat-label" /></mat-label>
 
-      <common-model-search-autocomplete [search]="searchControl" />
+      <common-model-search-autocomplete />
     </common-model-search-input-field>
   `,
   providers: [
-    provideValueAccessor(EquipmentSearchComponent)
+    provideModelSearchValueAccessor(EquipmentSearchComponent)
   ],
 })
 export class EquipmentSearchComponent implements ModelSearchComponent<Equipment> {

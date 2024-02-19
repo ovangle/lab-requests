@@ -22,8 +22,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { EquipmentTagInputComponent } from '../lab/equipment/tag/equipment-tag-input.component';
-import { EquipmentTrainingDescriptionsInputComponent } from '../lab/equipment/training/training-descriptions-input.component';
+import { EquipmentTagInputComponent } from './tag/equipment-tag-input.component';
+import { EquipmentTrainingDescriptionsInputComponent } from './training/training-descriptions-input.component';
 import { Equipment, EquipmentPatch, EquipmentService } from './equipment';
 import { ResizeTextareaOnInputDirective } from 'src/app/common/forms/resize-textarea-on-input.directive';
 import { EquipmentContext } from 'src/app/equipment/equipment-context';
@@ -133,7 +133,7 @@ export class EquipmentForm {
 
   readonly form = new FormGroup({
     equipment: new FormControl<Equipment | NotFoundValue | null>(null, {
-      validators: [Validators.required, equipmentNameRequiredValidator],
+      validators: [ Validators.required, equipmentNameRequiredValidator ],
     }),
     description: new FormControl<string>('', { nonNullable: true }),
     tags: new FormControl<string[]>([], { nonNullable: true }),

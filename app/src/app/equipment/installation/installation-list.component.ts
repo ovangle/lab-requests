@@ -13,6 +13,8 @@ import { EquipmentContext } from "../equipment-context";
 import { EquipmentInstallation, EquipmentInstallationService } from "./equipment-installation";
 import { Lab, LabService } from "src/app/lab/lab";
 import { LabSearchComponent } from "src/app/lab/lab-search.component";
+import { MatIconModule } from "@angular/material/icon";
+import { RouterModule } from "@angular/router";
 
 
 @Component({
@@ -21,14 +23,32 @@ import { LabSearchComponent } from "src/app/lab/lab-search.component";
     imports: [
         CommonModule,
         ReactiveFormsModule,
+        RouterModule,
         MatFormFieldModule,
+        MatIconModule,
         MatListModule,
         ModelSearchInputComponent
     ],
     template: `
-    <common-model-search-input-field [search]="labSearch">
-        <mat-label>Lab</mat-label>
-    </common-model-search-input-field>
+    <div class="list-header">
+        <div class="title">
+            <ng-content select=".list-title" />
+        </div>
+        <div class="filters">
+            <common-model-search-input-field [search]="labSearch"
+                                             clearOnFocus> 
+
+
+                <mat-label>Lab</mat-label>
+                <span matIconPrefix><mat-icon>search</mat-icon></span>
+            </common-model-search-input-field>
+        </div>
+        <div class="actions">
+            <a mat-raised-button color="primary" [routerLink]="['./', 'create-provision']">
+                <mat-icon>add</mat-icon>Request new install
+            </a>
+        </div>    
+    </div>
 
     @if (equipmentInstalls$ | async; as installs) {
         <mat-list>
@@ -40,6 +60,8 @@ import { LabSearchComponent } from "src/app/lab/lab-search.component";
                 </mat-list-item>
             }
         </mat-list>
+    } @else {
+        <div><em>This equipment has no current installations</em></div>
     }
 
     <ng-template #itemTemplate let-lab let-numInstalled="numInstalled" let-numPending="numPending">
@@ -74,7 +96,7 @@ export class EquipmentInstallationListComponent {
         this.equipment$,
         this.labSearch.modelOptions$
     ]).pipe(
-        map(([equipment, labs]) => {
+        map(([ equipment, labs ]) => {
             return equipment.installations.filter(
                 installation => labs.some((l) => l.id === installation.labId)
             );

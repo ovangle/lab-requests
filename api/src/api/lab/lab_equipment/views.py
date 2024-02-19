@@ -67,29 +67,6 @@ async def create_equipment(
     return await LabEquipmentView.from_model(model)
 
 
-@lab_equipments.get("/provision")
-async def index_equipment_provisions(
-    db=Depends(get_db),
-) -> LabEquipmentProvisionPage:
-    raise NotImplementedError
-
-
-@lab_equipments.post("/provision")
-async def request_equipment_provision(
-    request: LabEquipmentProvisionRequest, db=Depends(get_db)
-) -> LabEquipmentProvisionView:
-    provision = await request.do_create(db)
-    return await LabEquipmentProvisionView.from_model(provision)
-
-
-@lab_equipments.get("/provision/{provisioin_id}")
-async def get_equipment_provisioning(
-    provision_id: UUID, db=Depends(get_db)
-) -> LabEquipmentProvisionView:
-    provision = await LabEquipmentProvision.get_for_id(db, provision_id)
-    return await LabEquipmentProvisionView.from_model(provision)
-
-
 @lab_equipments.get("/{equipment_id}")
 async def read_equipment(equipment_id: UUID, db=Depends(get_db)) -> LabEquipmentView:
     equipment = await LabEquipment.get_for_id(db, equipment_id)
@@ -104,3 +81,12 @@ async def update_equipment(
     await update_req.do_update(equipment)
     await db.commit()
     return await LabEquipmentView.from_model(equipment)
+
+
+@lab_equipments.get("/{equipment_id}/provisions")
+async def index_equipment_provisions(equipment_id: UUID):
+    raise NotImplementedError
+
+@lab_equipments.post("/{equipment_id}/provisions"):
+async def create_equipment_provision(equipment_id: UUID, request: CreateEquipmentProvisionRequest):
+    raise NotImplementedError

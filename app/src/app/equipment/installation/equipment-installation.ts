@@ -2,16 +2,17 @@ import { validate as validateIsUUID } from 'uuid';
 
 import { ModelParams, Model, modelParamsFromJsonObject, ModelIndexPage, ModelPatch } from "src/app/common/model/model";
 import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
-import { ProvisionStatus, isProvisionStatus } from "../../lab/equipment/provision/provision-status";
 import { Lab, LabService, labFromJsonObject } from '../../lab/lab';
 import { Observable, first, firstValueFrom, map, of, shareReplay, switchMap } from 'rxjs';
 import { Injectable, Type, inject } from '@angular/core';
 import { ModelService, RestfulService } from 'src/app/common/model/model-service';
 import { EquipmentContext } from '../equipment-context';
-import { Equipment, EquipmentService } from '../equipment';
+import { Equipment, EquipmentService, equipmentFromJsonObject } from '../equipment';
 import { HttpParams } from '@angular/common/http';
 import urlJoin from 'url-join';
 import { RelatedModelService } from 'src/app/common/model/context';
+import { ProvisionStatus, isProvisionStatus } from '../provision/provision-status';
+import { P } from '@angular/cdk/keycodes';
 
 export interface EquipmentInstallationParams extends ModelParams {
     equipmentName: string;
@@ -60,31 +61,31 @@ export class EquipmentInstallation extends Model implements EquipmentInstallatio
     }
 
     get isRequested() {
-        return ['requested', 'approved', 'purchased', 'installed'].includes(this.provisionStatus);
+        return [ 'requested', 'approved', 'purchased', 'installed' ].includes(this.provisionStatus);
     }
 
     get isPendingApproval() {
-        return ['requested'].includes(this.provisionStatus);
+        return [ 'requested' ].includes(this.provisionStatus);
     }
 
     get isApproved() {
-        return ['installed', 'purchased', 'approved'].includes(this.provisionStatus);
+        return [ 'installed', 'purchased', 'approved' ].includes(this.provisionStatus);
     }
 
     get isPendingPurchase() {
-        return ['requested', 'approved'].includes(this.provisionStatus);
+        return [ 'requested', 'approved' ].includes(this.provisionStatus);
     }
 
     get isPurchased() {
-        return ['installed', 'purchased'].includes(this.provisionStatus);
+        return [ 'installed', 'purchased' ].includes(this.provisionStatus);
     }
 
     get isPendingInstallation() {
-        return ['requested', 'improved', 'purchase'].includes(this.provisionStatus);
+        return [ 'requested', 'improved', 'purchase' ].includes(this.provisionStatus);
     }
 
     get isInstalled() {
-        return ['installed'].includes(this.provisionStatus);
+        return [ 'installed' ].includes(this.provisionStatus);
     }
 
 }
@@ -92,38 +93,49 @@ export class EquipmentInstallation extends Model implements EquipmentInstallatio
 
 export function equipmentInstallationFromJsonObject(obj: JsonObject): EquipmentInstallation {
     const baseParams = modelParamsFromJsonObject(obj);
-    if (typeof obj['equipmentId'] !== 'string' || !validateIsUUID(obj['equipmentId'])) {
-        throw new Error("Expected a uuid 'equipmentId")
+
+    let equipment: Equipment | string;
+    let equipmentId: string;
+
+    if (isJsonObject(obj[ 'equipment' ])) {
+        equipment = equipmentFromJsonObject(obj[ 'equipment' ]);
+        equipmentId = equipment.id;
+    } else if (typeof obj[ 'equipment' ] === 'string') {
+        equipment = equipmentId = obj[ 'equipment' ];
+    } else {
+        throw new Error("Expected a json object or string 'equipment'");
     }
-    if (typeof obj['equipmentName'] !== 'string') {
-        throw new Error("Expected a string 'equipmentName'")
+
+    if (typeof obj[ 'equipmentName' ] !== 'string') {
+        throw new Error("Expected a string 'equipmentName'");
     }
+
     let labId: string;
     let lab: Lab | string;
-    if (typeof obj['lab'] === 'string' && validateIsUUID(obj['lab'])) {
-        labId = lab = obj['lab'];
-    } else if (isJsonObject(obj['lab'])) {
-        lab = labFromJsonObject(obj['lab']);
+    if (typeof obj[ 'lab' ] === 'string' && validateIsUUID(obj[ 'lab' ])) {
+        labId = lab = obj[ 'lab' ];
+    } else if (isJsonObject(obj[ 'lab' ])) {
+        lab = labFromJsonObject(obj[ 'lab' ]);
         labId = lab.id;
     } else {
         throw new Error("Expected a string or json object 'lab'")
     }
-    if (typeof obj['numInstalled'] !== 'number') {
+    if (typeof obj[ 'numInstalled' ] !== 'number') {
         throw new Error('Expected a number numInstalled');
     }
-    if (!isProvisionStatus(obj['provisionStatus'])) {
+    if (!isProvisionStatus(obj[ 'provisionStatus' ])) {
         throw new Error("Expected a provision status 'provisionStatus");
     }
 
     return new EquipmentInstallation({
         ...baseParams,
-        equipmentName: obj['equipmentName'],
-        equipmentId: obj['equipmentId'],
-        equipment: obj['equipmentId'],
+        equipmentId,
+        equipment,
+        equipmentName: obj[ 'equipmentName' ],
         labId,
         lab,
-        numInstalled: obj['numInstalled'],
-        provisionStatus: obj['provisionStatus']
+        numInstalled: obj[ 'numInstalled' ],
+        provisionStatus: obj[ 'provisionStatus' ]
     });
 }
 
@@ -131,5 +143,6 @@ export function equipmentInstallationFromJsonObject(obj: JsonObject): EquipmentI
 export class EquipmentInstallationService extends RelatedModelService<Equipment, EquipmentInstallation> {
     override readonly context = inject(EquipmentContext);
     override readonly modelFromJsonObject = equipmentInstallationFromJsonObject;
+    override readonly path = 'installations';
     readonly equipment$ = this.context.committed$;
 }

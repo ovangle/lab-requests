@@ -1,5 +1,5 @@
 {
-    "1": {
+    "postgres": {
         "name": "postgres",
         "port": 5432,
         "Username": "api",

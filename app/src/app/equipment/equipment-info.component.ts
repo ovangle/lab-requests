@@ -7,7 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { EquipmentTrainingDescriptionListComponent } from './training/training-description-list.component';
 import { EquipmentTrainingAcknowlegementComponent } from './training/training-acknowlegment-input.component';
 import { EquipmentTrainingDescriptionsInfoComponent } from './training/training-descriptions-info.component';
-import { Equipment } from '../../equipment/equipment';
+import { Equipment } from './equipment';
 
 @Component({
   selector: 'lab-equipment-info',

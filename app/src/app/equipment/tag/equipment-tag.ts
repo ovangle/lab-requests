@@ -3,7 +3,7 @@ import * as uuid from 'uuid';
 import { Observable, map } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import urlJoin from 'url-join';
-import { EquipmentService } from '../../../equipment/equipment';
+import { EquipmentService } from '../equipment';
 import { API_BASE_URL } from 'src/app/common/model/model-service';
 
 export interface EquipmentTag {

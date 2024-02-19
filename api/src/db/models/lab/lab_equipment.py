@@ -1,21 +1,22 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 import uuid
 
-from sqlalchemy import Column, ForeignKey, Table, insert
+from sqlalchemy import Column, ForeignKey, Table, insert, not_, select
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from api.lab.lab_resources import equipment_lease
 
 from db import LocalSession
-
 from ..base import Base, DoesNotExist, ModelException
 from ..base.fields import uuid_pk, action_timestamp, action_user_fk
 
 if TYPE_CHECKING:
+    from db.models.research.funding import ResearchFunding
     from db.models.user import User
     from .lab import Lab
 
@@ -25,8 +26,53 @@ class LabEquipmentDoesNotExist(DoesNotExist):
         super().__init__(for_id=for_id)
 
 
+class LabEquipmentInstallationDoesNotExist(DoesNotExist):
+    def __init__(
+        self,
+        *,
+        for_id: UUID | None = None,
+        current_for_equipment_lab: tuple[LabEquipment, Lab] | None = None,
+        pending_for_equipment_lab: tuple[LabEquipment, Lab] | None = None,
+    ):
+        if current_for_equipment_lab:
+            equipment, lab = current_for_equipment_lab
+            msg = f"No current installation for equipment {equipment.id}, lab {lab.id}"
+        if pending_for_equipment_lab:
+            equipment, lab = pending_for_equipment_lab
+            msg = f"No pending installation for equipment {equipment.id}, lab {lab.id}"
+        return super().__init__(msg, for_id=for_id)
+
+
+class LabEquipmentInstallationExists(ModelException):
+    def __init__(
+        self, equipment: LabEquipment, lab: Lab, existing_status: ProvisionStatus
+    ):
+        super().__init__(
+            f"An {existing_status} installation already exists for equipment {equipment.id} in {lab.id}"
+        )
+
+
 class LabEquipmentProvisionDoesNotExist(DoesNotExist):
-    pass
+    def __init__(
+        self,
+        *,
+        for_id: UUID | None = None,
+        for_equipment_lab: tuple[LabEquipment, Lab] | None = None,
+    ):
+        if for_equipment_lab:
+            equipment, lab = for_equipment_lab
+            msg = f"Not found for equipment {equipment.id} and lab {lab.id}"
+
+        super().__init__(msg, for_id=for_id)
+
+
+class LabEquipmentProvisionInProgress(ModelException):
+    def __init__(self, equipment: LabEquipment, lab: Lab):
+        self.equipment = equipment
+        self.lab = lab
+        super().__init__(
+            f"An active provision already exists for {equipment.id} in {lab.id}"
+        )
 
 
 class LabEquipmentProvisioningError(ModelException):
@@ -87,6 +133,47 @@ class LabEquipmentInstallation(Base):
     )
     last_provisioned_at: Mapped[action_timestamp]
 
+    @classmethod
+    async def get_for_id(cls, db: LocalSession, id: UUID):
+        install = await db.get(cls, id)
+        if install is None:
+            raise LabEquipmentInstallationDoesNotExist(for_id=id)
+        return install
+
+    @classmethod
+    async def get_current_for_equipment_lab(
+        cls, db: LocalSession, equipment: LabEquipment, lab: Lab
+    ):
+        install = await db.scalar(
+            select(cls).where(
+                cls.equipment_id == equipment.id,
+                cls.lab_id == lab.id,
+                cls.provision_status == "installed",
+            )
+        )
+        if install is None:
+            raise LabEquipmentInstallationDoesNotExist(
+                current_for_equipment_lab=(equipment, lab)
+            )
+        return install
+
+    @classmethod
+    async def get_pending_for_equipment_lab(
+        cls, db: LocalSession, equipment: LabEquipment, lab: Lab
+    ):
+        install = await db.scalar(
+            select(cls).where(
+                cls.equipment_id == equipment.id,
+                cls.lab_id == lab.id,
+                cls.provision_status != "installed",
+            )
+        )
+        if install is None:
+            raise LabEquipmentInstallationDoesNotExist(
+                pending_for_equipment_lab=(equipment, lab)
+            )
+        return install
+
     def update_installation(self, provision: LabEquipmentProvision):
         if provision.is_final:
             raise LabEquipmentProvisioningError(
@@ -108,6 +195,7 @@ class LabEquipmentProvision(Base):
         postgresql.ENUM(ProvisionStatus, name="equipment_provision_status"),
         default=ProvisionStatus.REQUESTED,
     )
+    reason: Mapped[str] = mapped_column(postgresql.TEXT, server_default="")
 
     equipment_id: Mapped[UUID] = mapped_column(ForeignKey("lab_equipment.id"))
     equipment: Mapped[LabEquipment] = relationship()
@@ -116,6 +204,13 @@ class LabEquipmentProvision(Base):
         ForeignKey("lab_equipment_installation.id"),
     )
     installation: Mapped[LabEquipmentInstallation] = relationship()
+
+    lab_id: Mapped[UUID | None] = mapped_column(ForeignKey("lab.id"), default=None)
+    lab = relationship()
+    funding_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("research_funding.id"), default=None
+    )
+    funding = relationship()
 
     estimated_cost: Mapped[float | None] = mapped_column(postgresql.FLOAT)
     actual_cost: Mapped[float | None] = mapped_column(
@@ -140,23 +235,21 @@ class LabEquipmentProvision(Base):
         self,
         *,
         equipment_or_install: LabEquipment | LabEquipmentInstallation,
-        lab: Lab | None = None,
         estimated_cost: float | None,
         quantity_required: int = 1,
+        funding: ResearchFunding | None = None,
+        reason: str = "",
         purchase_url: str,
     ):
         if isinstance(equipment_or_install, LabEquipmentInstallation):
             self.equipment_id = equipment_or_install.equipment_id
             self.installation_id = equipment_or_install.id
-            if lab and not lab.id == equipment_or_install.id:
-                raise ValueError("Lab must be same as existing install")
-            self.lab_id = equipment_or_install.id
+            self.lab_id = equipment_or_install.lab_id
         else:
             self.equipment_id = equipment_or_install.id
-            if not lab:
-                raise ValueError("Lab must be provied for new install")
-            self.lab_id = lab.id
+            self.installation_id = self.lab_id = None
 
+        self.reason = reason
         self.estimated_cost = estimated_cost
         self.quantity_required = quantity_required
         self.purchase_url = purchase_url
@@ -168,6 +261,21 @@ class LabEquipmentProvision(Base):
         if not model:
             raise LabEquipmentProvisionDoesNotExist(for_id=id)
         return model
+
+    @classmethod
+    async def get_active_for_equipment_lab(
+        cls, db: LocalSession, equipment: LabEquipment, lab: Lab
+    ):
+        active_provision = await db.scalar(
+            select(cls).where(
+                cls.equipment_id == equipment.id,
+                cls.lab_id == lab.id,
+                not_(cls.status.in_(["installed", "cancelled"])),
+            )
+        )
+        if active_provision is None:
+            raise LabEquipmentProvisionDoesNotExist(for_equipment_lab=(equipment, lab))
+        return active_provision
 
     @property
     def is_new_installation(self):
@@ -198,3 +306,79 @@ class LabEquipmentProvision(Base):
         self.status = ProvisionStatus.INSTALLED
         self.installed_by_id = installed_by.id
         self.installed_at = datetime.now()
+
+
+async def request_provision(
+    db: LocalSession,
+    equipment: LabEquipment,
+    lab: Lab | None,
+    quantity_required: int = 1,
+    funding: ResearchFunding | None = None,
+    estimated_cost: float | None = None,
+    reason: str = "",
+) -> LabEquipmentProvision:
+    if lab:
+        try:
+            current_install = (
+                await LabEquipmentInstallation.get_current_for_equipment_lab(
+                    db, equipment, lab
+                )
+            )
+        except DoesNotExist:
+            current_install = None
+
+        try:
+            await LabEquipmentProvision.get_active_for_equipment_lab(db, equipment, lab)
+            raise LabEquipmentProvisionInProgress(lab, equipment)
+        except LabEquipmentProvisionDoesNotExist:
+            pass
+
+        if current_install:
+            pending_install = LabEquipmentInstallation(
+                id=uuid4(),
+                equipment_id=equipment.id,
+                lab_id=lab.id,
+                provision_status="requested",
+                num_installed=current_install.num_installed + quantity_required,
+            )
+            db.add(pending_install)
+
+        equipment_or_install = current_install
+    else:
+        equipment_or_install = equipment
+
+    provision = LabEquipmentProvision(
+        equipment_or_install,
+        quantity_required=quantity_required,
+        reason=reason,
+        funding=funding,
+        estimated_cost=estimated_cost,
+        purchase_url=purchase_url,
+    )
+    db.add(provision)
+    await db.commit()
+    return provision
+
+
+async def create_known_install(
+    db: LocalSession, equipment: LabEquipment, lab: Lab, num_installed: int
+) -> LabEquipmentInstallation:
+    any_exists = await db.scalars(
+        select(LabEquipmentInstallation).where(
+            LabEquipmentInstallation.lab_id == lab.id,
+            LabEquipmentInstallation.equipment_id == equipment.id,
+        )
+    )
+    if any_exists:
+        raise LabEquipmentInstallationExists(equipment, lab, "installed")
+
+    installation = LabEquipmentInstallation(
+        equipment_id=equipment.id,
+        lab_id=lab.id,
+        num_installed=num_installed,
+        provision_status="installed",
+        last_provisioned_at=datetime.now(tz=timezone.utc),
+    )
+    db.add(installation)
+    await db.commit()
+    return installation

@@ -66,7 +66,10 @@ export abstract class ModelContext<
 
   sendCommittedId(source: Observable<string>): Subscription {
     return this.sendCommitted(
-      source.pipe(switchMap(id => this.service.fetch(id)))
+      source.pipe(switchMap(id => {
+        console.log('fetching equipment', id);
+        return this.service.fetch(id)
+      }))
     );
   }
 
@@ -99,9 +102,13 @@ export abstract class ModelContext<
 @Injectable()
 export abstract class RelatedModelService<TContextModel extends Model, T extends Model> extends ModelService<T> {
   abstract readonly context: ModelContext<TContextModel>;
+  abstract path: string;
 
   get indexUrl$(): Observable<string> {
-    return this.context.url$.pipe(first());
+    return this.context.url$.pipe(
+      first(),
+      map(url => urlJoin(url, this.path) + '/')
+    );
   }
 
   resourceUrl(id: string) {
@@ -120,7 +127,7 @@ export abstract class RelatedModelService<TContextModel extends Model, T extends
     );
   }
 
-  protected override _doQueryPage(params: HttpParams | { [k: string]: string | number | boolean | string[]; }): Observable<JsonObject> {
+  protected override _doQueryPage(params: HttpParams | { [ k: string ]: string | number | boolean | string[]; }): Observable<JsonObject> {
     return this.indexUrl$.pipe(
       switchMap(indexUrl => this._httpClient.get<JsonObject>(indexUrl, { params })),
     );
@@ -161,7 +168,7 @@ export abstract class AbstractModelContextDirective<T extends Model> {
       this.modelSubject,
       this.currentViewSubject,
     ]).pipe(
-      map(([model, currentView]) => {
+      map(([ model, currentView ]) => {
         if (model != null && currentView == null) {
           currentView = viewContainer.createEmbeddedView(
             templateRef,

@@ -24,7 +24,7 @@ export interface ModelSearchComponent<T extends Model> {
     readonly searchControl: ModelSearchControl<T>;
 }
 
-export function provideValueAccessor<T extends ModelSearchComponent<any>>(componentType: Type<T>) {
+export function provideModelSearchValueAccessor<T extends ModelSearchComponent<any>>(componentType: Type<T>) {
     return {
         provide: NG_VALUE_ACCESSOR,
         multi: true,
@@ -103,8 +103,10 @@ export class ModelSearchControl<T extends Model> implements ControlValueAccessor
         this.searchControl.setValue('');
     }
 
-    displayValue(value: T | _NOT_FOUND) {
-        if (isNotFound(value)) {
+    displayValue(value: string | T | _NOT_FOUND) {
+        if (typeof value === 'string') {
+            return value;
+        } if (isNotFound(value)) {
             return '---';
         } else {
             return this.formatModel(value);

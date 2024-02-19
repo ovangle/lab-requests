@@ -6,7 +6,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { RouterModule } from "@angular/router";
 import { Observable } from "rxjs";
 import { ModelSearchAutocompleteComponent } from "src/app/common/model/search/search-autocomplete.component";
-import { ModelSearchComponent, ModelSearchControl, provideValueAccessor } from "src/app/common/model/search/search-control";
+import { ModelSearchComponent, ModelSearchControl, provideModelSearchValueAccessor } from "src/app/common/model/search/search-control";
 import { ModelSearchInputComponent } from "src/app/common/model/search/search-input-field.component";
 import { User, UserService } from "./user";
 
@@ -29,8 +29,7 @@ import { User, UserService } from "./user";
         [required]="required">
         <mat-label><ng-content select="mat-label" /></mat-label>
 
-        <common-model-search-autocomplete [search]="searchControl" 
-            [notFoundTemplate]="userNotFound"/>
+        <common-model-search-autocomplete [notFoundTemplate]="userNotFound"/>
 
         <ng-template #userNotFound>
             The user is not listed <a [routerLink]="['/users/create']">create...</a>
@@ -38,7 +37,7 @@ import { User, UserService } from "./user";
     </common-model-search-input-field>
     `,
     providers: [
-        provideValueAccessor(UserSearchComponent)
+        provideModelSearchValueAccessor(UserSearchComponent)
     ]
 })
 export class UserSearchComponent implements ModelSearchComponent<User> {

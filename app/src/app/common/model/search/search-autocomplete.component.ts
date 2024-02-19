@@ -1,7 +1,9 @@
 import { CommonModule } from "@angular/common";
-import { Component, Input, TemplateRef, ViewChild } from "@angular/core";
+import { Component, Input, TemplateRef, ViewChild, inject } from "@angular/core";
 import { MatAutocomplete, MatAutocompleteModule } from "@angular/material/autocomplete";
 import { ModelSearchControl } from "./search-control";
+import { ModelSearchInputComponent } from "./search-input-field.component";
+import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 
 @Component({
     selector: 'common-model-search-autocomplete',
@@ -31,10 +33,21 @@ import { ModelSearchControl } from "./search-control";
         }
     </mat-autocomplete>
     `
+
 })
 export class ModelSearchAutocompleteComponent {
-    @Input({ required: true })
-    search: ModelSearchControl<any> | undefined;
+    readonly inputComponent = inject(ModelSearchInputComponent);
+    get search(): ModelSearchControl<any> | undefined {
+        return this.inputComponent.search;
+    }
+
+    @Input()
+    get allowNotFound() {
+        return this.search!.allowNotFound;
+    }
+    set allowNotFound(input: BooleanInput) {
+        this.search!.allowNotFound = coerceBooleanProperty(input);
+    }
 
     @Input()
     notFoundTemplate: TemplateRef<any> | undefined;

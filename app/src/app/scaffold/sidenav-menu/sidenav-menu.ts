@@ -17,6 +17,12 @@ const _STATIC_NODES: SidenavMenuNode[] = [
     icon: 'home',
     routerLink: [ '/user', 'home' ],
   },
+  {
+    type: 'link',
+    title: 'Equipment',
+    icon: 'build_circle',
+    routerLink: [ '/equipment' ]
+  },
 ]
 
 @Injectable({ providedIn: 'root' })

@@ -26,17 +26,25 @@ import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
         <mat-label><ng-content select="mat-label" /></mat-label>
         @if (_autocomplete) {
             <input matInput 
+                (focus)="_onSearchInputFocus()"
                     [formControl]="search!.searchControl" 
                     [matAutocomplete]="_autocomplete.autocomplete!" 
                     [required]="required"/>
         } @else {
             <input matInput [formControl]="search!.searchControl" 
+                    (focus)="_onSearchInputFocus()"
                     [required]="required" />
         }
 
-        <button mat-icon-button matIconSuffix (click)="search!.reset()">
-            <mat-icon>clear</mat-icon>
-        </button>
+        @if (!hideSearchPrefixIcon) {
+            <span matIconPrefix><mat-icon>search</mat-icon></span>
+        }
+
+        @if (!clearOnFocus) {
+            <button mat-icon-button matIconSuffix (click)="search!.reset()">
+                <mat-icon>clear</mat-icon>
+            </button>
+        }
 
         <ng-content select="common-search-autocomplete" />
     </mat-form-field>
@@ -53,9 +61,33 @@ export class ModelSearchInputComponent {
     set required(value: BooleanInput) {
         this._required = coerceBooleanProperty(value);
     }
-
     _required: boolean = false;
+
+    @Input()
+    get clearOnFocus(): boolean {
+        return this._clearOnFocus;
+    }
+    set clearOnFocus(value: BooleanInput) {
+        this._clearOnFocus = coerceBooleanProperty(value);
+    }
+    _clearOnFocus: boolean = false;
+
+    @Input()
+    get hideSearchPrefixIcon() {
+        return this._hideSearchPrefixIcon;
+    }
+    set hideSearchPrefixIcon(value: BooleanInput) {
+        this._hideSearchPrefixIcon = coerceBooleanProperty(value);
+    }
+    _hideSearchPrefixIcon = false;
+
 
     @ContentChild(ModelSearchAutocompleteComponent)
     _autocomplete: ModelSearchAutocompleteComponent | undefined;
+
+    _onSearchInputFocus() {
+        if (this.clearOnFocus) {
+            this.search?.searchControl.reset();
+        }
+    }
 }

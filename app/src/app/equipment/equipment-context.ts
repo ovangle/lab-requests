@@ -3,29 +3,57 @@ import { AbstractModelContextDirective, ModelContext } from "src/app/common/mode
 import { Equipment, EquipmentService } from "./equipment";
 import { ModelPatch } from "src/app/common/model/model";
 import { ActivatedRoute } from "@angular/router";
-import { map } from "rxjs";
+import { Observable, concat, concatMap, filter, from, map, merge, mergeAll, mergeMap, of, reduce, scan, switchMap, tap, throwError } from "rxjs";
 
 
 @Injectable()
 export class EquipmentContext extends ModelContext<Equipment> {
     override readonly service = inject(EquipmentService);
+
+    constructor() {
+        super();
+        this.committed$.subscribe(equipment => {
+            console.log('context equipment', equipment);
+        })
+    }
+}
+
+function equipmentIndexFromRoot(route: ActivatedRoute): ActivatedRoute | undefined {
+    for (const child of route.children) {
+        if (child.routeConfig?.path === 'equipment') {
+            return child;
+        }
+        const indexFromChild = equipmentIndexFromRoot(child);
+        if (indexFromChild !== undefined) {
+            return indexFromChild;
+        }
+    }
+    return undefined;
 }
 
 export function provideEquipmentDetailRouteContext(): Provider {
     return {
         provide: EquipmentContext,
-        useFactory: (route: ActivatedRoute) => {
+        useFactory: (rootRoute: ActivatedRoute) => {
             const context = new EquipmentContext();
 
-            const id$ = route.paramMap.pipe(
-                map(paramMap => paramMap.get('equipment_id')!)
-            );
-            context.sendCommittedId(route.paramMap.pipe(
-                map(paramMap => paramMap.get('equipment_id')!)
-            ));
+            const equipmentIndexRoute = equipmentIndexFromRoot(rootRoute);
+            if (equipmentIndexRoute === undefined) {
+                throw new Error('Could not locate equipment index in route tree');
+            }
+            let equipmentId: string | null = null;
+            for (const child of equipmentIndexRoute.children) {
+                equipmentId ||= child.snapshot.paramMap.get('equipment_id');
+            }
+            if (equipmentId === null) {
+                throw new Error('No equipment_id found in equipment params')
+            }
+
+
+            context.sendCommittedId(of(equipmentId));
             return context;
         },
-        deps: [ActivatedRoute]
+        deps: [ ActivatedRoute ]
     }
 }
 

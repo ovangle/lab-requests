@@ -15,4 +15,5 @@ import { Lab } from "../lab";
 export class LabEquipmentService extends RelatedModelService<Lab, EquipmentInstallation> {
     override readonly context = inject(LabContext);
     override readonly modelFromJsonObject = equipmentInstallationFromJsonObject;
+    override readonly path = 'equipments';
 }

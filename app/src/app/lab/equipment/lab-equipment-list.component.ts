@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, Input, inject } from '@angular/core';
 import { MatTableModule } from '@angular/material/table';
 import { MatListModule } from '@angular/material/list';
-import { EquipmentTagChipsComponent } from './tag/equipment-tag-chips.component';
+import { EquipmentTagChipsComponent } from '../../equipment/tag/equipment-tag-chips.component';
 import { RouterModule } from '@angular/router';
 import { Equipment, EquipmentService } from '../../equipment/equipment';
 import { Lab } from '../lab';
@@ -68,8 +68,8 @@ import { EquipmentInstallation } from 'src/app/equipment/installation/equipment-
 })
 export class LabEquipmentListComponent {
   _equipments = inject(EquipmentService);
-  labContext = inject(LabContext);
 
+  labContext = inject(LabContext);
   readonly lab$ = this.labContext.committed$;
 
   @Input()
@@ -85,7 +85,7 @@ export class LabEquipmentListComponent {
       first(),
       switchMap(lab => {
         if (this.equipment) {
-          return of([this.equipment]);
+          return of([ this.equipment ]);
         }
 
         const params = new HttpParams({

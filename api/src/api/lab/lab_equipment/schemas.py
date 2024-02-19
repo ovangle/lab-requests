@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, cast
 from typing_extensions import override
 from uuid import UUID, uuid4
 
-from sqlalchemy import select
+from sqlalchemy import not_, select
 from api.lab.schemas import LabView
 
 from db import LocalSession, local_object_session
@@ -23,6 +23,7 @@ from api.base.schemas import (
     ModelCreateRequest,
     ModelIndex,
 )
+from db.models.research.funding import ResearchFunding
 
 
 class LabEquipmentView(ModelView[LabEquipment]):
@@ -34,6 +35,7 @@ class LabEquipmentView(ModelView[LabEquipment]):
     tags: set[str]
 
     installations: ModelIndexPage[LabEquipmentInstallationView]
+    active_provisions: ModelIndexPage[LabEquipmentProvisionView]
 
     @classmethod
     async def from_model(cls, equipment: LabEquipment):
@@ -41,10 +43,22 @@ class LabEquipmentView(ModelView[LabEquipment]):
         installation_index = LabEquipmentInstallationIndex(
             select(LabEquipmentInstallation).where(
                 LabEquipmentInstallation.equipment_id == equipment.id,
-                LabEquipmentInstallation.provision_status != ProvisionStatus.CANCELLED,
+                LabEquipmentInstallation.provision_status == ProvisionStatus.INSTALLED,
             )
         )
         installations = await installation_index.load_page(db, 0)
+
+        active_provision_index = LabEquipmentProvisionIndex(
+            select(LabEquipmentProvision).where(
+                LabEquipmentProvision.equipment_id == equipment.id,
+                not_(
+                    LabEquipmentProvision.status.in_(
+                        [ProvisionStatus.CANCELLED, ProvisionStatus.INSTALLED]
+                    )
+                ),
+            )
+        )
+        active_provisions = await active_provision_index.load_page(db, 0)
 
         return cls(
             id=cast(UUID, equipment.id),
@@ -53,6 +67,7 @@ class LabEquipmentView(ModelView[LabEquipment]):
             training_descriptions=list(equipment.training_descriptions),
             tags=set(equipment.tags),
             installations=installations,
+            active_provisions=active_provisions,
             created_at=equipment.created_at,
             updated_at=equipment.updated_at,
         )
@@ -105,17 +120,20 @@ class LabEquipmentCreateRequest(ModelCreateRequest[LabEquipment]):
 
 
 class LabEquipmentInstallationView(ModelView[LabEquipmentInstallation]):
-    equipment_id: UUID
-    lab_id: UUID
+    equipment: UUID
+    equipment_name: str
+    lab: UUID
     num_installed: int
     provision_status: ProvisionStatus
 
     @classmethod
     async def from_model(cls, model: LabEquipmentInstallation):
+        equipment: LabEquipment = await model.awaitable_attrs.equipment
         return cls(
             id=model.id,
-            equipment_id=model.equipment_id,
-            lab_id=model.lab_id,
+            equipment=equipment.id,
+            equipment_name=equipment.name,
+            lab=model.lab_id,
             provision_status=model.provision_status,
             num_installed=model.num_installed,
             created_at=model.created_at,
@@ -164,10 +182,11 @@ class LabEquipmentInstallRequest(ModelCreateRequest[LabEquipment]):
 
 
 class LabEquipmentProvisionView(ModelView[LabEquipmentProvision]):
-    equipment_id: UUID
+    equipment: UUID
     installation: LabEquipmentInstallationView | None
 
     status: ProvisionStatus
+    reason: str
 
     estimated_cost: float | None
     quantity_required: int
@@ -185,7 +204,8 @@ class LabEquipmentProvisionView(ModelView[LabEquipmentProvision]):
         return cls(
             id=model.id,
             status=model.status,
-            equipment_id=model.equipment_id,
+            reason=model.reason,
+            equipment=model.equipment_id,
             installation=installation,
             estimated_cost=model.estimated_cost,
             quantity_required=model.quantity_required,
@@ -200,6 +220,34 @@ class LabEquipmentProvisionIndex(ModelIndex[LabEquipmentProvisionView]):
 
 # TODO: mypy does not support PEP 695
 type LabEquipmentProvisionPage = ModelIndexPage[LabEquipmentProvisionView]  # type: ignore
+
+
+class CreateEquipmentProvisionRequest(ModelCreateRequest[LabEquipment]):
+    status: ProvisionStatus
+
+    quantity_required: int
+
+    reason: str
+
+    lab: Lab | UUID | None
+
+    funding: ResearchFunding | UUID | None
+    estimated_cost: float | None
+
+    purchase_url: str
+
+    async def get_lab(self, db: LocalSession) -> Lab | None:
+        if isinstance(self.lab, UUID):
+            self.lab = await Lab.get_for_id(db, self.lab)
+        return cast(Lab | None, self.lab)
+
+    async def get_funding(self, db: LocalSession) -> ResearchFunding | None:
+        if isinstance(self.funding, UUID):
+            self.funding = await ResearchFunding.get_for_id(db, self.funding)
+        return cast(ResearchFunding | None, self.funding)
+
+    async def do_create(self, db: LocalSession, equipment: LabEquipment):
+        raise NotImplementedError()
 
 
 class LabEquipmentProvisionRequest(ModelCreateRequest[LabEquipment]):

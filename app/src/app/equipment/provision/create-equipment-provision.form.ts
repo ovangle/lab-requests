@@ -3,7 +3,6 @@ import { Component, EventEmitter, Input, Output, inject } from "@angular/core";
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatRadioGroup, MatRadioModule } from "@angular/material/radio";
-import { ProvisionStatus, isProvisionStatus } from "src/app/lab/equipment/provision/provision-status";
 import { Lab } from "src/app/lab/lab";
 import { LabSearchComponent } from "src/app/lab/lab-search.component";
 import { ResearchFunding } from "src/app/research/funding/research-funding";
@@ -19,8 +18,11 @@ import { EquipmentProvisionInfoComponent } from "./equipment-provision-info.comp
 import { ResizeTextareaOnInputDirective } from "src/app/common/forms/resize-textarea-on-input.directive";
 import { LabEquipmentProvision, EquipmentProvisionService, CreateEquipmentProvisionRequest } from "./equipment-provision";
 import { EquipmentCreateRequest } from "../equipment";
-import { ProvisionStatusPipe } from "src/app/lab/equipment/provision/provision-status.pipe";
+import { ProvisionStatus, isProvisionStatus } from "./provision-status";
+import { ProvisionStatusPipe } from "./provision-status.pipe";
 import { MatInputModule } from "@angular/material/input";
+import { MatIconModule } from "@angular/material/icon";
+import { MatButtonModule } from "@angular/material/button";
 
 
 @Component({
@@ -29,7 +31,10 @@ import { MatInputModule } from "@angular/material/input";
   imports: [
     CommonModule,
     ReactiveFormsModule,
+
+    MatButtonModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
     MatRadioModule,
 
@@ -43,13 +48,17 @@ import { MatInputModule } from "@angular/material/input";
   ],
   template: `
   @if (equipment$ | async; as equipment) {
-    <form (ngSubmit)="_onFormSubmit()">
+    <form [formGroup]="form" (ngSubmit)="_onFormSubmit()">
       @if (lab) {
         Provision {{equipment.name}} into {{lab.name}}
       } @else {
-        <lab-search formControlName="lab" [required]="isLabRequired">
+        <lab-search formControlName="lab" [required]="isLabRequired" [notFoundTemplate]="notFound">
           <mat-label>Lab</mat-label>
         </lab-search>
+
+        <ng-template #notFound>
+          Any lab
+        </ng-template>
       }
 
       @if (provisionLab$ | async; as provisionLab) {
@@ -89,12 +98,10 @@ import { MatInputModule } from "@angular/material/input";
           </mat-radio-group>
         }
 
-        <!--
         <mat-form-field>
           <mat-label>Quantity {{initialStatus | provisionStatus}}</mat-label>
           <input matInput type="number" formControlName="quantityRequired" />
-        <mat-form-field>
-      -->
+        </mat-form-field>
 
         @switch (initialStatus) {
           @case ('requested') {
@@ -113,10 +120,23 @@ import { MatInputModule } from "@angular/material/input";
                 unitOfMeasurement="item" />
             }
           }
+          @case ('installed') {
+            <mat-form-field>
+              <mat-label>Notes</mat-label>
+              <textarea matInput resizeOnInput formControlName="reason">
+              </textarea>
+            </mat-form-field>
+          }
           @default {
             Error: Invalid provision status on create '{{initialStatus | provisionStatus}}'.
           }
         }
+
+        <div class="form-controls">
+          <button mat-button type="submit">
+            <mat-icon>save</mat-icon>Save
+          </button>
+        </div>
       }
     </form>
   }
@@ -137,7 +157,7 @@ export class CreateEquipmentProvisionForm {
 
     lab: new FormControl<Lab | null>(null, {
       validators: (c) => {
-        if (this.isLabRequired) {
+        if (this.form && this.isLabRequired) {
           return Validators.required(c);
         }
         return null;
@@ -145,7 +165,7 @@ export class CreateEquipmentProvisionForm {
     }),
     funding: new FormControl<ResearchFunding | null>(null, {
       validators: (c) => {
-        if (this.isFundingRequired) {
+        if (this.form && this.isFundingRequired) {
           return Validators.required(c);
         }
         return null;
@@ -154,7 +174,7 @@ export class CreateEquipmentProvisionForm {
     cost: costEstimateForm(),
     quantityRequired: new FormControl<number>(1, {
       nonNullable: true,
-      validators: [Validators.required, Validators.min(1)]
+      validators: [ Validators.required, Validators.min(1) ]
     })
   });
 
@@ -184,7 +204,7 @@ export class CreateEquipmentProvisionForm {
     this.equipment$,
     this.provisionLab$,
   ]).pipe(
-    map(([equipment, lab]) => equipment.currentLabInstallation(lab))
+    map(([ equipment, lab ]) => equipment.currentLabInstallation(lab))
   );
 
   @Input()
