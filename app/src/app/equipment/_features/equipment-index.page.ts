@@ -44,14 +44,11 @@ import { MatIconModule } from '@angular/material/icon';
       }
     </mat-list>
   `,
+  host: {
+    '[class.scaffold-content-full-width]': 'true'
+  },
   styles: [
     `
-    :host {
-      display: block;
-      margin-top: 1em;
-      margin-left: 2em;
-      max-width: 80%;
-    }
     .equipment-index-header {
       display: flex;
       justify-content: space-between;

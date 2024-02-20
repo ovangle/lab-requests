@@ -15,6 +15,9 @@ import { Lab, LabService } from "src/app/lab/lab";
 import { LabSearchComponent } from "src/app/lab/lab-search.component";
 import { MatIconModule } from "@angular/material/icon";
 import { RouterModule } from "@angular/router";
+import { MatCardModule } from "@angular/material/card";
+import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
+import { MatButtonModule } from "@angular/material/button";
 
 
 @Component({
@@ -24,45 +27,65 @@ import { RouterModule } from "@angular/router";
         CommonModule,
         ReactiveFormsModule,
         RouterModule,
+
         MatFormFieldModule,
+        MatButtonModule,
+        MatCardModule,
         MatIconModule,
         MatListModule,
+
         ModelSearchInputComponent
     ],
     template: `
-    <div class="list-header">
-        <div class="title">
-            <ng-content select=".list-title" />
-        </div>
-        <div class="filters">
-            <common-model-search-input-field [search]="labSearch"
-                                             clearOnFocus> 
+    <mat-card>
+        <mat-card-header>
+            <div class="title">
+                <ng-content select=".list-title" />
+            </div>
+            
+            <div class="actions">
+                <a mat-raised-button color="primary" [routerLink]="['./', 'create-provision']">
+                    <mat-icon>add</mat-icon>Add
+                </a>
+            </div>    
+        </mat-card-header>
+
+        <mat-card-content>
+            <div class="list-filter-header">
+                <h4>Filters</h4>
+                <div class="list-filter-controls">
+                    <button mat-icon-button 
+                            (click)="_onFilterVisibilityToggleClick()">
+                        <mat-icon>{{_hideFilters ? 'visibility' : 'visibility_off'}}</mat-icon>
+                    </button>
+                </div>
+            </div>
+            <div class="list-filter" [class.list-filter-hidden]="_hideFilters">
+                <common-model-search-input-field [search]="labSearch"
+                                                clearOnFocus> 
 
 
-                <mat-label>Lab</mat-label>
-                <span matIconPrefix><mat-icon>search</mat-icon></span>
-            </common-model-search-input-field>
-        </div>
-        <div class="actions">
-            <a mat-raised-button color="primary" [routerLink]="['./', 'create-provision']">
-                <mat-icon>add</mat-icon>Request new install
-            </a>
-        </div>    
-    </div>
+                    <mat-label>Lab</mat-label>
+                    <span matIconPrefix><mat-icon>search</mat-icon></span>
+                </common-model-search-input-field>
+            </div>
 
-    @if (equipmentInstalls$ | async; as installs) {
-        <mat-list>
-            @for(install of installs; track install.id) {
-                <mat-list-item>
-                    @if (installCounts(install) | async; as templateContext) {
-                        <ng-container *ngTemplateOutlet="itemTemplate; context: templateContext" />
+            @if (equipmentInstalls$ | async; as installs) {
+                <mat-list>
+                    @for(install of installs; track install.id) {
+                        <mat-list-item>
+                            @if (installCounts(install) | async; as templateContext) {
+                                <ng-container *ngTemplateOutlet="itemTemplate; context: templateContext" />
+                            }
+                        </mat-list-item>
                     }
-                </mat-list-item>
+                </mat-list>
+            } @else {
+                <div><em>This equipment has no current installations</em></div>
             }
-        </mat-list>
-    } @else {
-        <div><em>This equipment has no current installations</em></div>
-    }
+        </mat-card-content>
+
+    </mat-card>
 
     <ng-template #itemTemplate let-lab let-numInstalled="numInstalled" let-numPending="numPending">
         <span class="lab-name">{{lab.name}}</span>
@@ -78,7 +101,25 @@ import { RouterModule } from "@angular/router";
     `,
     providers: [
         EquipmentInstallationService
-    ]
+    ],
+    styles: `
+    .mat-card-header {
+        display: flex;
+        justify-content: space-between;
+    }
+    .list-filter-header {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .list-filter {
+        overflow: hidden;
+    }
+
+    .list-filters-hidden {
+        max-height: 0;
+    }
+    `
 })
 export class EquipmentInstallationListComponent {
     _equipmentContext = inject(EquipmentContext);
@@ -86,6 +127,12 @@ export class EquipmentInstallationListComponent {
     _labs = inject(LabService);
 
     readonly equipment$ = this._equipmentContext.committed$;
+
+    _hideFilters = true;
+
+    _onFilterVisibilityToggleClick() {
+        this._hideFilters = !this._hideFilters;
+    }
 
     readonly labSearch = new ModelSearchControl<Lab>(
         (search) => this._labs.query({ search }),
@@ -96,7 +143,7 @@ export class EquipmentInstallationListComponent {
         this.equipment$,
         this.labSearch.modelOptions$
     ]).pipe(
-        map(([ equipment, labs ]) => {
+        map(([equipment, labs]) => {
             return equipment.installations.filter(
                 installation => labs.some((l) => l.id === installation.labId)
             );

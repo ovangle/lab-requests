@@ -6,6 +6,7 @@ import { Observable, map, of } from "rxjs";
 import { Equipment } from "../equipment";
 import { LabEquipmentProvision } from "../provision/equipment-provision";
 import { CreateEquipmentProvisionForm } from "../provision/create-equipment-provision.form";
+import { EquipmentDetailStateService, setCreateProvisionSubroute } from "./equipment-detail.state";
 
 
 @Component({
@@ -29,14 +30,14 @@ export class EquipmentDetailCreateProvisionPage {
   readonly _equipmentContext = inject(EquipmentContext);
   readonly equipment$ = this._equipmentContext.committed$;
 
+  readonly _equipmentDetailState = inject(EquipmentDetailStateService);
+
   ngOnInit() {
-    this.equipment$.subscribe(
-      equipment => console.log('context equipment !!', equipment)
-    )
+    this._equipmentDetailState.dispatch(setCreateProvisionSubroute);
   }
 
   async _onProvisionSave(_: LabEquipmentProvision) {
     await this._equipmentContext.refresh();
-    this.router.navigate([ '..' ], { relativeTo: this.route });
+    this.router.navigate(['..'], { relativeTo: this.route });
   }
 }

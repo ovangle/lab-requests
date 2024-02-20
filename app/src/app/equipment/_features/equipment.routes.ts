@@ -24,6 +24,11 @@ export const EQUIPMENT_ROUTES: Routes = [
     ],
     children: [
       {
+        path: 'update',
+        loadComponent: () => import('./equipment-detail-update.page')
+          .then(module => module.EquipmentDetailUpdatePage)
+      },
+      {
         path: 'create-provision',
         loadComponent: () => import('./equipment-detail-create-provision.page')
           .then(module => module.EquipmentDetailCreateProvisionPage)

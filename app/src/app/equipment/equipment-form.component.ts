@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import {
   AbstractControl,
+  FormBuilder,
   FormControl,
   FormGroup,
   ReactiveFormsModule,
@@ -60,7 +61,8 @@ export interface EquipmentFormControls {
     EquipmentTrainingDescriptionsInputComponent,
   ],
   template: `
-    <form [formGroup]="form!" (ngSubmit)="commitForm($event)">
+    <form [formGroup]="form!" (ngSubmit)="_onFormSubmit()">
+      @if (!equipment) {
         <mat-form-field>
           <mat-label>Name</mat-label>
           <input matInput formControlName="name" required>
@@ -74,6 +76,7 @@ export interface EquipmentFormControls {
             </mat-error>
           }
         </mat-form-field>
+      }
 
       <mat-form-field>
         <mat-label>Description</mat-label>
@@ -81,9 +84,9 @@ export interface EquipmentFormControls {
         </textarea>
       </mat-form-field>
 
-      <lab-equipment-tags-input formControlName="tags">
+      <equipment-tags-input formControlName="tags">
         <mat-label>Tags</mat-label>
-      </lab-equipment-tags-input>
+      </equipment-tags-input>
 
       <lab-equipment-training-descriptions-input
         formControlName="trainingDescriptions"
@@ -119,29 +122,37 @@ export class EquipmentForm {
     return this._equipment;
   }
   set equipment(equipment: Equipment | null) {
-    if (equipment) {
-      this.form.patchValue({ name: equipment.name });
-    } else {
-      this.form.patchValue({ name: '' })
-    }
     this._equipment = equipment;
+    if (equipment) {
+      this.form.patchValue({
+        name: equipment.name,
+        description: equipment.description,
+        tags: equipment.tags,
+        trainingDescriptions: []
+      })
+    } else {
+      this.form.reset();
+    }
   }
   _equipment: Equipment | null = null;
 
   @Output()
   save = new EventEmitter<Equipment>();
 
-  readonly form = new FormGroup({
+  form = new FormGroup({
     name: new FormControl<string>('', {
       nonNullable: true,
-      validators: [ Validators.required ],
+      validators: [Validators.required],
       asyncValidators: (control: AbstractControl<any>) => {
         return this._validateNameUnique(control as FormControl<string>);
       }
     }),
     description: new FormControl<string>('', { nonNullable: true }),
     tags: new FormControl<string[]>([], { nonNullable: true }),
-    trainingDescriptions: new FormControl<string[]>([], { nonNullable: true }),
+    trainingDescriptions: new FormControl<string[]>(
+      [],
+      { nonNullable: true }
+    ),
   });
 
   get currentPatch(): EquipmentUpdateRequest | null {
@@ -206,7 +217,7 @@ export class EquipmentForm {
     return firstValueFrom(update);
   }
 
-  async commitForm(evt: Event) {
+  async _onFormSubmit() {
     let equipment: Equipment;
     if (!this.equipment) {
       equipment = await this._doCreateEquipment();

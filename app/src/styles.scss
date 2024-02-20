@@ -131,3 +131,24 @@ mat-form-field {
 .d-flex {
   display: flex;
 }
+
+/**
+ * scaffold-classes
+ */
+ .scaffold-content-full-width {
+  display: block;
+  margin-top: 1em;
+  margin-left: 2em;
+  max-width: 80%;
+ }
+
+ .scaffold-content-centered {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+ }

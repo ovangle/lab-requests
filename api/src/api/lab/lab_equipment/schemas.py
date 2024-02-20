@@ -122,6 +122,24 @@ class LabEquipmentCreateRequest(ModelCreateRequest[LabEquipment]):
         return equipment
 
 
+class LabEquipmentUpdateRequest(ModelUpdateRequest[LabEquipment]):
+    description: str | None = None
+    tags: list[str] | None = None
+    training_descriptions: list[str] | None = None
+
+    async def do_update(self, model: LabEquipment):
+        db = local_object_session(model)
+        if self.description:
+            model.description = self.description
+        if self.tags:
+            model.tags = self.tags
+        if self.training_descriptions:
+            model.training_descriptions = self.training_descriptions
+        db.add(model)
+        await db.commit()
+        return await db.refresh(model)
+
+
 class LabEquipmentInstallationView(ModelView[LabEquipmentInstallation]):
     equipment: UUID
     equipment_name: str
@@ -319,8 +337,3 @@ class LabEquipmentProvisionRequest(ModelCreateRequest[LabEquipment]):
         db.add(provision)
         await db.commit()
         return provision
-
-
-class LabEquipmentUpdateRequest(ModelUpdateRequest[LabEquipment]):
-    async def do_update(self, model: LabEquipment):
-        raise NotImplementedError

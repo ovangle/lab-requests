@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterModule } from "@angular/router";
 import { EquipmentLeaseFormComponent } from "src/app/lab/lab-resources/equipment-lease/equipment-lease-form.component";
 import { EquipmentForm } from "../equipment-form.component";
 import { Equipment } from "../equipment";
+import { ScaffoldContentLayout } from "src/app/scaffold/scaffold-content.directive";
 
 
 @Component({
@@ -13,19 +14,14 @@ import { Equipment } from "../equipment";
     RouterModule,
     EquipmentForm
   ],
+  host: {
+    '[class.scaffold-content-full-width]': 'true'
+  },
   template: `
   <h1>Add equipment</h1>
   <equipment-form 
     (save)="_onEquipmentSave($event)" />
   `,
-  styles: `
-  :host {
-    display: block;
-    margin-top: 1em;
-    margin-left: 2em;
-    max-width: 80%;
-  }
-  `
 })
 export class EquipmentCreatePage {
   readonly router = inject(Router);
@@ -33,7 +29,7 @@ export class EquipmentCreatePage {
 
   async _onEquipmentSave(equipment: Equipment) {
     await this.router.navigate(
-      [ '..', equipment.id ],
+      ['..', equipment.id],
       { relativeTo: this.activatedRoute }
     );
   }

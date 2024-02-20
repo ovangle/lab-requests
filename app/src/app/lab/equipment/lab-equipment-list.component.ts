@@ -48,7 +48,7 @@ import { EquipmentInstallation } from 'src/app/equipment/installation/equipment-
           </span>
         </span>
         <span matListItemMeta>
-          <lab-equipment-tag-chips [tags]="equipment.tags" />
+          <equipment-tag-chips [equipment]="equipment" />
         </span>
       </a>
     </ng-template>
@@ -85,7 +85,7 @@ export class LabEquipmentListComponent {
       first(),
       switchMap(lab => {
         if (this.equipment) {
-          return of([ this.equipment ]);
+          return of([this.equipment]);
         }
 
         const params = new HttpParams({

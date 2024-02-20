@@ -20,9 +20,9 @@ interface EquipmentTag {
 }
 
 @Component({
-  selector: 'lab-equipment-tags-input',
+  selector: 'equipment-tags-input',
   standalone: true,
-  imports: [ CommonModule, MatFormFieldModule, MatIconModule, MatChipsModule ],
+  imports: [CommonModule, MatFormFieldModule, MatIconModule, MatChipsModule],
   template: `
     <mat-form-field>
       <mat-chip-grid #chipGrid>
@@ -61,7 +61,7 @@ interface EquipmentTag {
   ],
 })
 export class EquipmentTagInputComponent implements ControlValueAccessor {
-  readonly separatorKeysCodes = [ ENTER, COMMA ] as const;
+  readonly separatorKeysCodes = [ENTER, COMMA] as const;
   tags: string[] = [];
 
   add(event: MatChipInputEvent) {
@@ -70,12 +70,12 @@ export class EquipmentTagInputComponent implements ControlValueAccessor {
       this.tags.push(name);
     }
     event.chipInput!.clear();
-    this._onChange([ ...this.tags ]);
+    this._onChange([...this.tags]);
   }
 
   remove(tag: string) {
     this.tags = this.tags.filter((t) => t !== tag);
-    this._onChange([ ...this.tags ]);
+    this._onChange([...this.tags]);
   }
 
   edit(tag: string, evt: MatChipEditedEvent) {
@@ -84,11 +84,11 @@ export class EquipmentTagInputComponent implements ControlValueAccessor {
       this.remove(tag);
     }
     this.tags.splice(this.tags.indexOf(tag), 1, tag);
-    this._onChange([ ...this.tags ]);
+    this._onChange([...this.tags]);
   }
 
   writeValue(obj: string[]): void {
-    this.tags = [ ...obj ];
+    this.tags = [...obj];
   }
   _onChange = (value: string[]) => { };
   registerOnChange(fn: any): void {

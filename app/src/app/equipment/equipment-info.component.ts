@@ -24,11 +24,11 @@ import { Equipment } from './equipment';
   template: `
     <h1>
       {{ equipment!.name }}
-      <lab-equipment-tag-chips [tags]="equipment!.tags">
-      </lab-equipment-tag-chips>
+      <equipment-tag-chips [equipment]="equipment!">
+      </equipment-tag-chips>
     </h1>
   `,
-  styles: [ `` ],
+  styles: [``],
 })
 export class EquipmentInfoComponent {
   @Input() equipment: Equipment | undefined = undefined;

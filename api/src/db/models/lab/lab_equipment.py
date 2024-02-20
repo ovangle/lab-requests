@@ -438,6 +438,8 @@ async def create_known_install(
     db.add(installation)
     provision = LabEquipmentProvision(
         equipment_or_install=installation,
+        estimated_cost=0,
+        purchase_url="",
     )
     await db.commit()
     return provision

@@ -4,6 +4,7 @@ import { CommonModule } from "@angular/common";
 import { EquipmentContext } from "../equipment-context";
 import { Equipment } from "../equipment";
 import { ActivatedRoute, Router } from "@angular/router";
+import { EquipmentDetailStateService, setUpdateSubroute } from "./equipment-detail.state";
 
 @Component({
   standalone: true,
@@ -13,9 +14,10 @@ import { ActivatedRoute, Router } from "@angular/router";
   ],
   template: `
   @if (equipment$ | async; as equipment) {
-    <h1>Update {{equipment.name}}</h1>
+    <h2>Update details</h2>
 
     <equipment-form
+      [equipment]="equipment"
       (save)="_onEquipmentSave($event)" />
   }
   `
@@ -26,6 +28,12 @@ export class EquipmentDetailUpdatePage {
 
   readonly equipmentContext = inject(EquipmentContext);
   readonly equipment$ = this.equipmentContext.committed$;
+
+  readonly _equipmentDetailState = inject(EquipmentDetailStateService);
+
+  ngOnInit() {
+    this._equipmentDetailState.dispatch(setUpdateSubroute);
+  }
 
   async _onEquipmentSave(equipment: Equipment) {
     this.equipmentContext.nextCommitted(equipment);
