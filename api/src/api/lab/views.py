@@ -57,6 +57,6 @@ async def index_labs(
 
 
 @labs.get("/lab/{lab_id}")
-async def read_lab(lab_id: UUID, db=Depends(get_db)):
+async def read_lab(lab_id: UUID, db=Depends(get_db)) -> LabView:
     lab = await Lab.get_for_id(db, lab_id)
     return await LabView.from_model(lab)

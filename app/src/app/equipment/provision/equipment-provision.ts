@@ -1,6 +1,6 @@
 import { Model, ModelIndexPage, ModelParams, ModelPatch, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
-import { Equipment, EquipmentCreateRequest, labEquipmentCreateRequestToJson, equipmentFromJsonObject, EquipmentPatch, EquipmentService } from "../equipment";
+import { Equipment, EquipmentCreateRequest, equipmentCreateRequestToJsonObject, equipmentFromJsonObject, EquipmentUpdateRequest, EquipmentService } from "../equipment";
 import { ResearchFunding } from "src/app/research/funding/research-funding";
 import { Lab } from "../../lab/lab";
 import { Observable, first, firstValueFrom, map, shareReplay, switchMap } from "rxjs";
@@ -124,7 +124,7 @@ export function createEquipmentProvisionRequestToJson(request: CreateEquipmentPr
         funding: request.funding?.id || null,
 
         estimatedCost: request.estimatedCost,
-        quantitytRequired: request.quantityRequired,
+        quantityRequired: request.quantityRequired,
         purchaseUrl: request.purchaseUrl
     };
 }

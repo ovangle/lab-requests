@@ -10,13 +10,11 @@ from db.models.lab import LabEquipment
 from db.models.lab.lab_equipment import LabEquipmentProvision
 
 from .schemas import (
+    CreateEquipmentProvisionRequest,
     LabEquipmentCreateRequest,
     LabEquipmentIndex,
     LabEquipmentIndexPage,
-    LabEquipmentLookup,
-    LabEquipmentProvisionRequest,
     LabEquipmentProvisionView,
-    LabEquipmentProvisionPage,
     LabEquipmentUpdateRequest,
     LabEquipmentView,
 )
@@ -87,6 +85,11 @@ async def update_equipment(
 async def index_equipment_provisions(equipment_id: UUID):
     raise NotImplementedError
 
-@lab_equipments.post("/{equipment_id}/provisions"):
-async def create_equipment_provision(equipment_id: UUID, request: CreateEquipmentProvisionRequest):
-    raise NotImplementedError
+
+@lab_equipments.post("/{equipment_id}/provisions")
+async def create_equipment_provision(
+    equipment_id: UUID, request: CreateEquipmentProvisionRequest, db=Depends(get_db)
+) -> LabEquipmentProvisionView:
+    equipment = await LabEquipment.get_for_id(db, equipment_id)
+    provision = await request.do_create(db, equipment)
+    return await LabEquipmentProvisionView.from_model(provision)

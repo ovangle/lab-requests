@@ -14,9 +14,17 @@ import { Equipment } from "../equipment";
     EquipmentForm
   ],
   template: `
-  <h1>Create equipment</h1>
+  <h1>Add equipment</h1>
   <equipment-form 
     (save)="_onEquipmentSave($event)" />
+  `,
+  styles: `
+  :host {
+    display: block;
+    margin-top: 1em;
+    margin-left: 2em;
+    max-width: 80%;
+  }
   `
 })
 export class EquipmentCreatePage {
@@ -25,7 +33,7 @@ export class EquipmentCreatePage {
 
   async _onEquipmentSave(equipment: Equipment) {
     await this.router.navigate(
-      ['..', equipment.id],
+      [ '..', equipment.id ],
       { relativeTo: this.activatedRoute }
     );
   }

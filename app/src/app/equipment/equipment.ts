@@ -135,10 +135,16 @@ export function equipmentFromJsonObject(json: JsonObject): Equipment {
 }
 
 
-export interface EquipmentPatch {
-  description?: string;
-  tags?: string[];
-  trainingDescriptions?: string[];
+export interface EquipmentUpdateRequest {
+  description: string;
+  tags: string[];
+  trainingDescriptions: string[];
+}
+
+function equipmentPatchToJsonObject(patch: EquipmentUpdateRequest) {
+  return {
+    ...patch
+  };
 }
 
 export interface EquipmentCreateRequest {
@@ -150,7 +156,7 @@ export interface EquipmentCreateRequest {
   initialProvisions?: CreateEquipmentProvisionRequest[];
 }
 
-export function labEquipmentCreateRequestToJson(request: EquipmentCreateRequest): JsonObject {
+export function equipmentCreateRequestToJsonObject(request: EquipmentCreateRequest): JsonObject {
   return {
     ...request
   };
@@ -179,10 +185,10 @@ export function equipmentQueryToHttpParams(query: Partial<EquipmentQuery>) {
 }
 
 @Injectable({ providedIn: 'root' })
-export class EquipmentService extends RestfulService<Equipment, EquipmentCreateRequest, EquipmentPatch> {
+export class EquipmentService extends RestfulService<Equipment, EquipmentCreateRequest, EquipmentUpdateRequest> {
   override path = '/labs/equipment';
   override modelFromJsonObject = equipmentFromJsonObject;
-  override readonly createRequestToJsonObject = undefined;
-  override readonly updateRequestToJsonObject = undefined;
+  override readonly createRequestToJsonObject = equipmentCreateRequestToJsonObject;
+  override readonly updateRequestToJsonObject = equipmentPatchToJsonObject;
 }
 

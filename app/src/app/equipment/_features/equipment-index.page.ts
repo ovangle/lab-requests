@@ -8,6 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { RouterModule } from '@angular/router';
 import { LabContext } from 'src/app/lab/lab-context';
 import { MatListModule } from '@angular/material/list';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   standalone: true,
@@ -15,19 +16,23 @@ import { MatListModule } from '@angular/material/list';
     CommonModule,
     RouterModule,
     MatButtonModule,
+    MatIconModule,
     MatListModule
   ],
   template: `
+  <div class="equipment-index-header">
     <h2>
       Equipment
-      <div class="equipment-index-controls">
-        <a mat-raised-button
-            color="primary"
-            routerLink="./request">
-            Request
-        </a>
-      </div>
+      
     </h2>
+    <div class="equipment-index-controls">
+      <a mat-raised-button
+         color="primary"
+         routerLink="./create">
+        <mat-icon>add</mat-icon>Add
+      </a>
+    </div>
+  </div>
 
     <mat-list>
       @if (equipments$ | async; as equipments) {
@@ -38,36 +43,19 @@ import { MatListModule } from '@angular/material/list';
         }
       }
     </mat-list>
-
-    <ng-template #controls>
-      <div class="equipment-list-controls">
-        <a
-          mat-raised-button
-          class="create-button"
-          color="primary"
-          routerLink="./create"
-        >
-          + Add
-        </a>
-        <a
-          mat-raised-button
-          class="request-button"
-          color="primary"
-          routerLink="./provision/request"
-        >
-          + Request
-        </a>
-      </div>
-    </ng-template>
   `,
   styles: [
     `
-      div.equipment-list-controls {
-        float: right;
-      }
-      a + a {
-        margin-left: 1em;
-      }
+    :host {
+      display: block;
+      margin-top: 1em;
+      margin-left: 2em;
+      max-width: 80%;
+    }
+    .equipment-index-header {
+      display: flex;
+      justify-content: space-between;
+    }
     `,
   ],
 })

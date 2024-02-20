@@ -8,7 +8,7 @@ import {
 } from '@angular/forms';
 import { Observable, map, share, firstValueFrom } from 'rxjs';
 import {
-  EquipmentPatch,
+  EquipmentUpdateRequest,
   Equipment,
   EquipmentService,
 } from '../../equipment/equipment';
@@ -22,11 +22,11 @@ export type EquipmentForm = FormGroup<{
   trainingDescriptions: FormControl<string[]>;
 }>;
 
-export function equipmentPatchFromForm(form: EquipmentForm): EquipmentPatch {
+export function equipmentPatchFromForm(form: EquipmentForm): EquipmentUpdateRequest {
   if (!form.valid) {
     throw new Error('Invalid form has no patch');
   }
-  return form.value as EquipmentPatch;
+  return form.value as EquipmentUpdateRequest;
 }
 
 export function equipmentForm(): EquipmentForm {

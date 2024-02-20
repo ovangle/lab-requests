@@ -1,6 +1,6 @@
 import { Component, Input, inject } from "@angular/core";
 import { LabEquipmentProvision } from "./equipment-provision";
-import { ProvisionStatus } from "src/app/lab/equipment/provision/provision-status";
+import { ProvisionStatus } from "./provision-status";
 import { BehaviorSubject } from "rxjs";
 import { CommonModule } from "@angular/common";
 import { EquipmentProvisionInstallFormComponent } from "./equipment-provision-install.form";

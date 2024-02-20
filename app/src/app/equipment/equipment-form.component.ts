@@ -24,13 +24,14 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { EquipmentTagInputComponent } from './tag/equipment-tag-input.component';
 import { EquipmentTrainingDescriptionsInputComponent } from './training/training-descriptions-input.component';
-import { Equipment, EquipmentPatch, EquipmentService } from './equipment';
+import { Equipment, EquipmentUpdateRequest, EquipmentService, equipmentQueryToHttpParams } from './equipment';
 import { ResizeTextareaOnInputDirective } from 'src/app/common/forms/resize-textarea-on-input.directive';
 import { EquipmentContext } from 'src/app/equipment/equipment-context';
 import { HttpParams } from '@angular/common/http';
-import { Observable, firstValueFrom, map } from 'rxjs';
+import { Observable, debounceTime, firstValueFrom, map, shareReplay, switchMap } from 'rxjs';
 import { EquipmentSearchComponent } from './equipment-search.component';
 import { NotFoundValue } from '../common/model/search/search-control';
+import { RouterModule } from '@angular/router';
 
 export interface EquipmentFormControls {
   name: FormControl<Equipment | NotFoundValue | null>;
@@ -44,6 +45,7 @@ export interface EquipmentFormControls {
   standalone: true,
   imports: [
     CommonModule,
+    RouterModule,
     ReactiveFormsModule,
 
     MatButtonModule,
@@ -59,19 +61,20 @@ export interface EquipmentFormControls {
   ],
   template: `
     <form [formGroup]="form!" (ngSubmit)="commitForm($event)">
-      @if (!equipment) {
-        <equipment-search [inLab]="null" 
-          required
-          allowNotFound 
-          formControlName="equipment">
+        <mat-form-field>
           <mat-label>Name</mat-label>
-
+          <input matInput formControlName="name" required>
+      
           @if (nameErrors && nameErrors['required']) {
             <mat-error>A value is required</mat-error>
           }
+          @if (nameErrors && nameErrors['unique']) {
+            <mat-error>
+              Equipment name must be unqiue.
+            </mat-error>
+          }
+        </mat-form-field>
 
-        </equipment-search>
-      }
       <mat-form-field>
         <mat-label>Description</mat-label>
         <textarea matInput formControlName="description" resizeOnInput>
@@ -92,7 +95,7 @@ export interface EquipmentFormControls {
           mat-raised-button
           type="submit"
           color="primary"
-          [disabled]="form!.invalid"
+          [disabled]="!form!.valid"
         >
           <mat-icon>save</mat-icon> save
         </button>
@@ -113,34 +116,35 @@ export class EquipmentForm {
 
   @Input()
   get equipment() {
-    if (this.form.value.equipment instanceof Equipment) {
-      return this.form.value.equipment;
-    }
-    return null;
+    return this._equipment;
   }
   set equipment(equipment: Equipment | null) {
     if (equipment) {
-      this.form.patchValue({ equipment });
+      this.form.patchValue({ name: equipment.name });
+    } else {
+      this.form.patchValue({ name: '' })
     }
+    this._equipment = equipment;
   }
-
-  get isNewEquipment() {
-    return this.form.value.equipment instanceof NotFoundValue;
-  }
+  _equipment: Equipment | null = null;
 
   @Output()
   save = new EventEmitter<Equipment>();
 
   readonly form = new FormGroup({
-    equipment: new FormControl<Equipment | NotFoundValue | null>(null, {
-      validators: [ Validators.required, equipmentNameRequiredValidator ],
+    name: new FormControl<string>('', {
+      nonNullable: true,
+      validators: [ Validators.required ],
+      asyncValidators: (control: AbstractControl<any>) => {
+        return this._validateNameUnique(control as FormControl<string>);
+      }
     }),
     description: new FormControl<string>('', { nonNullable: true }),
     tags: new FormControl<string[]>([], { nonNullable: true }),
     trainingDescriptions: new FormControl<string[]>([], { nonNullable: true }),
   });
 
-  get currentPatch(): EquipmentPatch | null {
+  get currentPatch(): EquipmentUpdateRequest | null {
     if (!this.form.valid) {
       return null;
     }
@@ -152,20 +156,38 @@ export class EquipmentForm {
   }
 
   get nameErrors(): ValidationErrors | null {
-    return this.form!.controls.equipment.errors;
+    return this.form!.controls.name.errors;
+  }
+  readonly _matchEquipmentName: Observable<Equipment[]> = this.form.controls.name.valueChanges.pipe(
+    debounceTime(300),
+    switchMap(name => {
+      return this.equipmentService.query(equipmentQueryToHttpParams({ name: name }))
+    }),
+    shareReplay(1)
+  );
+
+  async _validateNameUnique(c: FormControl<string>): Promise<ValidationErrors | null> {
+    if (this.equipment) {
+      return null;
+    }
+    const nameMatches = await firstValueFrom(this._matchEquipmentName);
+    if (nameMatches.length > 0) {
+      return { unique: false };
+    }
+    return null;
   }
 
   get trainingDescripionsFormArr(): FormControl<string[]> {
     return this.form!.controls.trainingDescriptions;
   }
 
-  async _doCreateEquipment(name: string): Promise<Equipment> {
+  async _doCreateEquipment(): Promise<Equipment> {
     if (!this.form.valid) {
       throw new Error('Invalid form has no value');
     }
     const value = this.form.value;
     const create = this.equipmentService.create({
-      name: name,
+      name: this.form.value.name!,
       description: value.description!,
       tags: value.tags!,
       trainingDescriptions: value.trainingDescriptions!
@@ -185,15 +207,11 @@ export class EquipmentForm {
   }
 
   async commitForm(evt: Event) {
-    const formEquipment = this.form.value.equipment;
     let equipment: Equipment;
-    if (formEquipment instanceof NotFoundValue) {
-      const equipmentName = formEquipment.searchInput;
-      equipment = await this._doCreateEquipment(equipmentName);
-    } else if (formEquipment instanceof Equipment) {
-      equipment = await this._doUpdateEquipment(formEquipment);
+    if (!this.equipment) {
+      equipment = await this._doCreateEquipment();
     } else {
-      throw new Error('Expected an Equipment or NotFoundValue');
+      equipment = await this._doUpdateEquipment(this.equipment);
     }
     this.save.emit(equipment);
   }
@@ -202,13 +220,4 @@ export class EquipmentForm {
   _onDescriptionInput(evt: Event) {
     this._descriptionTextareaHeightPx = (evt.target as Element).scrollHeight;
   }
-}
-
-function equipmentNameRequiredValidator(control: AbstractControl<Equipment | NotFoundValue | null>) {
-  if (control.value instanceof NotFoundValue) {
-    if (control.value.searchInput.trim() == '') {
-      return { 'required': true };
-    }
-  }
-  return null;
 }

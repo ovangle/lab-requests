@@ -1,11 +1,12 @@
 from __future__ import annotations
+from http import HTTPStatus
 
 from typing import TYPE_CHECKING, cast
 from typing_extensions import override
 from uuid import UUID, uuid4
+from fastapi import HTTPException
 
 from sqlalchemy import not_, select
-from api.lab.schemas import LabView
 
 from db import LocalSession, local_object_session
 from db.models.lab.lab import Lab
@@ -13,6 +14,8 @@ from db.models.lab.lab_equipment import (
     LabEquipmentInstallation,
     LabEquipmentProvision,
     ProvisionStatus,
+    create_known_install,
+    request_provision,
 )
 from db.models.lab import LabEquipment
 from api.base.schemas import (
@@ -159,26 +162,7 @@ class LabEquipmentInstallRequest(ModelCreateRequest[LabEquipment]):
     lab: Lab | UUID
 
     async def do_create(self, db: LocalSession):
-        equipment: LabEquipment
-        if isinstance(self.equipment, LabEquipment):
-            equipment = self.equipment
-        elif isinstance(self.equipment, UUID):
-            equipment = await LabEquipment.get_for_id(db, self.equipment)
-        else:
-            equipment = await self.equipment.do_create(db)
-
-        lab: Lab
-        if isinstance(self.lab, Lab):
-            lab = self.lab
-        else:
-            lab = await Lab.get_for_id(db, self.lab)
-
-        install = LabEquipmentInstallation(
-            equipment_id=equipment.id,
-            lab_id=lab.id,
-        )
-        db.add(install)
-        await db.commit()
+        raise NotImplementedError
 
 
 class LabEquipmentProvisionView(ModelView[LabEquipmentProvision]):
@@ -246,8 +230,36 @@ class CreateEquipmentProvisionRequest(ModelCreateRequest[LabEquipment]):
             self.funding = await ResearchFunding.get_for_id(db, self.funding)
         return cast(ResearchFunding | None, self.funding)
 
-    async def do_create(self, db: LocalSession, equipment: LabEquipment):
-        raise NotImplementedError()
+    async def do_create(self, db: LocalSession, equipment: LabEquipment | None = None):
+        if equipment is None:
+            raise ValueError("Equipment must be supplied from context")
+        lab = (await self.get_lab(db)) if self.lab else None
+
+        if self.status == ProvisionStatus.REQUESTED:
+            return await request_provision(
+                db,
+                equipment,
+                quantity_required=self.quantity_required,
+                lab=(await self.get_lab(db)) if self.lab else None,
+                funding=(await self.get_funding(db)) if self.funding else None,
+                estimated_cost=self.estimated_cost,
+                reason=self.reason,
+                purchase_url=self.purchase_url,
+            )
+        elif self.status == ProvisionStatus.INSTALLED:
+            if lab is None:
+                raise HTTPException(
+                    HTTPStatus.BAD_REQUEST,
+                    "lab must be provided if importing a known install",
+                )
+
+            return await create_known_install(
+                db, equipment, lab, num_installed=self.quantity_required
+            )
+        else:
+            raise HTTPException(
+                HTTPStatus.BAD_REQUEST, "status must be installed or requested"
+            )
 
 
 class LabEquipmentProvisionRequest(ModelCreateRequest[LabEquipment]):
@@ -286,8 +298,8 @@ class LabEquipmentProvisionRequest(ModelCreateRequest[LabEquipment]):
         equipment = await self.get_or_create_equipment(db)
         print(f"creating installation in {lab.id}")
         installation = LabEquipmentInstallation(
-            equipment_id=equipment.id,
-            lab_id=lab.id,
+            equipment=equipment,
+            lab=lab,
             num_installed=self.quantity_required,
             provision_status=ProvisionStatus.REQUESTED,
         )
