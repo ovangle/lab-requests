@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from uuid import UUID, uuid4
 import uuid
 
@@ -10,7 +10,7 @@ from sqlalchemy import Column, ForeignKey, Table, insert, not_, select
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from db import LocalSession
+from db import LocalSession, local_object_session
 from ..base import Base, DoesNotExist, ModelException
 from ..base.fields import uuid_pk, action_timestamp, action_user_fk
 
@@ -85,6 +85,9 @@ class ProvisionStatus(Enum):
     INSTALLED = "installed"
     CANCELLED = "cancelled"
 
+    # Previously installed, but replaced by another installation
+    REPLACED = "replaced"
+
 
 class LabEquipment(Base):
     __tablename__ = "lab_equipment"
@@ -125,10 +128,10 @@ class LabEquipmentInstallation(Base):
     lab_id: Mapped[UUID] = mapped_column(ForeignKey("lab.id"))
     lab: Mapped[Lab] = relationship()
 
-    current_install_id: Mapped[UUID | None] = mapped_column(
+    replaces_installation_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("lab_equipment_installation.id"), default=None
     )
-    current_install: Mapped[LabEquipmentInstallation | None] = relationship()
+    replaces_installation: Mapped[LabEquipmentInstallation | None] = relationship()
 
     num_installed: Mapped[int] = mapped_column(postgresql.INTEGER, default=1)
 
@@ -178,28 +181,21 @@ class LabEquipmentInstallation(Base):
             )
         return install
 
-    def update_installation(self, provision: LabEquipmentProvision):
-        if provision.is_final:
-            raise LabEquipmentProvisioningError(
-                "Cannot upgrade installation. Provision not final"
-            )
-        self.last_provisioned_at = provision.installed_at
-
     def __init__(
         self,
-        current_install: LabEquipmentInstallation | None = None,
+        replaces_install: LabEquipmentInstallation | None = None,
         *,
         id: UUID | None = None,
         equipment: LabEquipment | None = None,
         lab: Lab | None = None,
-        provision_status: ProvisionStatus,
+        provision_status: ProvisionStatus = ProvisionStatus.INSTALLED,
         num_installed: int,
     ):
-        if current_install:
-            if not current_install.is_complete:
+        if replaces_install:
+            if not replaces_install.is_complete:
                 raise ValueError("Current install must be a completed install")
-            equipment_id = current_install.equipment_id
-            lab_id = current_install.lab_id
+            equipment_id = replaces_install.equipment_id
+            lab_id = replaces_install.lab_id
         else:
             if not equipment:
                 raise ValueError("Equipment must be provided for new install")
@@ -208,11 +204,16 @@ class LabEquipmentInstallation(Base):
                 raise ValueError("Lab must be provided for new install")
             lab_id = lab.id
 
+        if provision_status != ProvisionStatus.INSTALLED and not replaces_install:
+            raise ValueError(
+                "A current installation must exist in order to create a pending revision"
+            )
+
         super().__init__(
             id=id,
             equipment_id=equipment_id,
             lab_id=lab_id,
-            current_install_id=current_install.id if current_install else None,
+            replaces_installation_id=replaces_install.id if replaces_install else None,
             num_installed=num_installed,
             provision_status=provision_status,
         )
@@ -224,6 +225,10 @@ class LabEquipmentInstallation(Base):
     @property
     def is_complete(self):
         return self.provision_status == ProvisionStatus.INSTALLED
+
+    @property
+    def is_replaced(self):
+        return self.provision_status == ProvisionStatus.REPLACED
 
 
 class LabEquipmentProvision(Base):
@@ -251,6 +256,7 @@ class LabEquipmentProvision(Base):
 
     lab_id: Mapped[UUID | None] = mapped_column(ForeignKey("lab.id"), default=None)
     lab: Mapped[Lab | None] = relationship()
+
     funding_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("research_funding.id"), default=None
     )
@@ -266,27 +272,42 @@ class LabEquipmentProvision(Base):
     approved_at: Mapped[action_timestamp]
     approved_by_id: Mapped[UUID | None] = mapped_column(ForeignKey("user.id"))
     approved_by: Mapped[User | None] = relationship(foreign_keys=[approved_by_id])
+    approved_note: Mapped[str] = mapped_column(postgresql.TEXT, server_default="")
 
     purchased_at: Mapped[action_timestamp]
     purchased_by_id: Mapped[UUID | None] = mapped_column(ForeignKey("user.id"))
     purchased_by: Mapped[User | None] = relationship(foreign_keys=[purchased_by_id])
+    purchased_note: Mapped[str] = mapped_column(postgresql.TEXT, server_default="")
 
     installed_at: Mapped[action_timestamp]
     installed_by_id: Mapped[UUID | None] = mapped_column(ForeignKey("user.id"))
     installed_by: Mapped[User | None] = relationship(foreign_keys=[installed_by_id])
+    installed_note: Mapped[str] = mapped_column(postgresql.TEXT, server_default="")
 
     def __init__(
         self,
         *,
         equipment_or_install: LabEquipment | LabEquipmentInstallation,
-        estimated_cost: float | None,
         quantity_required: int = 1,
         funding: ResearchFunding | None = None,
+        estimated_cost: float | None = None,
         reason: str = "",
         purchase_url: str,
         status: ProvisionStatus = ProvisionStatus.REQUESTED,
     ):
+        if status == ProvisionStatus.INSTALLED:
+            if not isinstance(equipment_or_install, LabEquipmentInstallation):
+                raise ValueError("Must provide an installation")
+            if funding is not None:
+                raise ValueError(
+                    "Funding is not applicable to an already installed equipment"
+                )
+            self.installed_note = reason
+
         if isinstance(equipment_or_install, LabEquipmentInstallation):
+            if equipment_or_install.provision_status != status:
+                raise ValueError("Installation must have same provision status")
+
             self.equipment_id = equipment_or_install.equipment_id
             self.installation_id = equipment_or_install.id
             self.lab_id = equipment_or_install.lab_id
@@ -331,30 +352,159 @@ class LabEquipmentProvision(Base):
     def is_final(self):
         return self.status == ProvisionStatus.INSTALLED
 
-    def mark_approved(self, approved_by: User):
+    async def mark_approved(
+        self,
+        *,
+        approved_by: User,
+        approved_note: str,
+        lab: Lab | None = None,
+        funding: ResearchFunding | None = None,
+        estimated_cost: float | None = None,
+    ):
+        db = local_object_session(self)
         if self.status != ProvisionStatus.REQUESTED:
             raise LabEquipmentProvisioningError("provision must be requested")
+
+        equipment = await self.awaitable_attrs.equipment
+        if self.lab_id is None and lab is None:
+            raise LabEquipmentProvisioningError(
+                "lab must be provided on approval if not already set"
+            )
+        lab = cast(
+            Lab,
+            (await self.awaitable_attrs.lab) if self.lab_id is not None else lab,
+        )
+
+        try:
+            current_installation = (
+                await LabEquipmentInstallation.get_current_for_equipment_lab(
+                    db, equipment, lab
+                )
+            )
+        except DoesNotExist:
+            current_installation = LabEquipmentInstallation(
+                id=uuid4(),
+                equipment=equipment,
+                lab=lab,
+                num_installed=0,
+                provision_status=ProvisionStatus.INSTALLED,
+            )
+            db.add(current_installation)
+
+        try:
+            pending_installation = (
+                await LabEquipmentInstallation.get_pending_for_equipment_lab(
+                    db, equipment, lab
+                )
+            )
+            if self.lab_id is None:
+                raise LabEquipmentProvisioningError(
+                    "Provision already in progress for lab {lab.id}"
+                )
+            assert self.installation_id == pending_installation.id
+            pending_installation.provision_status = ProvisionStatus.APPROVED
+        except DoesNotExist:
+            num_pending = current_installation.num_installed + self.quantity_required
+            pending_installation = LabEquipmentInstallation(
+                current_installation,
+                id=uuid4(),
+                provision_status=ProvisionStatus.APPROVED,
+                num_installed=num_pending,
+            )
+        db.add(pending_installation)
+
+        self.lab_id = lab.id
+        self.installation_id = pending_installation.id
+
+        if self.funding_id is None and funding is None:
+            raise LabEquipmentProvisioningError(
+                "funding must be provided on approval if not already provided"
+            )
+
+        self.funding_id = self.funding_id or (cast(ResearchFunding, funding).id)
+
+        if self.estimated_cost is None and estimated_cost is None:
+            raise LabEquipmentProvisioningError(
+                "a cost estimate must be provided on approval if not already provided"
+            )
+        self.estimated_cost = self.estimated_cost or estimated_cost
+
         self.status = ProvisionStatus.APPROVED
         self.approved_by_id = approved_by.id
         self.approved_at = datetime.now()
+        self.approved_note = approved_note
+        db.add(self)
+        await db.commit()
 
-    def mark_purchased(self, purchased_by: User, actual_cost: float):
+    async def mark_purchased(
+        self,
+        *,
+        purchased_by: User,
+        purchased_note: str,
+        actual_cost: float,
+    ):
         if self.status != ProvisionStatus.APPROVED:
             raise LabEquipmentProvisioningError("provision must be approved")
+        db = local_object_session(self)
+
+        if self.installation_id is None:
+            raise LabEquipmentProvisioningError(
+                "No pending installation for approved provision"
+            )
+
+        pending_installation = cast(
+            LabEquipmentInstallation, await self.awaitable_attrs.installation
+        )
+        pending_installation.provision_status = ProvisionStatus.APPROVED
+        db.add(pending_installation)
+
         self.status = ProvisionStatus.PURCHASED
         self.actual_cost = actual_cost
         self.purchased_by_id = purchased_by.id
         self.purchased_at = datetime.now()
+        self.purchased_note = purchased_note
 
-    def mark_installed(self, installed_by: User):
+        db.add(self)
+        await db.commit()
+
+    async def mark_installed(
+        self,
+        *,
+        installed_by: User,
+        installed_note: str,
+    ):
+        db = local_object_session(self)
+
         if self.status != ProvisionStatus.PURCHASED:
             raise LabEquipmentProvisioningError("provision must be purchased")
+
+        if self.installation_id is None:
+            raise LabEquipmentProvisioningError(
+                "No pending install for purchased provision"
+            )
+
+        pending_installation = cast(
+            LabEquipmentInstallation, await self.awaitable_attrs.installation
+        )
+        pending_installation.provision_status = ProvisionStatus.INSTALLED
+        db.add(pending_installation)
+
+        current_installation = cast(
+            LabEquipmentInstallation,
+            await pending_installation.awaitable_attrs.current_install,
+        )
+        current_installation.provision_status = ProvisionStatus.REPLACED
+        db.add(current_installation)
+
         self.status = ProvisionStatus.INSTALLED
         self.installed_by_id = installed_by.id
         self.installed_at = datetime.now()
+        self.installed_note = installed_note
+
+        await db.commit()
 
 
-async def request_provision(
+async def create_new_provision(
     db: LocalSession,
     equipment: LabEquipment,
     lab: Lab | None,
@@ -373,7 +523,10 @@ async def request_provision(
                 )
             )
         except DoesNotExist:
-            current_install = None
+            current_install = LabEquipmentInstallation(
+                equipment=equipment, lab=lab, num_installed=0
+            )
+            db.add(current_install)
 
         try:
             await LabEquipmentProvision.get_active_for_equipment_lab(db, equipment, lab)
@@ -381,7 +534,7 @@ async def request_provision(
         except LabEquipmentProvisionDoesNotExist:
             pass
 
-        current_num_installed = current_install.num_installed if current_install else 0
+        current_num_installed = current_install.num_installed
 
         pending_install = LabEquipmentInstallation(
             current_install,
@@ -413,20 +566,15 @@ async def request_provision(
 async def create_known_install(
     db: LocalSession, equipment: LabEquipment, lab: Lab, num_installed: int
 ) -> LabEquipmentProvision:
-    any_exists = await db.scalars(
+    existing = await db.scalar(
         select(LabEquipmentInstallation).where(
             LabEquipmentInstallation.lab_id == lab.id,
             LabEquipmentInstallation.equipment_id == equipment.id,
         )
     )
-    if any_exists.first() is not None:
-        existing_install = any_exists.first()
-        assert existing_install is not None
+    if existing is not None:
         # Can not import an installation over an existing provision or installation.
-
-        raise LabEquipmentInstallationExists(
-            equipment, lab, existing_install.provision_status
-        )
+        raise LabEquipmentInstallationExists(equipment, lab, existing.provision_status)
 
     installation = LabEquipmentInstallation(
         id=uuid4(),
@@ -441,5 +589,6 @@ async def create_known_install(
         estimated_cost=0,
         purchase_url="",
     )
+    db.add(provision)
     await db.commit()
     return provision

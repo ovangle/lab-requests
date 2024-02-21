@@ -72,28 +72,28 @@ export abstract class ModelService<T extends Model> {
    * @returns
    */
   query(
-    params: HttpParams | { [k: string]: number | string | string[] },
+    params: HttpParams | { [ k: string ]: number | string | string[] },
   ): Observable<T[]> {
     return this.queryPage(params).pipe(map((page) => page.items));
   }
   queryOne(
-    params: HttpParams | { [k: string]: number | string | string[] },
+    params: HttpParams | { [ k: string ]: number | string | string[] },
   ): Observable<T | null> {
     return this.query(params).pipe(
       map((items) => {
         if (items.length > 1) {
           throw new Error('Server returned multiple results');
         }
-        return items[0] || null;
+        return items[ 0 ] || null;
       }),
     );
   }
   protected abstract _doQueryPage(
-    params: HttpParams | { [k: string]: boolean | number | string | string[] }
+    params: HttpParams | { [ k: string ]: boolean | number | string | string[] }
   ): Observable<JsonObject>;
 
   queryPage(
-    params: HttpParams | { [k: string]: number | string | string[] },
+    params: HttpParams | { [ k: string ]: number | string | string[] },
   ): Observable<ModelIndexPage<T>> {
     return this._doQueryPage(params).pipe(
       map(response => this.modelIndexPageFromJsonObject(response)),
@@ -146,7 +146,7 @@ export abstract class RestfulService<T extends Model, TCreate extends {} = {}, T
 
   protected override _doFetch(
     id: string,
-    options?: { params: { [k: string]: any } | HttpParams },
+    options?: { params: { [ k: string ]: any } | HttpParams },
   ): Observable<JsonObject> {
     return this._httpClient.get<JsonObject>(this.resourceUrl(id), {
       params: options?.params,
@@ -154,7 +154,7 @@ export abstract class RestfulService<T extends Model, TCreate extends {} = {}, T
   }
 
   protected override _doQueryPage(
-    params: HttpParams | { [k: string]: string | number | string[] },
+    params: HttpParams | { [ k: string ]: string | number | string[] },
   ): Observable<JsonObject> {
     return this._httpClient
       .get<JsonObject>(this.indexUrl, { params: params })

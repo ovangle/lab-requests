@@ -1,6 +1,6 @@
 import { state } from "@angular/animations";
 import { ChangeDetectorRef, DestroyRef, Injectable, inject } from "@angular/core";
-import { BehaviorSubject, Observable, Subject, combineLatest, distinctUntilChanged, map, scan, shareReplay, startWith } from "rxjs";
+import { BehaviorSubject, Observable, Subject, combineLatest, distinctUntilChanged, distinctUntilKeyChanged, map, scan, shareReplay, startWith } from "rxjs";
 
 
 export interface EquipmentDetailState {
@@ -21,16 +21,25 @@ const initialState: EquipmentDetailState = {
   showDescription: true,
   showDetail: true
 };
+const _stateKeys = [ ...Object.keys(initialState) ] as ReadonlyArray<keyof EquipmentDetailState>;
 
 export function reduceState(
   state: EquipmentDetailState,
   action: (state: EquipmentDetailState) => Partial<EquipmentDetailState>
 ): EquipmentDetailState {
+  debugger;
   const result = action(state);
   return {
     ...state,
     ...result
   };
+}
+
+export function diffStates(
+  a: EquipmentDetailState,
+  b: EquipmentDetailState
+): boolean {
+  return _stateKeys.some(k => a[ k ] !== b[ k ]);
 }
 
 export function setNoSubroute(state: EquipmentDetailState): Partial<EquipmentDetailState> {
@@ -61,32 +70,41 @@ export function setCreateProvisionSubroute(state: EquipmentDetailState): Partial
   };
 }
 
+export function setProvisionDetailSubroute(state: EquipmentDetailState): Partial<EquipmentDetailState> {
+  return {
+    showTagChips: true,
+    updateLinkVisible: false,
+    showDescription: true,
+    showDetail: false
+  }
+}
+
 @Injectable()
 export class EquipmentDetailStateService {
   readonly actionsSubject = new Subject<(state: EquipmentDetailState) => Partial<EquipmentDetailState>>();
 
   readonly state$ = this.actionsSubject.pipe(
     scan(
-      (state, action) => ({ ...state, ...action(state) }),
+      (state, action) => reduceState(state, action),
       initialState
     ),
+    startWith(initialState),
     shareReplay(1)
   )
 
   constructor() {
-    const cdRef = inject(ChangeDetectorRef);
-    const detectChangesSubscription = this.state$.subscribe(() => cdRef.detectChanges());
-
     const destroyRef = inject(DestroyRef);
     destroyRef.onDestroy(() => {
-      this.actionsSubject.complete()
-      detectChangesSubscription.unsubscribe();
+      this.actionsSubject.complete();
     });
 
   }
 
   dispatch(action: EquipmentDetailAction) {
-    this.actionsSubject.next(action);
+    window.setTimeout(() => {
+      console.log('dispatching', action);
+      this.actionsSubject.next(action)
+    });
   }
 
   select<T>(selector: (state: EquipmentDetailState) => T): Observable<T> {

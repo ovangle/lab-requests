@@ -60,7 +60,7 @@ import { EquipmentDetailStateService, setNoSubroute } from "./equipment-detail.s
         />
 
         <equipment-installation-list>
-            <h3 class="list-title">Installations</h3>
+            <div class="list-title">Installations</div>
         </equipment-installation-list>
       }
     }
@@ -84,12 +84,14 @@ export class EquipmentDetailPage {
 
     readonly _equipmentDetailState = inject(EquipmentDetailStateService);
     readonly showTagChips$ = this._equipmentDetailState.select((s) => s.showTagChips);
+
     readonly updateLinkVisible$ = this._equipmentDetailState.select((s) => s.updateLinkVisible);
     readonly updateLinkDisabled$ = this._equipmentDetailState.select((s) => s.updateLinkDisabled);
     readonly showDescription$ = this._equipmentDetailState.select((s) => s.showDescription);
     readonly showDetail$ = this._equipmentDetailState.select((s) => s.showDetail);
 
     _onRouterOutletDeactivate() {
+        debugger;
         this._equipmentDetailState.dispatch(setNoSubroute);
     }
 }

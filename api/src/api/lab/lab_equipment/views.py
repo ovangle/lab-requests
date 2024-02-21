@@ -92,4 +92,4 @@ async def create_equipment_provision(
 ) -> LabEquipmentProvisionView:
     equipment = await LabEquipment.get_for_id(db, equipment_id)
     provision = await request.do_create(db, equipment)
-    return await LabEquipmentProvisionView.from_model(provision)
+    return await LabEquipmentProvisionView.from_model(provision, equipment=equipment)

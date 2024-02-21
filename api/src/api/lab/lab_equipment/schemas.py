@@ -15,7 +15,7 @@ from db.models.lab.lab_equipment import (
     LabEquipmentProvision,
     ProvisionStatus,
     create_known_install,
-    request_provision,
+    create_new_provision,
 )
 from db.models.lab import LabEquipment
 from api.base.schemas import (
@@ -148,12 +148,21 @@ class LabEquipmentInstallationView(ModelView[LabEquipmentInstallation]):
     provision_status: ProvisionStatus
 
     @classmethod
-    async def from_model(cls, model: LabEquipmentInstallation):
-        equipment: LabEquipment = await model.awaitable_attrs.equipment
+    async def from_model(
+        cls,
+        model: LabEquipmentInstallation,
+        *,
+        equipment: LabEquipment | None = None,
+    ):
+        if equipment is not None:
+            equipment_ = equipment
+        else:
+            equipment_ = await model.awaitable_attrs.equipment
+
         return cls(
             id=model.id,
-            equipment=equipment.id,
-            equipment_name=equipment.name,
+            equipment=equipment_.id,
+            equipment_name=equipment_.name,
             lab=model.lab_id,
             provision_status=model.provision_status,
             num_installed=model.num_installed,
@@ -194,21 +203,33 @@ class LabEquipmentProvisionView(ModelView[LabEquipmentProvision]):
     quantity_required: int
 
     @classmethod
-    async def from_model(cls, model: LabEquipmentProvision):
-        if model.installation_id:
-            installation_model = await model.awaitable_attrs.installation
-            installation = await LabEquipmentInstallationView.from_model(
-                installation_model
+    async def from_model(
+        cls,
+        model: LabEquipmentProvision,
+        *,
+        installation: LabEquipmentInstallation | None = None,
+        equipment: LabEquipment | None = None,
+    ):
+        if not installation and model.installation_id:
+            installation = await model.awaitable_attrs.installation
+
+        if installation:
+            installation_view = await LabEquipmentInstallationView.from_model(
+                installation, equipment=equipment
             )
         else:
-            installation = None
+            installation_view = None
+
+        print("equipment_id", model.equipment_id)
+        print("updated_at", model.updated_at)
+        print("created_at", model.created_at)
 
         return cls(
             id=model.id,
             status=model.status,
             reason=model.reason,
             equipment=model.equipment_id,
-            installation=installation,
+            installation=installation_view,
             estimated_cost=model.estimated_cost,
             quantity_required=model.quantity_required,
             created_at=model.created_at,
@@ -254,7 +275,7 @@ class CreateEquipmentProvisionRequest(ModelCreateRequest[LabEquipment]):
         lab = (await self.get_lab(db)) if self.lab else None
 
         if self.status == ProvisionStatus.REQUESTED:
-            return await request_provision(
+            return await create_new_provision(
                 db,
                 equipment,
                 quantity_required=self.quantity_required,
@@ -268,7 +289,7 @@ class CreateEquipmentProvisionRequest(ModelCreateRequest[LabEquipment]):
             if lab is None:
                 raise HTTPException(
                     HTTPStatus.BAD_REQUEST,
-                    "lab must be provided if importing a known install",
+                    detail="lab must be provided if importing a known install",
                 )
 
             return await create_known_install(
@@ -276,7 +297,7 @@ class CreateEquipmentProvisionRequest(ModelCreateRequest[LabEquipment]):
             )
         else:
             raise HTTPException(
-                HTTPStatus.BAD_REQUEST, "status must be installed or requested"
+                HTTPStatus.BAD_REQUEST, detail="status must be installed or requested"
             )
 
 
