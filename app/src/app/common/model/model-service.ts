@@ -17,8 +17,8 @@ import {
   ModelIndexPage,
   modelIndexPageFromJsonObject,
   ModelQuery,
-  ModelCreate,
-  ModelAction,
+  ModelCreateRequest,
+  ModelUpdateRequest,
 } from './model';
 import urlJoin from 'url-join';
 import { Observable, Subject, map, of, tap } from 'rxjs';
@@ -110,13 +110,13 @@ export abstract class ModelService<T extends Model, TQuery extends ModelQuery<T>
 export abstract class RestfulService<
   T extends Model,
   TQuery extends ModelQuery<T> = ModelQuery<T>,
-  TCreate extends ModelCreate<T> = ModelCreate<T>,
-  TAction extends ModelAction<T> = ModelAction<T>
+  TCreate extends ModelCreateRequest<T> = ModelCreateRequest<T>,
+  TUpdate extends ModelUpdateRequest<T> = ModelUpdateRequest<T>
 > extends ModelService<T, TQuery> {
   abstract readonly path: string;
 
   abstract createToJsonObject?(request: TCreate): JsonObject;
-  abstract actionToJsonObject?(request: TAction): JsonObject;
+  abstract actionToJsonObject?(request: TUpdate): JsonObject;
 
   get indexUrl(): string {
     return urlJoin(this._apiBaseUrl, this.path);
@@ -178,7 +178,7 @@ export abstract class RestfulService<
       );
   }
 
-  update(model: T, request: TAction) {
+  update(model: T, request: TUpdate) {
     if (this.actionToJsonObject === undefined) {
       throw new Error('service defines no updateRequestToJsonObject method');
     }

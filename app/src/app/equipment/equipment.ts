@@ -1,8 +1,8 @@
 import { validate as validateIsUUID } from 'uuid';
 import {
   Model,
-  ModelAction,
-  ModelCreate,
+  ModelUpdateRequest,
+  ModelCreateRequest,
   ModelIndexPage,
   ModelParams,
   modelIndexPageFromJsonObject,
@@ -136,7 +136,7 @@ export function equipmentFromJsonObject(json: JsonObject): Equipment {
 }
 
 
-export interface EquipmentUpdateRequest extends ModelAction<Equipment> {
+export interface EquipmentUpdateRequest extends ModelUpdateRequest<Equipment> {
   description: string;
   tags: string[];
   trainingDescriptions: string[];
@@ -148,7 +148,7 @@ function equipmentPatchToJsonObject(patch: EquipmentUpdateRequest) {
   };
 }
 
-export interface EquipmentCreateRequest extends ModelCreate<Equipment> {
+export interface EquipmentCreateRequest extends ModelCreateRequest<Equipment> {
   name: string;
   description: string;
   tags: string[];

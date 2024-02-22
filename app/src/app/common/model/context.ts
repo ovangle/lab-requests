@@ -14,7 +14,7 @@ import {
   ViewRef,
   inject,
 } from '@angular/core';
-import { Model, ModelIndexPage, ModelParams, ModelQuery } from './model';
+import { Model, ModelCreateRequest, ModelIndexPage, ModelParams, ModelQuery } from './model';
 import {
   BehaviorSubject,
   Connectable,
@@ -103,7 +103,7 @@ export abstract class ModelContext<
 export abstract class RelatedModelService<
   TContextModel extends Model,
   T extends Model,
-  TQuery extends ModelQuery<T> = ModelQuery<T>
+  TQuery extends ModelQuery<T> = ModelQuery<T>,
 > extends ModelService<T, TQuery> {
   abstract readonly context: ModelContext<TContextModel>;
   abstract path: string;

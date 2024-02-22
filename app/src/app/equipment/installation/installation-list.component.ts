@@ -100,10 +100,7 @@ import { EquipmentProvision } from "../provision/equipment-provision";
                             <mat-icon>view</mat-icon>
                         </button>
                     )
-
-
-                } @else {
-                }
+                } 
             </span>
         </div>
     </ng-template>

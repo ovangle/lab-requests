@@ -99,9 +99,9 @@ export function injectQueryPage<T extends Model>(
   );
 }
 
-export interface ModelCreate<T extends Model> {
+export interface ModelCreateRequest<T extends Model> {
 }
 
-export interface ModelAction<T extends Model> {
+export interface ModelUpdateRequest<T extends Model> {
 }
 

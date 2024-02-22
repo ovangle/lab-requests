@@ -32,4 +32,5 @@ import { Equipment } from './equipment';
 })
 export class EquipmentInfoComponent {
   @Input() equipment: Equipment | undefined = undefined;
+
 }

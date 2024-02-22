@@ -1,4 +1,4 @@
-import { Model, ModelParams, ModelQuery, modelParamsFromJsonObject } from "src/app/common/model/model";
+import { Model, ModelCreateRequest, ModelParams, ModelQuery, ModelUpdateRequest, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
 import { Equipment, equipmentFromJsonObject, EquipmentService } from "../equipment";
 import { ResearchFunding } from "src/app/research/funding/research-funding";
@@ -93,7 +93,7 @@ function equipmentProvisionQueryToHttpParams(query: EquipmentProvisionQuery) {
 }
 
 
-export interface CreateEquipmentProvisionRequest {
+export interface CreateEquipmentProvisionRequest extends ModelCreateRequest<EquipmentProvision> {
     // The status of the newly created request.
     // It is possible for a newly created provision to skip previous steps
     // if conditions are met for them.
@@ -134,7 +134,7 @@ export function createEquipmentProvisionRequestToJson(request: CreateEquipmentPr
     };
 }
 
-export interface EquipmentProvisionApprovalRequest {
+export interface EquipmentProvisionApprovalRequest extends ModelUpdateRequest<EquipmentProvision> {
     // After approval, the lab must be known.
     lab: Lab;
 
@@ -149,7 +149,7 @@ export function equipmentProvisionApprovalRequestToJsonObject(request: Equipment
     return request;
 }
 
-export interface EquipmentProvisionPurchasedRequest {
+export interface EquipmentProvisionPurchasedRequest extends ModelUpdateRequest<EquipmentProvision> {
     readonly provisionStatus: 'purchased';
 }
 
@@ -157,7 +157,7 @@ export function equipmentProvisionPurchasedRequestToJsonObject(request: Equipmen
     return request;
 }
 
-export interface EquipmentProvisionInstalledRequest {
+export interface EquipmentProvisionInstalledRequest extends ModelUpdateRequest<EquipmentProvision> {
     readonly provisionStatus: 'installed';
     readonly lab: Lab;
     readonly notes: string[];
