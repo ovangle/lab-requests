@@ -11,7 +11,7 @@ import { Injectable, inject } from "@angular/core";
 import { EquipmentContext } from "../equipment-context";
 import { RelatedModelService } from "src/app/common/model/context";
 
-export interface LabEquipmentProvisionParams extends ModelParams {
+export interface EquipmentProvisionParams extends ModelParams {
     status: ProvisionStatus;
     equipmentId: string;
     equipment: Equipment | null;
@@ -19,14 +19,14 @@ export interface LabEquipmentProvisionParams extends ModelParams {
     reason: string;
 }
 
-export class LabEquipmentProvision extends Model implements LabEquipmentProvisionParams {
+export class EquipmentProvision extends Model implements EquipmentProvisionParams {
     status: ProvisionStatus;
     equipmentId: string;
     equipment: Equipment | null;
     installation: EquipmentInstallation | null;
     reason: string;
 
-    constructor(params: LabEquipmentProvisionParams) {
+    constructor(params: EquipmentProvisionParams) {
         super(params);
         this.status = params.status;
         this.equipmentId = params.equipmentId;
@@ -47,7 +47,7 @@ export class LabEquipmentProvision extends Model implements LabEquipmentProvisio
     }
 }
 
-export function labEquipmentProvisionFromJsonObject(json: JsonObject): LabEquipmentProvision {
+export function equipmentProvisionFromJsonObject(json: JsonObject): EquipmentProvision {
     const baseParams = modelParamsFromJsonObject(json);
 
     if (!isProvisionStatus(json['status'])) {
@@ -75,7 +75,7 @@ export function labEquipmentProvisionFromJsonObject(json: JsonObject): LabEquipm
         throw new Error("Expected a string 'reason'");
     }
 
-    return new LabEquipmentProvision({
+    return new EquipmentProvision({
         ...baseParams,
         status: json['status'],
         equipmentId,
@@ -85,7 +85,7 @@ export function labEquipmentProvisionFromJsonObject(json: JsonObject): LabEquipm
     });
 }
 
-export interface EquipmentProvisionQuery extends ModelQuery<LabEquipmentProvision> {
+export interface EquipmentProvisionQuery extends ModelQuery<EquipmentProvision> {
 
 }
 function equipmentProvisionQueryToHttpParams(query: EquipmentProvisionQuery) {
@@ -169,9 +169,9 @@ export function equipmentProvisionInstalledRequestToJsonObject(request: Equipmen
 
 
 @Injectable()
-export class EquipmentProvisionService extends RelatedModelService<Equipment, LabEquipmentProvision, EquipmentProvisionQuery> {
+export class EquipmentProvisionService extends RelatedModelService<Equipment, EquipmentProvision, EquipmentProvisionQuery> {
     override readonly context = inject(EquipmentContext);
-    override readonly modelFromJsonObject = labEquipmentProvisionFromJsonObject;
+    override readonly modelFromJsonObject = equipmentProvisionFromJsonObject;
     override readonly modelQueryToHttpParams = equipmentProvisionQueryToHttpParams;
     override readonly path = 'provisions';
 
@@ -192,11 +192,11 @@ export class EquipmentProvisionService extends RelatedModelService<Equipment, La
      * @param provision 
      * @param request 
      */
-    reset(provision: LabEquipmentProvision, request: CreateEquipmentProvisionRequest) {
+    reset(provision: EquipmentProvision, request: CreateEquipmentProvisionRequest) {
         throw new Error('not implemented');
     }
 
-    approve(provision: LabEquipmentProvision, request: EquipmentProvisionApprovalRequest) {
+    approve(provision: EquipmentProvision, request: EquipmentProvisionApprovalRequest) {
         return this.resourceUrl(provision.id).pipe(
             switchMap(resourceUrl =>
                 this._httpClient.post<JsonObject>(
@@ -209,7 +209,7 @@ export class EquipmentProvisionService extends RelatedModelService<Equipment, La
         );
     }
 
-    purchase(provision: LabEquipmentProvision, request: EquipmentProvisionPurchasedRequest) {
+    purchase(provision: EquipmentProvision, request: EquipmentProvisionPurchasedRequest) {
         return this.resourceUrl(provision.id).pipe(
             switchMap(resourceUrl => this._httpClient.put<JsonObject>(
                 resourceUrl,
@@ -220,7 +220,7 @@ export class EquipmentProvisionService extends RelatedModelService<Equipment, La
         );
     }
 
-    install(provision: LabEquipmentProvision, request: EquipmentProvisionInstalledRequest) {
+    install(provision: EquipmentProvision, request: EquipmentProvisionInstalledRequest) {
         return this.resourceUrl(provision.id).pipe(
             first(),
             switchMap(resourceUrl => this._httpClient.post<JsonObject>(

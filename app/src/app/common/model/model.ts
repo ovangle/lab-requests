@@ -99,7 +99,9 @@ export function injectQueryPage<T extends Model>(
   );
 }
 
+export interface ModelCreate<T extends Model> {
+}
+
 export interface ModelAction<T extends Model> {
-  readonly name: string;
 }
 

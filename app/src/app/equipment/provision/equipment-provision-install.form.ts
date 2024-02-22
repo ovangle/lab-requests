@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output, inject } from "@angular/core";
-import { LabEquipmentProvision } from "./equipment-provision";
+import { EquipmentProvision } from "./equipment-provision";
 
 
 @Component({
@@ -9,8 +9,8 @@ import { LabEquipmentProvision } from "./equipment-provision";
 })
 export class EquipmentProvisionInstallFormComponent {
   @Input({ required: true })
-  equipmentProvision: LabEquipmentProvision | undefined;
+  equipmentProvision: EquipmentProvision | undefined;
 
   @Output()
-  save = new EventEmitter<LabEquipmentProvision>();
+  save = new EventEmitter<EquipmentProvision>();
 }

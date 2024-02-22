@@ -18,7 +18,7 @@ import { RouterModule } from "@angular/router";
 import { MatCardModule } from "@angular/material/card";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 import { MatButtonModule } from "@angular/material/button";
-import { LabEquipmentProvision } from "../provision/equipment-provision";
+import { EquipmentProvision } from "../provision/equipment-provision";
 
 
 @Component({
@@ -173,7 +173,7 @@ export class EquipmentInstallationListComponent {
         this.equipment$,
         this.filterLab$
     ]).pipe(
-        map(([ equipment, lab ]) => {
+        map(([equipment, lab]) => {
             return equipment.installations.filter(
                 installation => lab == null ? true : installation.labId == lab.id
             );

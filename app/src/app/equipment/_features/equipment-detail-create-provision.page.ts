@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { CommonModule } from "@angular/common";
 import { Observable, map, of } from "rxjs";
 import { Equipment } from "../equipment";
-import { LabEquipmentProvision } from "../provision/equipment-provision";
+import { EquipmentProvision } from "../provision/equipment-provision";
 import { CreateEquipmentProvisionForm } from "../provision/create-equipment-provision.form";
 import { EquipmentDetailStateService, setCreateProvisionSubroute } from "./equipment-detail.state";
 
@@ -36,7 +36,7 @@ export class EquipmentDetailCreateProvisionPage {
     this._equipmentDetailState.dispatch(setCreateProvisionSubroute);
   }
 
-  async _onProvisionSave(_: LabEquipmentProvision) {
+  async _onProvisionSave(_: EquipmentProvision) {
     await this._equipmentContext.refresh();
     this.router.navigate(['..'], { relativeTo: this.route });
   }

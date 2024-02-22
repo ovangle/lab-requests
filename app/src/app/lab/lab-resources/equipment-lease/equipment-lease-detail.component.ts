@@ -8,7 +8,7 @@ import {
   EquipmentService,
 } from 'src/app/equipment/equipment';
 import { LabEquipmentProvisionInfoComponent } from '../../equipment/equipment-provision-card.component';
-import { LabEquipmentProvision } from '../../../equipment/provision/equipment-provision';
+import { EquipmentProvision } from '../../../equipment/provision/equipment-provision';
 import { EquipmentInfoComponent } from 'src/app/equipment/equipment-info.component';
 
 @Component({
@@ -44,7 +44,7 @@ export class EquipmentLeaseDetailComponent {
       return of(null);
     }
   }
-  get equipmentProvision(): LabEquipmentProvision | null {
+  get equipmentProvision(): EquipmentProvision | null {
     if (
       this.lease!.equipment instanceof Equipment ||
       typeof this.lease!.equipment === 'string'

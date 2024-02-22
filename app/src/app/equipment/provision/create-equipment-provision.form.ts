@@ -16,7 +16,7 @@ import { LabEquipmentListComponent } from "src/app/lab/equipment/lab-equipment-l
 import { EquipmentInstallationInfoComponent } from "../installation/equipment-installation-info.component";
 import { EquipmentProvisionInfoComponent } from "./equipment-provision-info.component";
 import { ResizeTextareaOnInputDirective } from "src/app/common/forms/resize-textarea-on-input.directive";
-import { LabEquipmentProvision, EquipmentProvisionService, CreateEquipmentProvisionRequest } from "./equipment-provision";
+import { EquipmentProvision, EquipmentProvisionService, CreateEquipmentProvisionRequest } from "./equipment-provision";
 import { EquipmentCreateRequest } from "../equipment";
 import { ProvisionStatus, isProvisionStatus } from "./provision-status";
 import { ProvisionStatusPipe } from "./provision-status.pipe";
@@ -174,7 +174,7 @@ export class CreateEquipmentProvisionForm {
     cost: costEstimateForm(),
     quantityRequired: new FormControl<number>(1, {
       nonNullable: true,
-      validators: [ Validators.required, Validators.min(1) ]
+      validators: [Validators.required, Validators.min(1)]
     })
   });
 
@@ -189,7 +189,7 @@ export class CreateEquipmentProvisionForm {
   _lab: Lab | null = null;
 
   @Output()
-  save = new EventEmitter<LabEquipmentProvision>();
+  save = new EventEmitter<EquipmentProvision>();
 
   get initialStatus() {
     return this.form.value.status!;
@@ -204,7 +204,7 @@ export class CreateEquipmentProvisionForm {
     this.equipment$,
     this.provisionLab$,
   ]).pipe(
-    map(([ equipment, lab ]) => equipment.currentLabInstallation(lab))
+    map(([equipment, lab]) => equipment.currentLabInstallation(lab))
   );
 
   @Input()

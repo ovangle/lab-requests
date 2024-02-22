@@ -17,6 +17,8 @@ import {
   ModelIndexPage,
   modelIndexPageFromJsonObject,
   ModelQuery,
+  ModelCreate,
+  ModelAction,
 } from './model';
 import urlJoin from 'url-join';
 import { Observable, Subject, map, of, tap } from 'rxjs';
@@ -108,13 +110,13 @@ export abstract class ModelService<T extends Model, TQuery extends ModelQuery<T>
 export abstract class RestfulService<
   T extends Model,
   TQuery extends ModelQuery<T> = ModelQuery<T>,
-  TCreate extends {} = {},
-  TUpdate extends {} = {}
+  TCreate extends ModelCreate<T> = ModelCreate<T>,
+  TAction extends ModelAction<T> = ModelAction<T>
 > extends ModelService<T, TQuery> {
   abstract readonly path: string;
 
-  abstract createRequestToJsonObject?(request: TCreate): JsonObject;
-  abstract updateRequestToJsonObject?(request: TUpdate): JsonObject;
+  abstract createToJsonObject?(request: TCreate): JsonObject;
+  abstract actionToJsonObject?(request: TAction): JsonObject;
 
   get indexUrl(): string {
     return urlJoin(this._apiBaseUrl, this.path);
@@ -164,10 +166,10 @@ export abstract class RestfulService<
   }
 
   create(request: TCreate): Observable<T> {
-    if (this.createRequestToJsonObject === undefined) {
+    if (this.createToJsonObject === undefined) {
       throw new Error("service defines no createRequestToJsonObject method")
     }
-    const body = this.createRequestToJsonObject(request);
+    const body = this.createToJsonObject(request);
 
     return this._httpClient
       .post<JsonObject>(this.indexUrl, body).pipe(
@@ -176,11 +178,11 @@ export abstract class RestfulService<
       );
   }
 
-  update(model: T, request: TUpdate) {
-    if (this.updateRequestToJsonObject === undefined) {
+  update(model: T, request: TAction) {
+    if (this.actionToJsonObject === undefined) {
       throw new Error('service defines no updateRequestToJsonObject method');
     }
-    const body = this.updateRequestToJsonObject(request);
+    const body = this.actionToJsonObject(request);
     return this._httpClient.put<JsonObject>(this.resourceUrl(model.id), body).pipe(
       map(response => this.modelFromJsonObject(response)),
       this._cacheOne

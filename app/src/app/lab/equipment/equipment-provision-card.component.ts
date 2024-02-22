@@ -1,6 +1,6 @@
 import { CommonModule } from "@angular/common";
 import { Component, Input, inject } from "@angular/core";
-import { LabEquipmentProvision } from "../../equipment/provision/equipment-provision";
+import { EquipmentProvision } from "../../equipment/provision/equipment-provision";
 import { MatCardModule } from "@angular/material/card";
 import { Equipment, EquipmentService } from "src/app/equipment/equipment";
 
@@ -28,6 +28,6 @@ export class LabEquipmentProvisionInfoComponent {
     readonly equipmentService = inject(EquipmentService);
 
     @Input({ required: true })
-    provision: LabEquipmentProvision | undefined;
+    provision: EquipmentProvision | undefined;
 
 }

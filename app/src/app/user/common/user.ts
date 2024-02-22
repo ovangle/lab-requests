@@ -271,8 +271,8 @@ export class UserService extends RestfulService<User, UserQuery> {
 
   override readonly modelFromJsonObject = userFromJsonObject;
   override readonly modelQueryToHttpParams = userQueryToHttpParams;
-  override createRequestToJsonObject = undefined;
-  override updateRequestToJsonObject = undefined;
+  override createToJsonObject = undefined;
+  override actionToJsonObject = undefined;
 
   me(): Observable<CurrentUser> {
     return this._httpClient

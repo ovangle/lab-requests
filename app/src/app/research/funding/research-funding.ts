@@ -107,8 +107,8 @@ function lookupName(lookup: string | ResearchFundingLookup): string | null {
 export class ResearchFundingService extends RestfulService<ResearchFunding, ResearchFundingQuery> {
   override readonly modelFromJsonObject = researchFundingFromJsonObject;
   override readonly modelQueryToHttpParams = researchFundingQueryToHttpParams;
-  override readonly createRequestToJsonObject = undefined;
-  override readonly updateRequestToJsonObject = undefined;
+  override readonly createToJsonObject = undefined;
+  override readonly actionToJsonObject = undefined;
 
   override readonly path: string = '/research/funding';
 

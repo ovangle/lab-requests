@@ -14,7 +14,7 @@ import { User, userFromJsonObject } from 'src/app/user/common/user';
 import { Injectable, Type } from '@angular/core';
 import { RestfulService } from '../common/model/model-service';
 import { EquipmentInstallation, equipmentInstallationFromJsonObject } from '../equipment/installation/equipment-installation';
-import { LabEquipmentProvision, labEquipmentProvisionFromJsonObject } from '../equipment/provision/equipment-provision';
+import { EquipmentProvision, equipmentProvisionFromJsonObject } from '../equipment/provision/equipment-provision';
 import { Equipment } from '../equipment/equipment';
 import { HttpParams } from '@angular/common/http';
 
@@ -84,7 +84,7 @@ function labQueryToHttpParams(query: LabQuery) {
 
 export interface LabProfileParams extends LabParams {
   readonly equipmentInstallPage: ModelIndexPage<EquipmentInstallation>;
-  readonly equipmentProvisionPage: ModelIndexPage<LabEquipmentProvision>;
+  readonly equipmentProvisionPage: ModelIndexPage<EquipmentProvision>;
 }
 
 export class LabProfile extends Lab implements LabProfileParams {
@@ -92,7 +92,7 @@ export class LabProfile extends Lab implements LabProfileParams {
   get equipmentInstalls() {
     return this.equipmentInstallPage.items;
   }
-  readonly equipmentProvisionPage: ModelIndexPage<LabEquipmentProvision>;
+  readonly equipmentProvisionPage: ModelIndexPage<EquipmentProvision>;
   get equipmentProvisions() {
     return this.equipmentProvisionPage.items;
   }
@@ -108,7 +108,7 @@ export class LabProfile extends Lab implements LabProfileParams {
       .find(install => install.equipmentId) || null;
   }
 
-  getProvision(equipment: Equipment): LabEquipmentProvision | null {
+  getProvision(equipment: Equipment): EquipmentProvision | null {
     return this.equipmentProvisions
       .find(provision => provision.equipmentId == equipment.id) || null;
   }
@@ -129,7 +129,7 @@ export function labProfileFromJsonObject(object: JsonObject) {
     throw new Error("Expected a json object 'equipmentProvisions'");
   }
   const equipmentProvisionPage = modelIndexPageFromJsonObject(
-    labEquipmentProvisionFromJsonObject,
+    equipmentProvisionFromJsonObject,
     object['equipmentProvisions'],
   );
 
@@ -146,7 +146,7 @@ export class LabService extends RestfulService<Lab>{
   override path: string = '/labs/lab';
   override readonly modelFromJsonObject = labFromJsonObject;
   override readonly modelQueryToHttpParams = labQueryToHttpParams;
-  override readonly createRequestToJsonObject = undefined;
-  override readonly updateRequestToJsonObject = undefined;
+  override readonly createToJsonObject = undefined;
+  override readonly actionToJsonObject = undefined;
 
 }

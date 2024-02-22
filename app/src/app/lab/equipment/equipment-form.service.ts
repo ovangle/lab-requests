@@ -36,7 +36,7 @@ export function equipmentForm(): EquipmentForm {
   return new FormGroup({
     name: new FormControl<string>('', {
       nonNullable: true,
-      validators: [ Validators.required ],
+      validators: [Validators.required],
       asyncValidators: [
         (c) => equipmentNameUniqueValidator(c as FormControl<string>),
       ],

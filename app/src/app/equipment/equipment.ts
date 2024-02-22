@@ -1,6 +1,8 @@
 import { validate as validateIsUUID } from 'uuid';
 import {
   Model,
+  ModelAction,
+  ModelCreate,
   ModelIndexPage,
   ModelParams,
   modelIndexPageFromJsonObject,
@@ -13,14 +15,14 @@ import { ModelContext } from 'src/app/common/model/context';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { Lab } from '../lab/lab';
 import { EquipmentInstallation, equipmentInstallationFromJsonObject } from './installation/equipment-installation';
-import { CreateEquipmentProvisionRequest, LabEquipmentProvision, labEquipmentProvisionFromJsonObject } from './provision/equipment-provision';
+import { CreateEquipmentProvisionRequest, EquipmentProvision, equipmentProvisionFromJsonObject } from './provision/equipment-provision';
 
 export interface EquipmentParams extends ModelParams {
   name: string;
   description: string;
   tags: string[];
   trainingDescriptions: string[];
-  activeProvisionsPage: ModelIndexPage<LabEquipmentProvision>;
+  activeProvisionsPage: ModelIndexPage<EquipmentProvision>;
   installationPage: ModelIndexPage<EquipmentInstallation>;
 }
 
@@ -40,7 +42,7 @@ export class Equipment extends Model {
     return this.installationsPage.items;
   }
 
-  activeProvisionsPage: ModelIndexPage<LabEquipmentProvision>;
+  activeProvisionsPage: ModelIndexPage<EquipmentProvision>;
   get activeProvisions() {
     return this.activeProvisionsPage.items;
   }
@@ -71,13 +73,13 @@ export class Equipment extends Model {
       .find(install => install.isPendingInstallation) || null;
   }
 
-  activeUnallocatedProvisions(): LabEquipmentProvision[] {
+  activeUnallocatedProvisions(): EquipmentProvision[] {
     return this.activeProvisions.filter(
       provision => provision.installation == null
     );
   }
 
-  activeProvision(lab: Lab): LabEquipmentProvision | null {
+  activeProvision(lab: Lab): EquipmentProvision | null {
     return this.activeProvisions.find(
       provision => provision.installation?.labId === lab.id && provision.isActive
     ) || null;
@@ -118,7 +120,7 @@ export function equipmentFromJsonObject(json: JsonObject): Equipment {
     throw new Error("Expected a json object 'activeProvisions'");
   }
   const activeProvisionsPage = modelIndexPageFromJsonObject(
-    labEquipmentProvisionFromJsonObject,
+    equipmentProvisionFromJsonObject,
     json['activeProvisions']
   );
 
@@ -134,7 +136,7 @@ export function equipmentFromJsonObject(json: JsonObject): Equipment {
 }
 
 
-export interface EquipmentUpdateRequest {
+export interface EquipmentUpdateRequest extends ModelAction<Equipment> {
   description: string;
   tags: string[];
   trainingDescriptions: string[];
@@ -146,7 +148,7 @@ function equipmentPatchToJsonObject(patch: EquipmentUpdateRequest) {
   };
 }
 
-export interface EquipmentCreateRequest {
+export interface EquipmentCreateRequest extends ModelCreate<Equipment> {
   name: string;
   description: string;
   tags: string[];
@@ -155,7 +157,7 @@ export interface EquipmentCreateRequest {
   initialProvisions?: CreateEquipmentProvisionRequest[];
 }
 
-export function equipmentCreateRequestToJsonObject(request: EquipmentCreateRequest): JsonObject {
+export function equipmentCreateToJsonObject(request: EquipmentCreateRequest): JsonObject {
   return {
     ...request
   };
@@ -188,7 +190,7 @@ export class EquipmentService extends RestfulService<Equipment, EquipmentQuery, 
   override path = '/labs/equipment';
   override readonly modelFromJsonObject = equipmentFromJsonObject;
   override readonly modelQueryToHttpParams = equipmentQueryToHttpParams;
-  override readonly createRequestToJsonObject = equipmentCreateRequestToJsonObject;
-  override readonly updateRequestToJsonObject = equipmentPatchToJsonObject;
+  override readonly createToJsonObject = equipmentCreateToJsonObject;
+  override readonly actionToJsonObject = equipmentPatchToJsonObject;
 }
 

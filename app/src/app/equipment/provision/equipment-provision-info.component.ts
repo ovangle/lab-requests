@@ -1,5 +1,5 @@
 import { Component, Input, inject } from "@angular/core";
-import { LabEquipmentProvision } from "./equipment-provision";
+import { EquipmentProvision } from "./equipment-provision";
 import { ProvisionStatus } from "./provision-status";
 import { BehaviorSubject } from "rxjs";
 import { CommonModule } from "@angular/common";
@@ -62,7 +62,7 @@ export class EquipmentProvisionInfoComponent {
   readonly equipmentContext = inject(EquipmentContext);
 
   @Input({ required: true })
-  equipmentProvision: LabEquipmentProvision | undefined;
+  equipmentProvision: EquipmentProvision | undefined;
 
   get status(): ProvisionStatus {
     return this.equipmentProvision!.status;
@@ -71,7 +71,7 @@ export class EquipmentProvisionInfoComponent {
   readonly nextStatusSubject = new BehaviorSubject<ProvisionStatus | null>(null);
   readonly nextStatus$ = this.nextStatusSubject.asObservable();
 
-  _onProvisionSave(saved: LabEquipmentProvision) {
+  _onProvisionSave(saved: EquipmentProvision) {
     this.equipmentProvision = saved;
     this.equipmentContext.refresh();
   }

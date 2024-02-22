@@ -22,7 +22,7 @@ import { Equipment, EquipmentService } from 'src/app/equipment/equipment';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { injectMaybeLabFromContext } from '../../lab-context';
 import { Lab } from '../../lab';
-import { LabEquipmentProvision } from '../../../equipment/provision/equipment-provision';
+import { EquipmentProvision } from '../../../equipment/provision/equipment-provision';
 import { CostEstimate } from 'src/app/research/funding/cost-estimate/cost-estimate';
 import { ResourceFormComponent } from '../../lab-resource/abstract-resource-form.component';
 import { ResourceParams } from '../../lab-resource/resource';
@@ -44,7 +44,7 @@ function equipmentLeaseForm(
   return new FormGroup({
     equipment: new FormControl<Equipment | NotFoundValue | null>(
       lease?.equipment || (null as any),
-      { validators: [ Validators.required ] },
+      { validators: [Validators.required] },
     ),
     equipmentTrainingCompleted: new FormControl<string[]>(
       lease?.equipmentTrainingCompleted || [],
@@ -123,7 +123,7 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
     return equipmentLeaseForm(committed);
   }
 
-  async getPatch(patchParams: ResourceParams, value: EquipmentLeaseForm[ 'value' ]): Promise<EquipmentLease> {
+  async getPatch(patchParams: ResourceParams, value: EquipmentLeaseForm['value']): Promise<EquipmentLease> {
     const equipment = await firstValueFrom(this.selectedEquipment$);
     const equipmentProvision = this._createdProvisionSubject.value;
 
@@ -157,9 +157,9 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
     })
   );
 
-  readonly _createdProvisionSubject = new BehaviorSubject<LabEquipmentProvision | null>(null);
+  readonly _createdProvisionSubject = new BehaviorSubject<EquipmentProvision | null>(null);
   readonly createdProvision$ = this._createdProvisionSubject.pipe(
-    filter((p): p is LabEquipmentProvision => p != null),
+    filter((p): p is EquipmentProvision => p != null),
   )
   readonly createdProvisionEquipment$ = this.createdProvision$.pipe(
     switchMap(provision => this._equipments.fetch(provision.equipmentId))

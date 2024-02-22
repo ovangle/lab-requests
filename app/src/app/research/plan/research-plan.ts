@@ -176,8 +176,8 @@ function researchPlanQueryToHttpParams(query: Partial<ResearchPlanQuery>): HttpP
 export class ResearchPlanService extends RestfulService<ResearchPlan, ResearchPlanQuery, CreateResearchPlan> {
   override readonly modelFromJsonObject = researchPlanFromJsonObject;
   override readonly modelQueryToHttpParams = researchPlanQueryToHttpParams;
-  override readonly createRequestToJsonObject = createResearchPlanToJsonObject;
-  override readonly updateRequestToJsonObject = undefined;
+  override readonly createToJsonObject = createResearchPlanToJsonObject;
+  override readonly actionToJsonObject = undefined;
   override path = '/research/plan';
 }
 
