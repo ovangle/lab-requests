@@ -62,10 +62,9 @@ export class EquipmentSearchComponent implements ModelSearchComponent<Equipment>
   }
 
   getModelOptions(search: string) {
-    return this.equipments.query(equipmentQueryToHttpParams({
-      installedInLab: this.inLab,
+    return this.equipments.query({
       name: search
-    }));
+    });
   }
   formatModel(equipment: Equipment) {
     return equipment.name;

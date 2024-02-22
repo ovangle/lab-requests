@@ -4,6 +4,7 @@ import {
   ModelParams,
   ModelIndexPage,
   modelParamsFromJsonObject,
+  ModelQuery,
 } from 'src/app/common/model/model';
 import { RestfulService } from 'src/app/common/model/model-service';
 import { HttpParams } from '@angular/common/http';
@@ -52,6 +53,18 @@ export class Campus extends Model implements CampusParams {
     this.code = params.code;
     this.name = params.name;
   }
+
+  match(lookup: string | CampusLookup) {
+    const id = campusIdFromCampusLookup(lookup);
+    if (id) {
+      return this.id === id;
+    }
+    const code = campusCodeFromCampusLookup(lookup);
+    if (code) {
+      return this.code === code;
+    }
+    return false;
+  }
 }
 
 export type CampusFmt = 'code' | 'name' | 'full';
@@ -70,6 +83,7 @@ export function formatCampus(
     default:
       throw new Error(`Invalid format ${format}`);
   }
+
 }
 
 export interface CampusLookup {
@@ -77,61 +91,64 @@ export interface CampusLookup {
   code?: CampusCode;
 }
 
-export function campusIdFromCampusLookup(lookup: CampusLookup | string) {
+function campusIdFromCampusLookup(lookup: CampusLookup | string) {
   if (typeof lookup === 'string') {
     return lookup;
   }
   return lookup.id || null;
 }
 
-export function campusCodeFromCampusLookup(lookup: CampusLookup | string) {
+function campusCodeFromCampusLookup(lookup: CampusLookup | string) {
   if (typeof lookup === 'string') {
     return null;
   }
   return lookup.code || null;
 }
 
-function campusLookupToHttpParams(lookup: CampusLookup) {
-  let params = new HttpParams();
-  if (lookup.id) {
-    params = params.set('id', lookup.id);
-  }
-  if (lookup.code) {
-    params = params.set('code_eq', lookup.code);
-  }
-  return params;
-}
-
-export interface CampusQuery extends CampusLookup {
+export interface CampusQuery extends ModelQuery<Campus> {
+  code?: string;
   textLike?: string;
 }
 
 export function campusQueryToHttpParams(
-  lookup: Partial<CampusQuery>,
+  query: Partial<CampusQuery>,
 ): HttpParams {
-  let params = campusLookupToHttpParams(lookup);
-  if (lookup.code) {
-    params = params.set('code_eq', lookup.code);
+  let params = new HttpParams()
+  if (query.code) {
+    params = params.set('code_eq', query.code);
   }
-  if (lookup.textLike) {
-    params = params.set('text_like', lookup.textLike);
+  if (query.textLike) {
+    params = params.set('text_like', query.textLike);
   }
   return params;
 }
 
 @Injectable({ providedIn: 'root' })
-export class CampusService extends RestfulService<Campus> {
-  override modelFromJsonObject = campusFromJsonObject;
+export class CampusService extends RestfulService<Campus, CampusQuery> {
+  override readonly modelFromJsonObject = campusFromJsonObject;
+  override readonly modelQueryToHttpParams = campusQueryToHttpParams;
   override readonly createRequestToJsonObject = undefined;
   override readonly updateRequestToJsonObject = undefined;
   override path = '/uni/campuses';
 
-  lookup(lookup: string | CampusLookup): Observable<Campus | null> {
-    if (typeof lookup === 'string') {
-      return this.fetch(lookup);
-    } else {
-      return this.queryOne(campusLookupToHttpParams(lookup));
+  lookup(lookup: string | CampusLookup, { useCache } = { useCache: true }): Observable<Campus | null> {
+    if (useCache) {
+      for (const _value of this._cache.values()) {
+        if (_value.match(lookup)) {
+          return of(_value);
+        }
+      }
     }
+
+    const id = campusIdFromCampusLookup(lookup);
+    if (id) {
+      return this.fetch(id);
+    }
+    const code = campusCodeFromCampusLookup(lookup);
+    if (code) {
+      return this.queryOne({ code });
+    }
+    throw new Error("Invalid campus lookup.");
   }
 
 }

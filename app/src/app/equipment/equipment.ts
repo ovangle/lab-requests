@@ -3,7 +3,6 @@ import {
   Model,
   ModelIndexPage,
   ModelParams,
-  ModelPatch,
   modelIndexPageFromJsonObject,
   modelParamsFromJsonObject,
 } from 'src/app/common/model/model';
@@ -89,46 +88,46 @@ export class Equipment extends Model {
 export function equipmentFromJsonObject(json: JsonObject): Equipment {
   const baseParams = modelParamsFromJsonObject(json);
 
-  if (typeof json[ 'name' ] !== 'string') {
+  if (typeof json['name'] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
-  if (typeof json[ 'description' ] !== 'string') {
+  if (typeof json['description'] !== 'string') {
     throw new Error("Expected a string 'description'");
   }
   if (
-    !Array.isArray(json[ 'tags' ]) ||
-    !json[ 'tags' ].every((t) => typeof t === 'string')
+    !Array.isArray(json['tags']) ||
+    !json['tags'].every((t) => typeof t === 'string')
   ) {
     throw new Error("Expected an array of strings 'tags'");
   }
   if (
-    !Array.isArray(json[ 'trainingDescriptions' ]) ||
-    !json[ 'trainingDescriptions' ].every((t) => typeof t === 'string')
+    !Array.isArray(json['trainingDescriptions']) ||
+    !json['trainingDescriptions'].every((t) => typeof t === 'string')
   ) {
     throw new Error("Expected an array of strings 'trainingDescriptions");
   }
-  if (!isJsonObject(json[ 'installations' ])) {
+  if (!isJsonObject(json['installations'])) {
     throw new Error("Expected a json object 'installations'")
   }
   const installationPage = modelIndexPageFromJsonObject(
     equipmentInstallationFromJsonObject,
-    json[ 'installations' ]
+    json['installations']
   );
 
-  if (!isJsonObject(json[ 'activeProvisions' ])) {
+  if (!isJsonObject(json['activeProvisions'])) {
     throw new Error("Expected a json object 'activeProvisions'");
   }
   const activeProvisionsPage = modelIndexPageFromJsonObject(
     labEquipmentProvisionFromJsonObject,
-    json[ 'activeProvisions' ]
+    json['activeProvisions']
   );
 
   return new Equipment({
     ...baseParams,
-    name: json[ 'name' ],
-    description: json[ 'description' ],
-    tags: json[ 'tags' ],
-    trainingDescriptions: json[ 'trainingDescriptions' ],
+    name: json['name'],
+    description: json['description'],
+    tags: json['tags'],
+    trainingDescriptions: json['trainingDescriptions'],
     activeProvisionsPage: activeProvisionsPage,
     installationPage,
   });
@@ -185,9 +184,10 @@ export function equipmentQueryToHttpParams(query: Partial<EquipmentQuery>) {
 }
 
 @Injectable({ providedIn: 'root' })
-export class EquipmentService extends RestfulService<Equipment, EquipmentCreateRequest, EquipmentUpdateRequest> {
+export class EquipmentService extends RestfulService<Equipment, EquipmentQuery, EquipmentCreateRequest, EquipmentUpdateRequest> {
   override path = '/labs/equipment';
-  override modelFromJsonObject = equipmentFromJsonObject;
+  override readonly modelFromJsonObject = equipmentFromJsonObject;
+  override readonly modelQueryToHttpParams = equipmentQueryToHttpParams;
   override readonly createRequestToJsonObject = equipmentCreateRequestToJsonObject;
   override readonly updateRequestToJsonObject = equipmentPatchToJsonObject;
 }

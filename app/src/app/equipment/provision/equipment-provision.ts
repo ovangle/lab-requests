@@ -1,18 +1,15 @@
-import { Model, ModelIndexPage, ModelParams, ModelPatch, modelParamsFromJsonObject } from "src/app/common/model/model";
+import { Model, ModelParams, ModelQuery, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
-import { Equipment, EquipmentCreateRequest, equipmentCreateRequestToJsonObject, equipmentFromJsonObject, EquipmentUpdateRequest, EquipmentService } from "../equipment";
+import { Equipment, equipmentFromJsonObject, EquipmentService } from "../equipment";
 import { ResearchFunding } from "src/app/research/funding/research-funding";
 import { Lab } from "../../lab/lab";
-import { Observable, first, firstValueFrom, map, shareReplay, switchMap } from "rxjs";
+import { first, firstValueFrom, map, switchMap } from "rxjs";
 import { EquipmentInstallation, equipmentInstallationFromJsonObject } from "../installation/equipment-installation";
 import { ProvisionStatus, isProvisionStatus } from "./provision-status";
 import { HttpParams } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
-import { ModelService } from "src/app/common/model/model-service";
-import urlJoin from "url-join";
 import { EquipmentContext } from "../equipment-context";
 import { RelatedModelService } from "src/app/common/model/context";
-import { Discipline } from "src/app/uni/discipline/discipline";
 
 export interface LabEquipmentProvisionParams extends ModelParams {
     status: ProvisionStatus;
@@ -39,7 +36,7 @@ export class LabEquipmentProvision extends Model implements LabEquipmentProvisio
     }
 
     get isActive() {
-        return ![ 'installed', 'cancelled' ].includes(this.status);
+        return !['installed', 'cancelled'].includes(this.status);
     }
 
     async resolveEquipment(service: EquipmentService): Promise<Equipment> {
@@ -53,40 +50,48 @@ export class LabEquipmentProvision extends Model implements LabEquipmentProvisio
 export function labEquipmentProvisionFromJsonObject(json: JsonObject): LabEquipmentProvision {
     const baseParams = modelParamsFromJsonObject(json);
 
-    if (!isProvisionStatus(json[ 'status' ])) {
+    if (!isProvisionStatus(json['status'])) {
         throw new Error("Expected a provision status 'status'");
     }
 
     let equipment: Equipment | null;
     let equipmentId: string;
-    if (isJsonObject(json[ 'equipment' ])) {
-        equipment = equipmentFromJsonObject(json[ 'equipment' ]);
+    if (isJsonObject(json['equipment'])) {
+        equipment = equipmentFromJsonObject(json['equipment']);
         equipmentId = equipment.id;
-    } else if (typeof json[ 'equipment' ] === 'string') {
+    } else if (typeof json['equipment'] === 'string') {
         equipment = null;
-        equipmentId = json[ 'equipment' ];
+        equipmentId = json['equipment'];
     } else {
         throw new Error('Expected a json object or string \'equipment\'')
     }
 
-    if (!isJsonObject(json[ 'installation' ]) && json[ 'installation' ] !== null) {
+    if (!isJsonObject(json['installation']) && json['installation'] !== null) {
         throw new Error("Expected a json object or null 'install'");
     }
-    const installation = json[ 'installation' ] && equipmentInstallationFromJsonObject(json[ 'installation' ])
+    const installation = json['installation'] && equipmentInstallationFromJsonObject(json['installation'])
 
-    if (typeof json[ 'reason' ] !== 'string') {
+    if (typeof json['reason'] !== 'string') {
         throw new Error("Expected a string 'reason'");
     }
 
     return new LabEquipmentProvision({
         ...baseParams,
-        status: json[ 'status' ],
+        status: json['status'],
         equipmentId,
         equipment,
         installation: installation,
-        reason: json[ 'reason' ]
+        reason: json['reason']
     });
 }
+
+export interface EquipmentProvisionQuery extends ModelQuery<LabEquipmentProvision> {
+
+}
+function equipmentProvisionQueryToHttpParams(query: EquipmentProvisionQuery) {
+    return new HttpParams();
+}
+
 
 export interface CreateEquipmentProvisionRequest {
     // The status of the newly created request.
@@ -164,9 +169,10 @@ export function equipmentProvisionInstalledRequestToJsonObject(request: Equipmen
 
 
 @Injectable()
-export class EquipmentProvisionService extends RelatedModelService<Equipment, LabEquipmentProvision> {
+export class EquipmentProvisionService extends RelatedModelService<Equipment, LabEquipmentProvision, EquipmentProvisionQuery> {
     override readonly context = inject(EquipmentContext);
-    override modelFromJsonObject = labEquipmentProvisionFromJsonObject;
+    override readonly modelFromJsonObject = labEquipmentProvisionFromJsonObject;
+    override readonly modelQueryToHttpParams = equipmentProvisionQueryToHttpParams;
     override readonly path = 'provisions';
 
     create(request: CreateEquipmentProvisionRequest) {

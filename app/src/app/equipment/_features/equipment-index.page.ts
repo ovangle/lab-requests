@@ -64,11 +64,7 @@ export class EquipmentIndexPage {
 
   readonly equipments$: Observable<Equipment[]> = this.lab$.pipe(
     switchMap((lab) => {
-      let params = new HttpParams();
-      if (lab) {
-        params = params.set('lab', lab.id);
-      }
-      return this.equipments.query(params);
+      return this.equipments.query({ installedInLab: lab });
     }),
     tap(equipments => {
       console.log('equipments', equipments)

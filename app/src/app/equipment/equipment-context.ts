@@ -1,9 +1,8 @@
 import { Directive, Injectable, Input, Provider, inject } from "@angular/core";
 import { AbstractModelContextDirective, ModelContext } from "src/app/common/model/context";
 import { Equipment, EquipmentService } from "./equipment";
-import { ModelPatch } from "src/app/common/model/model";
 import { ActivatedRoute } from "@angular/router";
-import { Observable, concat, concatMap, filter, from, map, merge, mergeAll, mergeMap, of, reduce, scan, switchMap, tap, throwError } from "rxjs";
+import { of } from "rxjs";
 
 
 @Injectable()
@@ -53,7 +52,7 @@ export function provideEquipmentDetailRouteContext(): Provider {
             context.sendCommittedId(of(equipmentId));
             return context;
         },
-        deps: [ ActivatedRoute ]
+        deps: [ActivatedRoute]
     }
 }
 

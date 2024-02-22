@@ -5,6 +5,7 @@ import {
   Model,
   ModelIndexPage,
   ModelParams,
+  ModelQuery,
   modelIndexPageFromJsonObject,
   modelParamsFromJsonObject,
 } from 'src/app/common/model/model';
@@ -15,6 +16,7 @@ import { RestfulService } from '../common/model/model-service';
 import { EquipmentInstallation, equipmentInstallationFromJsonObject } from '../equipment/installation/equipment-installation';
 import { LabEquipmentProvision, labEquipmentProvisionFromJsonObject } from '../equipment/provision/equipment-provision';
 import { Equipment } from '../equipment/equipment';
+import { HttpParams } from '@angular/common/http';
 
 export interface LabParams extends ModelParams {
   readonly id: string;
@@ -46,30 +48,38 @@ export function labFromJsonObject(json: JsonObject): Lab {
   }
   const base = modelParamsFromJsonObject(json);
 
-  if (typeof json[ 'id' ] !== 'string') {
+  if (typeof json['id'] !== 'string') {
     throw new Error("Expected a string 'id'");
   }
-  if (!isDiscipline(json[ 'discipline' ])) {
+  if (!isDiscipline(json['discipline'])) {
     throw new Error("Expected a Discipline 'discipline'");
   }
 
-  if (!isJsonObject(json[ 'campus' ])) {
+  if (!isJsonObject(json['campus'])) {
     throw new Error("Expected a json object 'campus'");
   }
-  const campus = campusFromJsonObject(json[ 'campus' ]);
+  const campus = campusFromJsonObject(json['campus']);
 
-  if (!Array.isArray(json[ 'supervisors' ]) || !json[ 'supervisors' ].every(isJsonObject)) {
+  if (!Array.isArray(json['supervisors']) || !json['supervisors'].every(isJsonObject)) {
     throw new Error("Expected an array of json objects 'supervisors'");
   }
-  const supervisors = json[ 'supervisors' ].map(userFromJsonObject);
+  const supervisors = json['supervisors'].map(userFromJsonObject);
 
   return new Lab({
     ...base,
-    id: json[ 'id' ],
-    discipline: json[ 'discipline' ],
+    id: json['id'],
+    discipline: json['discipline'],
     campus,
     supervisors,
   });
+}
+
+export interface LabQuery extends ModelQuery<Lab> {
+
+}
+
+function labQueryToHttpParams(query: LabQuery) {
+  return new HttpParams();
 }
 
 export interface LabProfileParams extends LabParams {
@@ -108,19 +118,19 @@ export class LabProfile extends Lab implements LabProfileParams {
 
 export function labProfileFromJsonObject(object: JsonObject) {
   const labParams = labFromJsonObject(object);
-  if (!isJsonObject(object[ 'equipmentInstalls' ])) {
+  if (!isJsonObject(object['equipmentInstalls'])) {
     throw new Error("Expected a json object 'equipmentInstalls'");
   }
   const equipmentInstallPage = modelIndexPageFromJsonObject(
     equipmentInstallationFromJsonObject,
-    object[ 'equipmentInstalls' ],
+    object['equipmentInstalls'],
   );
-  if (!isJsonObject(object[ 'equipmentProvisions' ])) {
+  if (!isJsonObject(object['equipmentProvisions'])) {
     throw new Error("Expected a json object 'equipmentProvisions'");
   }
   const equipmentProvisionPage = modelIndexPageFromJsonObject(
     labEquipmentProvisionFromJsonObject,
-    object[ 'equipmentProvisions' ],
+    object['equipmentProvisions'],
   );
 
   return new LabProfile({
@@ -135,6 +145,7 @@ export function labProfileFromJsonObject(object: JsonObject) {
 export class LabService extends RestfulService<Lab>{
   override path: string = '/labs/lab';
   override readonly modelFromJsonObject = labFromJsonObject;
+  override readonly modelQueryToHttpParams = labQueryToHttpParams;
   override readonly createRequestToJsonObject = undefined;
   override readonly updateRequestToJsonObject = undefined;
 

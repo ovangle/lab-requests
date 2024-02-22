@@ -16,7 +16,7 @@ import {
   ModelParams,
   ModelIndexPage,
   modelIndexPageFromJsonObject,
-  ModelPatch,
+  ModelQuery,
 } from './model';
 import urlJoin from 'url-join';
 import { Observable, Subject, map, of, tap } from 'rxjs';
@@ -25,7 +25,7 @@ import { JsonObject } from 'src/app/utils/is-json-object';
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL');
 
 @Injectable()
-export abstract class ModelService<T extends Model> {
+export abstract class ModelService<T extends Model, TQuery extends ModelQuery<T> = ModelQuery<T>> {
   protected readonly _httpClient = inject(HttpClient);
   protected readonly _apiBaseUrl = inject(API_BASE_URL);
   protected readonly _cache = new Map<string, T>();
@@ -46,6 +46,7 @@ export abstract class ModelService<T extends Model> {
   }
 
   abstract modelFromJsonObject(json: JsonObject): T;
+  abstract modelQueryToHttpParams(lookup: TQuery): HttpParams;
   abstract modelUrl(model: T): Observable<string>;
 
   modelIndexPageFromJsonObject(json: JsonObject): ModelIndexPage<T> {
@@ -71,30 +72,27 @@ export abstract class ModelService<T extends Model> {
    * @param lookup
    * @returns
    */
-  query(
-    params: HttpParams | { [ k: string ]: number | string | string[] },
-  ): Observable<T[]> {
+  query(params: TQuery): Observable<T[]> {
     return this.queryPage(params).pipe(map((page) => page.items));
   }
-  queryOne(
-    params: HttpParams | { [ k: string ]: number | string | string[] },
-  ): Observable<T | null> {
+
+  queryOne(params: TQuery): Observable<T | null> {
     return this.query(params).pipe(
       map((items) => {
         if (items.length > 1) {
           throw new Error('Server returned multiple results');
         }
-        return items[ 0 ] || null;
+        return items[0] || null;
       }),
     );
   }
-  protected abstract _doQueryPage(
-    params: HttpParams | { [ k: string ]: boolean | number | string | string[] }
-  ): Observable<JsonObject>;
 
-  queryPage(
-    params: HttpParams | { [ k: string ]: number | string | string[] },
-  ): Observable<ModelIndexPage<T>> {
+  protected abstract _doQueryPage(params: HttpParams): Observable<JsonObject>;
+
+  queryPage(lookup: TQuery, pageNum = 1): Observable<ModelIndexPage<T>> {
+    let params = this.modelQueryToHttpParams(lookup);
+    params = params.set('page', pageNum);
+
     return this._doQueryPage(params).pipe(
       map(response => this.modelIndexPageFromJsonObject(response)),
       this._cachePage
@@ -107,7 +105,12 @@ export abstract class ModelService<T extends Model> {
  * path from root.
  */
 @Injectable()
-export abstract class RestfulService<T extends Model, TCreate extends {} = {}, TUpdate extends {} = {}> extends ModelService<T> {
+export abstract class RestfulService<
+  T extends Model,
+  TQuery extends ModelQuery<T> = ModelQuery<T>,
+  TCreate extends {} = {},
+  TUpdate extends {} = {}
+> extends ModelService<T, TQuery> {
   abstract readonly path: string;
 
   abstract createRequestToJsonObject?(request: TCreate): JsonObject;
@@ -146,7 +149,7 @@ export abstract class RestfulService<T extends Model, TCreate extends {} = {}, T
 
   protected override _doFetch(
     id: string,
-    options?: { params: { [ k: string ]: any } | HttpParams },
+    options?: { params: { [k: string]: any } | HttpParams },
   ): Observable<JsonObject> {
     return this._httpClient.get<JsonObject>(this.resourceUrl(id), {
       params: options?.params,
@@ -154,7 +157,7 @@ export abstract class RestfulService<T extends Model, TCreate extends {} = {}, T
   }
 
   protected override _doQueryPage(
-    params: HttpParams | { [ k: string ]: string | number | string[] },
+    params: HttpParams | { [k: string]: string | number | string[] },
   ): Observable<JsonObject> {
     return this._httpClient
       .get<JsonObject>(this.indexUrl, { params: params })

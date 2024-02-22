@@ -67,42 +67,27 @@ import { EquipmentInstallation } from 'src/app/equipment/installation/equipment-
   ]
 })
 export class LabEquipmentListComponent {
-  _equipments = inject(EquipmentService);
 
   labContext = inject(LabContext);
   readonly lab$ = this.labContext.committed$;
 
-  @Input()
-  equipment: Equipment | null = null;
+  _equipments = inject(EquipmentService);
+  _labEquipments = inject(LabEquipmentService);
 
-  equipmentSearch = new ModelSearchControl<Equipment>(
+  equipmentSearch = new ModelSearchControl<EquipmentInstallation>(
     (search: string) => this.getEquipments(search),
-    (equipment: Equipment) => equipment.name
+    (equipment: EquipmentInstallation) => equipment.equipmentName
   );
 
-  getEquipments(search: string): Observable<Equipment[]> {
-    return this.lab$.pipe(
-      first(),
-      switchMap(lab => {
-        if (this.equipment) {
-          return of([this.equipment]);
-        }
-
-        const params = new HttpParams({
-          fromObject: {
-            has_install_in: lab.id,
-            search: search
-          }
-        })
-        return this._equipments.query(params)
-      })
-    )
+  getEquipments(search: string): Observable<EquipmentInstallation[]> {
+    return this._labEquipments.query({ search });
   }
 
   readonly equipments$ = this.equipmentSearch.modelOptions$;
 
-  async equipmentItemContext(equipment: Equipment): Promise<{ $implicit: Equipment, numInstalled: number, numPending: number }> {
+  async equipmentItemContext(install: EquipmentInstallation): Promise<{ $implicit: Equipment, numInstalled: number, numPending: number }> {
     const lab = await firstValueFrom(this.lab$);
+    const equipment = await install.resolveEquipment(this._equipments);
     const labInstalls = equipment.installations.filter(install => install.labId === lab.id);
 
     const numInstalled = labInstalls.filter(i => i.isInstalled)

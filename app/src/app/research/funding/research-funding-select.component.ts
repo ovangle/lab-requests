@@ -1,10 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import {
-  FUNDING_MODEL_NAMES,
   ResearchFunding,
-  ResearchFundingLookup,
   ResearchFundingService,
-  researchFundingIdFromLookup,
 } from './research-funding';
 import { Observable, map, of, shareReplay } from 'rxjs';
 import { MatSelectModule } from '@angular/material/select';

@@ -1,5 +1,5 @@
 import { Injectable, Type, inject } from "@angular/core";
-import { ModelIndexPage, ModelParams, ModelPatch, modelParamsFromJsonObject } from "src/app/common/model/model";
+import { ModelIndexPage, ModelParams, ModelQuery, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { ModelService, RestfulService } from "src/app/common/model/model-service";
 import { JsonObject } from "src/app/utils/is-json-object";
 import { ResearchPlan, ResearchPlanContext } from "../research-plan";
@@ -25,38 +25,46 @@ export interface ResearchPlanTask extends ModelParams {
 export function researchPlanTaskFromJson(json: JsonObject): ResearchPlanTask {
   const baseParams = modelParamsFromJsonObject(json);
 
-  if (typeof json[ 'index' ] !== 'number') {
+  if (typeof json['index'] !== 'number') {
     throw new Error("ResearchPlanTask: 'index' must be an number");
   }
 
-  if (typeof json[ 'description' ] !== 'string') {
+  if (typeof json['description'] !== 'string') {
     throw new Error("ResearchPlanTask: Expected a string 'description'");
   }
 
-  if (typeof json[ 'startDate' ] !== 'string' && json[ 'startDate' ] !== null) {
+  if (typeof json['startDate'] !== 'string' && json['startDate'] !== null) {
     throw new Error("ResearchPlanTask: 'startDate' must be a string or null");
   }
-  const startDate = json[ 'startDate' ] ? parseISO(json[ 'startDate' ]) : null;
-  if (typeof json[ 'endDate' ] !== 'string' && json[ 'endDate' ] !== null) {
+  const startDate = json['startDate'] ? parseISO(json['startDate']) : null;
+  if (typeof json['endDate'] !== 'string' && json['endDate'] !== null) {
     throw new Error("ResearchPlanTask: 'endDate' must be a string or null");
   }
-  const endDate = json[ 'endDate' ] ? parseISO(json[ 'endDate' ]) : null;
+  const endDate = json['endDate'] ? parseISO(json['endDate']) : null;
 
-  if (typeof json[ 'labId' ] !== 'string') {
+  if (typeof json['labId'] !== 'string') {
     throw new Error("ResearchPlanTask: 'labId' must be a string");
   }
-  if (typeof json[ 'supervisorId' ] !== 'string') {
+  if (typeof json['supervisorId'] !== 'string') {
     throw new Error("ResearchPlanTask: 'supervisorId' must be a string");
   }
   return {
     ...baseParams,
-    description: json[ 'description' ],
+    description: json['description'],
     startDate,
     endDate,
-    index: json[ 'index' ],
-    labId: json[ 'labId' ],
-    supervisorId: json[ 'supervisorId' ],
+    index: json['index'],
+    labId: json['labId'],
+    supervisorId: json['supervisorId'],
   };
+}
+
+export interface ResearchPlanTaskQuery extends ModelQuery<ResearchPlanTask> {
+
+}
+
+function researchPlanTaskQueryToHttpParams(query: ResearchPlanTaskQuery): HttpParams {
+  return new HttpParams();
 }
 
 export interface CreateResearchPlanTask {
@@ -88,9 +96,10 @@ export interface SpliceResearchPlanTasks {
 }
 
 @Injectable()
-export class ResearchPlanTaskService extends RelatedModelService<ResearchPlan, ResearchPlanTask> {
+export class ResearchPlanTaskService extends RelatedModelService<ResearchPlan, ResearchPlanTask, ResearchPlanTaskQuery> {
   override readonly context = inject(ResearchPlanContext);
   override readonly modelFromJsonObject = researchPlanTaskFromJson;
+  override readonly modelQueryToHttpParams = researchPlanTaskQueryToHttpParams;
   override readonly path = 'tasks';
 
 }

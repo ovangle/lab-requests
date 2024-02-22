@@ -14,7 +14,7 @@ import {
   ViewRef,
   inject,
 } from '@angular/core';
-import { Model, ModelIndexPage, ModelParams, ModelPatch } from './model';
+import { Model, ModelIndexPage, ModelParams, ModelQuery } from './model';
 import {
   BehaviorSubject,
   Connectable,
@@ -100,7 +100,11 @@ export abstract class ModelContext<
 }
 
 @Injectable()
-export abstract class RelatedModelService<TContextModel extends Model, T extends Model> extends ModelService<T> {
+export abstract class RelatedModelService<
+  TContextModel extends Model,
+  T extends Model,
+  TQuery extends ModelQuery<T> = ModelQuery<T>
+> extends ModelService<T, TQuery> {
   abstract readonly context: ModelContext<TContextModel>;
   abstract path: string;
 
@@ -127,7 +131,7 @@ export abstract class RelatedModelService<TContextModel extends Model, T extends
     );
   }
 
-  protected override _doQueryPage(params: HttpParams | { [ k: string ]: string | number | boolean | string[]; }): Observable<JsonObject> {
+  protected override _doQueryPage(params: HttpParams): Observable<JsonObject> {
     return this.indexUrl$.pipe(
       switchMap(indexUrl => this._httpClient.get<JsonObject>(indexUrl, { params })),
     );
@@ -168,7 +172,7 @@ export abstract class AbstractModelContextDirective<T extends Model> {
       this.modelSubject,
       this.currentViewSubject,
     ]).pipe(
-      map(([ model, currentView ]) => {
+      map(([model, currentView]) => {
         if (model != null && currentView == null) {
           currentView = viewContainer.createEmbeddedView(
             templateRef,

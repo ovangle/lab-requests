@@ -1,7 +1,8 @@
-import { HttpParams } from '@angular/common/http';
-import { Inject, Injectable, Type } from '@angular/core';
+import { Type, inject } from '@angular/core';
 import { parseISO } from 'date-fns';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
+import { ModelService } from './model-service';
+import { Connectable, Observable, ReplaySubject, connectable, switchMap } from 'rxjs';
 
 export abstract class Model {
   readonly id: string;
@@ -81,6 +82,24 @@ export function modelIndexPageFromJsonObject<T extends Model>(
   };
 }
 
-export interface ModelPatch<T extends Model> { }
+export interface ModelQuery<T extends Model> { }
 
-export interface ModelLookup<T extends Model> { }
+export function injectQueryPage<T extends Model>(
+  serviceType: Type<ModelService<T>>,
+  query: ModelQuery<T>,
+  pageNumber: Observable<number>,
+): Connectable<ModelIndexPage<T>> {
+  const service = inject(serviceType);
+
+  return connectable(
+    pageNumber.pipe(
+      switchMap(pageNumber => service.queryPage(query, pageNumber))
+    ),
+    { connector: () => new ReplaySubject(1) }
+  );
+}
+
+export interface ModelAction<T extends Model> {
+  readonly name: string;
+}
+

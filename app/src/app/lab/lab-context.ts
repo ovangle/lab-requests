@@ -1,9 +1,7 @@
 import { Directive, EmbeddedViewRef, HostBinding, Injectable, Injector, Input, TemplateRef, ViewContainerRef, inject } from "@angular/core";
 import { AbstractModelContextDirective, ModelContext } from "src/app/common/model/context";
 import { Lab, LabService } from "./lab";
-import { ModelPatch } from "src/app/common/model/model";
-import { BehaviorSubject, Observable, ReplaySubject, combineLatest, distinctUntilChanged, filter, map, of, switchMap, withLatestFrom } from "rxjs";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { Observable, of } from "rxjs";
 
 @Injectable()
 export class LabContext extends ModelContext<Lab> {

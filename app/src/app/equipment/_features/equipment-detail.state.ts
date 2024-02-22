@@ -21,14 +21,14 @@ const initialState: EquipmentDetailState = {
   showDescription: true,
   showDetail: true
 };
-const _stateKeys = [ ...Object.keys(initialState) ] as ReadonlyArray<keyof EquipmentDetailState>;
+const _stateKeys = [...Object.keys(initialState)] as ReadonlyArray<keyof EquipmentDetailState>;
 
 export function reduceState(
   state: EquipmentDetailState,
   action: (state: EquipmentDetailState) => Partial<EquipmentDetailState>
 ): EquipmentDetailState {
-  debugger;
   const result = action(state);
+
   return {
     ...state,
     ...result
@@ -39,7 +39,7 @@ export function diffStates(
   a: EquipmentDetailState,
   b: EquipmentDetailState
 ): boolean {
-  return _stateKeys.some(k => a[ k ] !== b[ k ]);
+  return _stateKeys.some(k => a[k] !== b[k]);
 }
 
 export function setNoSubroute(state: EquipmentDetailState): Partial<EquipmentDetailState> {

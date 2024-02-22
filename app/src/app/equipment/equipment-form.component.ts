@@ -172,7 +172,7 @@ export class EquipmentForm {
   readonly _matchEquipmentName: Observable<Equipment[]> = this.form.controls.name.valueChanges.pipe(
     debounceTime(300),
     switchMap(name => {
-      return this.equipmentService.query(equipmentQueryToHttpParams({ name: name }))
+      return this.equipmentService.query({ name: name })
     }),
     shareReplay(1)
   );

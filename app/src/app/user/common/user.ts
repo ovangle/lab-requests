@@ -18,7 +18,7 @@ import {
   Model,
   ModelIndexPage,
   ModelParams,
-  ModelPatch,
+  ModelQuery,
   modelIndexPageFromJsonObject,
   modelParamsFromJsonObject,
 } from '../../common/model/model';
@@ -125,6 +125,13 @@ function userLookupToHttpParams(lookup: UserLookup): HttpParams {
   }
   return params;
 }
+
+export interface UserQuery extends ModelQuery<User> { }
+
+export function userQueryToHttpParams(query: UserQuery): HttpParams {
+  return new HttpParams();
+}
+
 interface CurrentUserParams extends UserParams {
   readonly labs: ModelIndexPage<Lab>;
   readonly plans: ModelIndexPage<ResearchPlan>;
@@ -225,6 +232,10 @@ export interface CreateTemporaryUserRequest {
   discipline: Discipline;
 }
 
+function createTemporaryUserRequestToJsonObject(request: CreateTemporaryUserRequest): JsonObject {
+  return {}
+}
+
 export interface CreateTemporaryUserResult {
   token: string;
   tokenExpiresAt: Date;
@@ -255,10 +266,11 @@ export interface FinalizeTemporaryUserRequest {
 }
 
 @Injectable({ providedIn: 'root' })
-export class UserService extends RestfulService<User> {
+export class UserService extends RestfulService<User, UserQuery> {
   override readonly path: string = '/users';
 
   override readonly modelFromJsonObject = userFromJsonObject;
+  override readonly modelQueryToHttpParams = userQueryToHttpParams;
   override createRequestToJsonObject = undefined;
   override updateRequestToJsonObject = undefined;
 

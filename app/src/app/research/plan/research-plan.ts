@@ -3,7 +3,7 @@ import {
   Model,
   ModelIndexPage,
   ModelParams,
-  ModelPatch,
+  ModelQuery,
   modelParamsFromJsonObject,
 } from 'src/app/common/model/model';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
@@ -24,6 +24,7 @@ import { ModelContext } from 'src/app/common/model/context';
 import { ResourceContainer, ResourceContainerParams, resourceContainerParamsFromJson } from 'src/app/lab/lab-resource/resource-container';
 import { ResearchPlanTask, researchPlanTaskFromJson, SpliceResearchPlanTasks } from './task/research-plan-task';
 import { UserContext } from 'src/app/user/user-context';
+import { HttpParams } from '@angular/common/http';
 
 export interface ResearchPlanAttachment extends ModelParams {
   readonly id: string;
@@ -162,10 +163,19 @@ function createResearchPlanToJsonObject(plan: CreateResearchPlan) {
   return {};
 }
 
+export interface ResearchPlanQuery extends ModelQuery<ResearchPlan> {
+
+}
+
+function researchPlanQueryToHttpParams(query: Partial<ResearchPlanQuery>): HttpParams {
+  return new HttpParams();
+}
+
 
 @Injectable({ providedIn: 'root' })
-export class ResearchPlanService extends RestfulService<ResearchPlan, CreateResearchPlan> {
+export class ResearchPlanService extends RestfulService<ResearchPlan, ResearchPlanQuery, CreateResearchPlan> {
   override readonly modelFromJsonObject = researchPlanFromJsonObject;
+  override readonly modelQueryToHttpParams = researchPlanQueryToHttpParams;
   override readonly createRequestToJsonObject = createResearchPlanToJsonObject;
   override readonly updateRequestToJsonObject = undefined;
   override path = '/research/plan';
