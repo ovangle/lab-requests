@@ -1,7 +1,8 @@
 from __future__ import annotations
+from datetime import datetime
 from http import HTTPStatus
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Optional, cast
 from typing_extensions import override
 from uuid import UUID, uuid4
 from fastapi import HTTPException
@@ -12,6 +13,7 @@ from db import LocalSession, local_object_session
 from db.models.lab.lab import Lab
 from db.models.lab.lab_equipment import (
     LabEquipmentInstallation,
+    LabEquipmentInstallationItem,
     LabEquipmentProvision,
     ProvisionStatus,
     create_known_install,
@@ -147,6 +149,8 @@ class LabEquipmentInstallationView(ModelView[LabEquipmentInstallation]):
     num_installed: int
     provision_status: ProvisionStatus
 
+    items: list[LabEquipmentInstallationItemView]
+
     @classmethod
     async def from_model(
         cls,
@@ -159,6 +163,11 @@ class LabEquipmentInstallationView(ModelView[LabEquipmentInstallation]):
         else:
             equipment_ = await model.awaitable_attrs.equipment
 
+        items = [
+            await LabEquipmentInstallationItemView.from_model(m)
+            for m in await model.awaitable_attrs.items
+        ]
+
         return cls(
             id=model.id,
             equipment=equipment_.id,
@@ -166,6 +175,7 @@ class LabEquipmentInstallationView(ModelView[LabEquipmentInstallation]):
             lab=model.lab_id,
             provision_status=model.provision_status,
             num_installed=model.num_installed,
+            items=items,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
@@ -190,6 +200,30 @@ class LabEquipmentInstallRequest(ModelCreateRequest[LabEquipment]):
 
     async def do_create(self, db: LocalSession):
         raise NotImplementedError
+
+
+class LabEquipmentInstallationItemView(ModelView[LabEquipmentInstallationItem]):
+    id: UUID
+    installation_id: UUID
+    installation_index: int
+    provision_status: ProvisionStatus
+    last_provisioned_at: datetime | None
+    name: str
+
+    @classmethod
+    async def from_model(
+        cls, model: LabEquipmentInstallationItem
+    ) -> LabEquipmentInstallationItemView:
+        return cls(
+            id=model.id,
+            installation_id=model.installation_id,
+            installation_index=model.installation_index,
+            name=model.name,
+            provision_status=model.provision_status,
+            last_provisioned_at=model.last_provisioned_at,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
+        )
 
 
 class LabEquipmentProvisionView(ModelView[LabEquipmentProvision]):

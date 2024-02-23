@@ -2,11 +2,21 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Annotated, cast
 from uuid import UUID, uuid4
 import uuid
 
-from sqlalchemy import Column, ForeignKey, Table, insert, not_, select
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Table,
+    UniqueConstraint,
+    insert,
+    not_,
+    select,
+    update,
+    event,
+)
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -51,6 +61,23 @@ class LabEquipmentInstallationExists(ModelException):
         )
 
 
+class LabEquipmentInstallationItemDoesNotExist(DoesNotExist):
+    def __init__(
+        self,
+        *,
+        for_id: UUID | None = None,
+        for_installation_index: tuple[LabEquipmentInstallation, int] | None = None,
+    ):
+        if for_id:
+            super().__init__(for_id=for_id)
+        elif for_installation_index:
+            installation, index = for_installation_index
+            msg = f"No installation item for installation {installation.id} at index {index}"
+            super().__init__(msg)
+        else:
+            raise ValueError("Either for_id or for_installation_index must be provided")
+
+
 class LabEquipmentProvisionDoesNotExist(DoesNotExist):
     def __init__(
         self,
@@ -89,6 +116,15 @@ class ProvisionStatus(Enum):
     REPLACED = "replaced"
 
 
+provision_status = Annotated[
+    ProvisionStatus,
+    mapped_column(
+        postgresql.ENUM(ProvisionStatus, name="provision_status", create_type=False),
+        index=True,
+    ),
+]
+
+
 class LabEquipment(Base):
     __tablename__ = "lab_equipment"
 
@@ -117,6 +153,82 @@ class LabEquipment(Base):
         return e
 
 
+class LabEquipmentInstallationItem(Base):
+    """
+    Represents a specific piece of equipment included in an installation
+    """
+
+    __tablename__ = "lab_equipment_installation_item"
+    __table_args__ = (
+        UniqueConstraint(
+            "installation_id", "installation_index", name="installation_index_uniq"
+        ),
+    )
+
+    id: Mapped[uuid_pk]
+    installation_id: Mapped[UUID] = mapped_column(
+        ForeignKey("lab_equipment_installation.id"), index=True
+    )
+    installation: Mapped[LabEquipmentInstallation] = relationship()
+    installation_index: Mapped[int] = mapped_column(
+        postgresql.INTEGER, default=0, index=True
+    )
+
+    replaces_item_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("lab_equipment_installation_item.id"), default=None
+    )
+    replaces_item: Mapped[LabEquipmentInstallationItem | None] = relationship()
+
+    name: Mapped[str] = mapped_column(postgresql.VARCHAR(1024), index=True)
+    provision_status: Mapped[provision_status]
+    last_provisioned_at: Mapped[action_timestamp]
+
+    @classmethod
+    async def get_for_id(cls, db: LocalSession, id: UUID):
+        item = await db.get(LabEquipmentInstallationItem, id)
+        if item is None:
+            raise LabEquipmentInstallationItemDoesNotExist(for_id=id)
+        return item
+
+    @classmethod
+    async def get_for_installation_index(
+        cls, db: LocalSession, installation: LabEquipmentInstallation, index: int
+    ):
+        item = await db.scalar(
+            select(LabEquipmentInstallationItem).where(
+                LabEquipmentInstallationItem.installation_id == installation.id,
+                LabEquipmentInstallationItem.installation_index == index,
+            )
+        )
+        if item is None:
+            raise LabEquipmentInstallationItemDoesNotExist(
+                for_installation_index=(installation, index)
+            )
+        return item
+
+    def __init__(
+        self,
+        installation: LabEquipmentInstallation,
+        installation_index: int,
+        *,
+        name: str,
+        provision_status: ProvisionStatus,
+        replaces_item: LabEquipmentInstallationItem | None,
+        **kwargs,
+    ):
+        if installation_index < 0 or installation_index >= installation.num_installed:
+            raise IndexError("Installation index out of range for installation")
+
+        super().__init__(
+            installation_id=installation.id,
+            installation_index=installation_index,
+            replaces_item=replaces_item,
+            provision_status=provision_status,
+            name=name,
+            **kwargs,
+        )
+
+
 class LabEquipmentInstallation(Base):
     __tablename__ = "lab_equipment_installation"
 
@@ -134,10 +246,12 @@ class LabEquipmentInstallation(Base):
     replaces_installation: Mapped[LabEquipmentInstallation | None] = relationship()
 
     num_installed: Mapped[int] = mapped_column(postgresql.INTEGER, default=1)
-
-    provision_status: Mapped[ProvisionStatus] = mapped_column(
-        postgresql.ENUM(ProvisionStatus)
+    installed_items: Mapped[list[LabEquipmentInstallationItem]] = relationship(
+        back_populates="installation",
+        order_by=LabEquipmentInstallationItem.installation_index,
     )
+
+    provision_status: Mapped[provision_status]
     last_provisioned_at: Mapped[action_timestamp]
 
     @classmethod
@@ -229,6 +343,93 @@ class LabEquipmentInstallation(Base):
     @property
     def is_replaced(self):
         return self.provision_status == ProvisionStatus.REPLACED
+
+    async def _set_installed_item_nocommit(
+        self,
+        db: LocalSession,
+        at_index: int,
+        name: str,
+        **kwargs,
+    ):
+        if self.replaces_installation_id:
+            replaces_item = await db.scalar(
+                select(LabEquipmentInstallationItem).where(
+                    LabEquipmentInstallationItem.installation_id
+                    == self.replaces_installation_id,
+                    LabEquipmentInstallationItem.installation_index == at_index,
+                )
+            )
+        else:
+            replaces_item = None
+        item = LabEquipmentInstallationItem(
+            self,
+            at_index,
+            id=uuid4(),
+            name=name,
+            replaces_item=replaces_item,
+            provision_status=self.provision_status,
+            **kwargs,
+        )
+        db.add(item)
+        return item
+
+    async def set_installed_item(self, at_index: int, name: str, **kwargs):
+        db = local_object_session(self)
+        item = await self._set_installed_item_nocommit(db, at_index, name, **kwargs)
+        await db.commit()
+        return item
+
+    async def set_installed_items(self, item_kwargs: list[tuple[str, dict]]):
+        db = local_object_session(self)
+
+        items = [
+            await self._set_installed_item_nocommit(db, index, name, **kwargs)
+            for index, (name, kwargs) in enumerate(item_kwargs)
+        ]
+
+        await db.commit()
+        return items
+
+
+@event.listens_for(LabEquipmentInstallation, "after_insert")
+def add_replaced_item_provisions(mapper, connection, target: LabEquipmentInstallation):
+    if target.replaces_installation_id:
+        # If we are replacing an existing provision, we start as REQUESTED
+        assert target.provision_status == ProvisionStatus.REQUESTED
+
+        replaces_id = target.replaces_installation_id
+        replace_items = select(
+            LabEquipmentInstallationItem.installation_index,
+            LabEquipmentInstallationItem.id.label("replaces_item_id"),
+            LabEquipmentInstallationItem.name,
+        ).where(LabEquipmentInstallationItem.installation_id == replaces_id)
+
+        connection.execute(
+            insert(LabEquipmentInstallationItem)
+            .values(
+                installation_id=target.id,
+                provision_status=target.provision_status,
+                last_provisioned_at=target.last_provisioned_at,
+            )
+            .from_select(
+                ["installation_index", "replaces_item_id", "name"],
+                replace_items,
+            )
+        )
+
+
+@event.listens_for(LabEquipmentInstallation, "after_update")
+def update_item_provision_statuses(
+    mapper, connection, target: LabEquipmentInstallation
+):
+    connection.execute(
+        update(LabEquipmentInstallationItem)
+        .where(LabEquipmentInstallationItem.installation_id == target.id)
+        .values(
+            provision_status=target.provision_status,
+            last_provisioned_at=datetime.now(tz=timezone.utc),
+        )
+    )
 
 
 class LabEquipmentProvision(Base):
