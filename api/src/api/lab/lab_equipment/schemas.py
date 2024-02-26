@@ -165,7 +165,7 @@ class LabEquipmentInstallationView(ModelView[LabEquipmentInstallation]):
 
         items = [
             await LabEquipmentInstallationItemView.from_model(m)
-            for m in await model.awaitable_attrs.items
+            for m in await model.awaitable_attrs.installed_items
         ]
 
         return cls(
@@ -227,14 +227,16 @@ class LabEquipmentInstallationItemView(ModelView[LabEquipmentInstallationItem]):
 
 
 class LabEquipmentProvisionView(ModelView[LabEquipmentProvision]):
+    lab: UUID | None
     equipment: UUID
     installation: LabEquipmentInstallationView | None
 
     status: ProvisionStatus
     reason: str
-
-    estimated_cost: float | None
     quantity_required: int
+
+    funding: UUID | None
+    estimated_cost: float | None
 
     @classmethod
     async def from_model(
@@ -263,7 +265,9 @@ class LabEquipmentProvisionView(ModelView[LabEquipmentProvision]):
             status=model.status,
             reason=model.reason,
             equipment=model.equipment_id,
+            lab=model.lab_id,
             installation=installation_view,
+            funding=model.funding_id,
             estimated_cost=model.estimated_cost,
             quantity_required=model.quantity_required,
             created_at=model.created_at,

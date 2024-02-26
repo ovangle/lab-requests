@@ -12,6 +12,7 @@ from sqlalchemy import (
     Table,
     UniqueConstraint,
     insert,
+    literal,
     not_,
     select,
     update,
@@ -106,15 +107,31 @@ class LabEquipmentProvisioningError(ModelException):
 
 
 class ProvisionStatus(Enum):
+    # Requested to be installed in (potentially any) lab
     REQUESTED = "requested"
+    # The equipment has been approved by the lab manager.
     APPROVED = "approved"
+    # The equipment has been purchased and is awaiting installation.
     PURCHASED = "purchased"
+    # The equipment is installed in the lab
     INSTALLED = "installed"
+    # The request for new equipment is no longer active.
     CANCELLED = "cancelled"
-
     # Previously installed, but replaced by another installation
     REPLACED = "replaced"
 
+    @property
+    def is_pending(self):
+        return self in [
+            ProvisionStatus.REQUESTED,
+            ProvisionStatus.APPROVED,
+            ProvisionStatus.PURCHASED,
+        ]
+
+
+PENDING_PROVISION_STATUSES: list[ProvisionStatus] = [
+    s for s in ProvisionStatus if s.is_pending
+]
 
 provision_status = Annotated[
     ProvisionStatus,
@@ -269,7 +286,7 @@ class LabEquipmentInstallation(Base):
             select(cls).where(
                 cls.equipment_id == equipment.id,
                 cls.lab_id == lab.id,
-                cls.provision_status == "installed",
+                cls.provision_status == ProvisionStatus.INSTALLED,
             )
         )
         if install is None:
@@ -286,7 +303,7 @@ class LabEquipmentInstallation(Base):
             select(cls).where(
                 cls.equipment_id == equipment.id,
                 cls.lab_id == lab.id,
-                cls.provision_status != "installed",
+                cls.provision_status.in_(PENDING_PROVISION_STATUSES),
             )
         )
         if install is None:
@@ -402,17 +419,21 @@ def add_replaced_item_provisions(mapper, connection, target: LabEquipmentInstall
             LabEquipmentInstallationItem.installation_index,
             LabEquipmentInstallationItem.id.label("replaces_item_id"),
             LabEquipmentInstallationItem.name,
+            literal(target.id).label("installation_id"),
+            literal(target.provision_status).label("provision_status"),
+            literal(target.last_provisioned_at).label("last_provisioned_at"),
         ).where(LabEquipmentInstallationItem.installation_id == replaces_id)
 
         connection.execute(
-            insert(LabEquipmentInstallationItem)
-            .values(
-                installation_id=target.id,
-                provision_status=target.provision_status,
-                last_provisioned_at=target.last_provisioned_at,
-            )
-            .from_select(
-                ["installation_index", "replaces_item_id", "name"],
+            insert(LabEquipmentInstallationItem).from_select(
+                [
+                    "installation_index",
+                    "replaces_item_id",
+                    "name",
+                    "installation_id",
+                    "provision_status",
+                    "last_provisioned_at",
+                ],
                 replace_items,
             )
         )
@@ -538,7 +559,7 @@ class LabEquipmentProvision(Base):
             select(cls).where(
                 cls.equipment_id == equipment.id,
                 cls.lab_id == lab.id,
-                not_(cls.status.in_(["installed", "cancelled"])),
+                cls.status.in_(PENDING_PROVISION_STATUSES),
             )
         )
         if active_provision is None:
