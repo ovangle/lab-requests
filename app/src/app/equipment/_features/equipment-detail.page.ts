@@ -1,15 +1,13 @@
 import { CommonModule } from "@angular/common";
-import { Component, ViewChild, inject } from "@angular/core";
-import { ActivatedRoute, RouterModule } from "@angular/router";
-import { Observable, shareReplay, switchMap } from "rxjs";
-import { Equipment, EquipmentService } from "../equipment";
+import { Component, inject } from "@angular/core";
+import { RouterModule } from "@angular/router";
 import { EquipmentContext } from "../equipment-context";
 import { EquipmentInstallationListComponent } from "../installation/installation-list.component";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { EquipmentTrainingDescriptionsInfoComponent } from "../training/training-descriptions-info.component";
 import { EquipmentTagChipsComponent } from "../tag/equipment-tag-chips.component";
-import { EquipmentDetailStateService, setNoSubroute } from "./equipment-detail.state";
+import { EquipmentDetailStateService, EquipmentDetailSubpage, setDetailPageSubroute } from "./equipment-detail.state";
 
 @Component({
     selector: 'equipment-detail-page',
@@ -52,7 +50,7 @@ import { EquipmentDetailStateService, setNoSubroute } from "./equipment-detail.s
       @if (showDescription$ | async) {
         <p><em>{{ equipment.description }}</em></p>
       }
-      <router-outlet (deactivate)="_onRouterOutletDeactivate()" />
+      <router-outlet (activate)="_onRouterOutletActivate($event)" (deactivate)="_onRouterOutletDeactivate()" />
 
       @if (showDetail$ | async) {
         <lab-equipment-training-descriptions-info
@@ -90,8 +88,12 @@ export class EquipmentDetailPage {
     readonly showDescription$ = this._equipmentDetailState.select((s) => s.showDescription);
     readonly showDetail$ = this._equipmentDetailState.select((s) => s.showDetail);
 
+    _onRouterOutletActivate(page: EquipmentDetailSubpage) {
+        const action = setDetailPageSubroute(page);
+        this._equipmentDetailState.dispatch(action);
+    }
+
     _onRouterOutletDeactivate() {
-        debugger;
-        this._equipmentDetailState.dispatch(setNoSubroute);
+        this._equipmentDetailState.dispatch(setDetailPageSubroute(null));
     }
 }

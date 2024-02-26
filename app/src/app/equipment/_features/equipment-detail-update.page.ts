@@ -4,7 +4,7 @@ import { CommonModule } from "@angular/common";
 import { EquipmentContext } from "../equipment-context";
 import { Equipment } from "../equipment";
 import { ActivatedRoute, Router } from "@angular/router";
-import { EquipmentDetailStateService, setUpdateSubroute } from "./equipment-detail.state";
+import { EquipmentDetailSubpage, EquipmentDetailStateService } from "./equipment-detail.state";
 
 @Component({
   standalone: true,
@@ -22,7 +22,8 @@ import { EquipmentDetailStateService, setUpdateSubroute } from "./equipment-deta
   }
   `
 })
-export class EquipmentDetailUpdatePage {
+export class EquipmentDetailUpdatePage implements EquipmentDetailSubpage {
+  readonly subroute = 'update';
   readonly router = inject(Router);
   readonly route = inject(ActivatedRoute);
 
@@ -31,12 +32,8 @@ export class EquipmentDetailUpdatePage {
 
   readonly _equipmentDetailState = inject(EquipmentDetailStateService);
 
-  ngOnInit() {
-    this._equipmentDetailState.dispatch(setUpdateSubroute);
-  }
-
   async _onEquipmentSave(equipment: Equipment) {
     this.equipmentContext.nextCommitted(equipment);
-    await this.router.navigate(['..'], { relativeTo: this.route });
+    await this.router.navigate([ '..' ], { relativeTo: this.route });
   }
 }

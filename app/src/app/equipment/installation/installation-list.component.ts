@@ -96,12 +96,13 @@ import { EquipmentProvision } from "../provision/equipment-provision";
                     (
                         <em>pending</em> 
                         <span class="item-count">{{provision.quantityRequired}}</span>
-                        <button mat-icon-button routerLink="./provisions/{{provision.id}}">
-                            <mat-icon>view</mat-icon>
-                        </button>
+                        
                     )
                 } 
             </span>
+            <button mat-icon-button routerLink="./installations/{{install.id}}">
+                <mat-icon>pageview</mat-icon>
+            </button>
         </div>
     </ng-template>
     `,
@@ -130,9 +131,13 @@ import { EquipmentProvision } from "../provision/equipment-provision";
 
     .list-item {
         display: flex;
+        align-items: center;
     }
     .list-item > .lab-name {
         flex-basis: 50%;
+    }
+    .list-item > .install-info {
+        flex-grow: 1;
     }
 
     .item-count {
@@ -170,7 +175,7 @@ export class EquipmentInstallationListComponent {
         this.equipment$,
         this.filterLab$
     ]).pipe(
-        map(([equipment, lab]) => {
+        map(([ equipment, lab ]) => {
             return equipment.installations.filter(
                 installation => lab == null ? true : installation.labId == lab.id
             );

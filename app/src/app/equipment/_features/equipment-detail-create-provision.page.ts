@@ -6,7 +6,7 @@ import { Observable, map, of } from "rxjs";
 import { Equipment } from "../equipment";
 import { EquipmentProvision } from "../provision/equipment-provision";
 import { CreateEquipmentProvisionForm } from "../provision/create-equipment-provision.form";
-import { EquipmentDetailStateService, setCreateProvisionSubroute } from "./equipment-detail.state";
+import { EquipmentDetailStateService, EquipmentDetailSubpage } from "./equipment-detail.state";
 
 
 @Component({
@@ -23,7 +23,8 @@ import { EquipmentDetailStateService, setCreateProvisionSubroute } from "./equip
   }
   `,
 })
-export class EquipmentDetailCreateProvisionPage {
+export class EquipmentDetailCreateProvisionPage implements EquipmentDetailSubpage {
+  readonly subroute = 'create-provision';
   readonly router = inject(Router);
   readonly route = inject(ActivatedRoute);
 
@@ -32,12 +33,8 @@ export class EquipmentDetailCreateProvisionPage {
 
   readonly _equipmentDetailState = inject(EquipmentDetailStateService);
 
-  ngOnInit() {
-    this._equipmentDetailState.dispatch(setCreateProvisionSubroute);
-  }
-
   async _onProvisionSave(_: EquipmentProvision) {
     await this._equipmentContext.refresh();
-    this.router.navigate(['..'], { relativeTo: this.route });
+    this.router.navigate([ '..' ], { relativeTo: this.route });
   }
 }

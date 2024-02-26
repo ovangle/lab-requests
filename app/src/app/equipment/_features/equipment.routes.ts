@@ -32,6 +32,16 @@ export const EQUIPMENT_ROUTES: Routes = [
         path: 'create-provision',
         loadComponent: () => import('./equipment-detail-create-provision.page')
           .then(module => module.EquipmentDetailCreateProvisionPage)
+      },
+      {
+        path: 'installations',
+        children: [
+          {
+            path: ':installation_id',
+            loadComponent: () => import('./equipment-detail-installation-detail.page')
+              .then(module => module.EquipmentDetailInstallationDetailPage)
+          }
+        ]
       }
     ]
   }

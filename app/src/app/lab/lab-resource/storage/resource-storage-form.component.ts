@@ -28,7 +28,7 @@ import { MatCardModule } from '@angular/material/card';
 import { SelectOtherDescriptionComponent } from 'src/app/utils/forms/select-other-description.component';
 import {
   CostEstimateForm,
-  CostEstimateFormComponent,
+  ResearchFundingCostEstimateFormComponent,
   costEstimateForm,
   costEstimatesFromFormValue,
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
@@ -100,7 +100,7 @@ export function patchResourceStorageFormValue(
     MatSelectModule,
 
     SelectOtherDescriptionComponent,
-    CostEstimateFormComponent,
+    ResearchFundingCostEstimateFormComponent,
     CostEstimateInputComponent,
   ],
   template: `
@@ -131,7 +131,7 @@ export function patchResourceStorageFormValue(
       {{ numWeeksInProject }}
 
       @if (funding) {
-        <uni-research-funding-cost-estimate-form
+        <research-funding-cost-estimate-form
           [form]="form!.controls.estimatedCost"
           [funding]="funding"
           name="storage costs"

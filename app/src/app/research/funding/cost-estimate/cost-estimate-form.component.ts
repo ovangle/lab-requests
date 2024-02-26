@@ -60,7 +60,7 @@ export function costEstimatesFromFormValue(
 }
 
 @Component({
-  selector: 'uni-research-funding-cost-estimate-form',
+  selector: 'research-funding-cost-estimate-form',
   standalone: true,
   imports: [
     CommonModule,
@@ -130,7 +130,7 @@ export function costEstimatesFromFormValue(
     </form>
   `,
 })
-export class CostEstimateFormComponent {
+export class ResearchFundingCostEstimateFormComponent {
   @Input({ required: true })
   form: CostEstimateForm | undefined;
 

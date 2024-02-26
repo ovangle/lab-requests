@@ -15,7 +15,7 @@ import { CommonMeasurementUnitInputComponent } from 'src/app/common/measurement/
 import { MeasurementUnitPipe } from 'src/app/common/measurement/common-measurement-unit.pipe';
 import {
   CostEstimateForm,
-  CostEstimateFormComponent,
+  ResearchFundingCostEstimateFormComponent,
   costEstimateForm,
   costEstimatesFromFormValue,
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
@@ -102,7 +102,7 @@ export type InputMaterialFormErrors = ValidationErrors & {
     MeasurementUnitPipe,
     CommonMeasurementUnitInputComponent,
 
-    CostEstimateFormComponent,
+    ResearchFundingCostEstimateFormComponent,
     HazardClassesSelectComponent,
     ResourceStorageFormComponent,
     ProvisionFormComponent,
@@ -129,7 +129,7 @@ export type InputMaterialFormErrors = ValidationErrors & {
       </common-measurement-unit-input>
 
       @if (fundingModel) {
-        <uni-research-funding-cost-estimate-form
+        <research-funding-cost-estimate-form
           [form]="form.controls.perUnitCostEstimate"
           [funding]="fundingModel"
           [unitOfMeasurement]="baseUnit"

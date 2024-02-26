@@ -8,7 +8,7 @@ import { LabSearchComponent } from "src/app/lab/lab-search.component";
 import { ResearchFunding } from "src/app/research/funding/research-funding";
 import { EquipmentContext } from "../equipment-context";
 import { ResearchFundingCostEstimateComponent } from "src/app/research/funding/cost-estimate/cost-estimate.component";
-import { CostEstimateFormComponent, costEstimateForm } from "src/app/research/funding/cost-estimate/cost-estimate-form.component";
+import { ResearchFundingCostEstimateFormComponent, costEstimateForm } from "src/app/research/funding/cost-estimate/cost-estimate-form.component";
 import { Observable, combineLatest, filter, firstValueFrom, map } from "rxjs";
 import { EquipmentInstallation } from "../installation/equipment-installation";
 import { LabContextDirective } from "src/app/lab/lab-context";
@@ -40,7 +40,7 @@ import { MatButtonModule } from "@angular/material/button";
 
     ResizeTextareaOnInputDirective,
 
-    CostEstimateFormComponent,
+    ResearchFundingCostEstimateFormComponent,
     LabSearchComponent,
     EquipmentProvisionInfoComponent,
     ProvisionStatusPipe,
@@ -113,7 +113,7 @@ import { MatButtonModule } from "@angular/material/button";
             </mat-form-field>
 
             @if (funding) {
-              <uni-research-funding-cost-estimate-form 
+              <research-funding-cost-estimate-form 
                 [form]="form.controls.cost" 
                 [quantityRequired]="form.value.quantityRequired" 
                 [funding]="funding" 
@@ -174,7 +174,7 @@ export class CreateEquipmentProvisionForm {
     cost: costEstimateForm(),
     quantityRequired: new FormControl<number>(1, {
       nonNullable: true,
-      validators: [Validators.required, Validators.min(1)]
+      validators: [ Validators.required, Validators.min(1) ]
     })
   });
 
@@ -204,7 +204,7 @@ export class CreateEquipmentProvisionForm {
     this.equipment$,
     this.provisionLab$,
   ]).pipe(
-    map(([equipment, lab]) => equipment.currentLabInstallation(lab))
+    map(([ equipment, lab ]) => equipment.currentLabInstallation(lab))
   );
 
   @Input()

@@ -12,7 +12,7 @@ export interface EquipmentDetailState {
   readonly showDetail: boolean;
 }
 
-export type EquipmentDetailAction = (state: EquipmentDetailState) => Partial<EquipmentDetailState>;
+export type EquipmentDetailAction = (state: EquipmentDetailState) => EquipmentDetailState;
 
 const initialState: EquipmentDetailState = {
   showTagChips: true,
@@ -21,76 +21,55 @@ const initialState: EquipmentDetailState = {
   showDescription: true,
   showDetail: true
 };
-const _stateKeys = [...Object.keys(initialState)] as ReadonlyArray<keyof EquipmentDetailState>;
-
-export function reduceState(
-  state: EquipmentDetailState,
-  action: (state: EquipmentDetailState) => Partial<EquipmentDetailState>
-): EquipmentDetailState {
-  const result = action(state);
-
-  return {
-    ...state,
-    ...result
-  };
-}
+const _stateKeys = [ ...Object.keys(initialState) ] as ReadonlyArray<keyof EquipmentDetailState>;
 
 export function diffStates(
   a: EquipmentDetailState,
   b: EquipmentDetailState
 ): boolean {
-  return _stateKeys.some(k => a[k] !== b[k]);
+  return _stateKeys.some(k => a[ k ] !== b[ k ]);
 }
 
-export function setNoSubroute(state: EquipmentDetailState): Partial<EquipmentDetailState> {
-  return {
-    showTagChips: true,
-    updateLinkVisible: true,
-    updateLinkDisabled: false,
-    showDescription: true,
-    showDetail: true
-  };
+export interface EquipmentDetailSubpage {
+  readonly subroute: 'update' | 'create-provision' | 'installation-detail';
 }
 
-export function setUpdateSubroute(state: EquipmentDetailState) {
-  return {
-    showTagChips: false,
-    updateLinkDisabled: true,
-    showDescription: false,
-    showDetail: false
+export function setDetailPageSubroute(page: EquipmentDetailSubpage | null): EquipmentDetailAction {
+  const route = page?.subroute || null;
+  console.log('route', route);
+
+  const showDetail = page === null;
+  const updateLinkVisible = [ 'update', null ].includes(route);
+  const updateLinkDisabled = page !== null;
+
+  const showDescription = [ 'create-provision', 'installation-detail', null ].includes(route);
+  const showTagChips = [ 'create-provision', 'installation-detail', null ].includes(route);
+
+  return (state: EquipmentDetailState) => {
+    return {
+      ...state,
+      showTagChips,
+      updateLinkVisible,
+      updateLinkDisabled,
+      showDescription,
+      showDetail
+    }
   }
 }
 
-export function setCreateProvisionSubroute(state: EquipmentDetailState): Partial<EquipmentDetailState> {
-  return {
-    showTagChips: true,
-    updateLinkVisible: false,
-    showDescription: true,
-    showDetail: false
-  };
-}
-
-export function setProvisionDetailSubroute(state: EquipmentDetailState): Partial<EquipmentDetailState> {
-  return {
-    showTagChips: true,
-    updateLinkVisible: false,
-    showDescription: true,
-    showDetail: false
-  }
-}
 
 @Injectable()
 export class EquipmentDetailStateService {
-  readonly actionsSubject = new Subject<(state: EquipmentDetailState) => Partial<EquipmentDetailState>>();
+  readonly actionsSubject = new Subject<EquipmentDetailAction>();
 
   readonly state$ = this.actionsSubject.pipe(
     scan(
-      (state, action) => reduceState(state, action),
+      (state, action) => action(state),
       initialState
     ),
     startWith(initialState),
     shareReplay(1)
-  )
+  );
 
   constructor() {
     const destroyRef = inject(DestroyRef);
