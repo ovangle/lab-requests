@@ -130,6 +130,7 @@ export type InputMaterialFormErrors = ValidationErrors & {
 
       @if (fundingModel) {
         <research-funding-cost-estimate-form
+          canUseExternalFunding
           [form]="form.controls.perUnitCostEstimate"
           [funding]="fundingModel"
           [unitOfMeasurement]="baseUnit"

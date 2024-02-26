@@ -1,14 +1,15 @@
-import { Component, DestroyRef, Input, inject } from '@angular/core';
+import { Component, DestroyRef, Input, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule, ValidationErrors } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { CurrencyInputComponent } from 'src/app/common/currency/currency-input.component';
 import { MeasurementUnitPipe } from 'src/app/common/measurement/common-measurement-unit.pipe';
-import { NumberInput, coerceNumberProperty } from '@angular/cdk/coercion';
+import { BooleanInput, NumberInput, coerceBooleanProperty, coerceNumberProperty } from '@angular/cdk/coercion';
 import { ResearchFunding } from '../research-funding';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { CostEstimate } from './cost-estimate';
 import {
+  Observable,
   defer,
   filter,
   map,
@@ -78,9 +79,11 @@ export function costEstimatesFromFormValue(
     <form [formGroup]="form!">
       <h4><ng-content select=".title"></ng-content></h4>
 
-      <mat-checkbox formControlName="isUniversitySupplied">
-        Include {{ name }} in {{ funding!.name | lowercase }} budget
-      </mat-checkbox>
+      @if (canUseExternalFunding) {
+        <mat-checkbox formControlName="isUniversitySupplied">
+          Include {{ name }} in {{ funding!.name | lowercase }} budget
+        </mat-checkbox>
+      }
 
       @if (includeInProjectFunding) {
         @if (!isFixedPerUnitCost) {
@@ -131,8 +134,26 @@ export function costEstimatesFromFormValue(
   `,
 })
 export class ResearchFundingCostEstimateFormComponent {
-  @Input({ required: true })
-  form: CostEstimateForm | undefined;
+  readonly _form = costEstimateForm();
+
+  @Input()
+  set form(form: CostEstimateForm) {
+    form.valueChanges.subscribe(
+      value => this._form.patchValue(value)
+    );
+  }
+
+  @Input()
+  get canUseExternalFunding() {
+    return this._canUseExternalFunding;
+  }
+  set canUseExternalFunding(input: BooleanInput) {
+    this._canUseExternalFunding = coerceBooleanProperty(input);
+    if (this._canUseExternalFunding) {
+      this._form!.patchValue({ isUniversitySupplied: true });
+    }
+  }
+  _canUseExternalFunding = false;
 
   @Input()
   name: string | undefined;
@@ -142,12 +163,12 @@ export class ResearchFundingCostEstimateFormComponent {
 
   @Input()
   get quantityRequired(): number {
-    return this.form!.value.quantityRequired!;
+    return this._form!.value.quantityRequired!;
   }
   set quantityRequired(quantityRequired: NumberInput) {
     this._isFixedQuantityRequired = true;
     quantityRequired = coerceNumberProperty(quantityRequired);
-    this.form!.patchValue({ quantityRequired });
+    this._form!.patchValue({ quantityRequired });
   }
   _isFixedQuantityRequired = false;
   get isFixedQuantityRequired() {
@@ -156,12 +177,12 @@ export class ResearchFundingCostEstimateFormComponent {
 
   @Input()
   get perUnitCost(): number {
-    return this.form!.value.perUnitCost!;
+    return this._form!.value.perUnitCost!;
   }
   set perUnitCost(perUnitCost: NumberInput) {
     this._isFixedPerUnitCost = true;
     perUnitCost = coerceNumberProperty(perUnitCost);
-    this.form!.patchValue({ perUnitCost });
+    this._form!.patchValue({ perUnitCost });
   }
 
   _isFixedPerUnitCost = false;
@@ -169,11 +190,17 @@ export class ResearchFundingCostEstimateFormComponent {
     return this._isFixedPerUnitCost;
   }
 
+  @Output()
+  readonly costEstimateChange: Observable<CostEstimate> = this._form.valueChanges.pipe(
+    filter(() => this._form.valid),
+    map((value) => costEstimatesFromFormValue(value, this.unitOfMeasurement))
+  )
+
   get perUnitCostErrors(): ValidationErrors | null {
-    if (!this.form!.valid) {
+    if (!this._form!.valid) {
       debugger;
     }
-    return this.form!.controls.perUnitCost.errors;
+    return this._form!.controls.perUnitCost.errors;
   }
 
   @Input()
@@ -181,19 +208,19 @@ export class ResearchFundingCostEstimateFormComponent {
   readonly _destroyRef = inject(DestroyRef);
 
   readonly totalCost$ = defer(() =>
-    this.form!.valueChanges.pipe(
-      filter(() => this.form!.valid),
-      startWith(this.form!.value),
+    this._form!.valueChanges.pipe(
+      filter(() => this._form!.valid),
+      startWith(this._form!.value),
       map((value) => costEstimatesFromFormValue(value, this.unitOfMeasurement)),
     ),
   );
 
   get isSuppliedByUni() {
-    return this.form!.controls.isUniversitySupplied.value;
+    return this._form!.controls.isUniversitySupplied.value;
   }
 
   get includeInProjectFunding(): boolean {
-    return !!this.form!.value.isUniversitySupplied;
+    return !!this._form!.value.isUniversitySupplied;
   }
 
   _totalCost: CostEstimate | undefined;
@@ -203,10 +230,10 @@ export class ResearchFundingCostEstimateFormComponent {
 
   ngOnInit() {
     if (this.isFixedPerUnitCost) {
-      this.form!.controls[ 'perUnitCost' ].disable();
+      this._form!.controls[ 'perUnitCost' ].disable();
     }
     if (this.isFixedQuantityRequired) {
-      this.form!.controls[ 'quantityRequired' ].disable();
+      this._form!.controls[ 'quantityRequired' ].disable();
     }
   }
 }

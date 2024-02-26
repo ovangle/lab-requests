@@ -132,6 +132,7 @@ export function patchResourceStorageFormValue(
 
       @if (funding) {
         <research-funding-cost-estimate-form
+          canUseExternalFunding
           [form]="form!.controls.estimatedCost"
           [funding]="funding"
           name="storage costs"

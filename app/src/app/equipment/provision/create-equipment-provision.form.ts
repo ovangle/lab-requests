@@ -114,6 +114,7 @@ import { MatButtonModule } from "@angular/material/button";
 
             @if (funding) {
               <research-funding-cost-estimate-form 
+                canUseExternalFunding
                 [form]="form.controls.cost" 
                 [quantityRequired]="form.value.quantityRequired" 
                 [funding]="funding" 

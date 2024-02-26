@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, Input } from "@angular/core";
+import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { MatCardModule } from "@angular/material/card";
 import { EquipmentProvision } from "./equipment-provision";
 import { ProvisionStatusPipe } from "./provision-status.pipe";
@@ -7,6 +7,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { ResearchFundingCostEstimateComponent } from "src/app/research/funding/cost-estimate/cost-estimate.component";
 import { CostEstimate } from "src/app/research/funding/cost-estimate/cost-estimate";
 import { CostEstimateForm, ResearchFundingCostEstimateFormComponent, costEstimateForm, setCostEstimateFormValue } from "src/app/research/funding/cost-estimate/cost-estimate-form.component";
+import { EquipmentProvisionPurchaseCostEstimateForm } from "./equipment-provision-purchase-cost-estimate.form";
 
 
 @Component({
@@ -19,7 +20,7 @@ import { CostEstimateForm, ResearchFundingCostEstimateFormComponent, costEstimat
 
         ProvisionStatusPipe,
         ResearchFundingCostEstimateComponent,
-        ResearchFundingCostEstimateFormComponent
+        EquipmentProvisionPurchaseCostEstimateForm,
     ],
     template: `
     <mat-card>
@@ -34,20 +35,16 @@ import { CostEstimateForm, ResearchFundingCostEstimateFormComponent, costEstimat
 
             <p>{{provision!.reason}}</p>
 
-            @if (provision!.resolveFunding() | async; as funding) {
-                <research-funding-cost-estimate
-                    [funding]="funding"
-                    [perUnitCost]="provision!.estimatedCost || 0"
-                    [quantityRequired]="provision!.quantityRequired" />
-            } @else if (_costEstimateForm) {
-                <research-funding-cost-estimate-form
-                    [form]="_costEstimateForm"
-                    [funding]="funding"
-                    [perUnitCost]="provision!.estimatedCost" />
+            @if (!isEditingCostEstimates) {
+                @if (canEditCostEstimates) {
+                    <button mat-button (click)="_onEditCostEstimatesClick()"> 
+                        Add/edit cost estimates
+                    </button>
+                }
             } @else {
-                <button mat-button (click)="_onAddCostEstimatesClick()"> 
-                    Add cost estimates
-                </button>
+                <equipment-provision-purchase-cost-estimate-form
+                    [provision]="provision!" 
+                    (save)="provision = $event; save.emit($event)" />
             }
 
         </mat-card-content>
@@ -72,10 +69,17 @@ export class EquipmentProvisionCardComponent {
     @Input({ required: true })
     provision: EquipmentProvision | undefined;
 
+    @Output()
+    save = new EventEmitter<EquipmentProvision>();
+
     get availableActions(): string[] {
         switch (this.provision!.status) {
             case 'requested':
                 return [ 'APPROVE', 'DENY' ];
+            case 'approved':
+                return [ 'PURCHASE' ]
+            case 'purchased':
+                return [ 'INSTALL' ]
             default:
                 return [];
         }
@@ -83,22 +87,19 @@ export class EquipmentProvisionCardComponent {
 
     _onProvisionActionClick(action: string) { }
 
-    get costEstimate(): CostEstimate | null {
-        if (this.provision!.funding) {
-            return {
-                isUniversitySupplied: true,
-                perUnitCost: this.provision!.estimatedCost || 0,
-                unit: 'item',
-                quantityRequired: this.provision!.quantityRequired
-            };
-        }
-        return null;
+
+    isEditingCostEstimates = false;
+
+    get canEditCostEstimates() {
+        return [ 'requested' ].includes(this.provision!.status);
     }
 
-    _costEstimateForm: CostEstimateForm | undefined = undefined;
+    _onEditCostEstimatesClick() {
+        this.isEditingCostEstimates = true;
+    }
 
-    _onAddCostEstimateClick() {
-        this._costEstimateForm = costEstimateForm();
-        setCostEstimateFormValue(this._costEstimateForm, this.costEstimate);
+    _onCostEstimateSave(provision: EquipmentProvision) {
+        this.provision = provision;
+        this.save.next(provision);
     }
 }
