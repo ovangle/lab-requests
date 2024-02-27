@@ -8,7 +8,7 @@ import { LabSearchComponent } from "src/app/lab/lab-search.component";
 import { ResearchFunding } from "src/app/research/funding/research-funding";
 import { EquipmentContext } from "../equipment-context";
 import { ResearchFundingCostEstimateComponent } from "src/app/research/funding/cost-estimate/cost-estimate.component";
-import { ResearchFundingCostEstimateFormComponent, costEstimateForm } from "src/app/research/funding/cost-estimate/cost-estimate-form.component";
+import { ResearchFundingCostEstimateFormComponent } from "src/app/research/funding/cost-estimate/cost-estimate-form.component";
 import { Observable, combineLatest, filter, firstValueFrom, map } from "rxjs";
 import { EquipmentInstallation } from "../installation/equipment-installation";
 import { LabContextDirective } from "src/app/lab/lab-context";
@@ -172,7 +172,7 @@ export class CreateEquipmentProvisionForm {
         return null;
       }
     }),
-    cost: costEstimateForm(),
+    cost: new FormControl<number | null>(null),
     quantityRequired: new FormControl<number>(1, {
       nonNullable: true,
       validators: [ Validators.required, Validators.min(1) ]
@@ -235,7 +235,7 @@ export class CreateEquipmentProvisionForm {
         reason: this.form.value.reason!,
         lab: this.form.value.lab || null,
         funding: this.form.value.funding || null,
-        estimatedCost: this.form.value.cost?.perUnitCost || 0,
+        estimatedCost: this.form.value.cost || 0,
         purchaseUrl: ''
       })
     );

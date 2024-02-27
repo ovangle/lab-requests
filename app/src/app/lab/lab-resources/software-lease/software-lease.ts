@@ -1,8 +1,3 @@
-import {
-  CostEstimate,
-  costEstimateFromJson,
-  costEstimateToJson,
-} from 'src/app/research/funding/cost-estimate/cost-estimate';
 import { resourceFileAttachmentFromJson } from '../../lab-resource/file-attachment/file-attachment';
 import { ResourceParams, Resource, resourceParamsFromJsonObject } from '../../lab-resource/resource';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';

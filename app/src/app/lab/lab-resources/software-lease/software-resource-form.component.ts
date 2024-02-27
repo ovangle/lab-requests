@@ -12,10 +12,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { SoftwareLease, SoftwareLeaseParams } from './software-lease';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import {
-  CostEstimateForm,
-  costEstimateForm,
-} from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { ProvisionFormComponent } from '../../lab-resource/provision/provision-form.component';
 import { ResourceContext } from '../../lab-resource/resource-context';
 import { ResourceFormComponent } from '../../lab-resource/abstract-resource-form.component';
@@ -29,7 +25,7 @@ export type SoftwareLeaseForm = FormGroup<{
 
   isLicenseRequired: FormControl<boolean>;
   hasCostEstimates: FormControl<boolean>;
-  estimatedCost: CostEstimateForm;
+  estimatedCost: FormControl<number | null>;
 }>;
 
 export function softwareLeaseForm(committed: SoftwareLease | null): SoftwareLeaseForm {
@@ -42,7 +38,7 @@ export function softwareLeaseForm(committed: SoftwareLease | null): SoftwareLeas
     isLicenseRequired: new FormControl(false, { nonNullable: true }),
 
     hasCostEstimates: new FormControl<boolean>(false, { nonNullable: true }),
-    estimatedCost: costEstimateForm(),
+    estimatedCost: new FormControl<number | null>(null)
   });
 }
 
@@ -127,7 +123,7 @@ export class SoftwareLeaseFormComponent extends ResourceFormComponent<SoftwareLe
   override createForm(committed: SoftwareLease | null): SoftwareLeaseForm {
     return softwareLeaseForm(committed);
   }
-  override async getPatch(patchParams: ResourceParams, value: Partial<{ name: string; description: string; minVersion: string; isLicenseRequired: boolean; hasCostEstimates: boolean; estimatedCost: Partial<{ isUniversitySupplied: boolean; perUnitCost: number; quantityRequired: number; }>; }>): Promise<SoftwareLease> {
+  override async getPatch(patchParams: ResourceParams, value: SoftwareLeaseForm[ 'value' ]): Promise<SoftwareLease> {
     throw new Error('Not implemented');
   }
 }

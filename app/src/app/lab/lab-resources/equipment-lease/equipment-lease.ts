@@ -1,11 +1,6 @@
 import { validate as validateIsUUID } from 'uuid';
 
 import {
-  CostEstimate,
-  costEstimateFromJson,
-  costEstimateToJson,
-} from 'src/app/research/funding/cost-estimate/cost-estimate';
-import {
   Equipment,
   equipmentFromJsonObject,
   EquipmentService,
@@ -24,7 +19,7 @@ export interface EquipmentLeaseParams extends ResourceParams {
   requireSupervision: boolean;
 
   setupInstructions: string;
-  usageCostEstimate: CostEstimate | null;
+  usageCostEstimate: number | null;
 }
 
 export class EquipmentLease extends Resource {
@@ -41,7 +36,7 @@ export class EquipmentLease extends Resource {
   requireSupervision: boolean;
 
   setupInstructions: string;
-  usageCostEstimate: CostEstimate | null;
+  usageCostEstimate: number | null;
 
   constructor(params: EquipmentLeaseParams) {
     super(params);
@@ -81,10 +76,9 @@ export function equipmentLeaseFromJson(json: JsonObject): EquipmentLease {
     throw new Error("Expected a string 'setupInstructions'");
   }
 
-  if (!isJsonObject(json[ 'usageCostEstimate' ])) {
+  if (typeof json[ 'usageCostEstimate' ] !== 'number' && json[ 'usageCostEstimate' ] !== null) {
     throw new Error("Expected a json object 'usageCostEstimate'")
   }
-
 
   return new EquipmentLease({
     ...resourceParams,
@@ -93,9 +87,7 @@ export function equipmentLeaseFromJson(json: JsonObject): EquipmentLease {
     equipmentTrainingCompleted: new Set(json[ 'equipmentTrainingCompleted' ]),
     requireSupervision: json[ 'requireSupervision' ],
     setupInstructions: json[ 'setupInstructions' ],
-    usageCostEstimate: json[ 'usageCostEstimate' ]
-      ? costEstimateFromJson(json[ 'usageCostEstimate' ])
-      : null,
+    usageCostEstimate: json[ 'usageCostEstimate' ],
   });
 }
 
@@ -116,7 +108,6 @@ export function equipmentLeaseParamsToJson(lease: EquipmentLeaseParams): {
     equipmentTrainingCompleted: lease.equipmentTrainingCompleted,
     requireSupervision: lease.requireSupervision,
     setupInstructions: lease.setupInstructions,
-    usageCostEstimate:
-      lease.usageCostEstimate && costEstimateToJson(lease.usageCostEstimate),
+    usageCostEstimate: lease.usageCostEstimate
   };
 }

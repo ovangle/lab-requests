@@ -1,10 +1,3 @@
-import { differenceInCalendarWeeks } from 'date-fns';
-import {
-  CostEstimate,
-  costEstimateFromJson,
-  costEstimateToJson,
-} from 'src/app/research/funding/cost-estimate/cost-estimate';
-import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 
 export const RESOURCE_STORAGE_TYPES = [
@@ -68,10 +61,9 @@ export class ResourceStorage implements ResourceStorageParams {
 }
 
 export function resourceStorageFromJson(json: JsonObject): ResourceStorage {
-  if (!isJsonObject(json[ 'estimatedCost' ]) || json[ 'estimatedCost' ] !== null) {
-    throw new Error("Expected a json object or null 'estimatedCost'");
+  if (typeof json[ 'estimatedCost' ] !== 'number' && json[ 'estimatedCost' ] !== null) {
+    throw new Error("Expected a number or null 'estimatedCost'")
   }
-  const estimatedCost = json[ 'estimatedCost' ] && costEstimateFromJson(json[ 'estimatedCost' ]);
 
   if (typeof json[ 'description' ] !== 'string') {
     throw new Error("Expected a string 'description'");
@@ -79,7 +71,7 @@ export function resourceStorageFromJson(json: JsonObject): ResourceStorage {
 
   return new ResourceStorage({
     description: json[ 'description' ],
-    estimatedCost,
+    estimatedCost: json[ 'estimatedCost' ],
   });
 }
 

@@ -27,14 +27,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatCardModule } from '@angular/material/card';
 import { SelectOtherDescriptionComponent } from 'src/app/utils/forms/select-other-description.component';
 import {
-  CostEstimateForm,
   ResearchFundingCostEstimateFormComponent,
-  costEstimateForm,
-  costEstimatesFromFormValue,
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { differenceInCalendarWeeks } from 'date-fns';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
-import { CostEstimateInputComponent } from 'src/app/research/funding/cost-estimate/cost-estimate-input.component';
 import { CostEstimate } from 'src/app/research/funding/cost-estimate/cost-estimate';
 
 export type ResourceStorageForm = FormGroup<{
@@ -98,7 +94,6 @@ export function patchResourceStorageFormValue(
 
     SelectOtherDescriptionComponent,
     ResearchFundingCostEstimateFormComponent,
-    CostEstimateInputComponent,
   ],
   template: `
     <h3>Storage</h3>
@@ -136,15 +131,7 @@ export function patchResourceStorageFormValue(
           unitOfMeasurement="weeks"
           (costEstimateChange)="_onCostEstimateChange($event)"
         />
-
-        <uni-cost-estimate-input
-          formControlName="cost"
-          [fundingModel]="funding"
-          unitOfMeasurement="week"
-          [perUnitCost]="perWeekStorageCost"
-          [quantityRequired]="numWeeksInProject"
-        />
-      }
+     }
     </ng-container>
   `,
   styles: [

@@ -1,10 +1,6 @@
 import { ThisReceiver } from '@angular/compiler';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
-import {
-  CostEstimate,
-  costEstimateFromJson,
-  costEstimateToJson,
-} from 'src/app/research/funding/cost-estimate/cost-estimate';
+import { JsonObject } from 'src/app/utils/is-json-object';
 
 export const RESOURCE_DISPOSAL_TYPES = [
   'general',
@@ -15,7 +11,7 @@ export const RESOURCE_DISPOSAL_TYPES = [
   'other',
 ] as const;
 
-export type ResourceDisposalType = (typeof RESOURCE_DISPOSAL_TYPES)[number];
+export type ResourceDisposalType = (typeof RESOURCE_DISPOSAL_TYPES)[ number ];
 
 export function isResourceDisposalType(obj: any): obj is ResourceDisposalType {
   return (
@@ -25,12 +21,12 @@ export function isResourceDisposalType(obj: any): obj is ResourceDisposalType {
 
 export interface ResourceDisposalParams {
   readonly description: string;
-  readonly estimatedCost: CostEstimate | null;
+  readonly estimatedCost: number | null;
 }
 
 export class ResourceDisposal {
   readonly description: string;
-  readonly estimatedCost: CostEstimate | null;
+  readonly estimatedCost: number | null;
 
   constructor(params: ResourceDisposalParams) {
     this.description = params.description;
@@ -45,22 +41,26 @@ export class ResourceDisposal {
   }
 }
 
-export function resourceDisposalFromJson(json: {
-  [k: string]: any;
-}): ResourceDisposal {
+export function resourceDisposalFromJson(json: JsonObject): ResourceDisposal {
+  if (typeof json[ 'description' ] !== 'string') {
+    throw new Error("Expected a string 'description'");
+  }
+  if (typeof json[ 'estimatedCost' ] !== 'number' && json[ 'estimatedCost' ] !== null) {
+    throw new Error("Expected a number or null 'estimatedCost'");
+  }
+
+
   return new ResourceDisposal({
-    description: json['description'],
-    estimatedCost:
-      json['estimatedCost'] && costEstimateFromJson(json['estimatedCost']),
+    description: json[ 'description' ],
+    estimatedCost: json[ 'estimatedCost' ]
   });
 }
 
 export function resourceDisposalParamsToJson(
   disposal: ResourceDisposalParams,
-): { [k: string]: any } {
+): { [ k: string ]: any } {
   return {
     description: disposal.description,
-    costEstimate:
-      disposal.estimatedCost && costEstimateToJson(disposal.estimatedCost),
+    costEstimate: disposal.estimatedCost,
   };
 }

@@ -14,10 +14,7 @@ import { InputMaterial, InputMaterialParams } from './input-material';
 import { CommonMeasurementUnitInputComponent } from 'src/app/common/measurement/common-measurement-unit-input.component';
 import { MeasurementUnitPipe } from 'src/app/common/measurement/common-measurement-unit.pipe';
 import {
-  CostEstimateForm,
   ResearchFundingCostEstimateFormComponent,
-  costEstimateForm,
-  costEstimatesFromFormValue,
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { BehaviorSubject, first } from 'rxjs';

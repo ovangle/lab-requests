@@ -13,62 +13,13 @@ import {
   defer,
   filter,
   map,
+  shareReplay,
   startWith,
 } from 'rxjs';
 import { UnitOfMeasurement } from 'src/app/common/measurement/measurement';
 import { MatInputModule } from '@angular/material/input';
 import { CostEstimatePipe } from './cost-estimate.pipe';
 import { ResearchFundingSelectComponent } from '../research-funding-select.component';
-
-export type CostEstimateForm = FormGroup<{
-  funding: FormControl<ResearchFunding | null>;
-  isUniversitySupplied: FormControl<boolean>;
-  perUnitCost: FormControl<number>;
-  quantityRequired: FormControl<number>;
-}>;
-
-export function costEstimateForm(): CostEstimateForm {
-  return new FormGroup({
-    funding: new FormControl<ResearchFunding | null>(null),
-    isUniversitySupplied: new FormControl(true, { nonNullable: true }),
-    perUnitCost: new FormControl(0, { nonNullable: true }),
-    quantityRequired: new FormControl<number>(1, { nonNullable: true }),
-  });
-}
-
-export function setCostEstimateFormValue(
-  form: CostEstimateForm,
-  cost: CostEstimate | null,
-) {
-  if (cost == null) {
-    form.reset();
-  } else {
-    form.setValue({
-      funding: cost.funding,
-      isUniversitySupplied: cost.isUniversitySupplied,
-      perUnitCost: cost.perUnitCost,
-      quantityRequired: cost.quantityRequired,
-    });
-  }
-}
-
-export function costEstimatesFromFormValue(
-  value: CostEstimateForm[ 'value' ],
-  unit: UnitOfMeasurement | null,
-): CostEstimate {
-  if (!value.funding) {
-    throw new Error('Cost estimate has no funding');
-  }
-
-
-  return {
-    funding: value.funding,
-    isUniversitySupplied: !!value.isUniversitySupplied,
-    perUnitCost: value.perUnitCost!,
-    unit: unit || 'item',
-    quantityRequired: value.quantityRequired!,
-  };
-}
 
 @Component({
   selector: 'research-funding-cost-estimate-form',
@@ -138,11 +89,9 @@ export function costEstimatesFromFormValue(
         }
 
         <div class="total-amount">Total</div>
-        @if (totalCost$ | async; as cost) {
           <div>
-            <span [innerHTML]="cost | uniCostEstimate: 'full'"></span>
+            <span [innerHTML]="value | uniCostEstimate: 'full'"></span>
           </div>
-        }
       } @else {
         <p>Will be supplied by researcher</p>
       }
@@ -150,7 +99,17 @@ export function costEstimatesFromFormValue(
   `,
 })
 export class ResearchFundingCostEstimateFormComponent {
-  readonly _form = costEstimateForm();
+  readonly _form = new FormGroup({
+    funding: new FormControl<ResearchFunding | null>(null),
+    isUniversitySupplied: new FormControl(true, { nonNullable: true }),
+    unit: new FormControl<UnitOfMeasurement>('item', { nonNullable: true }),
+    perUnitCost: new FormControl(0, { nonNullable: true }),
+    quantityRequired: new FormControl<number>(1, { nonNullable: true }),
+  });
+
+  get value(): CostEstimate {
+    return this._form.value as CostEstimate;
+  }
 
   @Input()
   name: string | undefined;
@@ -197,8 +156,12 @@ export class ResearchFundingCostEstimateFormComponent {
   @Output()
   readonly costEstimateChange: Observable<CostEstimate> = this._form.valueChanges.pipe(
     filter(() => this._form.valid),
-    map((value) => costEstimatesFromFormValue(value, this.unitOfMeasurement))
-  )
+    map((value) => ({
+      ...value,
+      unit: this.unitOfMeasurement
+    } as CostEstimate)),
+    shareReplay(1)
+  );
 
   get perUnitCostErrors(): ValidationErrors | null {
     if (!this._form!.valid) {
@@ -207,17 +170,13 @@ export class ResearchFundingCostEstimateFormComponent {
     return this._form!.controls.perUnitCost.errors;
   }
 
-  @Input()
-  unitOfMeasurement: UnitOfMeasurement = 'item';
-  readonly _destroyRef = inject(DestroyRef);
-
-  readonly totalCost$ = defer(() =>
-    this._form!.valueChanges.pipe(
-      filter(() => this._form!.valid),
-      startWith(this._form!.value),
-      map((value) => costEstimatesFromFormValue(value, this.unitOfMeasurement)),
-    ),
-  );
+  @Input({ required: true })
+  get unitOfMeasurement(): UnitOfMeasurement {
+    return this._form.value.unit!;
+  }
+  set unitOfMeasurement(unit: UnitOfMeasurement) {
+    this._form.patchValue({ unit });
+  }
 
   get isSuppliedByUni() {
     return this._form!.controls.isUniversitySupplied.value;

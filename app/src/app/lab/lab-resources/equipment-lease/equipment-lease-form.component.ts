@@ -13,17 +13,12 @@ import { EquipmentLease, EquipmentLeaseParams } from './equipment-lease';
 import { BehaviorSubject, Observable, combineLatest, defer, filter, firstValueFrom, map, of, startWith, switchMap } from 'rxjs';
 import { EquipmentSearchComponent } from 'src/app/equipment/equipment-search.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import {
-  CostEstimateForm,
-  costEstimateForm,
-} from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { EquipmentRiskAssessmentFileInputComponent } from './risk-assessment-file-input.component';
 import { Equipment, EquipmentService } from 'src/app/equipment/equipment';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { injectMaybeLabFromContext } from '../../lab-context';
 import { Lab } from '../../lab';
 import { EquipmentProvision } from '../../../equipment/provision/equipment-provision';
-import { CostEstimate } from 'src/app/research/funding/cost-estimate/cost-estimate';
 import { ResourceFormComponent } from '../../lab-resource/abstract-resource-form.component';
 import { ResourceParams } from '../../lab-resource/resource';
 import { NotFoundValue } from 'src/app/common/model/search/search-control';
@@ -35,7 +30,7 @@ export type EquipmentLeaseForm = FormGroup<{
   requireSupervision: FormControl<boolean>;
 
   setupInstructions: FormControl<string>;
-  usageCostEstimate: CostEstimateForm;
+  usageCostEstimate: FormControl<number | null>;
 }>;
 
 function equipmentLeaseForm(
@@ -44,7 +39,7 @@ function equipmentLeaseForm(
   return new FormGroup({
     equipment: new FormControl<Equipment | NotFoundValue | null>(
       lease?.equipment || (null as any),
-      { validators: [Validators.required] },
+      { validators: [ Validators.required ] },
     ),
     equipmentTrainingCompleted: new FormControl<string[]>(
       lease?.equipmentTrainingCompleted || [],
@@ -56,7 +51,7 @@ function equipmentLeaseForm(
     setupInstructions: new FormControl<string>(lease?.setupInstructions || '', {
       nonNullable: true,
     }),
-    usageCostEstimate: costEstimateForm(),
+    usageCostEstimate: new FormControl<number | null>(null)
   });
 }
 
@@ -123,7 +118,7 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
     return equipmentLeaseForm(committed);
   }
 
-  async getPatch(patchParams: ResourceParams, value: EquipmentLeaseForm['value']): Promise<EquipmentLease> {
+  async getPatch(patchParams: ResourceParams, value: EquipmentLeaseForm[ 'value' ]): Promise<EquipmentLease> {
     const equipment = await firstValueFrom(this.selectedEquipment$);
     const equipmentProvision = this._createdProvisionSubject.value;
 
@@ -134,10 +129,7 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
       equipmentTrainingCompleted: new Set(value.equipmentTrainingCompleted!),
       requireSupervision: value.requireSupervision!,
       setupInstructions: value.setupInstructions!,
-      usageCostEstimate: {
-        unit: 'hour',
-        ...value.usageCostEstimate
-      } as CostEstimate
+      usageCostEstimate: value.usageCostEstimate!
     });
   }
 

@@ -15,17 +15,12 @@ import { CommonModule } from '@angular/common';
 import { MatSelectModule } from '@angular/material/select';
 import { SelectOtherDescriptionComponent } from 'src/app/utils/forms/select-other-description.component';
 import { ProvisionFormComponent } from '../provision/provision-form.component';
-import {
-  CostEstimateForm,
-  costEstimateForm,
-  costEstimatesFromFormValue,
-} from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 
 export type ResourceDisposalForm = FormGroup<{
   type: FormControl<ResourceDisposalType>;
   description: FormControl<string>;
   hasCostEstimates: FormControl<boolean>;
-  estimatedCost: CostEstimateForm;
+  estimatedCost: FormControl<number | null>;
 }>;
 
 export function resourceDisposalForm(): ResourceDisposalForm {
@@ -36,7 +31,7 @@ export function resourceDisposalForm(): ResourceDisposalForm {
     }),
     description: new FormControl<string>('', { nonNullable: true }),
     hasCostEstimates: new FormControl<boolean>(true, { nonNullable: true }),
-    estimatedCost: costEstimateForm(),
+    estimatedCost: new FormControl<number | null>(null)
   });
 }
 
@@ -49,9 +44,7 @@ export function resourceDisposalFromFormValue(
   const description =
     form.value.type === 'other' ? form.value.description! : form.value.type!;
 
-  const estimatedCost = form.value.hasCostEstimates
-    ? costEstimatesFromFormValue(form.value.estimatedCost!, 'kg')
-    : null;
+  const estimatedCost = form.value.hasCostEstimates ? form.value.estimatedCost! : null;
 
   return new ResourceDisposal({
     description,
@@ -59,17 +52,17 @@ export function resourceDisposalFromFormValue(
   });
 }
 
-export function patchResourceStorageFormValue(
+export function patchResourceDisposalFormValue(
   form: ResourceDisposalForm,
-  storage: ResourceDisposal,
+  disposal: ResourceDisposal,
   options?: any,
 ) {
   form.patchValue(
     {
-      type: storage.type,
-      description: storage.description,
-      hasCostEstimates: storage.estimatedCost != null,
-      estimatedCost: storage.estimatedCost || {},
+      type: disposal.type,
+      description: disposal.description,
+      hasCostEstimates: disposal.estimatedCost != null,
+      estimatedCost: disposal.estimatedCost || null,
     },
     options,
   );

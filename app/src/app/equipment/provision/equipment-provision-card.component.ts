@@ -5,8 +5,6 @@ import { EquipmentProvision } from "./equipment-provision";
 import { ProvisionStatusPipe } from "./provision-status.pipe";
 import { MatButtonModule } from "@angular/material/button";
 import { ResearchFundingCostEstimateComponent } from "src/app/research/funding/cost-estimate/cost-estimate.component";
-import { CostEstimate } from "src/app/research/funding/cost-estimate/cost-estimate";
-import { CostEstimateForm, ResearchFundingCostEstimateFormComponent, costEstimateForm, setCostEstimateFormValue } from "src/app/research/funding/cost-estimate/cost-estimate-form.component";
 import { EquipmentProvisionPurchaseCostEstimateForm } from "./equipment-provision-purchase-cost-estimate.form";
 
 
