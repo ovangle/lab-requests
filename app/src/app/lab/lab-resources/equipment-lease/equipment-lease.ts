@@ -61,24 +61,28 @@ export class EquipmentLease extends Resource {
 export function equipmentLeaseFromJson(json: JsonObject): EquipmentLease {
   const resourceParams = resourceParamsFromJsonObject(json);
 
-  if (!isJsonObject(json['equipment'])) {
+  if (!isJsonObject(json[ 'equipment' ])) {
     throw new Error("Expected a json object 'equipment'");
   }
-  const equipment = equipmentFromJsonObject(json['equipment']);
-  if (!isJsonObject(json['equipmentProvision']) && json['equipmentProvision'] !== null) {
+  const equipment = equipmentFromJsonObject(json[ 'equipment' ]);
+  if (!isJsonObject(json[ 'equipmentProvision' ]) && json[ 'equipmentProvision' ] !== null) {
     throw new Error("Expected a json object or null 'equipmentProvision'");
   }
-  const equipmentProvision = json['equipmentProvision'] && equipmentProvisionFromJsonObject(json['equipmentProvision']);
+  const equipmentProvision = json[ 'equipmentProvision' ] && equipmentProvisionFromJsonObject(json[ 'equipmentProvision' ]);
 
-  if (!Array.isArray(json['equipmentTrainingCompleted']) || !json['equipmentTrainingCompleted'].every(o => typeof o === 'string')) {
+  if (!Array.isArray(json[ 'equipmentTrainingCompleted' ]) || !json[ 'equipmentTrainingCompleted' ].every(o => typeof o === 'string')) {
     throw new Error("Expected a list of strings 'equipmentTrainingCompleted'");
   }
-  if (typeof json['requireSupervision'] !== 'boolean') {
+  if (typeof json[ 'requireSupervision' ] !== 'boolean') {
     throw new Error("Expected a boolean 'requireSupervision")
   }
 
-  if (typeof json['setupInstructions'] !== 'string') {
+  if (typeof json[ 'setupInstructions' ] !== 'string') {
     throw new Error("Expected a string 'setupInstructions'");
+  }
+
+  if (!isJsonObject(json[ 'usageCostEstimate' ])) {
+    throw new Error("Expected a json object 'usageCostEstimate'")
   }
 
 
@@ -86,17 +90,17 @@ export function equipmentLeaseFromJson(json: JsonObject): EquipmentLease {
     ...resourceParams,
     equipment,
     equipmentProvision,
-    equipmentTrainingCompleted: new Set(json['equipmentTrainingCompleted']),
-    requireSupervision: json['requireSupervision'],
-    setupInstructions: json['setupInstructions'],
-    usageCostEstimate: json['usageCostEstimate']
-      ? costEstimateFromJson(json['usageCostEstimate'])
+    equipmentTrainingCompleted: new Set(json[ 'equipmentTrainingCompleted' ]),
+    requireSupervision: json[ 'requireSupervision' ],
+    setupInstructions: json[ 'setupInstructions' ],
+    usageCostEstimate: json[ 'usageCostEstimate' ]
+      ? costEstimateFromJson(json[ 'usageCostEstimate' ])
       : null,
   });
 }
 
 export function equipmentLeaseParamsToJson(lease: EquipmentLeaseParams): {
-  [k: string]: any;
+  [ k: string ]: any;
 } {
   let equipment;
   if (lease.equipment instanceof Equipment) {

@@ -4,6 +4,7 @@ import {
   costEstimateFromJson,
   costEstimateToJson,
 } from 'src/app/research/funding/cost-estimate/cost-estimate';
+import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 
 export const RESOURCE_STORAGE_TYPES = [
@@ -45,22 +46,7 @@ export interface ResourceStorageParams {
   estimatedCost: CostEstimate | null;
 }
 
-export function storageCostEstimate(
-  value: ResourceStorage,
-  startDate: Date,
-  endDate: Date,
-): CostEstimate {
-  const durationInWeeks = differenceInCalendarWeeks(startDate, endDate);
-
-  return {
-    isUniversitySupplied: true,
-    perUnitCost: storageCostPerWeek(value.type),
-    unit: 'week',
-    quantityRequired: durationInWeeks,
-  };
-}
-
-export class ResourceStorage {
+export class ResourceStorage implements ResourceStorageParams {
   description: string;
   estimatedCost: CostEstimate | null;
 

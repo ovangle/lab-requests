@@ -20,6 +20,7 @@ import { MatInputModule } from '@angular/material/input';
 import { CostEstimatePipe } from './cost-estimate.pipe';
 
 export type CostEstimateForm = FormGroup<{
+  funding: FormControl<ResearchFunding | null>;
   isUniversitySupplied: FormControl<boolean>;
   perUnitCost: FormControl<number>;
   quantityRequired: FormControl<number>;
@@ -27,6 +28,7 @@ export type CostEstimateForm = FormGroup<{
 
 export function costEstimateForm(): CostEstimateForm {
   return new FormGroup({
+    funding: new FormControl<ResearchFunding | null>(null),
     isUniversitySupplied: new FormControl(true, { nonNullable: true }),
     perUnitCost: new FormControl(0, { nonNullable: true }),
     quantityRequired: new FormControl<number>(1, { nonNullable: true }),
@@ -41,6 +43,7 @@ export function setCostEstimateFormValue(
     form.reset();
   } else {
     form.setValue({
+      funding: cost.funding,
       isUniversitySupplied: cost.isUniversitySupplied,
       perUnitCost: cost.perUnitCost,
       quantityRequired: cost.quantityRequired,
@@ -52,7 +55,13 @@ export function costEstimatesFromFormValue(
   value: CostEstimateForm[ 'value' ],
   unit: UnitOfMeasurement | null,
 ): CostEstimate {
+  if (!value.funding) {
+    throw new Error('Cost estimate has no funding');
+  }
+
+
   return {
+    funding: value.funding,
     isUniversitySupplied: !!value.isUniversitySupplied,
     perUnitCost: value.perUnitCost!,
     unit: unit || 'item',
@@ -159,7 +168,12 @@ export class ResearchFundingCostEstimateFormComponent {
   name: string | undefined;
 
   @Input()
-  funding: ResearchFunding | undefined;
+  get funding(): ResearchFunding | null {
+    return this.form.value.funding || null;
+  }
+  set funding(funding: ResearchFunding | null) {
+    this.form!.patchValue({ funding });
+  }
 
   @Input()
   get quantityRequired(): number {

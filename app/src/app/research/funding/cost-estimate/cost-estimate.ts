@@ -6,9 +6,11 @@ import {
   formatUnitOfMeasurement,
   isUnitOfMeasurement,
 } from 'src/app/common/measurement/measurement';
-import { isJsonObject } from 'src/app/utils/is-json-object';
+import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
+import { ResearchFunding, researchFundingFromJsonObject } from '../research-funding';
 
 export interface CostEstimate {
+  funding: ResearchFunding;
   isUniversitySupplied: boolean;
   perUnitCost: number;
   unit: UnitOfMeasurement;
@@ -28,30 +30,33 @@ export function isCostEstimate(obj: unknown): obj is CostEstimate {
   );
 }
 
-export function costEstimateFromJson(json: unknown): CostEstimate {
-  if (!isJsonObject(json)) {
-    throw new Error('Expected a json object');
+export function costEstimateFromJson(json: JsonObject): CostEstimate {
+  if (!isJsonObject(json[ 'funding' ])) {
+    throw new Error("expected a json object or null 'funding'");
   }
-  if (typeof json['isUniversitySupplied'] !== 'boolean') {
+  const funding = researchFundingFromJsonObject(json[ 'funding' ]);
+
+  if (typeof json[ 'isUniversitySupplied' ] !== 'boolean') {
     throw new Error("expected a boolean 'isUniversitySupplied'");
   }
-  if (typeof json['estimatedCost'] !== 'number') {
+  if (typeof json[ 'estimatedCost' ] !== 'number') {
     throw new Error("Expected a number 'estimatedCost'");
   }
-  const unit = isUnitOfMeasurement(json['unit']) ? json['unit'] : 'item';
+  const unit = isUnitOfMeasurement(json[ 'unit' ]) ? json[ 'unit' ] : 'item';
   const quantityRequired =
-    typeof json['quantityRequired'] === 'number' ? json['quantityRequired'] : 1;
+    typeof json[ 'quantityRequired' ] === 'number' ? json[ 'quantityRequired' ] : 1;
 
   return {
-    isUniversitySupplied: json['isUniversitySupplied'],
-    perUnitCost: json['estimatedCost'],
+    funding,
+    isUniversitySupplied: json[ 'isUniversitySupplied' ],
+    perUnitCost: json[ 'estimatedCost' ],
     unit,
     quantityRequired,
   };
 }
 
 export function costEstimateToJson(cost: CostEstimate) {
-  let result: { [k: string]: any } = {
+  let result: { [ k: string ]: any } = {
     isUniversitySupplied: cost.isUniversitySupplied,
     estimatedCost: cost.perUnitCost,
     unit: cost.unit,
