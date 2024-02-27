@@ -23,7 +23,7 @@ export interface InputMaterialParams extends ResourceParams {
   baseUnit: string;
 
   numUnitsRequired: number;
-  perUnitCostEstimate: CostEstimate | null;
+  perUnitCostEstimate: number | null;
 
   storage: ResourceStorage | ResourceStorageParams;
   hazardClasses?: HazardClass[];
@@ -38,7 +38,7 @@ export class InputMaterial extends Resource {
 
   numUnitsRequired: number;
 
-  perUnitCostEstimate: CostEstimate | null;
+  perUnitCostEstimate: number | null;
 
   storage: ResourceStorage;
   hazardClasses: HazardClass[];
@@ -72,10 +72,9 @@ export function inputMaterialFromJson(json: JsonObject): InputMaterial {
   if (typeof json[ 'numUnitsRequired' ] !== 'number') {
     throw new Error("Expected a number 'numUnitsRequired");
   }
-  if (!isJsonObject(json[ 'perUnitCostEstimate' ]) && json[ 'perUnitCostEstimate' ] !== null) {
+  if (typeof json[ 'perUnitCostEstimate' ] !== 'number') {
     throw new Error("Expected a json object or null 'perUnitCostEstimate'");
   }
-  const perUnitCostEstimate = json[ 'perUnitCostEstimate' ] && costEstimateFromJson(json[ 'perUnitCostEstimate' ]);
 
   if (!isJsonObject(json[ 'storage' ])) {
     throw new Error("Expected a json object 'storage'");
@@ -93,7 +92,7 @@ export function inputMaterialFromJson(json: JsonObject): InputMaterial {
     description: json[ 'description' ],
     baseUnit: json[ 'baseUnit' ],
     numUnitsRequired: json[ 'numUnitsRequired' ],
-    perUnitCostEstimate,
+    perUnitCostEstimate: json[ 'perUnitCostEstimate' ],
     storage,
     hazardClasses,
   });
@@ -108,9 +107,7 @@ export function inputMaterialToJson(inputMaterial: InputMaterial): {
     name: inputMaterial.name,
     baseUnit: inputMaterial.baseUnit,
     numUnitsRequired: inputMaterial.numUnitsRequired,
-    perUnitCostEstimate:
-      inputMaterial.perUnitCostEstimate &&
-      costEstimateToJson(inputMaterial.perUnitCostEstimate),
+    perUnitCostEstimate: inputMaterial.perUnitCostEstimate,
     storage: resourceStorageParamsToJson(inputMaterial.storage),
     hazardClasses: hazardClassesToJson(inputMaterial.hazardClasses),
   };

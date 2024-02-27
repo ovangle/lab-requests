@@ -18,6 +18,7 @@ import {
 import { UnitOfMeasurement } from 'src/app/common/measurement/measurement';
 import { MatInputModule } from '@angular/material/input';
 import { CostEstimatePipe } from './cost-estimate.pipe';
+import { ResearchFundingSelectComponent } from '../research-funding-select.component';
 
 export type CostEstimateForm = FormGroup<{
   funding: FormControl<ResearchFunding | null>;
@@ -83,12 +84,18 @@ export function costEstimatesFromFormValue(
     MeasurementUnitPipe,
     CurrencyInputComponent,
     CostEstimatePipe,
+
+    ResearchFundingSelectComponent
   ],
   template: `
-    <form [formGroup]="form!">
+    <form [formGroup]="_form">
       <h4><ng-content select=".title"></ng-content></h4>
 
-      @if (canUseExternalFunding) {
+      @if (!_funding) {
+        <research-funding-select formControlName="funding" />
+      }
+
+      @if (funding) {
         <mat-checkbox formControlName="isUniversitySupplied">
           Include {{ name }} in {{ funding!.name | lowercase }} budget
         </mat-checkbox>
@@ -146,34 +153,17 @@ export class ResearchFundingCostEstimateFormComponent {
   readonly _form = costEstimateForm();
 
   @Input()
-  set form(form: CostEstimateForm) {
-    form.valueChanges.subscribe(
-      value => this._form.patchValue(value)
-    );
-  }
-
-  @Input()
-  get canUseExternalFunding() {
-    return this._canUseExternalFunding;
-  }
-  set canUseExternalFunding(input: BooleanInput) {
-    this._canUseExternalFunding = coerceBooleanProperty(input);
-    if (this._canUseExternalFunding) {
-      this._form!.patchValue({ isUniversitySupplied: true });
-    }
-  }
-  _canUseExternalFunding = false;
-
-  @Input()
   name: string | undefined;
 
   @Input()
   get funding(): ResearchFunding | null {
-    return this.form.value.funding || null;
+    return this._form.value.funding || null;
   }
   set funding(funding: ResearchFunding | null) {
-    this.form!.patchValue({ funding });
+    this._funding = funding;
+    this._form.patchValue({ funding });
   }
+  _funding: ResearchFunding | null = null;
 
   @Input()
   get quantityRequired(): number {

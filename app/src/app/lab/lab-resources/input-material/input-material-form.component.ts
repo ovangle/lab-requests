@@ -47,7 +47,7 @@ export type InputMaterialForm = FormGroup<{
   storage: ResourceStorageForm;
   hazardClasses: FormControl<HazardClass[]>;
 
-  perUnitCostEstimate: CostEstimateForm;
+  perUnitCostEstimate: FormControl<number>;
 }>;
 
 function inputMaterialForm(inputMaterial: InputMaterial | null): InputMaterialForm {
@@ -62,7 +62,7 @@ function inputMaterialForm(inputMaterial: InputMaterial | null): InputMaterialFo
       validators: [ Validators.required ],
     }),
     numUnitsRequired: new FormControl<number>(0, { nonNullable: true }),
-    perUnitCostEstimate: costEstimateForm(),
+    perUnitCostEstimate: new FormControl<number>(0, { nonNullable: true }),
     storage: resourceStorageForm(),
     hazardClasses: new FormControl<HazardClass[]>([], { nonNullable: true }),
   });
@@ -75,8 +75,8 @@ function inputMaterialFromFormValue(patchParams: ResourceParams, value: InputMat
     description: value.description || '',
     baseUnit: value.baseUnit!,
 
-    numUnitsRequired: value.perUnitCostEstimate!.quantityRequired!,
-    perUnitCostEstimate: costEstimatesFromFormValue(value.perUnitCostEstimate!, value.baseUnit!),
+    numUnitsRequired: value.numUnitsRequired!,
+    perUnitCostEstimate: value.perUnitCostEstimate!,
 
     storage: resourceStorageFromFormValue(value.storage!),
     hazardClasses: value?.hazardClasses || []
@@ -130,8 +130,6 @@ export type InputMaterialFormErrors = ValidationErrors & {
 
       @if (fundingModel) {
         <research-funding-cost-estimate-form
-          canUseExternalFunding
-          [form]="form.controls.perUnitCostEstimate"
           [funding]="fundingModel"
           [unitOfMeasurement]="baseUnit"
         />

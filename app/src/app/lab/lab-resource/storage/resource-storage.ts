@@ -43,12 +43,12 @@ export function isResourceStorageType(obj: any): obj is ResourceStorageType {
 
 export interface ResourceStorageParams {
   description?: string;
-  estimatedCost: CostEstimate | null;
+  estimatedCost: number | null;
 }
 
 export class ResourceStorage implements ResourceStorageParams {
   description: string;
-  estimatedCost: CostEstimate | null;
+  estimatedCost: number | null;
 
   constructor(params: ResourceStorageParams) {
     this.description = params.description || 'general';
@@ -88,7 +88,6 @@ export function resourceStorageParamsToJson(storage: ResourceStorageParams): {
 } {
   return {
     description: storage.description,
-    estimatedCost:
-      storage.estimatedCost && costEstimateToJson(storage.estimatedCost),
+    estimatedCost: storage.estimatedCost
   };
 }

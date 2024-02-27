@@ -23,6 +23,7 @@ import { ProvisionStatusPipe } from "./provision-status.pipe";
 import { MatInputModule } from "@angular/material/input";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
+import { CostEstimate } from "src/app/research/funding/cost-estimate/cost-estimate";
 
 
 @Component({
@@ -114,11 +115,10 @@ import { MatButtonModule } from "@angular/material/button";
 
             @if (funding) {
               <research-funding-cost-estimate-form 
-                canUseExternalFunding
-                [form]="form.controls.cost" 
                 [quantityRequired]="form.value.quantityRequired" 
                 [funding]="funding" 
-                unitOfMeasurement="item" />
+                unitOfMeasurement="item" 
+                (costEstimateChange)="_onCostEstimateChange($event)" />
             }
           }
           @case ('installed') {
@@ -240,6 +240,10 @@ export class CreateEquipmentProvisionForm {
       })
     );
     this.save.emit(provision);
+  }
+
+  _onCostEstimateChange(estimate: CostEstimate) {
+
   }
 
 }

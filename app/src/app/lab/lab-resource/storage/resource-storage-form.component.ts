@@ -35,12 +35,13 @@ import {
 import { differenceInCalendarWeeks } from 'date-fns';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { CostEstimateInputComponent } from 'src/app/research/funding/cost-estimate/cost-estimate-input.component';
+import { CostEstimate } from 'src/app/research/funding/cost-estimate/cost-estimate';
 
 export type ResourceStorageForm = FormGroup<{
   type: FormControl<ResourceStorageType>;
   description: FormControl<string>;
   hasCostEstimates: FormControl<boolean>;
-  estimatedCost: CostEstimateForm;
+  estimatedCost: FormControl<number>;
 }>;
 
 export function resourceStorageForm(): ResourceStorageForm {
@@ -53,7 +54,7 @@ export function resourceStorageForm(): ResourceStorageForm {
       validators: [ Validators.required ],
     }),
     hasCostEstimates: new FormControl(false, { nonNullable: true }),
-    estimatedCost: costEstimateForm(),
+    estimatedCost: new FormControl<number>(0, { nonNullable: true }),
   });
 }
 
@@ -63,13 +64,9 @@ export function resourceStorageFromFormValue(
   const description =
     value.type === 'other' ? value.description : value.type!;
 
-  const estimatedCost = value.hasCostEstimates
-    ? costEstimatesFromFormValue(value.estimatedCost!, 'week')
-    : null;
-
   return new ResourceStorage({
     description,
-    estimatedCost,
+    estimatedCost: value.estimatedCost || null,
   });
 }
 
@@ -83,7 +80,7 @@ export function patchResourceStorageFormValue(
       type: storage.type,
       description: storage.description,
       hasCostEstimates: storage.estimatedCost != null,
-      estimatedCost: storage.estimatedCost || {},
+      estimatedCost: storage.estimatedCost || 0,
     },
     options,
   );
@@ -132,13 +129,12 @@ export function patchResourceStorageFormValue(
 
       @if (funding) {
         <research-funding-cost-estimate-form
-          canUseExternalFunding
-          [form]="form!.controls.estimatedCost"
           [funding]="funding"
           name="storage costs"
           [perUnitCost]="perWeekStorageCost"
           [quantityRequired]="numWeeksInProject"
           unitOfMeasurement="weeks"
+          (costEstimateChange)="_onCostEstimateChange($event)"
         />
 
         <uni-cost-estimate-input
@@ -211,5 +207,9 @@ export class ResourceStorageFormComponent {
     const t = this.form!.value.type || 'other';
     console.log('storage type', t, storageCostPerWeek(t));
     return storageCostPerWeek(t);
+  }
+
+  _onCostEstimateChange(cost: CostEstimate) {
+
   }
 }
