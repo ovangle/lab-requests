@@ -47,7 +47,7 @@ export abstract class ResourceTableDataSource<
   readonly _formPane = inject(ScaffoldFormPaneControl);
 
   async openResourceCreateForm(): Promise<boolean> {
-    return this._formPane.open([ 'lab-forms', 'resources', this.resourceType, 'create' ], {});
+    return this._formPane.open([ 'lab-forms', 'resources', this.resourceType, 'create' ]);
   }
 
   async openResourceUpdateFormAt(index: number): Promise<boolean> {
@@ -56,7 +56,7 @@ export abstract class ResourceTableDataSource<
       'resources',
       this.resourceType,
       `${index}`,
-    ], {});
+    ]);
   }
 
   deleteElementAt(elementIndex: number): void {

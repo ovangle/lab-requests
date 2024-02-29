@@ -28,13 +28,14 @@ import { map } from 'rxjs';
       <mat-sidenav-content>
         <ng-content select=".content" />
       </mat-sidenav-content>
-      <scaffold-form-pane>
-        <ng-content select=".form-pane-content">
-        </ng-content>
-      </scaffold-form-pane>
+      
     </mat-sidenav-container>
+    <scaffold-form-pane>
+      <ng-content select=".form-pane-content">
+      </ng-content>
+    </scaffold-form-pane>
   `,
-  styleUrls: ['./scaffold-layout.scss']
+  styleUrls: [ './scaffold-layout.scss' ]
 })
 export class ScaffoldLayoutComponent {
   readonly state = inject(ScaffoldStateService);

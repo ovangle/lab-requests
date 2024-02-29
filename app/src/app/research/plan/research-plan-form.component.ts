@@ -104,13 +104,16 @@ function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan 
   ],
   template: `
     <form [formGroup]="form">
-      <mat-form-field>
-        <mat-label>Project title</mat-label>
-        <input matInput type="text" formControlName="title" required />
-        @if (titleErrors && titleErrors['required']) {
-          <mat-error>A value is required</mat-error>
-        }
-      </mat-form-field>
+      @if (!plan) {
+
+        <mat-form-field>
+          <mat-label>Project title</mat-label>
+          <input matInput type="text" formControlName="title" required />
+          @if (titleErrors && titleErrors['required']) {
+            <mat-error>A value is required</mat-error>
+          }
+        </mat-form-field>
+      }
 
       <mat-form-field>
         <mat-label>Experimental Plan Summary</mat-label>
@@ -176,16 +179,18 @@ function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan 
               [hideReviewControls]="hideReviewControls" />
           </mat-card>
         }
+      </div>
 
+      @if (plan) {
         <div class="resources" #resourceContainer>
           <h2>Requirements</h2>
 
           <lab-resource-container-form 
-            [container]="plan?._container || null" 
+            [container]="plan._container" 
             [funding]="funding" />
         </div>
+      }
 
-      </div>
       <div class="form-controls">
         <div (mouseenter)="_showAllFormErrors()">
           <button mat-raised-button [disabled]="!form.valid" 

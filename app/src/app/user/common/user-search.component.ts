@@ -32,7 +32,7 @@ import { User, UserService } from "./user";
         <common-model-search-autocomplete [notFoundTemplate]="userNotFound"/>
 
         <ng-template #userNotFound>
-            The user is not listed <a [routerLink]="['/users/create']">create...</a>
+            The user is not listed <a routerLink="/user/create-temporary">create...</a>
         </ng-template>
     </common-model-search-input-field>
     `,
@@ -51,8 +51,8 @@ export class UserSearchComponent implements ModelSearchComponent<User> {
 
     getSearchOptions(searchInput: string): Observable<User[]> {
         return this._userService.query({
-            search: searchInput || '',
-            include_roles: Array.from(this.includeRoles)
+            search: searchInput,
+            includeRoles: Array.from(this.includeRoles)
         })
     }
 

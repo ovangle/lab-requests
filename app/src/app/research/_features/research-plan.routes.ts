@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { provideResearchPlanDetailContext } from '../plan/research-plan-context';
 
 export const RESEARCH_PLAN_ROUTES: Routes = [
   {
@@ -15,7 +16,17 @@ export const RESEARCH_PLAN_ROUTES: Routes = [
   {
     path: ':plan_id',
     loadComponent: () => import('./research-plan-detail.page')
-      .then(module => module.ResearchPlanDetailPage)
+      .then(module => module.ResearchPlanDetailPage),
+    providers: [
+      provideResearchPlanDetailContext()
+    ],
+    children: [
+      {
+        path: 'update',
+        loadComponent: () => import('./research-plan-detail-update.page')
+          .then(module => module.ResearchPlanDetail__UpdatePage)
+      }
+    ]
     /*
     children: [
       {

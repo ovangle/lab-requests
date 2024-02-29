@@ -17,45 +17,10 @@ import {
   ResearchPlanService,
 
 } from '../plan/research-plan';
-import { CurrentUser, User } from 'src/app/user/common/user';
-import { Campus } from 'src/app/uni/campus/campus';
+import { CurrentUser } from 'src/app/user/common/user';
 import { UserContext } from 'src/app/user/user-context';
 import { ResearchPlanFormComponent } from '../plan/research-plan-form.component';
 import { CommonModule } from '@angular/common';
-
-const melCampusFixture = new Campus({
-  id: uuidv4(),
-  code: 'MEL',
-  name: 'Melbourne',
-  createdAt: new Date(),
-  updatedAt: new Date()
-});
-
-const experimentalPlanCreateFixture: Partial<CreateResearchPlan> = {
-  title: 'The importance of being earnest',
-  description: 'Behave earnestly, then deceptively and observe changes.',
-  funding: 'Grant',
-  researcher: new User({
-    id: uuidv4(),
-    email: 'help@me',
-    name: 'Help me',
-    baseCampus: melCampusFixture,
-    disciplines: new Set(['ict']),
-    roles: new Set(),
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }),
-  coordinator: new User({
-    id: uuidv4(),
-    email: 'a@technician',
-    name: 'a technician',
-    baseCampus: melCampusFixture,
-    disciplines: new Set(['electrical']),
-    roles: new Set(),
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }),
-};
 
 @Component({
   selector: 'lab-experimental-plan-create-page',
@@ -84,7 +49,7 @@ const experimentalPlanCreateFixture: Partial<CreateResearchPlan> = {
       
     `,
   ],
-  providers: [ResearchPlanContext],
+  providers: [ ResearchPlanContext ],
 })
 export class ResearchPlanCreatePage {
   readonly _cdRef = inject(ChangeDetectorRef);
@@ -102,6 +67,6 @@ export class ResearchPlanCreatePage {
 
   async onSave(patch: CreateResearchPlan) {
     const created = await firstValueFrom(this.plans.create(patch));
-    await this._router.navigate(['research', 'plans', created.id]);
+    await this._router.navigate([ 'research', 'plans', created.id ]);
   }
 }

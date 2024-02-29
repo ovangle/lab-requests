@@ -28,18 +28,18 @@ export function campusFromJsonObject(json: JsonObject): Campus {
   if (typeof json !== 'object' || json == null) {
     throw new Error('Expected a campus');
   }
-  const obj: { [k: string]: unknown } = json as any;
+  const obj: { [ k: string ]: unknown } = json as any;
 
   const baseParams = modelParamsFromJsonObject(obj);
 
-  if (!isCampusCode(obj['code'])) {
+  if (!isCampusCode(obj[ 'code' ])) {
     throw new Error('Expected a campus code');
   }
 
   return new Campus({
     ...baseParams,
-    code: obj['code'],
-    name: obj['name'] as string,
+    code: obj[ 'code' ],
+    name: obj[ 'name' ] as string,
   });
 }
 
@@ -107,7 +107,7 @@ function campusCodeFromCampusLookup(lookup: CampusLookup | string) {
 
 export interface CampusQuery extends ModelQuery<Campus> {
   code?: string;
-  textLike?: string;
+  search?: string;
 }
 
 export function campusQueryToHttpParams(
@@ -117,8 +117,8 @@ export function campusQueryToHttpParams(
   if (query.code) {
     params = params.set('code_eq', query.code);
   }
-  if (query.textLike) {
-    params = params.set('text_like', query.textLike);
+  if (query.search) {
+    params = params.set('search', query.search);
   }
   return params;
 }

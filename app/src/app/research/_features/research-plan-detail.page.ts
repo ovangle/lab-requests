@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import {
+  BehaviorSubject,
   Observable,
   Subscription,
   defer,
@@ -25,6 +26,8 @@ import {
 import { CommonModule } from '@angular/common';
 import { ResearchPlanInfoComponent } from '../plan/research-plan-info.component';
 import { MatCardModule } from '@angular/material/card';
+import { ResearchPlanDetailConfig, injectResearchPlanDetailConfig } from './research-plan-detail.state';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
   const activatedRoute = inject(ActivatedRoute);
@@ -55,7 +58,8 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
     ResearchPlanInfoComponent,
   ],
   template: `
-    @if (plan$ | async; as plan) {
+  @if (plan$ | async; as plan) {
+    @if (config$ | async; as config) {
       <research-plan-info [plan]="plan" />
       <mat-card>
         <mat-card-header>
@@ -104,7 +108,7 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
         </mat-card-content>
       </mat-card>
     }
-    
+  }
   `,
   styles: [
     `
@@ -119,18 +123,14 @@ export class ResearchPlanDetailPage {
   readonly isEditingForm = true;
 
   readonly _context = inject(ResearchPlanContext);
-  _contextConnection: Subscription;
 
   readonly appScaffold = inject(BodyScrollbarHidingService);
   readonly plan$ = this._context.committed$;
 
-  constructor() {
-    this._contextConnection = this._context.sendCommitted(
-      researchPlanContextFromDetailRoute(),
-    );
-  }
 
-  ngOnDestroy() {
-    this._contextConnection.unsubscribe();
-  }
+  readonly config$ = injectResearchPlanDetailConfig().pipe(
+    takeUntilDestroyed()
+  )
+
+
 }

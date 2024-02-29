@@ -15,6 +15,9 @@ import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
 import { MatInputModule } from '@angular/material/input';
 import { CampusInfoComponent } from './campus-info.component';
 import { Campus, CampusService } from './campus';
+import { ModelSearchInputComponent } from 'src/app/common/model/search/search-input-field.component';
+import { ModelSearchAutocompleteComponent } from 'src/app/common/model/search/search-autocomplete.component';
+import { ModelSearchComponent, ModelSearchControl, provideModelSearchValueAccessor } from 'src/app/common/model/search/search-control';
 
 @Component({
   selector: 'uni-campus-search',
@@ -22,38 +25,18 @@ import { Campus, CampusService } from './campus';
   imports: [
     CommonModule,
 
-    ReactiveFormsModule,
-    MatAutocompleteModule,
     MatFormFieldModule,
-    MatInputModule,
 
     CampusInfoComponent,
+    ModelSearchInputComponent,
+    ModelSearchAutocompleteComponent
   ],
   template: `
-    <mat-form-field>
-      <mat-label>
-        <ng-content select="mat-label"></ng-content>
-      </mat-label>
+  <common-model-search-input-field [search]="searchControl" [required]="required">
+    <mat-label>Campus</mat-label>
 
-      <input
-        matInput
-        [matAutocomplete]="autocomplete"
-        [formControl]="searchControl"
-        [required]="required"
-      />
-      <mat-error>
-        <ng-content select="mat-error"></ng-content>
-      </mat-error>
-    </mat-form-field>
-
-    <mat-autocomplete #autocomplete [displayWith]="_displayCampusInfo">
-      <mat-option
-        *ngFor="let campus of searchResults$ | async"
-        [value]="campus"
-      >
-        <uni-campus-info [campus]="campus"></uni-campus-info>
-      </mat-option>
-    </mat-autocomplete>
+    <common-model-search-autocomplete />
+  </common-model-search-input-field>
   `,
   styles: [
     `
@@ -63,47 +46,19 @@ import { Campus, CampusService } from './campus';
     `,
   ],
   providers: [
-    {
-      provide: NG_VALUE_ACCESSOR,
-      multi: true,
-      useExisting: CampusSearchComponent,
-    },
+    provideModelSearchValueAccessor(CampusSearchComponent)
   ],
 })
-export class CampusSearchComponent implements ControlValueAccessor {
+export class CampusSearchComponent implements ModelSearchComponent<Campus> {
   readonly campusService = inject(CampusService);
 
-  readonly searchControl = new FormControl<Campus | string>('', {
-    nonNullable: true,
-  });
-  readonly searchResults$: Observable<Campus[]> =
-    this.searchControl.valueChanges.pipe(
-      takeUntilDestroyed(),
-      startWith(null),
-      switchMap((nameOrCampus) => {
-        if (nameOrCampus == null) {
-          return of([]);
-        } else if (nameOrCampus instanceof Campus) {
-          return of([ nameOrCampus ]);
-        } else {
-          return this.campusService.query({ code: nameOrCampus });
-        }
-      }),
-    );
+  readonly searchControl = new ModelSearchControl<Campus>(
+    (search: string) => this.getCampuses(search),
+    (campus) => this._displayCampusInfo(campus)
+  );
 
-  readonly selectedCampus$: Observable<Campus | null> =
-    this.searchControl.valueChanges.pipe(
-      takeUntilDestroyed(),
-      map((value) => {
-        if (value instanceof Campus) {
-          return value;
-        }
-        return null;
-      }),
-    );
-
-  get hasSelectedValue() {
-    return this.searchControl.value instanceof Campus;
+  getCampuses(search: string) {
+    return this.campusService.query({ search });
   }
 
   @HostBinding('[attr.required]')
@@ -115,37 +70,8 @@ export class CampusSearchComponent implements ControlValueAccessor {
   }
   _required: boolean = false;
 
-  reset() {
-    this.searchControl.setValue('');
-    this._onChange(null);
-  }
-
-  constructor() {
-    this.searchControl.valueChanges
-      .pipe(
-        takeUntilDestroyed(),
-        filter((value): value is Campus => value instanceof Campus),
-      )
-      .subscribe((value) => this._onChange(value));
-  }
-
   _displayCampusInfo(campus: Campus) {
-    if (campus instanceof Campus) {
-      return `${campus.code} - ${campus.name}`;
-    }
-    return campus;
+    return `${campus.code} - ${campus.name}`;
   }
-
-  writeValue(value: Campus | string | null): void {
-    this.searchControl.setValue(value || '');
-  }
-  _onChange = (value: any) => { };
-  registerOnChange(fn: any): void {
-    this._onChange = fn;
-  }
-  _onTouched = () => { };
-  registerOnTouched(fn: any): void {
-    this._onTouched = fn;
-  }
-  readonly setDisabledState = disabledStateToggler(this.searchControl);
 }
+

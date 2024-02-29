@@ -1,7 +1,18 @@
-import { Component, DestroyRef, HostBinding, inject } from "@angular/core"
+import { Component, DestroyRef, EventEmitter, HostBinding, Output, inject } from "@angular/core"
 import { ScaffoldFormPaneControl, ScaffoldFormPane } from "./form-pane-control";
 import { BehaviorSubject } from "rxjs";
 import { CommonModule } from "@angular/common";
+import { UrlSegment } from "@angular/router";
+
+export class ScaffoldFormPaneActivation {
+  constructor(
+    readonly formUrl: readonly UrlSegment[]
+  ) { }
+}
+
+export class ScaffoldFormPaneDeactivation {
+
+}
 
 @Component({
   selector: 'scaffold-form-pane',
@@ -35,8 +46,21 @@ export class ScaffoldFormPaneComponent implements ScaffoldFormPane {
   @HostBinding('class.open')
   isOpen: boolean = false;
 
-  toggleIsOpen(isOpen: boolean) {
-    this.isOpen = isOpen;
+  @Output()
+  activate = new EventEmitter<ScaffoldFormPaneActivation>();
+
+  @Output()
+  deactivate = new EventEmitter<ScaffoldFormPaneDeactivation>();
+
+  toggleIsOpen(formUrl: readonly UrlSegment[] | null) {
+    this.isOpen = formUrl != null;
+
+    if (formUrl) {
+      this.activate.emit(new ScaffoldFormPaneActivation(formUrl));
+    } else {
+      this.deactivate.emit(new ScaffoldFormPaneDeactivation());
+    }
+
   }
 
   ngOnInit() {
@@ -45,7 +69,8 @@ export class ScaffoldFormPaneComponent implements ScaffoldFormPane {
     this._destroyRef.onDestroy(() => {
       controlConnection.unsubscribe();
     })
-
   }
 }
 
+
+// <p>@{outputs('Get_an_@mention_token_for_a_user')?['body/atMention']}</p><br><p>A new lab request has been submitted by @{outputs('Get_user_profile_(V2)')?['body/displayName']} (@{outputs('Get_user_profile_(V2)')?['body/mail']}).<br><br><br><br><a href="">view submission</a><br><a href="">view task</a></p>

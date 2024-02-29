@@ -48,7 +48,6 @@ import { ResourceTypePipe } from '../resource-type.pipe';
       align-items: center;
     }
     h3 {
-      padding-left: 2em;
       margin-bottom: 0;
     }
   `,

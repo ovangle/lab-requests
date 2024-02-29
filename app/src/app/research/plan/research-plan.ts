@@ -33,12 +33,12 @@ export interface ResearchPlanAttachment extends ModelParams {
 
 export function researchPlanAttachmentFromJsonObject(json: JsonObject) {
   const baseParams = modelParamsFromJsonObject(json);
-  if (typeof json['path'] !== 'string') {
+  if (typeof json[ 'path' ] !== 'string') {
     throw new Error("ResearchPlanAttachment: 'path' must be a string");
   }
   return {
     ...baseParams,
-    path: json['path'],
+    path: json[ 'path' ],
   };
 }
 
@@ -60,51 +60,51 @@ export function researchPlanFromJsonObject(json: JsonObject): ResearchPlan {
   const baseParams = modelParamsFromJsonObject(json);
   const containerParams = resourceContainerParamsFromJson(json);
 
-  if (typeof json['title'] !== 'string') {
+  if (typeof json[ 'title' ] !== 'string') {
     throw new Error("ResearchPlanParams: 'title' must be a string");
   }
-  if (typeof json['description'] !== 'string') {
+  if (typeof json[ 'description' ] !== 'string') {
     throw new Error("ResearchPlanParams: 'description' must be a string");
   }
-  if (!isJsonObject(json['funding'])) {
+  if (!isJsonObject(json[ 'funding' ])) {
     throw new Error("ResearchPlanParams: 'funding' must be a json object");
   }
-  const funding = researchFundingFromJsonObject(json['funding']);
+  const funding = researchFundingFromJsonObject(json[ 'funding' ]);
 
-  if (!isJsonObject(json['researcher'])) {
+  if (!isJsonObject(json[ 'researcher' ])) {
     throw new Error("ResearchPlanParams: 'researcher' must be a json object");
   }
-  const researcher = userFromJsonObject(json['researcher']);
+  const researcher = userFromJsonObject(json[ 'researcher' ]);
 
-  if (!isJsonObject(json['coordinator'])) {
+  if (!isJsonObject(json[ 'coordinator' ])) {
     throw new Error("ResearchPlanParams: 'coordinator' must be a json object");
   }
-  const coordinator = userFromJsonObject(json['coordinator']);
+  const coordinator = userFromJsonObject(json[ 'coordinator' ]);
 
-  if (!Array.isArray(json['tasks']) || !json['tasks'].every(isJsonObject)) {
+  if (!Array.isArray(json[ 'tasks' ]) || !json[ 'tasks' ].every(isJsonObject)) {
     throw new Error(
       "ResearchPlanParams: 'tasks' must be an array of json objects",
     );
   }
-  const tasks = json['tasks'].map((o) => researchPlanTaskFromJson(o));
+  const tasks = json[ 'tasks' ].map((o) => researchPlanTaskFromJson(o));
 
   if (
-    !Array.isArray(json['attachments']) ||
-    !json['attachments'].every(isJsonObject)
+    !Array.isArray(json[ 'attachments' ]) ||
+    !json[ 'attachments' ].every(isJsonObject)
   ) {
     throw new Error(
       "ResearchPlanParams: 'attachments' must be an array of json objects",
     );
   }
-  const attachments = json['attachments'].map((o) =>
+  const attachments = json[ 'attachments' ].map((o) =>
     researchPlanAttachmentFromJsonObject(o),
   );
 
   return new ResearchPlan({
     ...baseParams,
     ...containerParams,
-    title: json['title'],
-    description: json['description'],
+    title: json[ 'title' ],
+    description: json[ 'description' ],
     funding,
     researcher,
     coordinator,
