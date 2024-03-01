@@ -1,7 +1,5 @@
-import { parseISO } from 'date-fns';
 import {
   Model,
-  ModelIndexPage,
   ModelParams,
   ModelQuery,
   modelParamsFromJsonObject,
@@ -9,21 +7,17 @@ import {
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import {
   ResearchFunding,
-  ResearchFundingLookup,
   researchFundingFromJsonObject,
 } from '../funding/research-funding';
 import { User, UserLookup, userFromJsonObject } from 'src/app/user/common/user';
 import { Injectable, Type, inject } from '@angular/core';
 import {
-  ModelService,
   RestfulService,
 } from 'src/app/common/model/model-service';
-import { Observable, firstValueFrom, map, of, tap } from 'rxjs';
 
 import { ModelContext } from 'src/app/common/model/context';
 import { ResourceContainer, ResourceContainerParams, resourceContainerParamsFromJson } from 'src/app/lab/lab-resource/resource-container';
-import { ResearchPlanTask, researchPlanTaskFromJson, SpliceResearchPlanTasks } from './task/research-plan-task';
-import { UserContext } from 'src/app/user/user-context';
+import { CreateResearchPlanTask, ResearchPlanTask, ResearchPlanTaskSlice, researchPlanTaskFromJson } from './task/research-plan-task';
 import { HttpParams } from '@angular/common/http';
 
 export interface ResearchPlanAttachment extends ModelParams {
@@ -153,18 +147,24 @@ export class ResearchPlan extends Model implements ResearchPlanParams {
 export interface CreateResearchPlan {
   title: string;
   description: string;
-  funding: string | ResearchFundingLookup;
-  researcher: string | UserLookup | null;
-  coordinator: string | UserLookup | null;
-  tasks: SpliceResearchPlanTasks;
+  funding: string | null;
+  researcher: string;
+  coordinator: string;
+  tasks: CreateResearchPlanTask[];
 }
 
 function createResearchPlanToJsonObject(plan: CreateResearchPlan) {
-  return {};
+  return { ...plan };
+}
+
+export interface UpdateResearchPlan {
+  title: string;
+  description: string;
+  funding: string | null;
+  tasks: ResearchPlanTaskSlice[];
 }
 
 export interface ResearchPlanQuery extends ModelQuery<ResearchPlan> {
-
 }
 
 function researchPlanQueryToHttpParams(query: Partial<ResearchPlanQuery>): HttpParams {

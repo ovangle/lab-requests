@@ -58,5 +58,4 @@ export class ModelSearchAutocompleteComponent {
     displayValue = (value: any) => {
         return this.search!.displayValue(value);
     }
-
 }

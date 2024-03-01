@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import TYPE_CHECKING
-from uuid import UUID
+from typing import TYPE_CHECKING, Any, AsyncContextManager, Callable, Coroutine
+from uuid import UUID, uuid4
 from sqlalchemy import Column, ForeignKey, Select, Table, UniqueConstraint, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects import postgresql
@@ -133,6 +133,10 @@ class ResearchPlan(LabResourceConsumer, Base):
     # The lab tech who is responsible for allocating the tasks associated with this plan
     coordinator_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
     coordinator: Mapped[User] = relationship(foreign_keys=[coordinator_id])
+
+    # The default lab to conduct tasks in. Must be the default lab for the researcher's discipline and campus.
+    lab_id: Mapped[UUID] = mapped_column(ForeignKey("lab.id"))
+    lab: Mapped[Lab] = relationship(foreign_keys=[lab_id])
 
     tasks: Mapped[ResearchPlanTask] = relationship(
         back_populates="plan", order_by=ResearchPlanTask.index

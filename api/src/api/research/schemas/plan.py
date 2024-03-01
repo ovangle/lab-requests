@@ -8,7 +8,8 @@ from uuid import UUID, uuid4
 from pydantic import Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db import LocalSession
+from db import LocalSession, local_object_session
+from db.models.lab.lab import Lab
 from db.models.uni import Discipline
 from db.models.user import User
 from db.models.research import (
@@ -70,34 +71,73 @@ class ResearchPlanTaskIndex(ModelIndex[ResearchPlanTaskView]):
 ResearchPlanTaskIndexPage = ModelIndexPage[ResearchPlanTaskView]
 
 
-class ResearchPlanTaskAppendRequest(ModelCreateRequest[ResearchPlanTask]):
+class ResearchPlanTaskCreateRequest(ModelCreateRequest[ResearchPlanTask]):
     """
     Creates a task as the last task in the current tasks for a plan
     """
+
+    lab: LabLookup | UUID
+    supervisor: UserLookup | UUID
 
     description: str
     start_date: date | None = None
     end_date: date | None = None
 
-    lab: LabLookup | UUID
-
-    async def do_create(self, db: LocalSession, *, plan: ResearchPlan | None = None):
+    async def do_create(
+        self,
+        db: LocalSession,
+        *,
+        plan: ResearchPlan | None = None,
+        index: int | None = None,
+        default_lab: Lab,
+        default_supervisor: User,
+        **kwargs,
+    ):
         from ...lab.schemas import lookup_lab
 
         if plan is None:
             raise ValueError("Plan must be provided")
+        if index is None:
+            raise ValueError("Index must be provided")
 
-        next_index = len(await plan.awaitable_attrs.tasks)
+        if self.lab == default_lab.id:
+            lab = default_lab
+        else:
+            lab = await lookup_lab(db, self.lab)
+
+        if self.supervisor == default_supervisor.id:
+            supervisor_id = default_supervisor.id
+        else:
+            supervisor_id = (await lookup_user(db, self.supervisor)).id
 
         task = ResearchPlanTask(
             id=uuid4(),
             plan_id=plan.id,
-            index=next_index,
-            lab=await lookup_lab(db, self.lab),
+            index=index,
+            lab_id=lab.id,
+            supervisor_id=supervisor_id,
             description=self.description,
             start_date=self.start_date,
             end_date=self.end_date,
         )
+        db.add(task)
+        return task
+
+    async def do_update(
+        self, task: ResearchPlanTask, db: LocalSession | None = None
+    ) -> ResearchPlanTask:
+        from api.lab.schemas import lookup_lab
+
+        db = db or local_object_session(task)
+        if self.lab != task.lab_id:
+            task.lab_id = (await lookup_lab(db, self.lab)).id
+
+        if self.supervisor != task.supervisor_id:
+            task.supervisor_id = (await lookup_user(db, self.supervisor)).id
+
+        task.description = self.description
+        task.start_date = self.start_date
+        task.end_date = self.end_date
         db.add(task)
         return task
 
@@ -190,31 +230,86 @@ class ResearchPlanCreateRequest(ModelCreateRequest[ResearchPlan]):
     title: str
     description: str | None = None
 
-    funding: ResearchFundingCreateRequest | ResearchFundingLookup | UUID
+    funding: ResearchFundingLookup | UUID
     researcher: UserLookup | UUID
     coordinator: UserLookup | UUID
 
-    tasks: list[ResearchPlanTaskAppendRequest]
+    tasks: list[ResearchPlanTaskCreateRequest]
 
-    async def do_create(self, db: LocalSession) -> ResearchPlan:
+    async def do_create(self, db: LocalSession, **kwargs) -> ResearchPlan:
+        researcher = await lookup_user(db, self.researcher)
+        coordinator = await lookup_user(db, self.coordinator)
         plan = ResearchPlan(
             id=self.id or uuid4(),
             title=self.title,
             funding=await lookup_or_create_research_funding(db, self.funding),
-            researcher=await lookup_user(db, self.researcher),
-            coordinator=await lookup_user(db, self.coordinator),
+            researcher_id=researcher.id,
+            coordinator_id=coordinator.id,
         )
         db.add(plan)
 
+        if researcher.primary_discipline is None:
+            raise ValueError(
+                "Cannot create research plan for researcher with no primary discipline"
+            )
+
+        default_lab = await Lab.get_for_campus_and_discipline(
+            db, researcher.campus, researcher.primary_discipline
+        )
+
         for task in self.tasks:
-            await task.do_create(db, plan=plan)
+            await task.do_create(
+                db, plan=plan, default_supervisor=coordinator, default_lab=default_lab
+            )
 
         return plan
 
 
+class ResearchPlanTaskSlice(ModelUpdateRequest[ResearchPlan]):
+    start_index: int
+    end_index: int | None = None
+    items: list[ResearchPlanTaskCreateRequest]
+
+    async def do_update(
+        self,
+        plan: ResearchPlan,
+        *,
+        tasks: list[ResearchPlanTask],
+        db: LocalSession,
+        default_lab: Lab,
+        default_supervisor: User,
+    ):
+        to_update = tasks[self.start_index : self.end_index or len(tasks)]
+        for index, item in enumerate(self.items):
+            if index >= len(to_update):
+                await item.do_create(
+                    db, default_lab=default_lab, default_supervisor=default_supervisor
+                )
+            else:
+                await item.do_update(to_update[index], db=db)
+        for index, task in enumerate(tasks):
+            if task.index != index:
+                task.index = index
+                db.add(task)
+        return plan
+
+
 class ResearchPlanUpdateRequest(ModelUpdateRequest[ResearchPlan]):
+    tasks: list[ResearchPlanTaskSlice]
+
     async def do_update(self, model: ResearchPlan):
-        raise NotImplementedError
+        db = local_object_session(model)
+        all_tasks = await model.awaitable_attrs.tasks
+
+        for task_slice in self.tasks:
+            await task_slice.do_update(
+                model,
+                tasks=all_tasks,
+                default_supervisor=await model.awaitable_attrs.coordinator,
+                default_lab=await model.awaitable_attrs.lab,
+                db=db,
+            )
+        return model
 
 
 class ResearchPlanTaskLookup(ModelLookup[ResearchPlanTask]):

@@ -71,14 +71,6 @@ class User(Base):
         postgresql.ARRAY(postgresql.ENUM(Discipline)), server_default="{}"
     )
 
-    @property
-    def discipline_set(self):
-        return set(self.disciplines)
-
-    @discipline_set.setter
-    def discipline_set(self, value: set[Discipline]):
-        self.disciplines = list(value)
-
     roles: Mapped[list[str]] = mapped_column(
         postgresql.ARRAY(postgresql.VARCHAR(64)),
         server_default="{}",
@@ -91,6 +83,13 @@ class User(Base):
     @role_set.setter
     def role_set(self, value: set[str]):
         self.roles = list(value)
+
+    @property
+    def primary_discipline(self) -> Discipline | None:
+        try:
+            return self.disciplines[0]
+        except IndexError:
+            return None
 
     @declared_attr
     def credentials(self) -> Mapped[list[UserCredentials]]:

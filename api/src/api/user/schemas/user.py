@@ -62,7 +62,7 @@ class UserLookup(ModelLookup[User]):
     email: str | None = None
     username: str | None = None
 
-    async def get(self, db: LocalSession):
+    async def get(self, db: LocalSession) -> User:
         if self.id:
             return await User.get_for_id(db, self.id)
         if self.email:

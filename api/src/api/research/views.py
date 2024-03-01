@@ -7,7 +7,14 @@ from api.lab.lab_resource_consumer import (
     resource_type_index_cls,
     resource_type_view_cls,
 )
+from api.lab.schemas import lookup_lab
 from api.research.schemas import ResearchPlanTaskView
+from api.research.schemas.funding import lookup_research_funding
+from api.research.schemas.plan import (
+    ResearchPlanCreateRequest,
+    ResearchPlanUpdateRequest,
+)
+from api.user.schemas.user import lookup_user
 
 from db import get_db
 from db.models.lab import LabResourceType
@@ -46,9 +53,27 @@ async def index_plans(
     return await plan_index.load_page(db, 0)
 
 
+@research.post("/plans")
+async def create_plan(
+    request: ResearchPlanCreateRequest, db=Depends(get_db)
+) -> ResearchPlanView:
+    created = await request.do_create(db)
+    await db.commit()
+    return await ResearchPlanView.from_model(created)
+
+
 @research.get("/{plan_id}")
 async def get_plan(plan_id: UUID, db=Depends(get_db)) -> ResearchPlanView:
     plan = await ResearchPlan.get_for_id(db, plan_id)
+    return await ResearchPlanView.from_model(plan)
+
+
+@research.put("/{plan_id}")
+async def update_plan(
+    plan_id: UUID, request: ResearchPlanUpdateRequest, db=Depends(get_db)
+) -> ResearchPlanView:
+    plan = await ResearchPlan.get_for_id(db, plan_id)
+    plan = await request.do_update(plan)
     return await ResearchPlanView.from_model(plan)
 
 

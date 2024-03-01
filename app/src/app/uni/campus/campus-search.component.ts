@@ -1,18 +1,7 @@
 import { Component, HostBinding, inject } from '@angular/core';
-import {
-  ControlValueAccessor,
-  FormControl,
-  NG_VALUE_ACCESSOR,
-  ReactiveFormsModule,
-} from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable, filter, map, of, startWith, switchMap } from 'rxjs';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { disabledStateToggler } from 'src/app/utils/forms/disable-state-toggler';
 import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
-import { MatInputModule } from '@angular/material/input';
 import { CampusInfoComponent } from './campus-info.component';
 import { Campus, CampusService } from './campus';
 import { ModelSearchInputComponent } from 'src/app/common/model/search/search-input-field.component';

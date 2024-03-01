@@ -25,37 +25,37 @@ export interface ResearchPlanTask extends ModelParams {
 export function researchPlanTaskFromJson(json: JsonObject): ResearchPlanTask {
   const baseParams = modelParamsFromJsonObject(json);
 
-  if (typeof json['index'] !== 'number') {
+  if (typeof json[ 'index' ] !== 'number') {
     throw new Error("ResearchPlanTask: 'index' must be an number");
   }
 
-  if (typeof json['description'] !== 'string') {
+  if (typeof json[ 'description' ] !== 'string') {
     throw new Error("ResearchPlanTask: Expected a string 'description'");
   }
 
-  if (typeof json['startDate'] !== 'string' && json['startDate'] !== null) {
+  if (typeof json[ 'startDate' ] !== 'string' && json[ 'startDate' ] !== null) {
     throw new Error("ResearchPlanTask: 'startDate' must be a string or null");
   }
-  const startDate = json['startDate'] ? parseISO(json['startDate']) : null;
-  if (typeof json['endDate'] !== 'string' && json['endDate'] !== null) {
+  const startDate = json[ 'startDate' ] ? parseISO(json[ 'startDate' ]) : null;
+  if (typeof json[ 'endDate' ] !== 'string' && json[ 'endDate' ] !== null) {
     throw new Error("ResearchPlanTask: 'endDate' must be a string or null");
   }
-  const endDate = json['endDate'] ? parseISO(json['endDate']) : null;
+  const endDate = json[ 'endDate' ] ? parseISO(json[ 'endDate' ]) : null;
 
-  if (typeof json['labId'] !== 'string') {
+  if (typeof json[ 'labId' ] !== 'string') {
     throw new Error("ResearchPlanTask: 'labId' must be a string");
   }
-  if (typeof json['supervisorId'] !== 'string') {
+  if (typeof json[ 'supervisorId' ] !== 'string') {
     throw new Error("ResearchPlanTask: 'supervisorId' must be a string");
   }
   return {
     ...baseParams,
-    description: json['description'],
+    description: json[ 'description' ],
     startDate,
     endDate,
-    index: json['index'],
-    labId: json['labId'],
-    supervisorId: json['supervisorId'],
+    index: json[ 'index' ],
+    labId: json[ 'labId' ],
+    supervisorId: json[ 'supervisorId' ],
   };
 }
 
@@ -68,11 +68,11 @@ function researchPlanTaskQueryToHttpParams(query: ResearchPlanTaskQuery): HttpPa
 }
 
 export interface CreateResearchPlanTask {
-  description?: string;
-  startDate?: Date | null;
-  endDate?: Date | null;
-  labId?: string | null;
-  supervisorId?: string | null;
+  lab: string;
+  supervisor: string;
+  description: string;
+  startDate: Date | null;
+  endDate: Date | null;
 }
 
 
@@ -81,19 +81,18 @@ export function createResearchPlanTaskToJson(patch: CreateResearchPlanTask) {
   const endDate = patch.endDate && format(patch.endDate, 'yyyy-MM-DD');
 
   return {
-    description: patch.description,
+    ...patch,
     startDate,
     endDate,
-    labId: patch.labId,
-    supervisorId: patch.supervisorId
   };
 }
 
-export interface SpliceResearchPlanTasks {
+export interface ResearchPlanTaskSlice {
   startIndex: number;
   endIndex?: number;
   items: CreateResearchPlanTask[];
 }
+
 
 @Injectable()
 export class ResearchPlanTaskService extends RelatedModelService<ResearchPlan, ResearchPlanTask, ResearchPlanTaskQuery> {

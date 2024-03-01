@@ -1,10 +1,10 @@
 import { CommonModule } from "@angular/common"
-import { Component, Input } from "@angular/core"
-import { Form, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from "@angular/forms"
+import { Component, Input, assertInInjectionContext } from "@angular/core"
+import { Form, FormArray, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from "@angular/forms"
 import { ResearchPlan } from "../research-plan"
 import { MatInputModule } from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { ResearchPlanTask, CreateResearchPlanTask } from "./research-plan-task";
+import { ResearchPlanTask, CreateResearchPlanTask, ResearchPlanTaskSlice } from "./research-plan-task";
 import { Lab } from "src/app/lab/lab";
 import { User } from "src/app/user/common/user";
 import { MatDatepickerModule } from "@angular/material/datepicker";
@@ -12,6 +12,9 @@ import { BooleanInput, NumberInput, coerceBooleanProperty, coerceNumberProperty 
 import { UserSearchComponent } from "src/app/user/common/user-search.component";
 import { LabSearchComponent } from "src/app/lab/lab-search.component";
 import { ResizeTextareaOnInputDirective } from "src/app/common/forms/resize-textarea-on-input.directive";
+import { Discipline } from "src/app/uni/discipline/discipline";
+import { Campus } from "src/app/uni/campus/campus";
+import { format } from "date-fns";
 
 
 export type ResearchPlanTaskForm = FormGroup<{
@@ -32,6 +35,7 @@ export function researchPlanTaskForm(task?: ResearchPlanTask): ResearchPlanTaskF
     endDate: new FormControl<Date | null>(task?.endDate || null),
 
     lab: new FormControl<Lab | null>(null),
+
     supervisor: new FormControl<User | null>(null)
   })
 }
@@ -42,14 +46,49 @@ export function createResearchPlanTaskFromForm(form: ResearchPlanTaskForm): Crea
   }
 
   return {
+    lab: form.value.lab!.id,
+    supervisor: form.value.supervisor!.id,
     description: form.value.description!,
     startDate: form.value.startDate || null,
     endDate: form.value.endDate || null,
-    labId: form.value.lab?.id || null,
-    supervisorId: form.value.supervisor?.id || null
   };
 }
 
+export function initialTasksFromFormArray(arr: FormArray<ResearchPlanTaskForm>): CreateResearchPlanTask[] {
+  return arr.controls.map(createResearchPlanTaskFromForm)
+}
+
+export function researchPlanTaskSlicesFromFormArray(arr: FormArray<ResearchPlanTaskForm>): ResearchPlanTaskSlice[] {
+  const allSlices = arr.controls.flatMap((control, index) => {
+    if (!control.touched) {
+      return [];
+    }
+    return [ { startIndex: index, endIndex: index + 1, items: [ createResearchPlanTaskFromForm(control) ] } ];
+  })
+
+  const mergedSlices = [];
+  let currentSlice: ResearchPlanTaskSlice | null = null
+  for (const slice of allSlices) {
+    if (currentSlice == null) {
+      currentSlice = slice;
+      continue;
+    }
+    if (currentSlice.endIndex == slice.startIndex) {
+      currentSlice = {
+        startIndex: currentSlice.startIndex,
+        endIndex: slice.endIndex,
+        items: [ ...currentSlice.items, ...slice.items ]
+      }
+    } else {
+      mergedSlices.push(currentSlice);
+      currentSlice = null;
+    }
+  }
+  if (currentSlice != null) {
+    mergedSlices.push(currentSlice);
+  }
+  return mergedSlices;
+}
 
 @Component({
   selector: 'research-plan-task-form',
@@ -139,6 +178,30 @@ export function createResearchPlanTaskFromForm(form: ResearchPlanTaskForm): Crea
 export class ResearchPlanTaskFormComponent {
   @Input({ required: true })
   form: ResearchPlanTaskForm | undefined;
+
+  @Input({ required: true })
+  get defaultSupervisor() {
+    return this._defaultSupervisor;
+  }
+  set defaultSupervisor(supervisor: User | null) {
+    if (!this.form?.value.supervisor) {
+      this.form?.patchValue({ supervisor });
+    }
+    this._defaultSupervisor = supervisor;
+  }
+  _defaultSupervisor: User | null = null;
+
+  @Input({ required: true })
+  get defaultLab(): Lab | null {
+    return this._defaultLab;
+  }
+  set defaultLab(lab: Lab | null) {
+    if (!this.form?.value.lab) {
+      this.form!.patchValue({ lab });
+    }
+    this._defaultLab = lab;
+  }
+  _defaultLab: Lab | null = null;
 
   @Input({ required: true })
   get index(): number {

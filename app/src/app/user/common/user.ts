@@ -33,7 +33,7 @@ export interface UserParams extends ModelParams {
   name: string;
   email: string;
   baseCampus: Campus;
-  disciplines: ReadonlySet<Discipline>;
+  disciplines: readonly Discipline[];
 
   roles: ReadonlySet<Role>;
 }
@@ -46,7 +46,7 @@ export class User extends Model implements UserParams {
   // readonly discipline: Discipline;
   readonly roles: ReadonlySet<Role>;
 
-  readonly disciplines: ReadonlySet<Discipline>;
+  readonly disciplines: readonly Discipline[];
   /**
    * The labs that the current user supervises
    */
@@ -63,6 +63,11 @@ export class User extends Model implements UserParams {
 
   canActAs(actor: Actor) {
     return this.roles.has(actor.role);
+  }
+
+  get primaryDiscipline(): Discipline | null {
+    return this.disciplines[ 0 ] || null;
+
   }
 }
 
@@ -93,7 +98,7 @@ function userParamsFromJsonObject(json: JsonObject): UserParams {
   if (!Array.isArray(json[ 'disciplines' ]) || !json[ 'disciplines' ].every(isDiscipline)) {
     throw new Error("Expected an array of Disciplines 'disciplines'")
   }
-  const disciplines = new Set(json[ 'disciplines' ]);
+  const disciplines = json[ 'disciplines' ];
 
   return {
     ...baseParams,

@@ -52,13 +52,13 @@ class ModelLookup(BaseModel, Generic[TModel]):
 
 class ModelCreateRequest(BaseModel, Generic[TModel]):
     @abstractmethod
-    async def do_create(self, db: LocalSession) -> TModel:
+    async def do_create(self, db: LocalSession, **kwargs) -> TModel:
         ...
 
 
 class ModelUpdateRequest(BaseModel, Generic[TModel]):
     @abstractmethod
-    async def do_update(self, model: TModel) -> TModel:
+    async def do_update(self, model: TModel, **kwargs) -> TModel:
         ...
 
 

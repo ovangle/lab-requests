@@ -5,6 +5,7 @@ import {
   EventEmitter,
   Input,
   Output,
+  inject,
 } from '@angular/core';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -14,23 +15,27 @@ import { MatInputModule } from '@angular/material/input';
 import { CampusSearchComponent } from 'src/app/uni/campus/campus-search.component';
 import { DisciplineSelectComponent } from 'src/app/uni/discipline/discipline-select.component';
 
-import { ResearchPlan, CreateResearchPlan } from './research-plan';
+import { ResearchPlan, CreateResearchPlan, ResearchPlanService, UpdateResearchPlan } from './research-plan';
 import { ResearchFunding } from '../funding/research-funding';
 import { ResearchFundingSelectComponent } from '../funding/research-funding-select.component';
-import { UserLookup } from 'src/app/user/common/user';
-import { ResearchPlanTaskForm, ResearchPlanTaskFormComponent, createResearchPlanTaskFromForm, researchPlanTaskForm } from './task/research-plan-task-form.component';
+import { User, UserLookup } from 'src/app/user/common/user';
+import { ResearchPlanTaskForm, ResearchPlanTaskFormComponent, createResearchPlanTaskFromForm, initialTasksFromFormArray, researchPlanTaskForm, researchPlanTaskSlicesFromFormArray } from './task/research-plan-task-form.component';
 import { MatIconModule } from '@angular/material/icon';
 import { CreateResearchPlanTask } from './task/research-plan-task';
 import { UserSearchComponent } from 'src/app/user/common/user-search.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { LabResourceContainerFormComponent } from 'src/app/lab/lab-resource/resource-container-form.component';
+import { Discipline } from 'src/app/uni/discipline/discipline';
+import { Observable, distinctUntilChanged, firstValueFrom, map, of, startWith, switchMap } from 'rxjs';
+import { Lab, LabService } from 'src/app/lab/lab';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 export type ResearchPlanForm = FormGroup<{
   title: FormControl<string>;
   description: FormControl<string>;
-  researcher: FormControl<UserLookup | string | null>;
-  coordinator: FormControl<UserLookup | string | null>;
+  researcher: FormControl<User | null>;
+  coordinator: FormControl<User | null>;
   funding: FormControl<ResearchFunding | null>;
   tasks: FormArray<ResearchPlanTaskForm>;
 }>;
@@ -57,26 +62,30 @@ function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan 
   if (!form.valid) {
     throw new Error('Invalid form has no patch');
   }
-  const patch = {
-    title: form.value.title!,
-    description: form.value.description!,
-    researcher: form.value.researcher || null,
-    coordinator: form.value.coordinator || null,
-    funding: form.value.funding!.id,
-    tasks: {
-      startIndex: 0,
-      items: <CreateResearchPlanTask[]>[]
-    }
+  const value = form.value;
+  return {
+    title: value.title!,
+    description: value.description!,
+    researcher: value.researcher!.id,
+    coordinator: value.coordinator!.id,
+    funding: value.funding!.id,
+    tasks: initialTasksFromFormArray(form.controls.tasks)
+  }
+}
+
+function updateResearchPlanFromForm(form: ResearchPlanForm): UpdateResearchPlan {
+  if (!form.valid) {
+    throw new Error('Invalid form has no patch');
   }
 
-  const taskForms = form.controls.tasks;
-  taskForms.controls.forEach((taskForm) => {
-    const createTask = createResearchPlanTaskFromForm(taskForm);
-    patch[ 'tasks' ][ 'items' ].push(createTask)
-  });
+  const value = form.value;
 
-  return patch;
-
+  return {
+    title: value.title!,
+    description: value.description!,
+    funding: value.funding?.id || null,
+    tasks: researchPlanTaskSlicesFromFormArray(form.controls.tasks)
+  };
 }
 
 
@@ -176,6 +185,8 @@ function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan 
             <research-plan-task-form 
               [index]="$index"
               [form]="control" 
+              [defaultLab]="researcherDefaultLab$ | async"
+              [defaultSupervisor]="coordinator$ | async"
               [hideReviewControls]="hideReviewControls" />
           </mat-card>
         }
@@ -227,6 +238,9 @@ function createResearchPlanFromForm(form: ResearchPlanForm): CreateResearchPlan 
 })
 export class ResearchPlanFormComponent {
 
+  readonly _labService = inject(LabService);
+  readonly _researchPlanService = inject(ResearchPlanService);
+
   @Input()
   get plan(): ResearchPlan | null { return this._plan; }
   set plan(value: ResearchPlan) {
@@ -234,6 +248,9 @@ export class ResearchPlanFormComponent {
     patchFormValue(this.form, value);
   }
   _plan: ResearchPlan | null = null;
+
+  @Output()
+  readonly planSave = new EventEmitter<ResearchPlan | null>();
 
   @Input({ required: true })
   currentUserPlanRole: 'coordinator' | 'researcher' = 'researcher';
@@ -261,10 +278,10 @@ export class ResearchPlanFormComponent {
     description: new FormControl<string>('', {
       nonNullable: true,
     }),
-    researcher: new FormControl<UserLookup | string | null>(null, {
+    researcher: new FormControl<User | null>(null, {
       validators: [ Validators.required ],
     }),
-    coordinator: new FormControl<UserLookup | string | null>(null, {
+    coordinator: new FormControl<User | null>(null, {
       validators: [ Validators.required ]
     }),
     funding: new FormControl<ResearchFunding | null>(null, {
@@ -305,9 +322,35 @@ export class ResearchPlanFormComponent {
     return this.form.controls.funding.errors;
   }
 
+  readonly researcherDefaultLab$: Observable<Lab | null> = this.form.valueChanges.pipe(
+    takeUntilDestroyed(),
+    map(value => value.researcher || null),
+    distinctUntilChanged(),
+    switchMap(researcher => {
+      const researcherDiscipline = researcher?.primaryDiscipline;
+      const researcherCampus = researcher?.baseCampus;
+
+      if (researcherDiscipline && researcherCampus) {
+        return this._labService.query({
+          discipline: researcherDiscipline,
+          campus: researcherCampus
+        }).pipe(
+          map(labs => labs[ 0 ] || null)
+        )
+      }
+      return of(null);
+    }),
+  );
+
   get researcherErrors() {
     return this.form.controls.researcher.errors;
   }
+
+  readonly coordinator$: Observable<User | null> = this.form.valueChanges.pipe(
+    takeUntilDestroyed(),
+    map(value => value.coordinator || null),
+    distinctUntilChanged()
+  );
 
   get coordinatorErrors() {
     return this.form.controls.coordinator.errors;
@@ -344,9 +387,22 @@ export class ResearchPlanFormComponent {
     this.taskArray.push(researchPlanTaskForm());
   }
 
-  onSaveButtonClick() {
+  async onSaveButtonClick() {
     if (!this.form.valid) {
       throw new Error('Cannot save invalid form');
+    }
+    const value = this.form.value;
+
+    let savedPlan: ResearchPlan;
+    if (this.plan) {
+      savedPlan = await firstValueFrom(this._researchPlanService.update(
+        this.plan,
+        updateResearchPlanFromForm(this.form)
+      ))
+    } else {
+      savedPlan = await firstValueFrom(this._researchPlanService.create(
+        createResearchPlanFromForm(this.form)
+      ));
     }
   }
 }
