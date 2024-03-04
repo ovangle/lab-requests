@@ -12,7 +12,6 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 
 import {
-  ResearchPlanContext,
   CreateResearchPlan,
   ResearchPlanService,
 
@@ -49,7 +48,6 @@ import { CommonModule } from '@angular/common';
       
     `,
   ],
-  providers: [ ResearchPlanContext ],
 })
 export class ResearchPlanCreatePage {
   readonly _cdRef = inject(ChangeDetectorRef);
@@ -58,7 +56,6 @@ export class ResearchPlanCreatePage {
   readonly _activatedRoute = inject(ActivatedRoute);
 
   readonly plans = inject(ResearchPlanService);
-  readonly _context: ResearchPlanContext = inject(ResearchPlanContext);
 
   readonly _user = inject(UserContext);
   readonly currentUser$ = this._user.user.pipe(

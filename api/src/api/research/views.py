@@ -62,13 +62,13 @@ async def create_plan(
     return await ResearchPlanView.from_model(created)
 
 
-@research.get("/{plan_id}")
+@research.get("/plans/{plan_id}")
 async def get_plan(plan_id: UUID, db=Depends(get_db)) -> ResearchPlanView:
     plan = await ResearchPlan.get_for_id(db, plan_id)
     return await ResearchPlanView.from_model(plan)
 
 
-@research.put("/{plan_id}")
+@research.put("/plans/{plan_id}")
 async def update_plan(
     plan_id: UUID, request: ResearchPlanUpdateRequest, db=Depends(get_db)
 ) -> ResearchPlanView:
@@ -81,18 +81,18 @@ async def update_plan(
 async def index_plan_tasks(plan_id: UUID, db=Depends(get_db)):
     assert await ResearchPlan.get_for_id(db, plan_id)
     task_index = ResearchPlanTaskIndex(
-        select(ResearchPlan.tasks).where(ResearchPlanTask.plan_id == plan_id)
+        select(ResearchPlanTask).where(ResearchPlanTask.plan_id == plan_id)
     )
     return await task_index.load_page(db, 0)
 
 
-@research.get("/{plan_id}/tasks/{index}")
+@research.get("/plans/{plan_id}/tasks/{index}")
 async def get_plan_task(plan_id: UUID, index: int, db=Depends(get_db)):
     task = await ResearchPlanTask.get_for_plan_and_index(db, plan_id, index)
     return await ResearchPlanTaskView.from_model(task)
 
 
-@research.get("/{plan_id}/requirements/{resource_type}")
+@research.get("/plans/{plan_id}/requirements/{resource_type}")
 async def index_plan_requirements(
     plan_id: UUID, resource_type: LabResourceType, db=Depends(get_db)
 ):
@@ -103,7 +103,7 @@ async def index_plan_requirements(
     return await plan_index.load_page(db, 0)
 
 
-@research.get("/{plan_id}/requirements/{resource_type}/{resource_id}")
+@research.get("/plans/{plan_id}/requirements/{resource_type}/{resource_id}")
 async def get_plan_requirement(
     plan_id: UUID, resource_type: LabResourceType, resource_id: UUID, db=Depends(get_db)
 ):

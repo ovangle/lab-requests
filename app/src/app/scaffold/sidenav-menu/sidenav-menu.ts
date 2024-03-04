@@ -109,7 +109,7 @@ export class SidenavMenuRoot {
     return {
       type: 'link',
       icon: '',
-      routerLink: [ `/plans/${plan.id}` ],
+      routerLink: [ `/research/plans/${plan.id}` ],
       title: `${plan.title}`
     }
   }

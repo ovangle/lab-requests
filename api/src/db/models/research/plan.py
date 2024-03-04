@@ -7,7 +7,7 @@ from sqlalchemy import Column, ForeignKey, Select, Table, UniqueConstraint, sele
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects import postgresql
 from sqlalchemy_file import FileField, File
-from db import LocalSession
+from db import LocalSession, local_object_session
 
 from db.models.base.fields import uuid_pk
 from db.models.lab.lab_resource import LabResource, LabResourceType
@@ -63,8 +63,6 @@ class ResearchPlanTask(Base):
 
     start_date: Mapped[date | None] = mapped_column(postgresql.DATE(), nullable=True)
     end_date: Mapped[date | None] = mapped_column(postgresql.DATE(), nullable=True)
-
-    allocated: Mapped[bool] = mapped_column(postgresql.BOOLEAN)
 
     # The lab that this task will be conducted in (if any)
     lab_id: Mapped[UUID | None] = mapped_column(
@@ -138,7 +136,7 @@ class ResearchPlan(LabResourceConsumer, Base):
     lab_id: Mapped[UUID] = mapped_column(ForeignKey("lab.id"))
     lab: Mapped[Lab] = relationship(foreign_keys=[lab_id])
 
-    tasks: Mapped[ResearchPlanTask] = relationship(
+    tasks: Mapped[list[ResearchPlanTask]] = relationship(
         back_populates="plan", order_by=ResearchPlanTask.index
     )
 
@@ -161,3 +159,25 @@ class ResearchPlan(LabResourceConsumer, Base):
         self, resource_type: LabResourceType
     ) -> Select[tuple[LabResource]]:
         return select(type(self).resources).where(LabResource.type == resource_type)  # type: ignore
+
+    async def splice_tasks(
+        self,
+        start_index: int,
+        end_index: int | None,
+        items: list[ResearchPlanTask],
+        session: LocalSession | None = None,
+    ):
+        session = session or local_object_session(self)
+        for i, item in enumerate(items):
+            item.plan_id = self.id
+            item.index = start_index + i
+            session.add(item)
+
+        current_tasks = await self.awaitable_attrs.tasks
+        current_tasks[start_index:end_index] = items
+
+        for i, t in enumerate(current_tasks):
+            if t.index != i:
+                t.index = i
+                session.add(t)
+        await session.commit()

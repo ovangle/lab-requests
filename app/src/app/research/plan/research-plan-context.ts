@@ -3,9 +3,18 @@ import { ModelContext } from "src/app/common/model/context";
 import { ResearchPlan, ResearchPlanService } from "./research-plan";
 import { ActivatedRoute } from "@angular/router";
 import { roundToNearestMinutes } from "date-fns";
-import { map } from "rxjs";
+import { map, tap } from "rxjs";
+
+
+
+@Injectable()
+export class ResearchPlanContext extends ModelContext<ResearchPlan> {
+    override readonly service = inject(ResearchPlanService);
+
+}
 
 export function provideResearchPlanDetailContext(): Provider {
+    console.log('providing researcher plan detail context');
     return {
         provide: ResearchPlanContext,
         useFactory: (route: ActivatedRoute) => {
@@ -20,11 +29,4 @@ export function provideResearchPlanDetailContext(): Provider {
         },
         deps: [ ActivatedRoute ]
     }
-}
-
-
-@Injectable()
-export class ResearchPlanContext extends ModelContext<ResearchPlan> {
-    override readonly service = inject(ResearchPlanService);
-
 }

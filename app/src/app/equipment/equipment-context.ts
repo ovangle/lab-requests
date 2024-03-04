@@ -47,12 +47,10 @@ export function provideEquipmentDetailRouteContext(): Provider {
             if (equipmentId === null) {
                 throw new Error('No equipment_id found in equipment params')
             }
-
-
             context.sendCommittedId(of(equipmentId));
             return context;
         },
-        deps: [ActivatedRoute]
+        deps: [ ActivatedRoute ]
     }
 }
 

@@ -53,7 +53,7 @@ ResearchFundingIndexPage = ModelIndexPage[ResearchFundingView]
 class ResearchFundingUpdateRequest(ModelUpdateRequest[ResearchFunding]):
     description: str
 
-    async def do_update(self, model: ResearchFunding) -> ResearchFunding:
+    async def do_update(self, model: ResearchFunding, **kwargs) -> ResearchFunding:
         if self.description != model.description:
             model.description = self.description
 
@@ -64,7 +64,7 @@ class ResearchFundingCreateRequest(ModelCreateRequest[ResearchFunding]):
     name: str
     description: str
 
-    async def do_create(self, db: LocalSession) -> ResearchFunding:
+    async def do_create(self, db: LocalSession, **kwargs) -> ResearchFunding:
         model = ResearchFunding(
             id=uuid4(), name=self.name, description=self.description
         )
@@ -88,4 +88,4 @@ async def lookup_or_create_research_funding(
         case ResearchFundingCreateRequest():
             return await ref_or_create.do_create(db)
         case _:
-            return lookup_research_funding(db, ref_or_create)
+            return await lookup_research_funding(db, ref_or_create)

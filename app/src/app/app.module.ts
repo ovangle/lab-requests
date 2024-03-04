@@ -27,7 +27,6 @@ import {
   provideAppOauthProviderParams,
 } from './app-oauth-provider-params';
 import { ScaffoldLayoutComponent } from './scaffold/scaffold-layout.component';
-import { Platform } from '@angular/cdk/platform';
 import { provideAppBaseUrl } from './utils/app-base-url';
 
 @NgModule({

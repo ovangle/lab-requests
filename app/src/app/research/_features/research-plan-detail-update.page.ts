@@ -1,5 +1,5 @@
 import { Component, inject } from "@angular/core";
-import { ResearchPlanContext } from "../plan/research-plan";
+import { ResearchPlanContext } from "../plan/research-plan-context";
 
 
 @Component({

@@ -66,10 +66,7 @@ export abstract class ModelContext<
 
   sendCommittedId(source: Observable<string>): Subscription {
     return this.sendCommitted(
-      source.pipe(switchMap(id => {
-        console.log('fetching equipment', id);
-        return this.service.fetch(id)
-      }))
+      source.pipe(switchMap(id => this.service.fetch(id)))
     );
   }
 
@@ -133,7 +130,7 @@ export abstract class RelatedModelService<
 
   protected override _doQueryPage(params: HttpParams): Observable<JsonObject> {
     return this.indexUrl$.pipe(
-      switchMap(indexUrl => this._httpClient.get<JsonObject>(indexUrl, { params })),
+      switchMap(indexUrl => this._httpClient.get<JsonObject>(indexUrl + '/', { params })),
     );
   }
 }
@@ -172,7 +169,7 @@ export abstract class AbstractModelContextDirective<T extends Model> {
       this.modelSubject,
       this.currentViewSubject,
     ]).pipe(
-      map(([model, currentView]) => {
+      map(([ model, currentView ]) => {
         if (model != null && currentView == null) {
           currentView = viewContainer.createEmbeddedView(
             templateRef,

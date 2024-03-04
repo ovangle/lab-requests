@@ -36,7 +36,7 @@ const routes: Routes = [
           )
       },
       {
-        path: 'research',
+        path: 'research/plans',
         loadChildren: () =>
           import('./research/_features/research-plan.routes').then(
             module => module.RESEARCH_PLAN_ROUTES

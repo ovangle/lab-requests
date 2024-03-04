@@ -17,7 +17,7 @@ import {
 
 import { ModelContext } from 'src/app/common/model/context';
 import { ResourceContainer, ResourceContainerParams, resourceContainerParamsFromJson } from 'src/app/lab/lab-resource/resource-container';
-import { CreateResearchPlanTask, ResearchPlanTask, ResearchPlanTaskSlice, researchPlanTaskFromJson } from './task/research-plan-task';
+import { CreateResearchPlanTask, ResearchPlanTask, ResearchPlanTaskParams, ResearchPlanTaskSlice, researchPlanTaskFromJson } from './task/research-plan-task';
 import { HttpParams } from '@angular/common/http';
 
 export interface ResearchPlanAttachment extends ModelParams {
@@ -154,6 +154,7 @@ export interface CreateResearchPlan {
 }
 
 function createResearchPlanToJsonObject(plan: CreateResearchPlan) {
+  debugger;
   return { ...plan };
 }
 
@@ -178,10 +179,5 @@ export class ResearchPlanService extends RestfulService<ResearchPlan, ResearchPl
   override readonly modelQueryToHttpParams = researchPlanQueryToHttpParams;
   override readonly createToJsonObject = createResearchPlanToJsonObject;
   override readonly actionToJsonObject = undefined;
-  override path = '/research/plan';
-}
-
-@Injectable()
-export class ResearchPlanContext extends ModelContext<ResearchPlan> {
-  override readonly service = inject(ResearchPlanService);
+  override path = '/research/plans';
 }

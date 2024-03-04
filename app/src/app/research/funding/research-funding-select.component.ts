@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, Input, OnInit, inject } from '@angular/core';
 import {
   ResearchFunding,
   ResearchFundingService,
@@ -16,6 +16,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { disabledStateToggler } from 'src/app/utils/forms/disable-state-toggler';
 import { UserContext } from 'src/app/user/user-context';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
 
 @Component({
   selector: 'research-funding-select',
@@ -29,7 +30,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   template: `
     <mat-form-field>
       <mat-label><ng-content select="mat-label"></ng-content></mat-label>
-      <mat-select [formControl]="formControl">
+      <mat-select [formControl]="formControl" [required]="required">
         @if (options$ | async; as options) {
           @for (option of options; track option.id) {
             <mat-option [value]="option">{{ option.name }}</mat-option>
@@ -57,16 +58,25 @@ export class ResearchFundingSelectComponent implements ControlValueAccessor {
     shareReplay(1)
   );
 
+  @Input()
+  get required(): boolean {
+    return this._required;
+  }
+  set required(value: BooleanInput) {
+    this._required = coerceBooleanProperty(value);
+  }
+  _required: boolean = false;
+
   readonly formControl = new FormControl<ResearchFunding | null>(null);
 
   // Coerce control value into ResearchFundingLookup or null
-  readonly value$ = this.formControl.valueChanges.pipe(
+  readonly value$: Observable<ResearchFunding | null> = this.formControl.valueChanges.pipe(
     takeUntilDestroyed(),
     map(value => {
       if (value instanceof ResearchFunding) {
-        return value.id;
+        return value;
       }
-      return value;
+      return null;
     })
   );
 

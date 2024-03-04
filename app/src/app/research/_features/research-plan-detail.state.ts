@@ -1,12 +1,16 @@
 import { inject } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { ActivatedRouteSnapshot, ActivationEnd, Router } from "@angular/router";
-import { Observable, filter, map, shareReplay } from "rxjs";
+import { Observable, filter, map, shareReplay, startWith } from "rxjs";
 
 
 export interface ResearchPlanDetailConfig {
     showPlanSummary: boolean;
 }
+
+const defaultConfig: ResearchPlanDetailConfig = {
+    showPlanSummary: true
+};
 
 export function configForSubroute(subroute: string | null): ResearchPlanDetailConfig {
     let config: ResearchPlanDetailConfig = {
@@ -39,6 +43,7 @@ export function injectResearchPlanDetailConfig(): Observable<ResearchPlanDetailC
             const subrouteUrl = e.snapshot.firstChild?.url || [];
             return configForSubroute(subrouteUrl[ 0 ]?.path || null)
         }),
+        startWith(defaultConfig),
         shareReplay(1)
     );
 }

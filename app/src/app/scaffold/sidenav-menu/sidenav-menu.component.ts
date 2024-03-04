@@ -107,12 +107,10 @@ export class SidenavMenuComponent implements OnInit {
   >(this._treeControl, this._treeFlattener);
 
   isExpandableGroup(_: number, node: FlattenedMenuNode) {
-    console.log('is expandable group', node, node.expandable && !node.isFixed)
     return node.expandable && !node.isFixed;
   }
 
   isStaticGroup(_: number, node: FlattenedMenuNode) {
-    console.log('is fixed group', node, node.expandable && node.isFixed);
     return node.expandable && node.isFixed;
   }
 

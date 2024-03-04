@@ -18,7 +18,7 @@ import { DisciplineSelectComponent } from 'src/app/uni/discipline/discipline-sel
 import { ResearchPlan, CreateResearchPlan, ResearchPlanService, UpdateResearchPlan } from './research-plan';
 import { ResearchFunding } from '../funding/research-funding';
 import { ResearchFundingSelectComponent } from '../funding/research-funding-select.component';
-import { User, UserLookup } from 'src/app/user/common/user';
+import { User, UserLookup, UserService } from 'src/app/user/common/user';
 import { ResearchPlanTaskForm, ResearchPlanTaskFormComponent, createResearchPlanTaskFromForm, initialTasksFromFormArray, researchPlanTaskForm, researchPlanTaskSlicesFromFormArray } from './task/research-plan-task-form.component';
 import { MatIconModule } from '@angular/material/icon';
 import { CreateResearchPlanTask } from './task/research-plan-task';
@@ -161,7 +161,7 @@ function updateResearchPlanFromForm(form: ResearchPlanForm): UpdateResearchPlan 
         }
       }
 
-      <research-funding-select formControlName="funding">
+      <research-funding-select formControlName="funding" required>
         <mat-label>Funding source</mat-label>
 
         @if (fundingErrors && fundingErrors['required']) {
@@ -238,6 +238,7 @@ function updateResearchPlanFromForm(form: ResearchPlanForm): UpdateResearchPlan 
 })
 export class ResearchPlanFormComponent {
 
+  readonly _userService = inject(UserService);
   readonly _labService = inject(LabService);
   readonly _researchPlanService = inject(ResearchPlanService);
 
@@ -297,7 +298,9 @@ export class ResearchPlanFormComponent {
   save = new EventEmitter<CreateResearchPlan>()
 
   ngOnInit() {
-    this.form.patchValue({ [ this.currentUserPlanRole ]: this.currentUserId! });
+    this._userService.fetch(this.currentUserId!).subscribe(user => {
+      this.form.patchValue({ [ this.currentUserPlanRole ]: user })
+    })
 
     switch (this.currentUserPlanRole) {
       case 'coordinator':
@@ -391,8 +394,6 @@ export class ResearchPlanFormComponent {
     if (!this.form.valid) {
       throw new Error('Cannot save invalid form');
     }
-    const value = this.form.value;
-
     let savedPlan: ResearchPlan;
     if (this.plan) {
       savedPlan = await firstValueFrom(this._researchPlanService.update(

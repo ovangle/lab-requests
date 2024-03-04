@@ -62,13 +62,13 @@ class LabLookup(ModelLookup[Lab]):
 
     async def get(self, db: LocalSession):
         if self.id:
-            return await Lab.get_for_id(db, id)
+            return await Lab.get_for_id(db, self.id)
         raise ValueError("Expected an id")
 
 
 async def lookup_lab(db: LocalSession, ref: LabLookup | UUID):
     if isinstance(ref, UUID):
-        ref = LabLookup(id=ref)
+        return await Lab.get_for_id(db, ref)
     return await ref.get(db)
 
 

@@ -4,7 +4,7 @@ import { Form, FormArray, FormControl, FormGroup, ReactiveFormsModule, Validatio
 import { ResearchPlan } from "../research-plan"
 import { MatInputModule } from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { ResearchPlanTask, CreateResearchPlanTask, ResearchPlanTaskSlice } from "./research-plan-task";
+import { ResearchPlanTaskParams, CreateResearchPlanTask, ResearchPlanTaskSlice } from "./research-plan-task";
 import { Lab } from "src/app/lab/lab";
 import { User } from "src/app/user/common/user";
 import { MatDatepickerModule } from "@angular/material/datepicker";
@@ -25,7 +25,7 @@ export type ResearchPlanTaskForm = FormGroup<{
   supervisor: FormControl<User | null>;
 }>;
 
-export function researchPlanTaskForm(task?: ResearchPlanTask): ResearchPlanTaskForm {
+export function researchPlanTaskForm(task?: ResearchPlanTaskParams): ResearchPlanTaskForm {
   return new FormGroup({
     description: new FormControl(
       task?.description || '',
@@ -57,6 +57,7 @@ export function createResearchPlanTaskFromForm(form: ResearchPlanTaskForm): Crea
 export function initialTasksFromFormArray(arr: FormArray<ResearchPlanTaskForm>): CreateResearchPlanTask[] {
   return arr.controls.map(createResearchPlanTaskFromForm)
 }
+
 
 export function researchPlanTaskSlicesFromFormArray(arr: FormArray<ResearchPlanTaskForm>): ResearchPlanTaskSlice[] {
   const allSlices = arr.controls.flatMap((control, index) => {

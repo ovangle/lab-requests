@@ -17,7 +17,6 @@ const researcherFixture = {
 };
 
 @Component({
-  selector: 'lab-experimental-plan-index',
   standalone: true,
   imports: [
     CommonModule,
@@ -26,23 +25,30 @@ const researcherFixture = {
     MatButtonModule,
     MatListModule
   ],
+  host: {
+    '[class.scaffold-content-full-width]': 'true'
+  },
   template: `
-    @if (actor$ | async; as actor) {
-      <div>{{ actor | json }}</div>
-    }
+  <div class="page-header">
+    <h1>Research plans</h1>
 
-    <a mat-button routerLink="./create"> + Add </a>
+    <a mat-raised-button color="primary" routerLink="./create"> + Add </a>
+  </div>
 
     @if (items$ | async; as items) {
       <mat-list>
         @for (item of items; track item.id) {
-          <mat-list-item
-            ><a routerLink="./{{ item.id }}">{{ item.title }}</a></mat-list-item
-          >
+          <a mat-list-item routerLink="./{{ item.id }}">{{ item.title }}</a>
         }
       </mat-list>
     }
   `,
+  styles: `
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+  }
+  `
 })
 export class ResearchPlanIndexPage {
   readonly _models = inject(ResearchPlanService);

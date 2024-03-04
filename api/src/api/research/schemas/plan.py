@@ -9,6 +9,7 @@ from pydantic import Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import LocalSession, local_object_session
+from db.models.base.errors import DoesNotExist
 from db.models.lab.lab import Lab
 from db.models.uni import Discipline
 from db.models.user import User
@@ -43,6 +44,8 @@ class ResearchPlanTaskView(ModelView[ResearchPlanTask]):
     id: UUID
     index: int
 
+    description: str
+
     start_date: date | None
     end_date: date | None
 
@@ -54,6 +57,7 @@ class ResearchPlanTaskView(ModelView[ResearchPlanTask]):
         return cls(
             id=model.id,
             index=model.index,
+            description=model.description,
             start_date=model.start_date,
             end_date=model.end_date,
             lab_id=model.lab_id,
@@ -89,8 +93,8 @@ class ResearchPlanTaskCreateRequest(ModelCreateRequest[ResearchPlanTask]):
         *,
         plan: ResearchPlan | None = None,
         index: int | None = None,
-        default_lab: Lab,
-        default_supervisor: User,
+        default_lab: Lab | None = None,
+        default_supervisor: User | None = None,
         **kwargs,
     ):
         from ...lab.schemas import lookup_lab
@@ -100,17 +104,41 @@ class ResearchPlanTaskCreateRequest(ModelCreateRequest[ResearchPlanTask]):
         if index is None:
             raise ValueError("Index must be provided")
 
-        if self.lab == default_lab.id:
+        task = await self.as_task(
+            plan,
+            index,
+            db,
+            default_lab=default_lab,
+            default_supervisor=default_supervisor,
+        )
+
+        db.add(task)
+        await db.commit()
+        return task
+
+    async def as_task(
+        self,
+        plan: ResearchPlan,
+        index: int,
+        db: LocalSession,
+        default_lab: Lab | None = None,
+        default_supervisor: User | None = None,
+    ):
+        from ...lab.schemas import lookup_lab
+
+        assert default_lab is not None
+        if self.lab == (default_lab and default_lab.id):
             lab = default_lab
         else:
             lab = await lookup_lab(db, self.lab)
 
+        assert default_supervisor is not None
         if self.supervisor == default_supervisor.id:
             supervisor_id = default_supervisor.id
         else:
             supervisor_id = (await lookup_user(db, self.supervisor)).id
 
-        task = ResearchPlanTask(
+        return ResearchPlanTask(
             id=uuid4(),
             plan_id=plan.id,
             index=index,
@@ -120,26 +148,6 @@ class ResearchPlanTaskCreateRequest(ModelCreateRequest[ResearchPlanTask]):
             start_date=self.start_date,
             end_date=self.end_date,
         )
-        db.add(task)
-        return task
-
-    async def do_update(
-        self, task: ResearchPlanTask, db: LocalSession | None = None
-    ) -> ResearchPlanTask:
-        from api.lab.schemas import lookup_lab
-
-        db = db or local_object_session(task)
-        if self.lab != task.lab_id:
-            task.lab_id = (await lookup_lab(db, self.lab)).id
-
-        if self.supervisor != task.supervisor_id:
-            task.supervisor_id = (await lookup_user(db, self.supervisor)).id
-
-        task.description = self.description
-        task.start_date = self.start_date
-        task.end_date = self.end_date
-        db.add(task)
-        return task
 
 
 class ResearchPlanAttachmentView(ModelView[ResearchPlanAttachment]):
@@ -173,7 +181,9 @@ class ResearchPlanView(LabResourceConsumerView[ResearchPlan]):
     async def from_model(cls, model: ResearchPlan, **kwargs) -> ResearchPlanView:
         assert not kwargs
 
-        funding = await ResearchFundingView.from_model(model.funding)
+        funding = await ResearchFundingView.from_model(
+            await model.awaitable_attrs.funding
+        )
         researcher = await UserView.from_model(await model.awaitable_attrs.researcher)
         coordinator = await UserView.from_model(await model.awaitable_attrs.coordinator)
 
@@ -239,10 +249,24 @@ class ResearchPlanCreateRequest(ModelCreateRequest[ResearchPlan]):
     async def do_create(self, db: LocalSession, **kwargs) -> ResearchPlan:
         researcher = await lookup_user(db, self.researcher)
         coordinator = await lookup_user(db, self.coordinator)
+
+        if not researcher.primary_discipline:
+            raise ValueError(
+                "Cannot create plan for researcher with no primary discipline"
+            )
+
+        try:
+            default_lab = await Lab.get_for_campus_and_discipline(
+                db, researcher.campus_id, researcher.primary_discipline
+            )
+        except DoesNotExist as e:
+            raise ValueError("Cannot create plan for researcher", e)
+
         plan = ResearchPlan(
             id=self.id or uuid4(),
             title=self.title,
-            funding=await lookup_or_create_research_funding(db, self.funding),
+            funding_id=(await lookup_or_create_research_funding(db, self.funding)).id,
+            lab_id=default_lab.id,
             researcher_id=researcher.id,
             coordinator_id=coordinator.id,
         )
@@ -253,13 +277,13 @@ class ResearchPlanCreateRequest(ModelCreateRequest[ResearchPlan]):
                 "Cannot create research plan for researcher with no primary discipline"
             )
 
-        default_lab = await Lab.get_for_campus_and_discipline(
-            db, researcher.campus, researcher.primary_discipline
-        )
-
-        for task in self.tasks:
+        for i, task in enumerate(self.tasks):
             await task.do_create(
-                db, plan=plan, default_supervisor=coordinator, default_lab=default_lab
+                db,
+                plan=plan,
+                index=i,
+                default_supervisor=coordinator,
+                default_lab=default_lab,
             )
 
         return plan
@@ -272,32 +296,31 @@ class ResearchPlanTaskSlice(ModelUpdateRequest[ResearchPlan]):
 
     async def do_update(
         self,
-        plan: ResearchPlan,
-        *,
-        tasks: list[ResearchPlanTask],
-        db: LocalSession,
-        default_lab: Lab,
-        default_supervisor: User,
-    ):
-        to_update = tasks[self.start_index : self.end_index or len(tasks)]
-        for index, item in enumerate(self.items):
-            if index >= len(to_update):
-                await item.do_create(
-                    db, default_lab=default_lab, default_supervisor=default_supervisor
-                )
-            else:
-                await item.do_update(to_update[index], db=db)
-        for index, task in enumerate(tasks):
-            if task.index != index:
-                task.index = index
-                db.add(task)
-        return plan
+        model: ResearchPlan,
+        default_lab: Lab | None = None,
+        default_supervisor: User | None = None,
+        db: LocalSession | None = None,
+        **kwargs,
+    ) -> ResearchPlan:
+        assert db
+        items = [
+            await item.as_task(
+                model,
+                index,
+                db,
+                default_lab=default_lab,
+                default_supervisor=default_supervisor,
+            )
+            for index, item in enumerate(self.items)
+        ]
+        await model.splice_tasks(self.start_index, self.end_index, items, session=db)
+        return model
 
 
 class ResearchPlanUpdateRequest(ModelUpdateRequest[ResearchPlan]):
     tasks: list[ResearchPlanTaskSlice]
 
-    async def do_update(self, model: ResearchPlan):
+    async def do_update(self, model: ResearchPlan, **kwargs):
         db = local_object_session(model)
         all_tasks = await model.awaitable_attrs.tasks
 

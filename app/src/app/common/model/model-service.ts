@@ -84,7 +84,7 @@ export abstract class ModelService<T extends Model, TQuery extends ModelQuery<T>
         if (items.length > 1) {
           throw new Error('Server returned multiple results');
         }
-        return items[0] || null;
+        return items[ 0 ] || null;
       }),
     );
   }
@@ -126,11 +126,11 @@ export abstract class RestfulService<
    *  e.g. /users/me
    */
   indexMethodUrl(name: string) {
-    return urlJoin(this.indexUrl, name) + '/';
+    return urlJoin(this.indexUrl, name);
   }
 
   resourceUrl(id: string) {
-    return urlJoin(this._apiBaseUrl, this.path, id) + '/';
+    return urlJoin(this._apiBaseUrl, this.path, id);
   }
 
   modelUrl(model: T) {
@@ -151,7 +151,7 @@ export abstract class RestfulService<
 
   protected override _doFetch(
     id: string,
-    options?: { params: { [k: string]: any } | HttpParams },
+    options?: { params: { [ k: string ]: any } | HttpParams },
   ): Observable<JsonObject> {
     return this._httpClient.get<JsonObject>(this.resourceUrl(id), {
       params: options?.params,
@@ -159,7 +159,7 @@ export abstract class RestfulService<
   }
 
   protected override _doQueryPage(
-    params: HttpParams | { [k: string]: string | number | string[] },
+    params: HttpParams | { [ k: string ]: string | number | string[] },
   ): Observable<JsonObject> {
     return this._httpClient
       .get<JsonObject>(this.indexUrl, { params: params })
