@@ -6,6 +6,8 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import {
   Observable,
   defer,
+  distinctUntilChanged,
+  firstValueFrom,
   map,
   shareReplay,
   switchMap,
@@ -23,7 +25,12 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ResearchPlanContext } from '../plan/research-plan-context';
 import { UserInfoComponent } from 'src/app/user/user-info.component';
 import { MatListModule } from '@angular/material/list';
-import { ResearchPlanTaskInfoComponent } from '../plan/task/research-plan-task-info.component';
+import { ResearchPlanTaskCardComponent } from '../plan/task/research-plan-task-card.component';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { LabService } from 'src/app/lab/lab';
+import { LabResourceContainerFormComponent } from 'src/app/lab/lab-resource/resource-container-form.component';
+import { ResourceContainerControl } from 'src/app/lab/lab-resource/resource-container-control';
 
 export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
   const activatedRoute = inject(ActivatedRoute);
@@ -49,11 +56,13 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
     CommonModule,
     RouterModule,
 
-    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
     MatListModule,
     MatTabsModule,
     UserInfoComponent,
-    ResearchPlanTaskInfoComponent,
+    ResearchPlanTaskCardComponent,
+    LabResourceContainerFormComponent
   ],
   host: {
     '[class.scaffold-content-full-width]': 'true'
@@ -63,97 +72,92 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
     <div class="page-header">
       <div class="page-title">
         <h1>
-          {{ plan!.title }} 
+          Research plan
         </h1>
-        <div class="subtitle">Research {{ plan!.funding.name }} project</div>
-      </div> 
+        <div class="subtitle">
+          {{plan!.title}}
+        </div>
+      </div>
     </div>
-    <div class="description">
-      <b>Experimental plan summary</b>
-      <p>{{plan!.description}}</p>
+    <section class="general-info">
+      <div class="general-info-header">
+        <h2>General</h2>
+        <button mat-raised-button routerLink="./update" color="primary">
+          <mat-icon>edit</mat-icon>Edit
+        </button>
+      </div>
+      <div class="funding-info">
+        <b>Funding</b> {{plan!.funding.name}}
+      </div>
+      <div class="description">
+        <b>Experimental plan summary</b>
+        <p>{{plan!.description}}</p>
+      </div>
+      <b>Researcher</b> <user-info [user]="plan!.researcher" /> <br/>
+      <b>Coordinator</b> <user-info [user]="plan!.coordinator" /> <br/>
+      <b>Base lab</b>{{(lab$ | async)?.name}}
+    </section>
+
+    <section class="task-info">
+      <h2>Tasks</h2>
+      <div>
+        @for (task of plan!.tasks; track task.id) {
+          <mat-list-item>
+            <research-plan-task-card [task]="task" />
+          </mat-list-item>
+        }
+      </div>
+    </section>
+
+    <section class="resources" #resourceContainer>
+      <h2>Requirements</h2>
+
+      <lab-resource-container-form 
+        [containerControl]="containerControl" />
+    </section>
+
+    <div class="child-route">
+      <router-outlet />
     </div>
-    <b>Researcher</b> <user-info [user]="plan!.researcher" /> <br/>
-    <b>Coordinator</b> <user-info [user]="plan!.coordinator" /> <br/>
-
-    <h2>Tasks</h2>
-    <mat-list>
-      @for (task of plan!.tasks; track task.id) {
-        <mat-list-item>
-          <research-plan-task-info [task]="task" />
-        </mat-list-item>
-      }
-    </mat-list>
-
-    <!--
-      <mat-card>
-        <mat-card-header>
-          <nav
-            mat-tab-nav-bar
-            [tabPanel]="tabPanel"
-            mat-align-tabs="start"
-            mat-stretch-tabs="false"
-          >
-            @for (
-              workUnit of plan.workUnits;
-              track workUnit.id;
-              let index = $index
-            ) {
-              <a
-                mat-tab-link
-                [routerLink]="['./', 'work-units', index]"
-                routerLinkActive
-                #linkActive="routerLinkActive"
-                [active]="linkActive.isActive"
-              >
-                {{ workUnit.campus.name }} - {{ workUnit.labType }}
-              </a>
-            }
-            <div class="spacer" [style.flex-grow]="1"></div>
-            <a
-              mat-tab-link
-              #createLink
-              routerLink="./work-units/create"
-              routerLinkActive
-              #linkActive="routerLinkActive"
-              [active]="linkActive.isActive"
-              [disabled]="linkActive.isActive"
-            >
-              <mat-icon>+</mat-icon>
-            </a>
-          </nav>
-        </mat-card-header>
-
-        <mat-card-content>
-          <mat-tab-nav-panel #tabPanel>
-            <router-outlet></router-outlet>
-          </mat-tab-nav-panel>
-        </mat-card-content>
-      </mat-card>
-          -->
   }
   `,
-  styles: [
-    `
-      mat-card-header {
-        padding: 0;
-      }
-
-    `,
-  ],
+  styles: `
+    .general-info-header {
+      display: flex;
+      justify-content: space-between;
+    }
+    mat-card-header {
+      padding: 0;
+    }
+  `,
 })
 export class ResearchPlanDetailPage {
   readonly isEditingForm = true;
 
+  readonly _labService = inject(LabService);
+  readonly _planService = inject(ResearchPlanService);
   readonly _context = inject(ResearchPlanContext);
 
   readonly appScaffold = inject(BodyScrollbarHidingService);
   readonly plan$ = this._context.committed$;
-
 
   readonly config$ = injectResearchPlanDetailConfig().pipe(
     takeUntilDestroyed(),
     shareReplay(1)
   )
 
+  readonly containerControl = new ResourceContainerControl<ResearchPlan>(
+    this._context,
+    async (patch) => {
+      const committed = await firstValueFrom(this.plan$);
+      return firstValueFrom(this._planService.update(committed, patch))
+    }
+  );
+
   readonly showPlanSummary$ = this.config$.pipe(map(config => config.showPlanSummary));
+
+  readonly lab$ = this.plan$.pipe(
+    distinctUntilChanged(),
+    switchMap(plan => plan.resolveLab(this._labService))
+  )
 }

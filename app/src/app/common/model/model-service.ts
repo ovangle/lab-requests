@@ -32,9 +32,9 @@ export abstract class ModelService<T extends Model, TQuery extends ModelQuery<T>
   protected readonly _apiBaseUrl = inject(API_BASE_URL);
   protected readonly _cache = new Map<string, T>();
 
-  protected _cacheOne = tap((model: T) => this._cache.set(model.id, model));
+  protected _cacheOne = tap((model: T) => this.addCache(model));
   protected _cachePage = tap((page: ModelIndexPage<T>) => {
-    page.items.forEach(item => this._cache.set(item.id, item))
+    page.items.forEach(item => this.addCache(item))
   })
 
   protected _tryFetchCache(
@@ -99,6 +99,10 @@ export abstract class ModelService<T extends Model, TQuery extends ModelQuery<T>
       map(response => this.modelIndexPageFromJsonObject(response)),
       this._cachePage
     );
+  }
+
+  addCache(item: T) {
+    this._cache.set(item.id, item);
   }
 }
 

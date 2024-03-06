@@ -37,7 +37,7 @@ import { isThisSecond } from 'date-fns';
 import { ResearchFunding, ResearchFundingService, researchFundingFromJsonObject } from 'src/app/research/funding/research-funding';
 import { ResourceContainerControl } from './resource-container-control';
 
-export interface ResourceContainerParams {
+export interface ResourceContainerParams extends ModelParams {
   equipments: EquipmentLease[];
   softwares: SoftwareLease[];
 
@@ -45,7 +45,8 @@ export interface ResourceContainerParams {
   outputMaterials: OutputMaterial[];
 }
 
-export class ResourceContainer implements ResourceContainerParams {
+export abstract class ResourceContainer extends Model implements ResourceContainerParams {
+  abstract funding: ResearchFunding;
   equipments: EquipmentLease[];
   softwares: SoftwareLease[];
 
@@ -53,14 +54,16 @@ export class ResourceContainer implements ResourceContainerParams {
   outputMaterials: OutputMaterial[];
 
   constructor(params: ResourceContainerParams) {
+    super(params);
+
     this.equipments = params.equipments;
     this.softwares = params.softwares;
     this.inputMaterials = params.inputMaterials;
     this.outputMaterials = params.outputMaterials;
   }
 
-  getResources<T extends Resource>(t: ResourceType & T['type']): readonly T[] {
-    return this[resourceContainerAttr(t)] as any[];
+  getResources<T extends Resource>(t: ResourceType & T[ 'type' ]): readonly T[] {
+    return this[ resourceContainerAttr(t) ] as any[];
   }
 
   countResources(t: ResourceType): number {
@@ -68,21 +71,21 @@ export class ResourceContainer implements ResourceContainerParams {
   }
 
   getResourceAt<T extends Resource>(
-    t: ResourceType & T['type'],
+    t: ResourceType & T[ 'type' ],
     index: number,
   ): T {
     const resources = this.getResources(t);
     if (index < 0 || index >= resources.length) {
       throw new Error(`No resource at ${index}`);
     }
-    return resources[index];
+    return resources[ index ];
   }
   apply(patch: ResourceContainerPatch) {
     for (const resourceType of ALL_RESOURCE_TYPES) {
       const attr = resourceContainerAttr(resourceType);
       if (patch.hasOwnProperty(attr)) {
-        const resources = this[attr];
-        for (const s of (patch[attr] as Array<ResourceSplice<any>>)) {
+        const resources = this[ attr ];
+        for (const s of (patch[ attr ] as Array<ResourceSplice<any>>)) {
           resources.splice(s.start, resources.length, ...s.items);
         }
       }
@@ -110,25 +113,25 @@ export function resourceContainerAttr(
 export function resourceContainerParamsFromJson(json: JsonObject): ResourceContainerParams {
   const baseParams = modelParamsFromJsonObject(json);
 
-  if (!Array.isArray(json['equipments']) || !json['equipments'].every(isJsonObject)) {
+  if (!Array.isArray(json[ 'equipments' ]) || !json[ 'equipments' ].every(isJsonObject)) {
     throw new Error("Expected a list of json objects 'equipments'")
   }
-  const equipments = json['equipments'].map(equipmentLeaseFromJson);
+  const equipments = json[ 'equipments' ].map(equipmentLeaseFromJson);
 
-  if (!Array.isArray(json['softwares']) || !json['softwares'].every(isJsonObject)) {
+  if (!Array.isArray(json[ 'softwares' ]) || !json[ 'softwares' ].every(isJsonObject)) {
     throw new Error("Expected a list of json objects 'softwares'")
   }
-  const softwares = json['softwares'].map(softwareLeaseFromJsonObject);
+  const softwares = json[ 'softwares' ].map(softwareLeaseFromJsonObject);
 
-  if (!Array.isArray(json['inputMaterials']) || !json['inputMaterials'].every(isJsonObject)) {
+  if (!Array.isArray(json[ 'inputMaterials' ]) || !json[ 'inputMaterials' ].every(isJsonObject)) {
     throw new Error("Expected a list of json objects 'inputMaterials'")
   }
-  const inputMaterials = json['inputMaterials'].map(inputMaterialFromJson);
+  const inputMaterials = json[ 'inputMaterials' ].map(inputMaterialFromJson);
 
-  if (!Array.isArray(json['outputMaterials']) || !json['outputMaterials'].every(isJsonObject)) {
+  if (!Array.isArray(json[ 'outputMaterials' ]) || !json[ 'outputMaterials' ].every(isJsonObject)) {
     throw new Error("Expected a list of json objects 'outputMaterials'")
   }
-  const outputMaterials = json['outputMaterials'].map(outputMaterialFromJson);
+  const outputMaterials = json[ 'outputMaterials' ].map(outputMaterialFromJson);
 
 
   return {
@@ -161,9 +164,9 @@ export function resourceContainerPatchToJson(
   for (const resourceType of ALL_RESOURCE_TYPES) {
     const resourceToJson = resourceSerializer(resourceType);
 
-    const slices = patch[resourceContainerAttr(resourceType)];
+    const slices = patch[ resourceContainerAttr(resourceType) ];
 
-    json[resourceContainerAttr(resourceType)] = slices.map((slice) => ({
+    json[ resourceContainerAttr(resourceType) ] = slices.map((slice) => ({
       ...slice,
       items: slice.items.map((item) => resourceToJson(item as any)),
     }));
@@ -185,11 +188,11 @@ export function resourceContainerPatchToJson(
 }
 
 function delResourcePatch<T extends Resource>(
-  resourceType: T['type'] & ResourceType,
+  resourceType: T[ 'type' ] & ResourceType,
   toDel: number[],
 ): Partial<ResourceContainerPatch> {
   return {
-    [resourceContainerAttr(resourceType)]: toDel.map((toDel) => ({
+    [ resourceContainerAttr(resourceType) ]: toDel.map((toDel) => ({
       start: toDel,
       end: toDel + 1,
       items: [],
@@ -198,8 +201,8 @@ function delResourcePatch<T extends Resource>(
 }
 
 @Injectable({ providedIn: 'root' })
-export class ResourceContainerContext {
-  _control: ResourceContainerControl | undefined;
+export class ResourceContainerContext<T extends ResourceContainer> {
+  _control: ResourceContainerControl<T> | undefined;
   _controlCommitted: Subscription | undefined;
   _controlFunding: Subscription | undefined;
 
@@ -219,19 +222,19 @@ export class ResourceContainerContext {
   )
 
 
-  get control(): ResourceContainerControl {
+  get control(): ResourceContainerControl<T> {
     if (this._control === undefined) {
       throw new Error('No current control')
     }
     return this._control;
   }
 
-  attachControl(control: ResourceContainerControl) {
+  attachControl(control: ResourceContainerControl<T>) {
     if (this._control !== undefined) {
       throw new Error('Can only attach at most one container form to context');
     }
     this._control = control;
-    this._controlCommitted = this._control.committed$.subscribe(
+    this._controlCommitted = this._control.container$.subscribe(
       (container) => {
         this._committedSubject.next(container)
       }
@@ -249,25 +252,25 @@ export class ResourceContainerContext {
   committedResources$<TResource extends Resource>(
     resourceType: ResourceType,
   ): Observable<readonly TResource[]> {
-    return this.control.committed$.pipe(
+    return this.control.container$.pipe(
       map((committed) =>
         committed ? committed.getResources<TResource>(resourceType) : [],
       ),
     );
   }
 
-  async getResourceAt<T extends Resource>(resourceType: T['type'], index: number): Promise<T | undefined> {
-    const committed = await firstValueFrom(this.control.committed$);
+  async getResourceAt<T extends Resource>(resourceType: T[ 'type' ], index: number): Promise<T | undefined> {
+    const committed = await firstValueFrom(this.control.container$);
     return committed.getResourceAt(resourceType, index);
   }
 
   async getResourceCount(resourceType: ResourceType): Promise<number> {
-    const committed = await firstValueFrom(this.control.committed$);
+    const committed = await firstValueFrom(this.control.container$);
     return committed.getResources(resourceType).length;
   }
 
   async commit(patch: ResourceContainerPatch): Promise<ResourceContainer> {
-    const committed = await firstValueFrom(this.control.committed$);
+    const committed = await firstValueFrom(this.control.container$);
     if (!committed) {
       throw new Error('Cannot commit resources until container exists');
     }
@@ -280,7 +283,7 @@ export class ResourceContainerContext {
     if (committed == null) {
       throw new Error('Cannot delete resources until container');
     }
-    const patch = delResourcePatch(resourceType, [index]);
+    const patch = delResourcePatch(resourceType, [ index ]);
     return this.control.commit(patch as ResourceContainerPatch);
   }
 }

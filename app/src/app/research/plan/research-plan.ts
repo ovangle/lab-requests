@@ -19,6 +19,8 @@ import { ModelContext } from 'src/app/common/model/context';
 import { ResourceContainer, ResourceContainerParams, resourceContainerParamsFromJson } from 'src/app/lab/lab-resource/resource-container';
 import { CreateResearchPlanTask, ResearchPlanTask, ResearchPlanTaskParams, ResearchPlanTaskSlice, researchPlanTaskFromJson } from './task/research-plan-task';
 import { HttpParams } from '@angular/common/http';
+import { Lab, LabService, labFromJsonObject } from 'src/app/lab/lab';
+import { firstValueFrom } from 'rxjs';
 
 export interface ResearchPlanAttachment extends ModelParams {
   readonly id: string;
@@ -45,13 +47,13 @@ export interface ResearchPlanParams extends ResourceContainerParams, ModelParams
 
   readonly researcher: User;
   readonly coordinator: User;
+  readonly lab: Lab | string;
 
   readonly tasks: readonly ResearchPlanTask[];
   readonly attachments: readonly ResearchPlanAttachment[];
 }
 
 export function researchPlanFromJsonObject(json: JsonObject): ResearchPlan {
-  const baseParams = modelParamsFromJsonObject(json);
   const containerParams = resourceContainerParamsFromJson(json);
 
   if (typeof json[ 'title' ] !== 'string') {
@@ -75,6 +77,15 @@ export function researchPlanFromJsonObject(json: JsonObject): ResearchPlan {
   }
   const coordinator = userFromJsonObject(json[ 'coordinator' ]);
 
+  let lab: Lab | string;
+  if (isJsonObject(json[ 'lab' ])) {
+    lab = labFromJsonObject(json[ 'lab' ]);
+  } else if (typeof json[ 'lab' ] === 'string') {
+    lab = json[ 'lab' ]
+  } else {
+    throw new Error("Expected a json object or string 'lab'");
+  }
+
   if (!Array.isArray(json[ 'tasks' ]) || !json[ 'tasks' ].every(isJsonObject)) {
     throw new Error(
       "ResearchPlanParams: 'tasks' must be an array of json objects",
@@ -95,28 +106,28 @@ export function researchPlanFromJsonObject(json: JsonObject): ResearchPlan {
   );
 
   return new ResearchPlan({
-    ...baseParams,
     ...containerParams,
     title: json[ 'title' ],
     description: json[ 'description' ],
     funding,
     researcher,
     coordinator,
+    lab,
     tasks,
     attachments,
   });
 }
 
-export class ResearchPlan extends Model implements ResearchPlanParams {
+export class ResearchPlan extends ResourceContainer implements ResearchPlanParams {
   title: string;
   description: string;
   funding: ResearchFunding;
   researcher: User;
   coordinator: User;
+
+  lab: Lab | string;
   tasks: readonly ResearchPlanTask[];
   attachments: readonly ResearchPlanAttachment[];
-
-  readonly _container: ResourceContainer;
 
   constructor(params: ResearchPlanParams) {
     super(params);
@@ -125,23 +136,18 @@ export class ResearchPlan extends Model implements ResearchPlanParams {
     this.funding = params.funding;
     this.researcher = params.researcher;
     this.coordinator = params.coordinator;
+    this.lab = params.lab;
     this.tasks = params.tasks;
     this.attachments = params.attachments;
-    this._container = new ResourceContainer(params);
   }
 
-  get equipments() {
-    return this._container.equipments;
+  async resolveLab(labService: LabService) {
+    if (typeof this.lab === 'string') {
+      this.lab = await firstValueFrom(labService.fetch(this.lab));
+    }
+    return this.lab;
   }
-  get softwares() {
-    return this._container.softwares;
-  }
-  get inputMaterials() {
-    return this._container.inputMaterials;
-  }
-  get outputMaterials() {
-    return this._container.outputMaterials;
-  }
+
 }
 
 export interface CreateResearchPlan {

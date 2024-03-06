@@ -1,45 +1,35 @@
 import { v4 as uuid } from 'uuid';
 import { FormArray, FormGroup } from '@angular/forms';
-import { BehaviorSubject, Observable, ReplaySubject, firstValueFrom } from 'rxjs';
+import { BehaviorSubject, Observable, ReplaySubject, defer, firstValueFrom, map } from 'rxjs';
 import {
   ResourceContainer,
   ResourceContainerPatch,
 } from './resource-container';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
+import { ModelContext } from 'src/app/common/model/context';
 
 
 /**
  * Used to control the current research container in the context.
  */
-export class ResourceContainerControl {
-  _committedSubject = new BehaviorSubject<ResourceContainer>(new ResourceContainer({
-    equipments: [],
-    softwares: [],
-    inputMaterials: [],
-    outputMaterials: [],
-  }));
-  readonly committed$ = this._committedSubject.asObservable();
-  _fundingSubject = new ReplaySubject<ResearchFunding>(1);
-  readonly funding$ = this._fundingSubject.asObservable();
+export class ResourceContainerControl<T extends ResourceContainer> {
+  context: ModelContext<T>;
+  readonly container$ = defer(() => this.context.committed$);
+  _saveContainer: (patch: ResourceContainerPatch) => Promise<T>
 
-  _onCommit: (patch: ResourceContainerPatch) => void;
+  readonly funding$ = this.container$.pipe(
+    map(container => container.funding)
+  );
 
   constructor(
-    container: ResourceContainer | null,
-    funding: Observable<ResearchFunding>,
-    onCommit: (patch: ResourceContainerPatch) => void
+    context: ModelContext<T>,
+    saveContainer: (patch: ResourceContainerPatch) => Promise<T>
   ) {
-    if (container) {
-      this._committedSubject.next(container);
-    }
-    funding.subscribe(this._fundingSubject);
-    this._onCommit = onCommit;
+    this.context = context;
+    this._saveContainer = saveContainer;
   }
 
-  commit(patch: ResourceContainerPatch): Promise<ResourceContainer> {
-    const committed = this._committedSubject.value;
-    this._committedSubject.next(committed.apply(patch));
-    this._onCommit(patch);
-    return firstValueFrom(this._committedSubject);
+  async commit(patch: ResourceContainerPatch): Promise<T> {
+    return await this._saveContainer(patch);
   }
 }

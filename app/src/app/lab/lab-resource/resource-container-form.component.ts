@@ -44,9 +44,10 @@ import { ResearchFunding } from "src/app/research/funding/research-funding";
     }
     `
 })
-export class LabResourceContainerFormComponent {
-    containerControl: ResourceContainerControl | undefined;
-    readonly context = inject(ResourceContainerContext);
+export class LabResourceContainerFormComponent<T extends ResourceContainer> {
+    @Input({ required: true })
+    containerControl: ResourceContainerControl<T> | undefined;
+    readonly context = inject(ResourceContainerContext<T>);
 
     _fundingSubject = new BehaviorSubject<ResearchFunding | null>(null);
     @Input()
@@ -57,20 +58,8 @@ export class LabResourceContainerFormComponent {
         this._fundingSubject.next(funding);
     }
 
-    @Input({ required: true })
-    container: ResourceContainer | null = null;
-
     ngOnInit() {
-        this.containerControl = new ResourceContainerControl(
-            this.container,
-            this._fundingSubject.pipe(
-                filter((f): f is ResearchFunding => f != null)
-            ),
-            (patch) => {
-                throw new Error('not implemented');
-            }
-        );
-        this.context.attachControl(this.containerControl);
+        this.context.attachControl(this.containerControl!);
     }
 
     ngOnDestroy() {

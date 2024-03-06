@@ -192,16 +192,6 @@ function updateResearchPlanFromForm(form: ResearchPlanForm): UpdateResearchPlan 
         }
       </div>
 
-      @if (plan) {
-        <div class="resources" #resourceContainer>
-          <h2>Requirements</h2>
-
-          <lab-resource-container-form 
-            [container]="plan._container" 
-            [funding]="funding" />
-        </div>
-      }
-
       <div class="form-controls">
         <div (mouseenter)="_showAllFormErrors()">
           <button mat-raised-button [disabled]="!form.valid" 
@@ -238,7 +228,6 @@ function updateResearchPlanFromForm(form: ResearchPlanForm): UpdateResearchPlan 
 })
 export class ResearchPlanFormComponent {
 
-  readonly _userService = inject(UserService);
   readonly _labService = inject(LabService);
   readonly _researchPlanService = inject(ResearchPlanService);
 
@@ -251,13 +240,22 @@ export class ResearchPlanFormComponent {
   _plan: ResearchPlan | null = null;
 
   @Output()
-  readonly planSave = new EventEmitter<ResearchPlan | null>();
+  readonly save = new EventEmitter<ResearchPlan>();
 
   @Input({ required: true })
-  currentUserPlanRole: 'coordinator' | 'researcher' = 'researcher';
+  get currentUser(): User {
+    return this._currentUser!;
+  }
+  set currentUser(user: User) {
+    this._currentUser = user;
+    this.form.patchValue({ [ this.currentUserPlanRole ]: this._currentUser });
+  }
 
-  @Input({ required: true })
-  currentUserId: string | undefined;
+  _currentUser: User | undefined;
+
+  get currentUserPlanRole() {
+    return this.currentUser!.roles.has('student') ? 'researcher' : 'coordinator';
+  }
 
   _userSearchIncludeRoles = new Set<string>();
 
@@ -294,14 +292,7 @@ export class ResearchPlanFormComponent {
     ]),
   });
 
-  @Output()
-  save = new EventEmitter<CreateResearchPlan>()
-
   ngOnInit() {
-    this._userService.fetch(this.currentUserId!).subscribe(user => {
-      this.form.patchValue({ [ this.currentUserPlanRole ]: user })
-    })
-
     switch (this.currentUserPlanRole) {
       case 'coordinator':
         this._userSearchIncludeRoles.add('student');

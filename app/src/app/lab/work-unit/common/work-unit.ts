@@ -42,7 +42,7 @@ import { Lab } from '../../lab';
 import { HttpParams } from '@angular/common/http';
 import { ResearchPlanContext } from 'src/app/research/plan/research-plan-context';
 
-export interface WorkUnitParams extends ResourceContainerParams, ModelParams {
+export interface WorkUnitParams extends ModelParams {
   planId: string;
   id: string;
   name: string;
@@ -78,8 +78,6 @@ export class WorkUnit extends Model implements WorkUnitParams {
   readonly startDate: Date | null;
   readonly endDate: Date | null;
 
-  readonly _container: ResourceContainer;
-
   constructor(params: WorkUnitParams) {
     super(params);
 
@@ -93,22 +91,7 @@ export class WorkUnit extends Model implements WorkUnitParams {
 
     this.startDate = params.startDate || null;
     this.endDate = params.endDate || null;
-    this._container = new ResourceContainer(params);
   }
-
-  get equipments() {
-    return this._container.equipments;
-  }
-  get softwares() {
-    return this._container.softwares;
-  }
-  get inputMaterials() {
-    return this._container.inputMaterials;
-  }
-  get outputMaterials() {
-    return this._container.outputMaterials;
-  }
-
 }
 
 export type WorkUnitFmt = 'campus+lab';

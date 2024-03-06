@@ -173,6 +173,7 @@ class ResearchPlanView(LabResourceConsumerView[ResearchPlan]):
 
     researcher: UserView
     coordinator: UserView
+    lab: UUID
 
     tasks: list[ResearchPlanTaskView]
     attachments: list[ResearchPlanAttachmentView]
@@ -205,6 +206,7 @@ class ResearchPlanView(LabResourceConsumerView[ResearchPlan]):
             funding=funding,
             researcher=researcher,
             coordinator=coordinator,
+            lab=model.lab_id,
             tasks=tasks,
             attachments=attachments,
             created_at=model.created_at,

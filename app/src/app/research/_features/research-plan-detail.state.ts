@@ -6,20 +6,20 @@ import { Observable, filter, map, shareReplay, startWith } from "rxjs";
 
 export interface ResearchPlanDetailConfig {
     showPlanSummary: boolean;
+    showTasks: boolean;
 }
 
 const defaultConfig: ResearchPlanDetailConfig = {
-    showPlanSummary: true
+    showPlanSummary: true,
+    showTasks: true
 };
 
 export function configForSubroute(subroute: string | null): ResearchPlanDetailConfig {
-    let config: ResearchPlanDetailConfig = {
-        showPlanSummary: true
-    };
+    let config = defaultConfig;
 
     switch (subroute) {
         case 'update':
-            return { ...config, showPlanSummary: false };
+            return { ...config, showPlanSummary: false, showTasks: false };
         case null:
             return config;
         default:

@@ -13,6 +13,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import {
   CreateResearchPlan,
+  ResearchPlan,
   ResearchPlanService,
 
 } from '../plan/research-plan';
@@ -34,8 +35,7 @@ import { CommonModule } from '@angular/common';
     @if (currentUser$ | async; as currentUser) {
       <research-plan-form 
         hideReviewControls
-        [currentUserPlanRole]="currentUser.roles.has('student') ? 'researcher' : 'coordinator'"
-        [currentUserId]="currentUser.id"
+        [currentUser]="currentUser"
         (save)="onSave($event)" />
     }
   `,
@@ -45,7 +45,6 @@ import { CommonModule } from '@angular/common';
         display: block;
         margin: 2em 1em;
       }
-      
     `,
   ],
 })
@@ -62,8 +61,7 @@ export class ResearchPlanCreatePage {
     filter((u): u is CurrentUser => u != null)
   );
 
-  async onSave(patch: CreateResearchPlan) {
-    const created = await firstValueFrom(this.plans.create(patch));
-    await this._router.navigate([ 'research', 'plans', created.id ]);
+  async onSave(plan: ResearchPlan) {
+    await this._router.navigate([ 'research', 'plans', plan.id ]);
   }
 }
