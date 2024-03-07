@@ -14,12 +14,10 @@ import { map, startWith } from "rxjs";
     ],
     template: `
     @if (plan$ | async; as plan) {
-        @if (currentUser$ | async; as currentUser) {
-            <research-plan-form 
-                [plan]="plan" 
-                [currentUser]="currentUser"
-                (save)="context.nextCommitted($event)" />
-        }
+        <research-plan-form 
+            [plan]="plan" 
+            [currentUser]="currentUser!"
+            (save)="context.nextCommitted($event)" />
     }
     `
 })
@@ -29,9 +27,8 @@ export class ResearchPlanDetail__UpdatePage {
 
     readonly plan$ = this.context.committed$;
 
+    get currentUser() {
+        return this._userContext.currentUser;
+    }
     readonly currentUser$ = this._userContext.committed$;
-
-    readonly currentUserPlanRole$ = this.currentUser$.pipe(
-        map(user => user.roles.has('student') ? 'researcher' : 'coordinator'),
-    );
 }

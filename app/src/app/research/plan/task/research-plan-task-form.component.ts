@@ -112,40 +112,44 @@ export function researchPlanTaskSlicesFromFormArray(arr: FormArray<ResearchPlanT
     </div>
 
     <div class="controls" [formGroup]="form!">
-      <mat-form-field class="description-field">
-        <mat-label>Description</mat-label>
-        <textarea matInput resizeOnInput
-                  formControlName="description" required> 
-        </textarea>
-        @if (descriptionErrors && descriptionErrors['required']) {
-          <mat-error>A description is required</mat-error>
-        }
-      </mat-form-field>
+      <div class="base-controls">
+        <mat-form-field class="description-field">
+          <mat-label>Description</mat-label>
+          <textarea matInput resizeOnInput
+                    formControlName="description" required> 
+          </textarea>
+          @if (descriptionErrors && descriptionErrors['required']) {
+            <mat-error>A description is required</mat-error>
+          }
+        </mat-form-field>
 
       <div>
-      <mat-form-field class="duration-field">
-          <mat-label>Duration</mat-label>
-          <mat-date-range-input [rangePicker]="durationPicker">
-            <input matStartDate formControlName="startDate" placeholder="start" />
-            <input matEndDate formControlName="endDate" placeholder="end" />
-          </mat-date-range-input>
+        <mat-form-field class="duration-field">
+            <mat-label>Duration</mat-label>
+            <mat-date-range-input [rangePicker]="durationPicker">
+              <input matStartDate formControlName="startDate" placeholder="start" />
+              <input matEndDate formControlName="endDate" placeholder="end" />
+            </mat-date-range-input>
 
-          <mat-hint>DD/MM/YYYY - DD/MM/YYYY</mat-hint>
+            <mat-hint>DD/MM/YYYY - DD/MM/YYYY</mat-hint>
 
-          <mat-datepicker-toggle matIconSuffix [for]="durationPicker" />
-          <mat-date-range-picker #durationPicker />
-      </mat-form-field>
+            <mat-datepicker-toggle matIconSuffix [for]="durationPicker" />
+            <mat-date-range-picker #durationPicker />
+        </mat-form-field>
       </div>
+    </div>
 
       @if (!hideReviewControls) {
-        <lab-search formControlName="lab">
-          <mat-label>Lab</mat-label>
-        </lab-search>
+        <div class="review-controls">
+          <lab-search formControlName="lab">
+            <mat-label>Lab</mat-label>
+          </lab-search>
 
-        <user-search formControlName="technician" 
-                     [includeRoles]="technicianRoles">
-          <mat-label>Technician</mat-label>
-        </user-search>
+          <user-search formControlName="supervisor" 
+                      [includeRoles]="technicianRoles">
+            <mat-label>Technician</mat-label>
+          </user-search>
+        </div>
       }
     <div>
   `,
@@ -157,9 +161,22 @@ export function researchPlanTaskSlicesFromFormArray(arr: FormArray<ResearchPlanT
   }
 
   .controls {
+    width: 100%;
+  }
+
+  .base-controls, .review-controls {
     display: flex; 
     flex-grow: 1;
   }
+
+  .review-controls > * {
+    flex-grow: 1;
+  }
+
+  .review-controls user-search {
+    margin-left: 1em;
+  }
+
   .duration-field {
     padding-left: 1em;
     box-sizing: border-box;

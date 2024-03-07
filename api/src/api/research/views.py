@@ -9,7 +9,7 @@ from api.lab.lab_resource_consumer import (
 )
 from api.lab.schemas import lookup_lab
 from api.research.schemas import ResearchPlanTaskView
-from api.research.schemas.funding import lookup_research_funding
+from api.research.schemas.funding import ResearchFundingView, lookup_research_funding
 from api.research.schemas.plan import (
     ResearchPlanCreateRequest,
     ResearchPlanUpdateRequest,
@@ -39,6 +39,14 @@ async def index_research_fundings(
 ) -> ResearchFundingIndexPage:
     index = ResearchFundingIndex(query_research_fundings(name_eq=name))
     return await index.load_page(db, page_index)
+
+
+@research.get("/funding/{funding_id}")
+async def get_research_funding(
+    funding_id: UUID, db=Depends(get_db)
+) -> ResearchFundingView:
+    funding = await ResearchFunding.get_for_id(db, funding_id)
+    return await ResearchFundingView.from_model(funding)
 
 
 @research.get("/plans")

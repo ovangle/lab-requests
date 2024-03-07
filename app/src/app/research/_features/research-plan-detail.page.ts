@@ -80,11 +80,12 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
       </div>
     </div>
     <section class="general-info">
+    @if (showGeneralInfo$ | async) {
       <div class="general-info-header">
         <h2>General</h2>
-        <button mat-raised-button routerLink="./update" color="primary">
-          <mat-icon>edit</mat-icon>Edit
-        </button>
+        @if (showEditButton$ | async) {
+          <ng-container *ngTemplateOutlet="editButton" />
+        }
       </div>
       <div class="funding-info">
         <b>Funding</b> {{plan!.funding.name}}
@@ -96,8 +97,15 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
       <b>Researcher</b> <user-info [user]="plan!.researcher" /> <br/>
       <b>Coordinator</b> <user-info [user]="plan!.coordinator" /> <br/>
       <b>Base lab</b>{{(lab$ | async)?.name}}
+    } @else if (showEditButton$ | async) {
+      <div class="general-info-header">
+        <div></div>
+        <ng-container *ngTemplateOutlet="editButton" />
+      </div>
+    }
     </section>
 
+    @if (showTaskInfo$ | async) {
     <section class="task-info">
       <h2>Tasks</h2>
       <div>
@@ -108,18 +116,28 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
         }
       </div>
     </section>
+    }
 
-    <section class="resources" #resourceContainer>
-      <h2>Requirements</h2>
+    @if (showRequirements$ | async) {
+      <section class="resources" #resourceContainer>
+        <h2>Requirements</h2>
 
-      <lab-resource-container-form 
-        [containerControl]="containerControl" />
-    </section>
+        <lab-resource-container-form 
+          [containerControl]="containerControl" />
+      </section>
+    }
 
     <div class="child-route">
       <router-outlet />
     </div>
   }
+
+  <ng-template #editButton> 
+    <button mat-raised-button routerLink="./update" color="primary"
+      [disabled]="editButtonDisabled$ | async">
+      <mat-icon>edit</mat-icon>Edit
+    </button>
+  </ng-template>
   `,
   styles: `
     .general-info-header {
@@ -141,10 +159,7 @@ export class ResearchPlanDetailPage {
   readonly appScaffold = inject(BodyScrollbarHidingService);
   readonly plan$ = this._context.committed$;
 
-  readonly config$ = injectResearchPlanDetailConfig().pipe(
-    takeUntilDestroyed(),
-    shareReplay(1)
-  )
+  readonly config$ = injectResearchPlanDetailConfig();
 
   readonly containerControl = new ResourceContainerControl<ResearchPlan>(
     this._context,
@@ -155,6 +170,11 @@ export class ResearchPlanDetailPage {
   );
 
   readonly showPlanSummary$ = this.config$.pipe(map(config => config.showPlanSummary));
+  readonly showEditButton$ = this.config$.pipe(map(config => config.showEditButton));
+  readonly editButtonDisabled$ = this.config$.pipe(map(config => config.editButtonDisabled));
+  readonly showGeneralInfo$ = this.config$.pipe(map(config => config.showGeneralInfo));
+  readonly showTaskInfo$ = this.config$.pipe(map(config => config.showTasks))
+  readonly showRequirements$ = this.config$.pipe(map(config => config.showRequirements));
 
   readonly lab$ = this.plan$.pipe(
     distinctUntilChanged(),

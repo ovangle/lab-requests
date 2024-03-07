@@ -48,13 +48,10 @@ function patchFormValue(form: ResearchPlanForm, plan: ResearchPlan) {
     funding: plan.funding
   })
 
+  form.controls.tasks.clear();
   const tasks = form.controls.tasks;
-  for (let i = 0; i < plan.tasks.length; i++) {
-    const task = plan.tasks[ i ];
-    let taskForm = tasks.controls[ i ];
-    if (taskForm == null) {
-      tasks.controls.push(researchPlanTaskForm(task))
-    }
+  for (const task of plan.tasks) {
+    tasks.controls.push(researchPlanTaskForm(task))
   }
 }
 
@@ -114,7 +111,6 @@ function updateResearchPlanFromForm(form: ResearchPlanForm): UpdateResearchPlan 
   template: `
     <form [formGroup]="form">
       @if (!plan) {
-
         <mat-form-field>
           <mat-label>Project title</mat-label>
           <input matInput type="text" formControlName="title" required />
@@ -134,30 +130,32 @@ function updateResearchPlanFromForm(form: ResearchPlanForm): UpdateResearchPlan 
         </textarea>
       </mat-form-field>
 
-      @switch (currentUserPlanRole) {
+      @if (!hideReviewControls) {
+        @switch (currentUserPlanRole) {
 
-        @case ('coordinator') {
-          <user-search formControlName="researcher"
-            [includeRoles]="_userSearchIncludeRoles"
-            createTemporaryIfNotFound
-            required >
-            <mat-label>Primary researcher</mat-label>
+          @case ('coordinator') {
+            <user-search formControlName="researcher"
+              [includeRoles]="_userSearchIncludeRoles"
+              createTemporaryIfNotFound
+              required >
+              <mat-label>Primary researcher</mat-label>
 
-            @if (researcherErrors && researcherErrors['required']) {
-              <mat-error>A value is required</mat-error>
-            }
-          </user-search>
-        }
-        @case ('researcher') {
-          <user-search formControlName="coordinator"
-                       [includeRoles]="_userSearchIncludeRoles" 
-                       required >
-              <mat-label>Coordinator</mat-label>
-              
-              @if (coordinatorErrors && coordinatorErrors['required']) {
+              @if (researcherErrors && researcherErrors['required']) {
                 <mat-error>A value is required</mat-error>
               }
-          </user-search>
+            </user-search>
+          }
+          @case ('researcher') {
+            <user-search formControlName="coordinator"
+                        [includeRoles]="_userSearchIncludeRoles" 
+                        required >
+                <mat-label>Coordinator</mat-label>
+                
+                @if (coordinatorErrors && coordinatorErrors['required']) {
+                  <mat-error>A value is required</mat-error>
+                }
+            </user-search>
+          }
         }
       }
 
@@ -248,13 +246,15 @@ export class ResearchPlanFormComponent {
   }
   set currentUser(user: User) {
     this._currentUser = user;
-    this.form.patchValue({ [ this.currentUserPlanRole ]: this._currentUser });
+    window.setTimeout(() =>
+      this.form.patchValue({ [ this.currentUserPlanRole ]: this._currentUser })
+    );
   }
 
   _currentUser: User | undefined;
 
   get currentUserPlanRole() {
-    return this.currentUser!.roles.has('student') ? 'researcher' : 'coordinator';
+    return (this.currentUser && this.currentUser!.roles.has('student')) ? 'researcher' : 'coordinator';
   }
 
   _userSearchIncludeRoles = new Set<string>();

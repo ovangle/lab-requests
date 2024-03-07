@@ -1,9 +1,9 @@
-import { Component, Input, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, OnInit, inject } from '@angular/core';
 import {
   ResearchFunding,
   ResearchFundingService,
 } from './research-funding';
-import { Observable, map, of, shareReplay } from 'rxjs';
+import { Observable, map, of, shareReplay, tap } from 'rxjs';
 import { MatSelectModule } from '@angular/material/select';
 import { CommonModule } from '@angular/common';
 import {
@@ -30,7 +30,7 @@ import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
   template: `
     <mat-form-field>
       <mat-label><ng-content select="mat-label"></ng-content></mat-label>
-      <mat-select [formControl]="formControl" [required]="required">
+      <mat-select [formControl]="formControl" [required]="required" [compareWith]="_compareOptions">
         @if (options$ | async; as options) {
           @for (option of options; track option.id) {
             <mat-option [value]="option">{{ option.name }}</mat-option>
@@ -55,7 +55,14 @@ export class ResearchFundingSelectComponent implements ControlValueAccessor {
 
   readonly researchFundings = inject(ResearchFundingService);
   readonly options$: Observable<ResearchFunding[]> = this.researchFundings.all().pipe(
-    shareReplay(1)
+    shareReplay(1),
+    tap((options) => {
+      console.log('setting options');
+      console.log('form value', this.formControl.value);
+      for (const option of options) {
+        console.log(option === this.formControl.value);
+      }
+    })
   );
 
   @Input()
@@ -81,13 +88,10 @@ export class ResearchFundingSelectComponent implements ControlValueAccessor {
   );
 
   writeValue(obj: ResearchFunding | null): void {
-    if (obj == null) {
-      this.formControl.setValue(null);
-    } else {
-      this.researchFundings.lookup(obj).subscribe(
-        (funding) => this.formControl.setValue(funding)
-      );
+    if (!(obj instanceof ResearchFunding) || obj == null) {
+      throw new Error('Expected a ResearchFunding or null');
     }
+    this.formControl.setValue(obj);
   }
 
   ngOnInit() {
@@ -103,4 +107,8 @@ export class ResearchFundingSelectComponent implements ControlValueAccessor {
     this._onTouched = fn;
   }
   readonly setDisabledState = disabledStateToggler(this.formControl);
+
+  _compareOptions(a: ResearchFunding | null, b: ResearchFunding | null) {
+    return a?.id === b?.id;
+  }
 }

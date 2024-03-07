@@ -11,6 +11,7 @@ import { ResearchPlanContext } from "../research-plan-context";
 import { Lab, LabService, labFromJsonObject } from "src/app/lab/lab";
 import { User, UserService, userFromJsonObject } from "src/app/user/common/user";
 import { ThisReceiver } from "@angular/compiler";
+import { P } from "@angular/cdk/keycodes";
 
 
 export interface ResearchPlanTaskParams extends ModelParams {
@@ -141,6 +142,14 @@ export interface ResearchPlanTaskSlice {
   startIndex: number;
   endIndex?: number;
   items: CreateResearchPlanTask[];
+}
+
+export function researchPlanTaskSliceToJson(slice: ResearchPlanTaskSlice): JsonObject {
+  return {
+    startIndex: slice.startIndex,
+    endIndex: slice.endIndex,
+    items: slice.items.map(item => createResearchPlanTaskToJson(item))
+  }
 }
 
 

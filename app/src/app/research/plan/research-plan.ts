@@ -17,7 +17,7 @@ import {
 
 import { ModelContext } from 'src/app/common/model/context';
 import { ResourceContainer, ResourceContainerParams, resourceContainerParamsFromJson } from 'src/app/lab/lab-resource/resource-container';
-import { CreateResearchPlanTask, ResearchPlanTask, ResearchPlanTaskParams, ResearchPlanTaskSlice, researchPlanTaskFromJson } from './task/research-plan-task';
+import { CreateResearchPlanTask, ResearchPlanTask, ResearchPlanTaskParams, ResearchPlanTaskSlice, researchPlanTaskFromJson, researchPlanTaskSliceToJson } from './task/research-plan-task';
 import { HttpParams } from '@angular/common/http';
 import { Lab, LabService, labFromJsonObject } from 'src/app/lab/lab';
 import { firstValueFrom } from 'rxjs';
@@ -160,7 +160,6 @@ export interface CreateResearchPlan {
 }
 
 function createResearchPlanToJsonObject(plan: CreateResearchPlan) {
-  debugger;
   return { ...plan };
 }
 
@@ -169,6 +168,15 @@ export interface UpdateResearchPlan {
   description: string;
   funding: string | null;
   tasks: ResearchPlanTaskSlice[];
+}
+
+function updateResearchPlanToJsonObject(patch: UpdateResearchPlan) {
+  return {
+    title: patch.title,
+    description: patch.description,
+    funding: patch.funding,
+    tasks: patch.tasks.map(t => researchPlanTaskSliceToJson(t))
+  };
 }
 
 export interface ResearchPlanQuery extends ModelQuery<ResearchPlan> {
@@ -184,6 +192,6 @@ export class ResearchPlanService extends RestfulService<ResearchPlan, ResearchPl
   override readonly modelFromJsonObject = researchPlanFromJsonObject;
   override readonly modelQueryToHttpParams = researchPlanQueryToHttpParams;
   override readonly createToJsonObject = createResearchPlanToJsonObject;
-  override readonly actionToJsonObject = undefined;
+  override readonly actionToJsonObject = updateResearchPlanToJsonObject;
   override path = '/research/plans';
 }
