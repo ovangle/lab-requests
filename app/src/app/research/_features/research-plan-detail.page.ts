@@ -74,9 +74,9 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
         <h1>
           Research plan
         </h1>
-        <div class="subtitle">
+        <h3 class="subtitle">
           {{plan!.title}}
-        </div>
+        </h3>
       </div>
     </div>
     <section class="general-info">
@@ -140,6 +140,9 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
   </ng-template>
   `,
   styles: `
+    h1 {
+      margin-bottom: 0.15em;
+    }
     .general-info-header {
       display: flex;
       justify-content: space-between;

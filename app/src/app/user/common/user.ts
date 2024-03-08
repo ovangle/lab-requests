@@ -7,11 +7,12 @@ import { Injectable } from '@angular/core';
 import {
   Observable,
   catchError,
+  firstValueFrom,
   map,
   tap
 } from 'rxjs';
 import { ResearchPlan, researchPlanFromJsonObject } from 'src/app/research/plan/research-plan';
-import { Campus, CampusLookup, campusFromJsonObject } from 'src/app/uni/campus/campus';
+import { Campus, CampusLookup, CampusService, campusFromJsonObject } from 'src/app/uni/campus/campus';
 import { Discipline, isDiscipline } from 'src/app/uni/discipline/discipline';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import {
@@ -32,7 +33,7 @@ import urlJoin from 'url-join';
 export interface UserParams extends ModelParams {
   name: string;
   email: string;
-  baseCampus: Campus;
+  baseCampus: Campus | string;
   disciplines: readonly Discipline[];
 
   roles: ReadonlySet<Role>;
@@ -42,7 +43,10 @@ export class User extends Model implements UserParams {
   readonly email: string;
   readonly name: string;
 
-  readonly baseCampus: Campus;
+  get baseCampus(): Campus | string {
+    return this._baseCampus;
+  }
+  _baseCampus: Campus | string;
   // readonly discipline: Discipline;
   readonly roles: ReadonlySet<Role>;
 
@@ -52,13 +56,20 @@ export class User extends Model implements UserParams {
    */
   constructor(params: UserParams) {
     super(params);
-    this.baseCampus = params.baseCampus;
+    this._baseCampus = params.baseCampus;
     // this.discipline = params.discipline;
     this.email = params.email;
     this.name = params.name;
 
     this.roles = params.roles;
     this.disciplines = params.disciplines;
+  }
+
+  async resolveBaseCampus(campusService: CampusService): Promise<Campus> {
+    if (typeof this._baseCampus === 'string') {
+      this._baseCampus = await firstValueFrom(campusService.fetch(this._baseCampus));
+    }
+    return this._baseCampus;
   }
 
   canActAs(actor: Actor) {
@@ -81,10 +92,14 @@ function userParamsFromJsonObject(json: JsonObject): UserParams {
     throw new Error("Expected a string 'name'");
   }
 
-  if (!isJsonObject(json[ 'baseCampus' ])) {
+  let baseCampus: Campus | string;
+  if (typeof json[ 'baseCampus' ] === 'string') {
+    baseCampus = json[ 'baseCampus' ];
+  } else if (isJsonObject(json[ 'baseCampus' ])) {
+    baseCampus = campusFromJsonObject(json[ 'baseCampus' ]);
+  } else {
     throw new Error("Expected a json object 'baseCampus'");
   }
-  const baseCampus = campusFromJsonObject(json[ 'baseCampus' ]);
 
   // if (!isDiscipline(json[ 'discipline' ])) {
   //   throw new Error('Expected a valid discipline');

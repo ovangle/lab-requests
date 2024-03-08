@@ -48,7 +48,7 @@ class UserDomain(Enum):
 
 
 user_domain = Annotated[
-    UserDomain, mapped_column(postgresql.ENUM(UserDomain), name="user_domain")
+    UserDomain, mapped_column(postgresql.ENUM(UserDomain, name="user_domain"))
 ]
 
 

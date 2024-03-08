@@ -25,7 +25,7 @@ from ...base.schemas import (
     ModelIndex,
     ModelIndexPage,
 )
-from api.uni.schemas import CampusLookup, CampusView
+from api.uni.schemas import CampusLookup
 
 
 class UserView(ModelView[User]):
@@ -34,20 +34,19 @@ class UserView(ModelView[User]):
     email: str
     name: str
     disciplines: set[Discipline]
-    base_campus: CampusView
+    base_campus: UUID
 
     disabled: bool
     roles: set[str]
 
     @classmethod
     async def from_model(cls, model: User, **kwargs):
-        base_campus = await CampusView.from_model(await model.awaitable_attrs.campus)
         return cls(
             id=model.id,
             domain=model.domain,
             email=model.email,
             name=model.name,
-            base_campus=base_campus,
+            base_campus=model.campus_id,
             disciplines=set(model.disciplines),
             disabled=model.disabled,
             roles=set(model.roles),

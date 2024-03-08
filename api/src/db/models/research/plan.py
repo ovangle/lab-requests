@@ -1,7 +1,15 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import TYPE_CHECKING, Any, AsyncContextManager, Callable, Coroutine
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    AsyncContextManager,
+    Callable,
+    Coroutine,
+    Optional,
+    TypedDict,
+)
 from uuid import UUID, uuid4
 from sqlalchemy import Column, ForeignKey, Select, Table, UniqueConstraint, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -98,6 +106,31 @@ class ResearchPlanTask(Base):
             raise ResearchPlanTaskDoesNotExist(for_plan_index=(plan_id, index))
         return task
 
+    def set_attrs(self, session: LocalSession, task_attrs: ResearchPlanTaskAttrs):
+        if task_attrs["description"] != self.description:
+            self.description = task_attrs["description"]
+            session.add(self)
+        if self.start_date != task_attrs["start_date"]:
+            self.start_date = task_attrs["start_date"]
+            session.add(self)
+        if self.end_date != task_attrs["end_date"]:
+            self.end_date = task_attrs["end_date"]
+            session.add(self)
+        if self.lab_id != task_attrs["lab_id"]:
+            self.lab_id = task_attrs["lab_id"]
+            session.add(self)
+        if self.supervisor_id != task_attrs["supervisor_id"]:
+            self.supervisor_id = task_attrs["supervisor_id"]
+            session.add(self)
+
+
+class ResearchPlanTaskAttrs(TypedDict):
+    description: str
+    start_date: Optional[date]
+    end_date: Optional[date]
+    lab_id: UUID
+    supervisor_id: UUID
+
 
 class ResearchPlanAttachment(Base):
     __tablename__ = "research_plan_attachment"
@@ -164,20 +197,27 @@ class ResearchPlan(LabResourceConsumer, Base):
         self,
         start_index: int,
         end_index: int | None,
-        items: list[ResearchPlanTask],
-        session: LocalSession | None = None,
+        items: list[ResearchPlanTaskAttrs],
+        session: LocalSession,
     ):
-        session = session or local_object_session(self)
+        if end_index is None:
+            end_index = len(await self.awaitable_attrs.tasks)
+        current_tasks = (await self.awaitable_attrs.tasks)[start_index:]
         for i, item in enumerate(items):
-            item.plan_id = self.id
-            item.index = start_index + i
-            session.add(item)
+            if i < len(current_tasks):
+                current_tasks[i].set_attrs(session, item)
+            else:
+                task = ResearchPlanTask(plan_id=self.id, index=start_index + i, **item)
+                if start_index + i >= end_index:
+                    current_tasks[i].index = end_index + i
+                session.add(task)
 
-        current_tasks = await self.awaitable_attrs.tasks
-        current_tasks[start_index:end_index] = items
+        if len(items) < (end_index - start_index):
+            for i in range(end_index, len(current_tasks)):
+                current_tasks[i].index = end_index + i
+                session.add(current_tasks[i])
+        if len(items) > (end_index - start_index):
+            for i in range(len(current_tasks), end_index):
+                await session.delete(current_tasks[i])
 
-        for i, t in enumerate(current_tasks):
-            if t.index != i:
-                t.index = i
-                session.add(t)
         await session.commit()

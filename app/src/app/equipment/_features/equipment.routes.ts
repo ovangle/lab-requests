@@ -9,7 +9,6 @@ export const EQUIPMENT_ROUTES: Routes = [
     loadComponent: () => import('./equipment-index.page')
       .then(module => module.EquipmentIndexPage)
   },
-
   {
     path: 'create',
     loadComponent: () => import('./equipment-create.page')

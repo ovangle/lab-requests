@@ -11,13 +11,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db import LocalSession, local_object_session
 from db.models.base.errors import DoesNotExist
 from db.models.lab.lab import Lab
+from db.models.research.plan import ResearchPlanAttachment
 from db.models.uni import Discipline
 from db.models.user import User
 from db.models.research import (
     ResearchFunding,
     ResearchPlan,
     ResearchPlanTask,
-    ResearchPlanAttachment,
+    ResearchPlanTaskAttrs,
 )
 
 from ...base.schemas import (
@@ -41,6 +42,7 @@ from .funding import (
 
 
 class ResearchPlanTaskView(ModelView[ResearchPlanTask]):
+    plan_id: UUID
     id: UUID
     index: int
 
@@ -55,6 +57,7 @@ class ResearchPlanTaskView(ModelView[ResearchPlanTask]):
     @classmethod
     async def from_model(cls, model: ResearchPlanTask, **kwargs):
         return cls(
+            plan_id=model.plan_id,
             id=model.id,
             index=model.index,
             description=model.description,
@@ -104,26 +107,28 @@ class ResearchPlanTaskCreateRequest(ModelCreateRequest[ResearchPlanTask]):
         if index is None:
             raise ValueError("Index must be provided")
 
-        task = await self.as_task(
-            plan,
-            index,
-            db,
-            default_lab=default_lab,
-            default_supervisor=default_supervisor,
+        task = ResearchPlanTask(
+            plan_id=plan.id,
+            index=index,
+            **(
+                await self.as_task_attrs(
+                    db,
+                    default_lab=default_lab,
+                    default_supervisor=default_supervisor,
+                )
+            ),
         )
 
         db.add(task)
         await db.commit()
         return task
 
-    async def as_task(
+    async def as_task_attrs(
         self,
-        plan: ResearchPlan,
-        index: int,
         db: LocalSession,
         default_lab: Lab | None = None,
         default_supervisor: User | None = None,
-    ):
+    ) -> ResearchPlanTaskAttrs:
         from ...lab.schemas import lookup_lab
 
         assert default_lab is not None
@@ -138,16 +143,13 @@ class ResearchPlanTaskCreateRequest(ModelCreateRequest[ResearchPlanTask]):
         else:
             supervisor_id = (await lookup_user(db, self.supervisor)).id
 
-        return ResearchPlanTask(
-            id=uuid4(),
-            plan_id=plan.id,
-            index=index,
-            lab_id=lab.id,
-            supervisor_id=supervisor_id,
-            description=self.description,
-            start_date=self.start_date,
-            end_date=self.end_date,
-        )
+        return {
+            "description": self.description,
+            "lab_id": lab.id,
+            "supervisor_id": supervisor_id,
+            "start_date": self.start_date,
+            "end_date": self.end_date,
+        }
 
 
 class ResearchPlanAttachmentView(ModelView[ResearchPlanAttachment]):
@@ -306,24 +308,39 @@ class ResearchPlanTaskSlice(ModelUpdateRequest[ResearchPlan]):
     ) -> ResearchPlan:
         assert db
         items = [
-            await item.as_task(
-                model,
-                index,
+            await item.as_task_attrs(
                 db,
                 default_lab=default_lab,
                 default_supervisor=default_supervisor,
             )
             for index, item in enumerate(self.items)
         ]
+        end_index = self.end_index
+        if end_index is None:
+            end_index = len(await model.awaitable_attrs.tasks)
+
         await model.splice_tasks(self.start_index, self.end_index, items, session=db)
         return model
 
 
 class ResearchPlanUpdateRequest(ModelUpdateRequest[ResearchPlan]):
+    title: str
+    description: str
     tasks: list[ResearchPlanTaskSlice]
 
-    async def do_update(self, model: ResearchPlan, **kwargs):
+    async def do_update(self, model: ResearchPlan, **kwargs) -> ResearchPlan:
         db = local_object_session(model)
+
+        if model.title != self.title:
+            model.title = self.title
+            db.add(model)
+
+        if model.description != self.description:
+            model.description = self.description
+            db.add(model)
+
+        await db.commit()
+
         all_tasks = await model.awaitable_attrs.tasks
 
         for task_slice in self.tasks:
@@ -334,6 +351,7 @@ class ResearchPlanUpdateRequest(ModelUpdateRequest[ResearchPlan]):
                 default_lab=await model.awaitable_attrs.lab,
                 db=db,
             )
+        await db.refresh(model)
         return model
 
 

@@ -23,7 +23,7 @@ import { ResearchFunding } from "src/app/research/funding/research-funding";
         OutputMaterialTableComponent
     ],
     template: `
-    @if (funding) {
+    @if (funding$ | async; as funding) {
         <div class="equipment-lease-table-container">
             <lab-equipment-lease-table />
         </div>
@@ -49,14 +49,7 @@ export class LabResourceContainerFormComponent<T extends ResourceContainer> {
     containerControl: ResourceContainerControl<T> | undefined;
     readonly context = inject(ResourceContainerContext<T>);
 
-    _fundingSubject = new BehaviorSubject<ResearchFunding | null>(null);
-    @Input()
-    get funding(): ResearchFunding | null {
-        return this._fundingSubject.value;
-    }
-    set funding(funding: ResearchFunding | null) {
-        this._fundingSubject.next(funding);
-    }
+    readonly funding$ = this.context.funding$;
 
     ngOnInit() {
         this.context.attachControl(this.containerControl!);

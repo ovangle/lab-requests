@@ -1,33 +1,37 @@
-:host { 
-  min-height: calc(100% - var(--mat-toolbar-standard-height)); 
+:host {
+  min-height: calc(100% - var(--mat-toolbar-standard-height));
   --scaffold-toolbar-height: 40px;
 }
 
 scaffold-toolbar {
-    position: fixed;
-    top: 0;
-    width: 100%;
-    z-index: 100;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 100;
 }
 
 mat-sidenav-container {
-    position: absolute;
-    top: var(--mat-toolbar-standard-height);
-    bottom: 0;
-    left: 0;
-    right: 0;
+  position: absolute;
+  top: var(--mat-toolbar-standard-height);
+  bottom: 0;
+  left: 0;
+  right: 0;
 }
 
 mat-sidenav {
   width: 20em;
 }
 
+mat-sidenav ::ng-deep .mat-drawer-inner-container {
+  overflow-x: hidden;
+}
+
 scaffold-form-pane {
-    position: absolute;
-    top: 0;
-    right: 0;
-    height: 100%;
-    max-width: 40vw;
-    background-color: white;
-    z-index: 100;
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  max-width: 40vw;
+  background-color: white;
+  z-index: 100;
 }

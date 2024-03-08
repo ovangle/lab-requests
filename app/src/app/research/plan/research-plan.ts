@@ -20,7 +20,7 @@ import { ResourceContainer, ResourceContainerParams, resourceContainerParamsFrom
 import { CreateResearchPlanTask, ResearchPlanTask, ResearchPlanTaskParams, ResearchPlanTaskSlice, researchPlanTaskFromJson, researchPlanTaskSliceToJson } from './task/research-plan-task';
 import { HttpParams } from '@angular/common/http';
 import { Lab, LabService, labFromJsonObject } from 'src/app/lab/lab';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, switchMap } from 'rxjs';
 
 export interface ResearchPlanAttachment extends ModelParams {
   readonly id: string;
@@ -194,4 +194,34 @@ export class ResearchPlanService extends RestfulService<ResearchPlan, ResearchPl
   override readonly createToJsonObject = createResearchPlanToJsonObject;
   override readonly actionToJsonObject = updateResearchPlanToJsonObject;
   override path = '/research/plans';
+
+  _alterTasks(task: ResearchPlanTask, slices: ResearchPlanTaskSlice[]) {
+    return this.fetch(task.planId).pipe(
+      switchMap(plan => this.update(plan, {
+        title: plan.title,
+        description: plan.description,
+        tasks: slices
+      }))
+    );
+  }
+
+  updateTask(task: ResearchPlanTask, request: CreateResearchPlanTask) {
+    const slice: ResearchPlanTaskSlice = {
+      startIndex: task.index,
+      endIndex: task.index + 1,
+      items: [
+        request
+      ]
+    };
+    return this._alterTasks(task, [ slice ]);
+  }
+
+  removeTask(task: ResearchPlanTask) {
+    const slice: ResearchPlanTaskSlice = {
+      startIndex: task.index,
+      endIndex: task.index + 1,
+      items: []
+    };
+    return this._alterTasks(task, [ slice ]);
+  }
 }

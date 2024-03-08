@@ -4,6 +4,7 @@ html,
 body {
   height: 100%;
 }
+
 body {
   margin: 0;
   font-family: Roboto, "Helvetica Neue", sans-serif;
@@ -24,8 +25,7 @@ $cqu_primary_palette: (
   200: #87d1ee,
   100: #b5e3f5,
   50: #e2f4fb,
-  contrast: (
-    50: rgba(black, 0.87),
+  contrast: (50: rgba(black, 0.87),
     100: rgba(black, 0.87),
     200: rgba(black, 0.87),
     300: rgba(black, 0.87),
@@ -49,8 +49,7 @@ $cqu_secondary_palette: (
   200: #e5eb96,
   100: #f0f2bf,
   50: #f9fae6,
-  contrast: (
-    50: rgba(black, 0.87),
+  contrast: (50: rgba(black, 0.87),
     100: rgba(black, 0.87),
     200: rgba(black, 0.87),
     300: rgba(black, 0.87),
@@ -66,18 +65,15 @@ $cqu_secondary_palette: (
 $primary: mat.define-palette($cqu_primary_palette, 800);
 $accent: mat.define-palette($cqu_secondary_palette, 300);
 
-$theme: mat.define-light-theme(
-  (
-    color: (
-      primary: $primary,
-      accent: $accent,
-    ),
-    typography: mat.define-typography-config(),
-    density: 0,
-  )
-);
+$theme: mat.define-light-theme((color: (primary: $primary,
+        accent: $accent,
+      ),
+      typography: mat.define-typography-config(),
+      density: 0,
+    ));
 
 @include mat.all-component-themes($theme);
+
 body {
   width: 100vw;
   height: 100vh;
@@ -93,10 +89,12 @@ body {
 body.hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 body.hide-scrollbar {
   -ms-overflow-style: none;
   // padding-right: 16px;
 }
+
 html:has(body.hide-scrollbar) {
   scrollbar-width: 0;
 }
@@ -135,14 +133,15 @@ mat-form-field {
 /**
  * scaffold-classes
  */
- .scaffold-content-full-width {
+.scaffold-content-full-width {
   display: block;
   margin-top: 1em;
   margin-left: 2em;
+  padding-bottom: 5em;
   max-width: 80%;
- }
+}
 
- .scaffold-content-centered {
+.scaffold-content-centered {
   position: absolute;
   top: 0;
   left: 0;
@@ -151,4 +150,4 @@ mat-form-field {
   display: flex;
   justify-content: center;
   align-items: center;
- }
+}

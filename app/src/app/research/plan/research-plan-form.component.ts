@@ -180,6 +180,9 @@ function updateResearchPlanFromForm(form: ResearchPlanForm): UpdateResearchPlan 
 
         @for (control of taskForms; track control) {
           <mat-card>
+            <div class="task-index">
+              <b>{{$index + 1}}</b>
+            </div>
             <research-plan-task-form 
               [index]="$index"
               [form]="control" 
@@ -192,9 +195,16 @@ function updateResearchPlanFromForm(form: ResearchPlanForm): UpdateResearchPlan 
 
       <div class="form-controls">
         <div (mouseenter)="_showAllFormErrors()">
-          <button mat-raised-button [disabled]="!form.valid" 
+          <button mat-raised-button 
+                  color="primary"
+                  [disabled]="!form.valid" 
                   (click)="onSaveButtonClick()">
             <mat-icon>save</mat-icon> SAVE
+          </button>
+          <button mat-raised-button
+                  color="warn"
+                  (click)="onCancelButtonClick()">
+            <mat-icon>clear</mat-icon> CANCEL
           </button>
         </div>
       </div>
@@ -221,6 +231,10 @@ function updateResearchPlanFromForm(form: ResearchPlanForm): UpdateResearchPlan 
       .researcher-details {
         padding-left: 3em;
       }
+
+      button + button {
+        margin-left: 1em;
+      }
     `,
   ],
 })
@@ -239,6 +253,9 @@ export class ResearchPlanFormComponent {
 
   @Output()
   readonly save = new EventEmitter<ResearchPlan>();
+
+  @Output()
+  readonly cancel = new EventEmitter<void>();
 
   @Input({ required: true })
   get currentUser(): User {
@@ -396,5 +413,8 @@ export class ResearchPlanFormComponent {
         createResearchPlanFromForm(this.form)
       ));
     }
+  }
+  onCancelButtonClick() {
+    this.cancel.emit();
   }
 }

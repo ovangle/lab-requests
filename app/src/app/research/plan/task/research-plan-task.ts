@@ -15,6 +15,7 @@ import { P } from "@angular/cdk/keycodes";
 
 
 export interface ResearchPlanTaskParams extends ModelParams {
+  readonly planId: string;
   readonly id: string;
   readonly index: number;
 
@@ -28,6 +29,7 @@ export interface ResearchPlanTaskParams extends ModelParams {
 }
 
 export class ResearchPlanTask extends Model implements ResearchPlanTaskParams {
+  planId: string;
   index: number;
   description: string;
 
@@ -39,6 +41,7 @@ export class ResearchPlanTask extends Model implements ResearchPlanTaskParams {
 
   constructor(params: ResearchPlanTaskParams) {
     super(params);
+    this.planId = params.planId;
     this.index = params.index;
     this.description = params.description;
     this.startDate = params.startDate;
@@ -64,6 +67,10 @@ export class ResearchPlanTask extends Model implements ResearchPlanTaskParams {
 
 export function researchPlanTaskFromJson(json: JsonObject): ResearchPlanTask {
   const baseParams = modelParamsFromJsonObject(json);
+
+  if (typeof json[ 'planId' ] !== 'string') {
+    throw new Error("Expected a string 'planId'");
+  }
 
   if (typeof json[ 'index' ] !== 'number') {
     throw new Error("ResearchPlanTask: 'index' must be an number");
@@ -101,6 +108,7 @@ export function researchPlanTaskFromJson(json: JsonObject): ResearchPlanTask {
 
   return new ResearchPlanTask({
     ...baseParams,
+    planId: json[ 'planId' ],
     description: json[ 'description' ],
     startDate,
     endDate,

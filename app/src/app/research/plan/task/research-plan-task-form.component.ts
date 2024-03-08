@@ -35,7 +35,6 @@ export function researchPlanTaskForm(task?: ResearchPlanTaskParams): ResearchPla
     endDate: new FormControl<Date | null>(task?.endDate || null),
 
     lab: new FormControl<Lab | null>(null),
-
     supervisor: new FormControl<User | null>(null)
   })
 }
@@ -104,13 +103,8 @@ export function researchPlanTaskSlicesFromFormArray(arr: FormArray<ResearchPlanT
     ResizeTextareaOnInputDirective,
     LabSearchComponent,
     UserSearchComponent
-
   ],
   template: `
-    <div class="index">
-      {{index + 1}}.
-    </div>
-
     <div class="controls" [formGroup]="form!">
       <div class="base-controls">
         <mat-form-field class="description-field">
@@ -197,7 +191,7 @@ export class ResearchPlanTaskFormComponent {
   @Input({ required: true })
   form: ResearchPlanTaskForm | undefined;
 
-  @Input({ required: true })
+  @Input()
   get defaultSupervisor() {
     return this._defaultSupervisor;
   }
@@ -209,7 +203,7 @@ export class ResearchPlanTaskFormComponent {
   }
   _defaultSupervisor: User | null = null;
 
-  @Input({ required: true })
+  @Input()
   get defaultLab(): Lab | null {
     return this._defaultLab;
   }
