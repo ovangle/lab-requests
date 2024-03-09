@@ -38,6 +38,7 @@ from .funding import (
     ResearchFundingLookup,
     ResearchFundingView,
     lookup_or_create_research_funding,
+    lookup_research_funding,
 )
 
 
@@ -108,14 +109,12 @@ class ResearchPlanTaskCreateRequest(ModelCreateRequest[ResearchPlanTask]):
             raise ValueError("Index must be provided")
 
         task = ResearchPlanTask(
-            plan_id=plan.id,
-            index=index,
-            **(
-                await self.as_task_attrs(
-                    db,
-                    default_lab=default_lab,
-                    default_supervisor=default_supervisor,
-                )
+            plan.id,
+            index,
+            await self.as_task_attrs(
+                db,
+                default_lab=default_lab,
+                default_supervisor=default_supervisor,
             ),
         )
 
@@ -242,7 +241,7 @@ ResearchPlanIndexPage = ModelIndexPage[ResearchPlanView]
 class ResearchPlanCreateRequest(ModelCreateRequest[ResearchPlan]):
     id: UUID | None = None
     title: str
-    description: str | None = None
+    description: str
 
     funding: ResearchFundingLookup | UUID
     researcher: UserLookup | UUID
@@ -266,13 +265,21 @@ class ResearchPlanCreateRequest(ModelCreateRequest[ResearchPlan]):
         except DoesNotExist as e:
             raise ValueError("Cannot create plan for researcher", e)
 
+        tasks = [
+            await task.as_task_attrs(
+                db, default_lab=default_lab, default_supervisor=coordinator
+            )
+            for task in self.tasks
+        ]
+
         plan = ResearchPlan(
-            id=self.id or uuid4(),
-            title=self.title,
-            funding_id=(await lookup_or_create_research_funding(db, self.funding)).id,
-            lab_id=default_lab.id,
-            researcher_id=researcher.id,
-            coordinator_id=coordinator.id,
+            self.title,
+            self.description,
+            funding=(await lookup_research_funding(db, self.funding)),
+            researcher=researcher.id,
+            coordinator=coordinator.id,
+            lab=default_lab,
+            tasks=tasks,
         )
         db.add(plan)
 

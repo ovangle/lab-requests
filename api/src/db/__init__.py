@@ -25,6 +25,10 @@ engine = create_async_engine(
 
 
 class LocalSession(AsyncSession):
+    """
+    An async session that is local to the current api request.
+    """
+
     pass
 
 

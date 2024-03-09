@@ -77,7 +77,7 @@ ResearchFundingRef = ResearchFundingLookup | UUID
 
 async def lookup_research_funding(db: LocalSession, ref: ResearchFundingRef):
     if isinstance(ref, UUID):
-        ref = ResearchFundingLookup(id=ref)
+        return await ResearchFunding.get_for_id(db, ref)
     return await ref.get(db)
 
 

@@ -11,7 +11,17 @@ from typing import (
     TypedDict,
 )
 from uuid import UUID, uuid4
-from sqlalchemy import Column, ForeignKey, Select, Table, UniqueConstraint, select
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Select,
+    Table,
+    UniqueConstraint,
+    delete,
+    func,
+    select,
+    update,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects import postgresql
 from sqlalchemy_file import FileField, File
@@ -19,6 +29,7 @@ from db import LocalSession, local_object_session
 
 from db.models.base.fields import uuid_pk
 from db.models.lab.lab_resource import LabResource, LabResourceType
+from db.models.uni.discipline import Discipline, uni_discipline
 import filestore
 
 from ..base import Base, DoesNotExist
@@ -106,7 +117,14 @@ class ResearchPlanTask(Base):
             raise ResearchPlanTaskDoesNotExist(for_plan_index=(plan_id, index))
         return task
 
-    def set_attrs(self, session: LocalSession, task_attrs: ResearchPlanTaskAttrs):
+    def __init__(
+        self, plan: ResearchPlan | UUID, index: int, attrs: ResearchPlanTaskAttrs
+    ):
+        plan_id = plan.id if isinstance(plan, ResearchPlan) else plan
+        super().__init__(plan_id=plan_id, index=index, **attrs)
+
+    def set_attrs(self, task_attrs: ResearchPlanTaskAttrs):
+        session = local_object_session(self)
         if task_attrs["description"] != self.description:
             self.description = task_attrs["description"]
             session.add(self)
@@ -150,6 +168,7 @@ class ResearchPlan(LabResourceConsumer, Base):
 
     id: Mapped[uuid_pk]
 
+    discipline: Mapped[uni_discipline]
     title: Mapped[str] = mapped_column(postgresql.VARCHAR(256))
     description: Mapped[str] = mapped_column(postgresql.TEXT(), default="{}")
 
@@ -193,6 +212,73 @@ class ResearchPlan(LabResourceConsumer, Base):
     ) -> Select[tuple[LabResource]]:
         return select(type(self).resources).where(LabResource.type == resource_type)  # type: ignore
 
+    def __init__(
+        self,
+        title: str,
+        description: str,
+        *,
+        researcher: User | UUID,
+        coordinator: User | UUID,
+        lab: Lab | UUID,
+        funding: ResearchFunding | UUID | None,
+        tasks: list[ResearchPlanTaskAttrs],
+    ):
+        super().__init__(
+            id=uuid4(),
+            title=title,
+            description=description,
+            researcher_id=researcher.id if isinstance(researcher, User) else researcher,
+            coordinator_id=(
+                coordinator.id if isinstance(coordinator, User) else coordinator
+            ),
+            funding_id=funding.id if isinstance(funding, ResearchFunding) else funding,
+            lab=lab,
+        )
+
+        self.tasks = [ResearchPlanTask(self.id, i, t) for i, t in enumerate(tasks)]
+
+    async def append_task(self, task_attrs: ResearchPlanTaskAttrs):
+        session = local_object_session(self)
+        last_index = (
+            await session.scalar(
+                select(func.count())
+                .select_from(ResearchPlanTask)
+                .where(ResearchPlanTask.plan_id == self.id)
+            )
+        ) or 0
+
+        session.add(ResearchPlanTask(self, last_index, task_attrs))
+
+    async def insert_task(self, at_index: int, items: ResearchPlanTaskAttrs):
+        session = local_object_session(self)
+        await session.execute(
+            update(ResearchPlanTask)
+            .values(index=ResearchPlanTask.index + 1)
+            .where(
+                ResearchPlanTask.plan_id == self.id,
+                ResearchPlanTask.index > at_index,
+            )
+        )
+        session.add(ResearchPlanTask(self, at_index, items))
+        await session.commit()
+
+    async def insert_all_tasks(
+        self, at_index: int, task_attrs: list[ResearchPlanTaskAttrs]
+    ):
+        session = local_object_session(self)
+        await session.execute(
+            update(ResearchPlanTask)
+            .values(index=ResearchPlanTask.index + len(task_attrs))
+            .where(
+                ResearchPlanTask.plan_id == self.id,
+                ResearchPlanTask.index > at_index,
+            )
+        )
+        session.add_all(
+            [ResearchPlanTask(self, at_index + i, t) for i, t in enumerate(task_attrs)]
+        )
+        await session.commit()
+
     async def splice_tasks(
         self,
         start_index: int,
@@ -202,22 +288,25 @@ class ResearchPlan(LabResourceConsumer, Base):
     ):
         if end_index is None:
             end_index = len(await self.awaitable_attrs.tasks)
-        current_tasks = (await self.awaitable_attrs.tasks)[start_index:]
-        for i, item in enumerate(items):
-            if i < len(current_tasks):
-                current_tasks[i].set_attrs(session, item)
-            else:
-                task = ResearchPlanTask(plan_id=self.id, index=start_index + i, **item)
-                if start_index + i >= end_index:
-                    current_tasks[i].index = end_index + i
-                session.add(task)
+        all_tasks = await self.awaitable_attrs.tasks
+        if end_index is None:
+            end_index = len(all_tasks)
 
-        if len(items) < (end_index - start_index):
-            for i in range(end_index, len(current_tasks)):
-                current_tasks[i].index = end_index + i
-                session.add(current_tasks[i])
-        if len(items) > (end_index - start_index):
-            for i in range(len(current_tasks), end_index):
-                await session.delete(current_tasks[i])
+        tasks = all_tasks[start_index:end_index]
+
+        for i, item in enumerate(items):
+            if i < len(tasks):
+                await tasks[i].set_attrs(item)
+            else:
+                await self.insert_task(start_index + i, item)
+
+        if len(tasks) > len(items):
+            await session.execute(
+                delete(ResearchPlanTask).where(
+                    ResearchPlanTask.plan_id == self.id,
+                    ResearchPlanTask.index > start_index + len(items),
+                    ResearchPlanTask.index <= end_index,
+                )
+            )
 
         await session.commit()
