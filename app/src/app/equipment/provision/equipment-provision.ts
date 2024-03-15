@@ -1,9 +1,9 @@
 import { Model, ModelCreateRequest, ModelParams, ModelQuery, ModelUpdateRequest, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
-import { Equipment, equipmentFromJsonObject, EquipmentService } from "../equipment";
+import { Equipment, EquipmentCreateRequest, equipmentFromJsonObject, EquipmentService } from "../equipment";
 import { ResearchFunding, ResearchFundingService, researchFundingFromJsonObject } from "src/app/research/funding/research-funding";
 import { Lab, LabService, labFromJsonObject } from "../../lab/lab";
-import { first, firstValueFrom, map, switchMap } from "rxjs";
+import { Observable, first, firstValueFrom, map, switchMap } from "rxjs";
 import { EquipmentInstallation, equipmentInstallationFromJsonObject } from "../installation/equipment-installation";
 import { ProvisionStatus, isProvisionStatus } from "./provision-status";
 import { HttpParams } from "@angular/common/http";
@@ -152,6 +152,8 @@ function equipmentProvisionQueryToHttpParams(query: EquipmentProvisionQuery) {
 
 
 export interface CreateEquipmentProvisionRequest extends ModelCreateRequest<EquipmentProvision> {
+    equipment: Equipment | EquipmentCreateRequest;
+
     // The status of the newly created request.
     // It is possible for a newly created provision to skip previous steps
     // if conditions are met for them.
@@ -225,12 +227,18 @@ export function equipmentProvisionInstalledRequestToJsonObject(request: Equipmen
     return request;
 }
 
-
 @Injectable()
-export class EquipmentProvisionService extends RelatedModelService<Equipment, EquipmentProvision, EquipmentProvisionQuery> {
-    override readonly context = inject(EquipmentContext);
+export abstract class AbstractEquipmentProvisionService<TContext extends Model> extends RelatedModelService<TContext, EquipmentProvision, EquipmentProvisionQuery> {
     override readonly modelFromJsonObject = equipmentProvisionFromJsonObject;
     override readonly modelQueryToHttpParams = equipmentProvisionQueryToHttpParams;
+
+    abstract create(request: CreateEquipmentProvisionRequest): Observable<EquipmentProvision>;
+}
+
+
+@Injectable()
+export class EquipmentProvisionService extends AbstractEquipmentProvisionService<Equipment> {
+    override readonly context = inject(EquipmentContext);
     override readonly path = 'provisions';
 
     create(request: CreateEquipmentProvisionRequest) {

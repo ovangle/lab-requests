@@ -24,17 +24,17 @@ export abstract class ResourceFormComponent<T extends Resource, TForm extends Fo
     }
 
     abstract createForm(committed: T | null): TForm;
-    abstract getPatch(baseParams: ResourceParams, value: TForm['value']): Promise<T>;
+    abstract getPatch(baseParams: ResourceParams, value: TForm[ 'value' ]): Promise<any>;
 
     @Output()
     patchChange = this._formSubject.pipe(
         takeUntilDestroyed(),
         filter((f): f is TForm => f != null),
-        switchMap(f => combineLatest([f.statusChanges, f.valueChanges])),
-        filter(([status]) => status === 'VALID'),
-        map(([_, value]) => value as TForm['value']),
+        switchMap(f => combineLatest([ f.statusChanges, f.valueChanges ])),
+        filter(([ status ]) => status === 'VALID'),
+        map(([ _, value ]) => value as TForm[ 'value' ]),
         withLatestFrom(this.initial),
-        switchMap(([value, committed]) => this.getPatch(patchParams(committed), value))
+        switchMap(([ value, committed ]) => this.getPatch(patchParams(committed), value))
     );
 
     @Output()

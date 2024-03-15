@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
 import {
   RESOURCE_DISPOSAL_TYPES,
   ResourceDisposal,
@@ -14,7 +14,11 @@ import {
 import { CommonModule } from '@angular/common';
 import { MatSelectModule } from '@angular/material/select';
 import { SelectOtherDescriptionComponent } from 'src/app/utils/forms/select-other-description.component';
-import { ProvisionFormComponent } from '../provision/provision-form.component';
+import { ResearchFundingCostEstimateFormComponent } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
+import { ResearchFunding } from 'src/app/research/funding/research-funding';
+import { CostEstimate } from 'src/app/research/funding/cost-estimate/cost-estimate';
+import { P } from '@angular/cdk/keycodes';
+import { UnitOfMeasurement } from 'src/app/common/measurement/measurement';
 
 export type ResourceDisposalForm = FormGroup<{
   type: FormControl<ResourceDisposalType>;
@@ -79,7 +83,7 @@ export function patchResourceDisposalFormValue(
 
     SelectOtherDescriptionComponent,
 
-    ProvisionFormComponent,
+    ResearchFundingCostEstimateFormComponent
   ],
   template: `
     <div class="container" [formGroup]="formGroup">
@@ -101,11 +105,14 @@ export function patchResourceDisposalFormValue(
       >
       </lab-req-select-other-description>
 
-      <lab-resource-provision-form
-        [form]="formGroup"
-        [canResearcherSupply]="false"
-      >
-      </lab-resource-provision-form>
+      @if (funding) {
+        <research-funding-cost-estimate-form
+          [funding]="funding"
+          unitOfMeasurement="kg"
+          (costEstimateChange)="onCostEstimateChange($event)"
+        >
+        </research-funding-cost-estimate-form>
+      }
     </div>
   `,
   styles: [
@@ -119,9 +126,24 @@ export function patchResourceDisposalFormValue(
 export class ResourceDisposalFormComponent {
   readonly disposalTypes = RESOURCE_DISPOSAL_TYPES;
 
+  @Input()
+  funding: ResearchFunding | null = null;
+
+  @Input()
+  unitOfMeasurement: UnitOfMeasurement | undefined;
+
+  @Input()
+  numUnitsRequired: number = 1;
+
   _controlContainer = inject(ControlContainer);
 
   get formGroup(): ResourceDisposalForm {
     return this._controlContainer.control as ResourceDisposalForm;
+  }
+
+  onCostEstimateChange(value: CostEstimate) {
+    this.formGroup.patchValue({
+      estimatedCost: value.perUnitCost
+    });
   }
 }

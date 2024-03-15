@@ -90,46 +90,46 @@ export class Equipment extends Model {
 export function equipmentFromJsonObject(json: JsonObject): Equipment {
   const baseParams = modelParamsFromJsonObject(json);
 
-  if (typeof json['name'] !== 'string') {
+  if (typeof json[ 'name' ] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
-  if (typeof json['description'] !== 'string') {
+  if (typeof json[ 'description' ] !== 'string') {
     throw new Error("Expected a string 'description'");
   }
   if (
-    !Array.isArray(json['tags']) ||
-    !json['tags'].every((t) => typeof t === 'string')
+    !Array.isArray(json[ 'tags' ]) ||
+    !json[ 'tags' ].every((t) => typeof t === 'string')
   ) {
     throw new Error("Expected an array of strings 'tags'");
   }
   if (
-    !Array.isArray(json['trainingDescriptions']) ||
-    !json['trainingDescriptions'].every((t) => typeof t === 'string')
+    !Array.isArray(json[ 'trainingDescriptions' ]) ||
+    !json[ 'trainingDescriptions' ].every((t) => typeof t === 'string')
   ) {
     throw new Error("Expected an array of strings 'trainingDescriptions");
   }
-  if (!isJsonObject(json['installations'])) {
+  if (!isJsonObject(json[ 'installations' ])) {
     throw new Error("Expected a json object 'installations'")
   }
   const installationPage = modelIndexPageFromJsonObject(
     equipmentInstallationFromJsonObject,
-    json['installations']
+    json[ 'installations' ]
   );
 
-  if (!isJsonObject(json['activeProvisions'])) {
+  if (!isJsonObject(json[ 'activeProvisions' ])) {
     throw new Error("Expected a json object 'activeProvisions'");
   }
   const activeProvisionsPage = modelIndexPageFromJsonObject(
     equipmentProvisionFromJsonObject,
-    json['activeProvisions']
+    json[ 'activeProvisions' ]
   );
 
   return new Equipment({
     ...baseParams,
-    name: json['name'],
-    description: json['description'],
-    tags: json['tags'],
-    trainingDescriptions: json['trainingDescriptions'],
+    name: json[ 'name' ],
+    description: json[ 'description' ],
+    tags: json[ 'tags' ],
+    trainingDescriptions: json[ 'trainingDescriptions' ],
     activeProvisionsPage: activeProvisionsPage,
     installationPage,
   });
@@ -150,9 +150,9 @@ function equipmentPatchToJsonObject(patch: EquipmentUpdateRequest) {
 
 export interface EquipmentCreateRequest extends ModelCreateRequest<Equipment> {
   name: string;
-  description: string;
-  tags: string[];
-  trainingDescriptions: string[];
+  description?: string;
+  tags?: string[];
+  trainingDescriptions?: string[];
 
   initialProvisions?: CreateEquipmentProvisionRequest[];
 }

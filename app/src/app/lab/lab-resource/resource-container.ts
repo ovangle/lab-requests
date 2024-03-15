@@ -36,6 +36,7 @@ import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { isThisSecond } from 'date-fns';
 import { ResearchFunding, ResearchFundingService, researchFundingFromJsonObject } from 'src/app/research/funding/research-funding';
 import { ResourceContainerControl } from './resource-container-control';
+import { Lab, LabService } from '../lab';
 
 export interface ResourceContainerParams extends ModelParams {
   equipments: EquipmentLease[];
@@ -47,6 +48,8 @@ export interface ResourceContainerParams extends ModelParams {
 
 export abstract class ResourceContainer extends Model implements ResourceContainerParams {
   abstract funding: ResearchFunding;
+  abstract lab: Lab | string;
+
   equipments: EquipmentLease[];
   softwares: SoftwareLease[];
 
@@ -61,6 +64,14 @@ export abstract class ResourceContainer extends Model implements ResourceContain
     this.inputMaterials = params.inputMaterials;
     this.outputMaterials = params.outputMaterials;
   }
+
+  async resolveLab(labService: LabService): Promise<Lab> {
+    if (typeof this.lab === 'string') {
+      this.lab = await firstValueFrom(labService.fetch(this.lab));
+    }
+    return this.lab;
+  }
+
 
   getResources<T extends Resource>(t: ResourceType & T[ 'type' ]): readonly T[] {
     return this[ resourceContainerAttr(t) ] as any[];
@@ -202,12 +213,17 @@ function delResourcePatch<T extends Resource>(
 
 @Injectable({ providedIn: 'root' })
 export class ResourceContainerContext<T extends ResourceContainer> {
+  readonly _labService = inject(LabService);
   _control: ResourceContainerControl<T> | undefined;
   _controlCommitted: Subscription | undefined;
   _controlFunding: Subscription | undefined;
 
   _committedSubject = new ReplaySubject<ResourceContainer>(1);
   committed$ = this._committedSubject.asObservable();
+
+  readonly lab$ = this.committed$.pipe(
+    switchMap(committed => committed.resolveLab(this._labService))
+  )
 
   readonly fundingService = inject(ResearchFundingService);
   _fundingSubject = new ReplaySubject<ResearchFunding | string>(1);

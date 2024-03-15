@@ -4,7 +4,7 @@
   "configurations": [
     {
       "name": "debug api server",
-      "type": "python",
+      "type": "debugpy",
       "request": "attach",
       "connect": {
         "host": "127.0.0.1",
@@ -20,9 +20,9 @@
       "justMyCode": false
     },
     {
-      "name": "debug client app",
+      "name": "launch client app",
       "type": "chrome",
-      "request": "attach",
+      "request": "launch",
       "url": "http://localhost:4200",
       "webRoot": "${workspaceFolder}/app"
     }

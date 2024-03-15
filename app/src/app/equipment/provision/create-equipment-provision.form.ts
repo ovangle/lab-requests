@@ -2,28 +2,25 @@ import { CommonModule } from "@angular/common";
 import { Component, EventEmitter, Input, Output, inject } from "@angular/core";
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatRadioGroup, MatRadioModule } from "@angular/material/radio";
+import { MatRadioModule } from "@angular/material/radio";
 import { Lab } from "src/app/lab/lab";
 import { LabSearchComponent } from "src/app/lab/lab-search.component";
 import { ResearchFunding } from "src/app/research/funding/research-funding";
-import { EquipmentContext } from "../equipment-context";
-import { ResearchFundingCostEstimateComponent } from "src/app/research/funding/cost-estimate/cost-estimate.component";
 import { ResearchFundingCostEstimateFormComponent } from "src/app/research/funding/cost-estimate/cost-estimate-form.component";
-import { Observable, combineLatest, filter, firstValueFrom, map } from "rxjs";
+import { BehaviorSubject, Observable, combineLatest, filter, firstValueFrom, map, of, switchMap } from "rxjs";
 import { EquipmentInstallation } from "../installation/equipment-installation";
-import { LabContextDirective } from "src/app/lab/lab-context";
-import { LabEquipmentListComponent } from "src/app/lab/equipment/lab-equipment-list.component";
 import { EquipmentInstallationInfoComponent } from "../installation/equipment-installation-info.component";
 import { EquipmentProvisionInfoComponent } from "./equipment-provision-info.component";
 import { ResizeTextareaOnInputDirective } from "src/app/common/forms/resize-textarea-on-input.directive";
-import { EquipmentProvision, EquipmentProvisionService, CreateEquipmentProvisionRequest } from "./equipment-provision";
-import { EquipmentCreateRequest } from "../equipment";
+import { EquipmentProvision, EquipmentProvisionService, CreateEquipmentProvisionRequest, AbstractEquipmentProvisionService } from "./equipment-provision";
+import { Equipment, EquipmentCreateRequest } from "../equipment";
 import { ProvisionStatus, isProvisionStatus } from "./provision-status";
 import { ProvisionStatusPipe } from "./provision-status.pipe";
 import { MatInputModule } from "@angular/material/input";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { CostEstimate } from "src/app/research/funding/cost-estimate/cost-estimate";
+import { LabEquipmentProvisionService } from "src/app/lab/equipment/provision/lab-equipment-provision";
 
 
 @Component({
@@ -63,19 +60,18 @@ import { CostEstimate } from "src/app/research/funding/cost-estimate/cost-estima
       }
 
       @if (provisionLab$ | async; as provisionLab) {
-        @if (equipment.activeProvision(provisionLab); as activeProvision) {
+        @if (activeProvision$ | async; as activeProvision) {
           <!-- 
             There can be at most one active provision per lab
             so must update the current provision somehow.
           -->
           <equipment-provision-info [equipmentProvision]="activeProvision" />
-        } @else if (equipment.currentLabInstallation(provisionLab)) {
-
+        } @else if (currentLabInstallation$ | async) {
           <!-- 
             there is an existing installation, so can add additional
             items, but they must go through provisioning
           -->
-          <equipment-installation-info [equipment]="equipment" 
+          <equipment-installation-info [equipment]="$any(equipment)" 
                                        [lab]="provisionLab" />
 
           
@@ -143,14 +139,30 @@ import { CostEstimate } from "src/app/research/funding/cost-estimate/cost-estima
   }
   `,
   providers: [
-    EquipmentProvisionService
+    {
+      provide: AbstractEquipmentProvisionService,
+      useClass: LabEquipmentProvisionService
+    }
   ]
 })
 export class CreateEquipmentProvisionForm {
-  readonly context = inject(EquipmentContext);
-  readonly equipment$ = this.context.committed$;
 
-  readonly provisionService = inject(EquipmentProvisionService);
+  readonly equipmentSubject = new BehaviorSubject<Equipment | EquipmentCreateRequest | undefined>(undefined);
+  readonly equipment$ = this.equipmentSubject.asObservable();
+
+  readonly isNewEquipment$ = this.equipment$.pipe(
+    map(equipment => !(equipment instanceof Equipment))
+  )
+
+  @Input({ required: true })
+  get equipment() {
+    return this.equipmentSubject.value!;
+  }
+  set equipment(equipment: Equipment | EquipmentCreateRequest) {
+    this.equipmentSubject.next(equipment);
+  }
+
+  readonly provisionService = inject(AbstractEquipmentProvisionService);
 
   readonly form = new FormGroup({
     status: new FormControl<ProvisionStatus>('requested', { nonNullable: true }),
@@ -201,11 +213,28 @@ export class CreateEquipmentProvisionForm {
     filter((value): value is Lab => value != null)
   );
 
+  readonly activeProvision$ = combineLatest([
+    this.equipment$,
+    this.provisionLab$
+  ]).pipe(
+    map(([ equipment, lab ]) => {
+      if (equipment instanceof Equipment && lab instanceof Lab) {
+        return equipment.activeProvision(lab)
+      }
+      return null;
+    })
+  )
+
   readonly currentLabInstallation$: Observable<EquipmentInstallation | null> = combineLatest([
     this.equipment$,
     this.provisionLab$,
   ]).pipe(
-    map(([ equipment, lab ]) => equipment.currentLabInstallation(lab))
+    map(([ equipment, lab ]) => {
+      if (equipment instanceof Equipment) {
+        return equipment.currentLabInstallation(lab);
+      }
+      return null;
+    })
   );
 
   @Input()
@@ -227,9 +256,15 @@ export class CreateEquipmentProvisionForm {
       && this.form.value.status !== 'installed';
   }
 
+  ngOnDestroy() {
+    this.equipmentSubject.complete();
+  }
+
   async _onFormSubmit() {
+    const equipment = await firstValueFrom(this.equipment$);
     const provision = await firstValueFrom(
       this.provisionService.create({
+        equipment: equipment!,
         status: this.initialStatus,
         quantityRequired: this.form.value.quantityRequired!,
         reason: this.form.value.reason!,
@@ -243,7 +278,10 @@ export class CreateEquipmentProvisionForm {
   }
 
   _onCostEstimateChange(estimate: CostEstimate) {
-
+    this.form.patchValue({
+      quantityRequired: estimate.quantityRequired,
+      cost: estimate.perUnitCost
+    })
   }
 
 }

@@ -2,6 +2,7 @@ import { validate as validateIsUUID } from 'uuid';
 
 import {
   Equipment,
+  EquipmentCreateRequest,
   equipmentFromJsonObject,
   EquipmentService,
 } from 'src/app/equipment/equipment';
@@ -13,7 +14,7 @@ import { Resource, ResourceParams, resourceParamsFromJsonObject } from '../../la
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 
 export interface EquipmentLeaseParams extends ResourceParams {
-  equipment: Equipment;
+  equipment: Equipment | EquipmentCreateRequest;
   equipmentProvision: EquipmentProvision | null;
   equipmentTrainingCompleted: ReadonlySet<string>;
   requireSupervision: boolean;
@@ -40,6 +41,10 @@ export class EquipmentLease extends Resource {
 
   constructor(params: EquipmentLeaseParams) {
     super(params);
+
+    if (!(params.equipment instanceof Equipment)) {
+      throw new Error("Patch must be created on server");
+    }
 
     this.equipment = params.equipment;
     this.equipmentProvision = params.equipmentProvision;

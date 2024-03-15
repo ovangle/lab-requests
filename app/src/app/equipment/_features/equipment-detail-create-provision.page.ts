@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { CommonModule } from "@angular/common";
 import { Observable, map, of } from "rxjs";
 import { Equipment } from "../equipment";
-import { EquipmentProvision } from "../provision/equipment-provision";
+import { AbstractEquipmentProvisionService, EquipmentProvision, EquipmentProvisionService } from "../provision/equipment-provision";
 import { CreateEquipmentProvisionForm } from "../provision/create-equipment-provision.form";
 import { EquipmentDetailStateService, EquipmentDetailSubpage } from "./equipment-detail.state";
 
@@ -19,9 +19,16 @@ import { EquipmentDetailStateService, EquipmentDetailSubpage } from "./equipment
   <h2>New provision</h2>
   @if (equipment$ | async; as equipment) {
     <equipment-create-equipment-provision-form
+      [equipment]="equipment"
       (save)="_onProvisionSave($event)" />
   }
   `,
+  providers: [
+    {
+      provide: AbstractEquipmentProvisionService,
+      useClass: EquipmentProvisionService
+    }
+  ]
 })
 export class EquipmentDetailCreateProvisionPage implements EquipmentDetailSubpage {
   readonly subroute = 'create-provision';

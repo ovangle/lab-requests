@@ -12,11 +12,12 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { SoftwareLease, SoftwareLeaseParams } from './software-lease';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { ProvisionFormComponent } from '../../lab-resource/provision/provision-form.component';
 import { ResourceContext } from '../../lab-resource/resource-context';
 import { ResourceFormComponent } from '../../lab-resource/abstract-resource-form.component';
 import { ResourceParams } from '../../lab-resource/resource';
 import { SoftwareLike } from '../../software/software-like';
+import { ResearchFundingCostEstimateFormComponent } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
+import { ResearchFunding } from 'src/app/research/funding/research-funding';
 
 export type SoftwareLeaseForm = FormGroup<{
   software: FormControl<SoftwareLike | null>;
@@ -58,7 +59,7 @@ export type SoftwareLeaseFormErrors = ValidationErrors & {
     MatInputModule,
     MatSelectModule,
 
-    ProvisionFormComponent,
+    ResearchFundingCostEstimateFormComponent
   ],
   template: `
   @if (form) {
@@ -93,13 +94,11 @@ export type SoftwareLeaseFormErrors = ValidationErrors & {
         This software requires a licence seat
       </mat-checkbox>
 
-      @if (isLicenseRequired) {
-        <lab-resource-provision-form
-          [form]="form"
-          [canResearcherSupply]="false"
-          provisioningUnit="per license"
-        >
-        </lab-resource-provision-form>
+      @if (isLicenseRequired && funding) {
+        <research-funding-cost-estimate-form
+          [funding]="funding"
+          unitOfMeasurement="license seat"
+        />
       }
     </form>
   }
@@ -115,6 +114,8 @@ export type SoftwareLeaseFormErrors = ValidationErrors & {
 })
 export class SoftwareLeaseFormComponent extends ResourceFormComponent<SoftwareLease, SoftwareLeaseForm> {
 
+  @Input()
+  funding: ResearchFunding | null = null;
 
   get isLicenseRequired() {
     return !!this.form!.value.isLicenseRequired;

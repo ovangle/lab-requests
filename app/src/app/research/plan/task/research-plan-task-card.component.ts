@@ -79,7 +79,7 @@ import { ResearchPlanContext } from "../research-plan-context";
   }
   mat-card-footer {
     display: flex;
-    justify-content: end;
+    justify-content: flex-end;
   }
     `
 })

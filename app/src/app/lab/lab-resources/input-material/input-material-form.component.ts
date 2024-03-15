@@ -20,7 +20,6 @@ import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { BehaviorSubject, first } from 'rxjs';
 import { HazardClassesSelectComponent } from '../../lab-resource/hazardous/hazard-classes-select.component';
 import { HazardClass } from '../../lab-resource/hazardous/hazardous';
-import { ProvisionFormComponent } from '../../lab-resource/provision/provision-form.component';
 import {
   ResourceStorageForm,
   resourceStorageForm,
@@ -102,7 +101,6 @@ export type InputMaterialFormErrors = ValidationErrors & {
     ResearchFundingCostEstimateFormComponent,
     HazardClassesSelectComponent,
     ResourceStorageFormComponent,
-    ProvisionFormComponent,
   ],
   template: `
   @if (form) {
@@ -125,16 +123,16 @@ export type InputMaterialFormErrors = ValidationErrors & {
         <mat-label>Units</mat-label>
       </common-measurement-unit-input>
 
-      @if (fundingModel) {
+      @if (funding) {
         <research-funding-cost-estimate-form
-          [funding]="fundingModel"
+          [funding]="funding"
           [unitOfMeasurement]="baseUnit"
         />
       }
 
       <lab-resource-storage-form
         [form]="form.controls.storage"
-        [funding]="fundingModel"
+        [funding]="funding"
         [storageStartDate]="startDate"
         [storageEndDate]="endDate"
       />
@@ -165,8 +163,10 @@ export class InputMaterialFormComponent extends ResourceFormComponent<InputMater
   }
   readonly _planContext = inject(ResearchPlanContext);
 
+  @Input()
+  funding: ResearchFunding | null = null;
+
   override ngOnDestroy() {
-    this._fundingModelSubject.complete();
     this._durationSubject.complete();
     super.ngOnDestroy();
   }
@@ -178,13 +178,6 @@ export class InputMaterialFormComponent extends ResourceFormComponent<InputMater
   get nameErrors(): InputMaterialFormErrors[ 'name' ] | null {
     const control = this.form!.controls.name;
     return control.errors as InputMaterialFormErrors[ 'name' ] | null;
-  }
-
-  readonly _fundingModelSubject = new BehaviorSubject<ResearchFunding | null>(
-    null,
-  );
-  get fundingModel(): ResearchFunding | null {
-    return this._fundingModelSubject.value;
   }
 
   readonly _durationSubject = new BehaviorSubject<{

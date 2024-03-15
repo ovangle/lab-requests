@@ -169,6 +169,7 @@ class ResearchPlanView(LabResourceConsumerView[ResearchPlan]):
     id: UUID
     title: str = Field(max_length=256)
     description: str
+    discipline: Discipline
 
     funding: ResearchFundingView
 
@@ -204,6 +205,7 @@ class ResearchPlanView(LabResourceConsumerView[ResearchPlan]):
             id=model.id,
             title=model.title,
             description=model.description,
+            discipline=model.discipline,
             funding=funding,
             researcher=researcher,
             coordinator=coordinator,
