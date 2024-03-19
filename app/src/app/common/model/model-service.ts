@@ -120,7 +120,7 @@ export abstract class RestfulService<
   abstract readonly path: string;
 
   abstract createToJsonObject?(request: TCreate): JsonObject;
-  abstract actionToJsonObject?(request: TUpdate): JsonObject;
+  abstract actionToJsonObject?(model: T, request: Partial<TUpdate>): JsonObject;
 
   get indexUrl(): string {
     return urlJoin(this._apiBaseUrl, this.path);
@@ -182,11 +182,11 @@ export abstract class RestfulService<
       );
   }
 
-  update(model: T, request: TUpdate) {
+  update(model: T, request: Partial<TUpdate>) {
     if (this.actionToJsonObject === undefined) {
       throw new Error('service defines no updateRequestToJsonObject method');
     }
-    const body = this.actionToJsonObject(request);
+    const body = this.actionToJsonObject(model, request);
     return this._httpClient.put<JsonObject>(this.resourceUrl(model.id), body).pipe(
       map(response => this.modelFromJsonObject(response)),
       this._cacheOne

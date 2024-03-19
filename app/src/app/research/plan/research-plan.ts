@@ -168,16 +168,23 @@ function createResearchPlanToJsonObject(plan: CreateResearchPlan) {
 export interface UpdateResearchPlan {
   title: string;
   description: string;
-  funding: string | null;
+  funding: ResearchFunding | null;
   tasks: ResearchPlanTaskSlice[];
 }
 
-function updateResearchPlanToJsonObject(patch: UpdateResearchPlan) {
+function updateResearchPlanToJsonObject(plan: ResearchPlan, patch: Partial<UpdateResearchPlan>) {
+  let funding: ResearchFunding | null
+  if (patch.funding instanceof ResearchFunding || patch.funding === null) {
+    funding = patch.funding;
+  } else {
+    funding = plan.funding;
+  }
+
   return {
-    title: patch.title,
-    description: patch.description,
-    funding: patch.funding,
-    tasks: patch.tasks.map(t => researchPlanTaskSliceToJson(t))
+    title: typeof patch.title === 'string' ? patch.title : plan.title,
+    description: typeof patch.description === 'string' ? patch.description : plan.description,
+    funding: funding?.id,
+    tasks: Array.isArray(patch.tasks) ? patch.tasks.map(t => researchPlanTaskSliceToJson(t)) : []
   };
 }
 

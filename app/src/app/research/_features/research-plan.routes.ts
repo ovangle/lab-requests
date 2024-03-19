@@ -22,9 +22,14 @@ export const RESEARCH_PLAN_ROUTES: Routes = [
     ],
     children: [
       {
-        path: 'update',
-        loadComponent: () => import('./research-plan-detail-update.page')
-          .then(module => module.ResearchPlanDetail__UpdatePage)
+        path: '',
+        loadComponent: () => import('./research-plan-detail--tasks.page')
+          .then(module => module.ResearchPlanDetail__TasksPage)
+      },
+      {
+        path: 'requirements',
+        loadComponent: () => import('./research-plan-detail--requirements.page')
+          .then(module => module.ResearchPlanDetail__RequirementsPage)
       }
     ]
   },

@@ -6,25 +6,24 @@ import { CommonModule } from "@angular/common";
 import { map, startWith } from "rxjs";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ResearchPlan } from "../plan/research-plan";
+import { ResearchPlanTaskCardComponent } from "../plan/task/research-plan-task-card.component";
 
 
 @Component({
     standalone: true,
     imports: [
         CommonModule,
-        ResearchPlanFormComponent
+        ResearchPlanTaskCardComponent
     ],
     template: `
     @if (plan$ | async; as plan) {
-        <research-plan-form 
-            [plan]="plan" 
-            [currentUser]="currentUser!"
-            (save)="_onResearchPlanSaved($event)" 
-            (cancel)="_router.navigate(['..'], {relativeTo: activatedRoute})" />
+        @for (task of plan.tasks; track task.index) {
+            <research-plan-task-card [task]="task" />
+        }
     }
     `
 })
-export class ResearchPlanDetail__UpdatePage {
+export class ResearchPlanDetail__TasksPage {
     _router = inject(Router);
     activatedRoute = inject(ActivatedRoute);
     readonly _userContext = inject(UserContext);

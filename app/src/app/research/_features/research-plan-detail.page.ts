@@ -31,6 +31,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { LabService } from 'src/app/lab/lab';
 import { LabResourceContainerFormComponent } from 'src/app/lab/lab-resource/resource-container-form.component';
 import { ResourceContainerControl } from 'src/app/lab/lab-resource/resource-container-control';
+import { ResearchPlanForm, researchPlanForm } from '../plan/research-plan-form.component';
+import { DisciplinePipe } from 'src/app/uni/discipline/discipline.pipe';
+import { ResearchPlanForm__TitleField } from '../plan/form/research-plan-form--title-field.component';
+import { ResearchPlanForm__DescriptionField } from '../plan/form/research-plan-form--description-field.component';
+import { ResearchPlanForm__CoordinatorField } from '../plan/form/research-plan-form--coordinator-field.component';
+import { ResearchPlanForm__ResearcherField } from '../plan/form/research-plan-form--researcher-field.component';
+import { ReactiveFormsModule } from '@angular/forms';
 
 export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
   const activatedRoute = inject(ActivatedRoute);
@@ -54,90 +61,70 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
   standalone: true,
   imports: [
     CommonModule,
+    ReactiveFormsModule,
     RouterModule,
 
-    MatButtonModule,
-    MatIconModule,
-    MatListModule,
     MatTabsModule,
-    UserInfoComponent,
-    ResearchPlanTaskCardComponent,
-    LabResourceContainerFormComponent
+
+    DisciplinePipe,
+    ResearchPlanForm__TitleField,
+    ResearchPlanForm__DescriptionField,
+    ResearchPlanForm__CoordinatorField,
+    ResearchPlanForm__ResearcherField
   ],
   host: {
     '[class.scaffold-content-full-width]': 'true'
   },
   template: `
   @if (plan$ | async; as plan) {
-    <div class="page-header">
-      <div class="page-title">
-        <h1>
-          Research plan
-        </h1>
-        <h3 class="subtitle">
-          {{plan!.title}}
-        </h3>
+    <ng-container [formGroup]="_updateForm!">
+      <div class="page-header">
+        <div class="page-title">
+          <h1>
+            {{plan.discipline | uniDiscipline}} research plan
+          </h1>
+          <research-plan-form--title-field
+            [plan]="plan"
+            [contentEditable]="isEditingField('title')"
+            (contentEditableToggle)="onContentEditableToggled('title', $event)"
+            (contentChange)="onContentChange('title', $event)"
+          />
+        </div>
       </div>
-    </div>
-    <section class="general-info">
-    @if (showGeneralInfo$ | async) {
-      <div class="general-info-header">
-        <h2>General</h2>
-        @if (showEditButton$ | async) {
-          <ng-container *ngTemplateOutlet="editButton" />
-        }
-      </div>
-      <div class="funding-info">
-        <b>Funding</b> {{plan!.funding.name}}
-      </div>
-      <div class="description">
-        <b>Experimental plan summary</b>
-        <p>{{plan!.description}}</p>
-      </div>
-      <b>Researcher</b> <user-info [user]="plan!.researcher" /> <br/>
-      <b>Coordinator</b> <user-info [user]="plan!.coordinator" /> <br/>
-      <b>Base lab</b>{{(lab$ | async)?.name}}
-    } @else if (showEditButton$ | async) {
-      <div class="general-info-header">
-        <div></div>
-        <ng-container *ngTemplateOutlet="editButton" />
-      </div>
-    }
-    </section>
+      <div class="page-body">
+        <h2 class="section-title">General</h2>
 
-    @if (showTaskInfo$ | async) {
-    <section class="task-info">
-      <h2>Tasks</h2>
-      <div>
-        @for (task of plan!.tasks; track task.id) {
-          <mat-list-item>
-            <research-plan-task-card [task]="task" />
-          </mat-list-item>
-        }
+        <research-plan-form--description-field 
+            [plan]="plan" 
+            [contentEditable]="isEditingField('description')"
+            (contentChange)="onContentChange('description', $event)" />
+
+        <research-plan-form--coordinator-field
+            [plan]="plan!"
+            [contentEditable]="isEditingField('coordinator')"
+            (contentEditableToggle)="onContentEditableToggled('coordinator', $event)"
+            (contentChange)="onContentChange('coordinator', $event)" />
+          
+        <research-plan-form--researcher-field
+            [plan]="plan!"
+            [contentEditable]="isEditingField('researcher')"
+            (contentChange)="onContentChange('researcher', $event)" />
+
       </div>
-    </section>
-    }
+    </ng-container>
 
-    @if (showRequirements$ | async) {
-      <section class="resources" #resourceContainer>
-        <h2>Requirements</h2>
+    <nav mat-tab-nav-bar [tabPanel]="tabPanel">
+      <a mat-tab-link routerLink="./">Tasks</a>
+      <a mat-tab-link routerLink="./requirements">Requirements</a>
+    </nav>
 
-        <lab-resource-container-form 
-          [containerControl]="containerControl" />
-      </section>
-    }
-
-    <div class="child-route">
-      <router-outlet />
-    </div>
+    <mat-tab-nav-panel #tabPanel>
+      <div class="child-content">
+        <router-outlet />
+      </div>
+    </mat-tab-nav-panel>
   }
 
-  <ng-template #editButton> 
-    <button mat-raised-button routerLink="./update" color="primary"
-      [disabled]="editButtonDisabled$ | async">
-      <mat-icon>edit</mat-icon>Edit
-    </button>
-  </ng-template>
   `,
   styles: `
     h1 {
@@ -159,18 +146,12 @@ export class ResearchPlanDetailPage {
   readonly _planService = inject(ResearchPlanService);
   readonly _context = inject(ResearchPlanContext);
 
+  _updateForm: ResearchPlanForm | undefined;
+
   readonly appScaffold = inject(BodyScrollbarHidingService);
   readonly plan$ = this._context.committed$;
 
   readonly config$ = injectResearchPlanDetailConfig();
-
-  readonly containerControl = new ResourceContainerControl<ResearchPlan>(
-    this._context,
-    async (patch) => {
-      const committed = await firstValueFrom(this.plan$);
-      return firstValueFrom(this._planService.update(committed, patch))
-    }
-  );
 
   readonly showPlanSummary$ = this.config$.pipe(map(config => config.showPlanSummary));
   readonly showEditButton$ = this.config$.pipe(map(config => config.showEditButton));
@@ -179,8 +160,44 @@ export class ResearchPlanDetailPage {
   readonly showTaskInfo$ = this.config$.pipe(map(config => config.showTasks))
   readonly showRequirements$ = this.config$.pipe(map(config => config.showRequirements));
 
+  constructor() {
+    this.plan$.pipe(
+      takeUntilDestroyed(),
+      map(plan => researchPlanForm(plan))
+    ).subscribe(form => {
+      this._updateForm = form;
+    });
+  }
+
   readonly lab$ = this.plan$.pipe(
     distinctUntilChanged(),
     switchMap(plan => plan.resolveLab(this._labService))
   )
+
+  readonly editFields = new Set<keyof ResearchPlanForm[ 'controls' ]>();
+
+  isEditingField(name: keyof ResearchPlanForm[ 'controls' ]): boolean {
+    return this.editFields.has(name);
+  }
+
+  onContentEditableToggled(name: keyof ResearchPlanForm[ 'controls' ], isEditable: boolean) {
+    if (isEditable && !this.editFields.has(name)) {
+      this.editFields.add(name);
+    }
+    if (!isEditable && this.editFields.has(name)) {
+      this.editFields.delete(name)
+    }
+  }
+
+  async onContentChange<K extends keyof ResearchPlanForm[ 'controls' ]>(
+    name: K,
+    value: ResearchPlanForm[ 'value' ][ K ]
+  ) {
+    let plan = await firstValueFrom(this.plan$);
+    plan = await firstValueFrom(
+      this._planService.update(plan, { [ name ]: value })
+    );
+    this._context.nextCommitted(plan);
+  }
+
 }

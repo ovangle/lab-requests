@@ -18,15 +18,13 @@ import { DisciplineSelectComponent } from 'src/app/uni/discipline/discipline-sel
 import { ResearchPlan, CreateResearchPlan, ResearchPlanService, UpdateResearchPlan } from './research-plan';
 import { ResearchFunding } from '../funding/research-funding';
 import { ResearchFundingSelectComponent } from '../funding/research-funding-select.component';
-import { User, UserLookup, UserService } from 'src/app/user/common/user';
+import { User } from 'src/app/user/common/user';
 import { ResearchPlanTaskForm, ResearchPlanTaskFormComponent, createResearchPlanTaskFromForm, initialTasksFromFormArray, researchPlanTaskForm, researchPlanTaskSlicesFromFormArray } from './task/research-plan-task-form.component';
 import { MatIconModule } from '@angular/material/icon';
-import { CreateResearchPlanTask } from './task/research-plan-task';
 import { UserSearchComponent } from 'src/app/user/common/user-search.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { LabResourceContainerFormComponent } from 'src/app/lab/lab-resource/resource-container-form.component';
-import { Discipline } from 'src/app/uni/discipline/discipline';
 import { Observable, distinctUntilChanged, firstValueFrom, map, of, startWith, switchMap } from 'rxjs';
 import { Lab, LabService } from 'src/app/lab/lab';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -39,6 +37,40 @@ export type ResearchPlanForm = FormGroup<{
   funding: FormControl<ResearchFunding | null>;
   tasks: FormArray<ResearchPlanTaskForm>;
 }>;
+
+export function researchPlanForm(plan: ResearchPlan | null = null) {
+
+  let tasks: FormArray<ResearchPlanTaskForm>;
+  if (plan != null) {
+    tasks = new FormArray(plan.tasks.map(
+      task => researchPlanTaskForm(task)
+    ))
+  } else {
+    tasks = new FormArray([
+      researchPlanTaskForm()
+    ]);
+  }
+
+  return new FormGroup({
+    title: new FormControl<string>(plan?.title || '', {
+      nonNullable: true,
+      validators: [ Validators.required ],
+    }),
+    description: new FormControl<string>(plan?.description || '', {
+      nonNullable: true,
+    }),
+    researcher: new FormControl<User | null>(plan?.researcher || null, {
+      validators: [ Validators.required ],
+    }),
+    coordinator: new FormControl<User | null>(plan?.coordinator || null, {
+      validators: [ Validators.required ]
+    }),
+    funding: new FormControl<ResearchFunding | null>(plan?.funding || null, {
+      validators: [ Validators.required ],
+    }),
+    tasks
+  });
+}
 
 function patchFormValue(form: ResearchPlanForm, plan: ResearchPlan) {
   form.patchValue({
@@ -80,7 +112,7 @@ function updateResearchPlanFromForm(form: ResearchPlanForm): UpdateResearchPlan 
   return {
     title: value.title!,
     description: value.description!,
-    funding: value.funding?.id || null,
+    funding: value.funding || null,
     tasks: researchPlanTaskSlicesFromFormArray(form.controls.tasks)
   };
 }

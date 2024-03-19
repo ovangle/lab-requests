@@ -9,6 +9,7 @@ import { ModelSearchAutocompleteComponent } from "src/app/common/model/search/se
 import { ModelSearchComponent, ModelSearchControl, provideModelSearchValueAccessor } from "src/app/common/model/search/search-control";
 import { ModelSearchInputComponent } from "src/app/common/model/search/search-input-field.component";
 import { User, UserService } from "./user";
+import { Discipline } from "src/app/uni/discipline/discipline";
 
 
 @Component({
@@ -52,6 +53,7 @@ export class UserSearchComponent implements ModelSearchComponent<User> {
     getSearchOptions(searchInput: string): Observable<User[]> {
         return this._userService.query({
             search: searchInput,
+            discipline: this.discipline,
             includeRoles: Array.from(this.includeRoles)
         })
     }
@@ -73,7 +75,25 @@ export class UserSearchComponent implements ModelSearchComponent<User> {
      * Roles to restrict the user search to.
      */
     @Input()
-    includeRoles = new Set<string>();
+    get includeRoles(): Set<string> {
+        return this._includeRoles;
+    }
+    set includeRoles(roles: string | string[] | Set<string>) {
+        if (typeof roles === 'string') {
+            roles = roles.split(',');
+        }
+        this._includeRoles.clear()
+        for (const role of roles) {
+            this._includeRoles.add(role);
+        }
+    }
+    _includeRoles = new Set<string>();
+
+    /**
+     * Restrict the search to users of the given discipline.
+     */
+    @Input()
+    discipline: Discipline | undefined;
 
     @Input()
     get createTemporaryIfNotFound() {

@@ -149,6 +149,7 @@ function userLookupEmail(lookup: string | UserLookup): string | undefined {
 
 export interface UserQuery extends ModelQuery<User> {
   includeRoles?: string[];
+  discipline?: Discipline;
   search?: string;
   email?: string;
 }
@@ -160,6 +161,9 @@ export function userQueryToHttpParams(query: UserQuery): HttpParams {
   }
   if (query.search) {
     params = params.set('search', query.search);
+  }
+  if (query.discipline) {
+    params = params.set('discipline', query.discipline);
   }
   return params;
 }

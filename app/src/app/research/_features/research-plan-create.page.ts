@@ -30,7 +30,7 @@ import { CommonModule } from '@angular/common';
     ResearchPlanFormComponent
   ],
   template: `
-    <h1>Create experimental plan</h1>
+    <h1>Create research plan</h1>
 
     @if (currentUser$ | async; as currentUser) {
       <research-plan-form 
