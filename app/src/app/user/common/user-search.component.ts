@@ -27,10 +27,15 @@ import { Discipline } from "src/app/uni/discipline/discipline";
     ],
     template: `
     <common-model-search-input-field [search]="searchControl"
+        [clearOnFocus]="clearOnFocus"
         [required]="required">
         <mat-label><ng-content select="mat-label" /></mat-label>
 
         <common-model-search-autocomplete [notFoundTemplate]="userNotFound"/>
+
+        <div matIconSuffix>
+            <ng-content select="[matIconSuffix]"></ng-content>
+        </div>
 
         <ng-template #userNotFound>
             The user is not listed <a routerLink="/user/create-temporary">create...</a>
@@ -70,6 +75,15 @@ export class UserSearchComponent implements ModelSearchComponent<User> {
         this._required = coerceBooleanProperty(value);
     }
     private _required: boolean = false;
+
+    @Input()
+    get clearOnFocus(): boolean {
+        return this._clearOnFocus;
+    }
+    set clearOnFocus(value: BooleanInput) {
+        this._clearOnFocus = coerceBooleanProperty(value);
+    }
+    _clearOnFocus = false;
 
     /**
      * Roles to restrict the user search to.

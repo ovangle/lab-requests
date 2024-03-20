@@ -8,6 +8,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { ModelSearchAutocompleteComponent } from "./search-autocomplete.component";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
+import { distinctUntilChanged, first } from "rxjs";
 
 @Component({
     selector: 'common-model-search-input-field',
@@ -45,6 +46,10 @@ import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
                 <mat-icon>clear</mat-icon>
             </button>
         }
+        <div matIconSuffix>
+            <ng-content select="[matIconSuffix]">
+            </ng-content>
+        </div>
 
         <ng-content select="common-search-autocomplete" />
     </mat-form-field>
@@ -71,6 +76,7 @@ export class ModelSearchInputComponent {
         this._clearOnFocus = coerceBooleanProperty(value);
     }
     _clearOnFocus: boolean = false;
+    _valueChangedSinceLastClear = false;
 
     @Input()
     get hideSearchPrefixIcon() {
@@ -86,8 +92,18 @@ export class ModelSearchInputComponent {
     _autocomplete: ModelSearchAutocompleteComponent | undefined;
 
     _onSearchInputFocus() {
-        if (this.clearOnFocus) {
+        if (this.clearOnFocus && !this._valueChangedSinceLastClear) {
             this.search?.searchControl.reset();
+
+            // Choosing a value from the autocomplete refocuses the element, triggering a clear of the input.
+            // If we clear once, wait until a value is selected before we clear again.
+            this._valueChangedSinceLastClear = false;
+            this.search?.searchControl.valueChanges.pipe(
+                distinctUntilChanged(),
+                first()
+            ).subscribe(() => {
+                this._valueChangedSinceLastClear = true;
+            });
         }
     }
 }

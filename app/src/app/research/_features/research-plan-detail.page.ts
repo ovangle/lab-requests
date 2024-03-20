@@ -92,11 +92,20 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
         </div>
       </div>
       <div class="page-body">
-        <h2 class="section-title">General</h2>
+        <div class="section-title">
+          <h2 class="section-title">General</h2>
+          @if (isEditingGeneralInfo) {
+            <button mat-raised-button color="primary" (click)="saveGeneralInfo()">SAVE</button>
+            <button mat-raised-button color="warn" (click)="cancelEditGeneralInfo()">CANCEL</button>
+          } @else {
+            <button mat-raised-button (click)="toggleEditingGeneralInfo(true)">EDIT</button>
+          }
+        </div>
 
         <research-plan-form--description-field 
             [plan]="plan" 
             [contentEditable]="isEditingField('description')"
+            (contentEditableToggle)="onContentEditableToggled('description', $event)"
             (contentChange)="onContentChange('description', $event)" />
 
         <research-plan-form--coordinator-field
@@ -198,6 +207,25 @@ export class ResearchPlanDetailPage {
       this._planService.update(plan, { [ name ]: value })
     );
     this._context.nextCommitted(plan);
+  }
+
+  isEditingGeneralInfo = false;
+  toggleEditingGeneralInfo(isEditing = false) {
+    for (const field of [ 'description', 'coordinator', 'researcher' ]) {
+      if (isEditing) {
+        this.editFields.add(field as any);
+      } else {
+        this.editFields.delete(field as any);
+      }
+    }
+    this.isEditingGeneralInfo = isEditing;
+  }
+
+  cancelEditGeneralInfo() {
+    this._updateForm!.reset();
+    this.toggleEditingGeneralInfo(false);
+  }
+  saveGeneralInfo() {
   }
 
 }

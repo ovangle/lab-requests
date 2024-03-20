@@ -79,5 +79,4 @@ export class ResearchPlanForm__TitleField extends AbstractResearchPlanDetailFiel
     this.control!.reset();
     this.contentEditableToggle.emit(false);
   }
-
 }

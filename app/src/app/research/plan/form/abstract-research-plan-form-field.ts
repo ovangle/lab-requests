@@ -1,6 +1,6 @@
 import { Directive, EventEmitter, Input, Output, inject } from "@angular/core";
 import { ResearchPlan } from "../research-plan";
-import { AbstractControl, ControlContainer, FormGroupDirective, ValidationErrors } from "@angular/forms";
+import { AbstractControl, ControlContainer, FormControl, FormGroupDirective, ValidationErrors } from "@angular/forms";
 import { ResearchPlanForm } from "../research-plan-form.component";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 
@@ -32,7 +32,7 @@ export abstract class AbstractResearchPlanDetailFieldComponent<TValue> {
     return this.controlContainer.control as ResearchPlanForm | null;
   }
 
-  get control(): AbstractControl<TValue, TValue> | null {
+  get control(): FormControl<TValue> | null {
     if (this.planForm && this._contentEditable) {
       return this.planForm.controls[ this.controlName ] as any;
     }

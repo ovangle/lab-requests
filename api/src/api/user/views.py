@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, security
 from api.uni.schemas import lookup_campus
 
 from db import LocalSession, get_db
+from db.models.uni.discipline import Discipline
 from db.models.user import (
     NativeUserCredentials,
     TemporaryAccessToken,
@@ -36,13 +37,18 @@ users = APIRouter(prefix="/users", tags=["users"])
 async def index_users(
     search: Optional[str] = None,
     include_roles: Optional[str] = None,
+    discipline: Optional[Discipline] = None,
     db=Depends(get_db),
 ):
     if include_roles:
         include_role_set = set(include_roles.split(","))
     else:
         include_role_set = None
-    index = UserIndex(query_users(search=search, include_roles=include_role_set))
+    index = UserIndex(
+        query_users(
+            search=search, include_roles=include_role_set, discipline=discipline
+        )
+    )
     return await index.load_page(db, 0)
 
 
