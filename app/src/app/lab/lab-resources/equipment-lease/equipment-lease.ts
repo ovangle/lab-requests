@@ -10,8 +10,12 @@ import {
   EquipmentProvision,
   equipmentProvisionFromJsonObject
 } from 'src/app/equipment/provision/equipment-provision';
-import { Resource, ResourceParams, resourceParamsFromJsonObject } from '../../lab-resource/resource';
+import { Resource, ResourceParams, resourceParamsFromJsonObject, ResourcePatch, ResourceService } from '../../lab-resource/resource';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
+import { Injectable } from '@angular/core';
+import { HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { ModelQuery } from 'src/app/common/model/model';
 
 export interface EquipmentLeaseParams extends ResourceParams {
   equipment: Equipment | EquipmentCreateRequest;
@@ -96,23 +100,43 @@ export function equipmentLeaseFromJson(json: JsonObject): EquipmentLease {
   });
 }
 
-export function equipmentLeaseParamsToJson(lease: EquipmentLeaseParams): {
-  [ k: string ]: any;
-} {
-  let equipment;
-  if (lease.equipment instanceof Equipment) {
-    equipment = lease.equipment.id;
-  } else {
-    equipment = lease.equipment;
-  }
+export interface EquipmentLeasePatch extends ResourcePatch<EquipmentLease> {
+  equipment: Equipment | EquipmentCreateRequest;
+  equipmentProvision: EquipmentProvision | null;
 
-  return {
-    id: lease.id,
-    index: lease.index,
-    equipment: (lease.equipment),
-    equipmentTrainingCompleted: lease.equipmentTrainingCompleted,
-    requireSupervision: lease.requireSupervision,
-    setupInstructions: lease.setupInstructions,
-    usageCostEstimate: lease.usageCostEstimate
-  };
+  equipmentTrainingCompleted: Set<string>;
+  requireSupervision: boolean;
+  setupInstructions: string;
+
+  usageCostEstimate: number;
+}
+
+export function equipmentLeasePatchToJsonObject(committed: EquipmentLease | null, patch: Partial<EquipmentLeasePatch>): JsonObject {
+  let json: JsonObject = {};
+
+  if (patch.equipment instanceof Equipment) {
+    json[ 'equipment' ] = patch.equipment.id;
+  } else if (patch.equipment) {
+    json[ 'equipment' ] = patch.equipment;
+  } else if (committed?.equipment) {
+    json[ 'equipment' ] = committed.equipment.id;
+  }
+  json[ 'equipmentTrainingCompleted' ] = patch.equipmentTrainingCompleted;
+  json[ 'requireSupervision' ] = patch.requireSupervision;
+
+  return json;
+}
+
+@Injectable()
+export class EquipmentLeaseService extends ResourceService<EquipmentLease, EquipmentLeasePatch> {
+  override resourceType: 'equipment-lease' = 'equipment-lease';
+  override resourcePatchToJson(current: EquipmentLease | null, patch: Partial<EquipmentLeasePatch>): JsonObject {
+    return equipmentLeasePatchToJsonObject(current, patch)
+  }
+  override modelFromJsonObject(json: JsonObject): EquipmentLease {
+    return equipmentLeaseFromJson(json);
+  }
+  override modelQueryToHttpParams(lookup: ModelQuery<EquipmentLease>): HttpParams {
+    throw new Error('Method not implemented.');
+  }
 }

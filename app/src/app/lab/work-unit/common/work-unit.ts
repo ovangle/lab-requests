@@ -29,9 +29,7 @@ import {
 import {
   ResourceContainer,
   ResourceContainerParams,
-  ResourceContainerPatch,
   resourceContainerParamsFromJson,
-  resourceContainerPatchToJson,
 } from '../../lab-resource/resource-container';
 import { ResourceType } from '../../lab-resource/resource-type';
 import { StoredFile } from 'src/app/common/file/stored-file';

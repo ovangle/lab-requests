@@ -4,8 +4,8 @@ from sqlalchemy import Select
 from db.models.lab import LabResource
 from db.models.lab.resources import EquipmentLease
 
-from ..lab_equipment.schemas import LabEquipmentView, LabEquipmentProvisionView
-from ..lab_resource import LabResourceView, LabResourceIndex
+from ...lab_equipment.schemas import LabEquipmentView, LabEquipmentProvisionView
+from ...lab_resource import LabResourceParams, LabResourceView, LabResourceIndex
 
 
 class LabEquipmentLeaseView(LabResourceView[EquipmentLease]):
@@ -47,3 +47,7 @@ class LabEquipmentLeaseView(LabResourceView[EquipmentLease]):
 
 class LabEquipmentLeaseIndex(LabResourceIndex[LabEquipmentLeaseView]):
     __item_view__ = LabEquipmentLeaseView
+
+
+class LabEquipmentLeaseParams(LabResourceParams):
+    pass

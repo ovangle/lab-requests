@@ -16,7 +16,7 @@ import {
   MatTableModule,
 } from '@angular/material/table';
 import { CollectionViewer, DataSource } from '@angular/cdk/collections';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { ActivatedRoute, RouterLink, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import {
@@ -31,7 +31,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { ResourceContainerContext } from '../resource-container';
 import type { ResourceType } from '../resource-type';
 import { ResourceTypePipe } from '../resource-type.pipe';
-import { Resource } from '../resource';
+import { Resource, ResourceService } from '../resource';
 import { ScaffoldFormPaneControl } from 'src/app/scaffold/form-pane/form-pane-control';
 
 @Injectable()
@@ -40,6 +40,7 @@ export abstract class ResourceTableDataSource<
 > extends DataSource<T> {
   abstract readonly resourceType: ResourceType;
   abstract readonly resourceTitle: string;
+  abstract readonly resourceService: ResourceService<T>
 
   readonly _containerContext = inject(ResourceContainerContext);
   readonly resourceContainer$ = this._containerContext.committed$;
@@ -59,9 +60,15 @@ export abstract class ResourceTableDataSource<
     ]);
   }
 
-  deleteElementAt(elementIndex: number): void {
-    this._containerContext.deleteResourceAt(this.resourceType, elementIndex);
+  async getElementAt(elementIndex: number): Promise<T> {
+    return (await this._containerContext.getResourceAt(this.resourceType, elementIndex)) as T;
   }
+
+  async deleteElementAt(elementIndex: number): Promise<void> {
+    const element = await this.getElementAt(elementIndex);
+    return await firstValueFrom(this.resourceService.delete(element));
+  }
+
 
   override connect(
     collectionViewer: CollectionViewer,
@@ -102,7 +109,7 @@ export abstract class ResourceTableDataSource<
 })
 export class ResourceTableComponent<T extends Resource>
   implements AfterContentInit {
-  dataSource: ResourceTableDataSource<T> = inject(ResourceTableDataSource);
+  readonly dataSource: ResourceTableDataSource<T> = inject(ResourceTableDataSource<T>);
 
   route = inject(ActivatedRoute);
   _formPane = inject(ScaffoldFormPaneControl);
@@ -145,9 +152,9 @@ export class ResourceTableComponent<T extends Resource>
     }
   }
 
-  deleteElementAt(index: number, event: Event) {
-    this.dataSource.deleteElementAt(index);
+  async deleteElementAt(index: number, event: Event) {
     event.stopPropagation();
+    await this.dataSource.deleteElementAt(index);
   }
 
   openResourceCreateForm(event: Event) {

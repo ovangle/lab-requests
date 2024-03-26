@@ -9,7 +9,7 @@ import {
 } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { EquipmentLease, EquipmentLeaseParams } from './equipment-lease';
+import { EquipmentLease, EquipmentLeaseParams, EquipmentLeasePatch, EquipmentLeaseService } from './equipment-lease';
 import { BehaviorSubject, Observable, combineLatest, defer, filter, firstValueFrom, map, of, skipWhile, startWith, switchMap, tap } from 'rxjs';
 import { EquipmentSearchComponent } from 'src/app/equipment/equipment-search.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -24,6 +24,7 @@ import { ResourceParams } from '../../lab-resource/resource';
 import { NotFoundValue } from 'src/app/common/model/search/search-control';
 import { EquipmentTrainingAcknowlegementComponent } from 'src/app/equipment/training/training-acknowlegment-input.component';
 import { CreateEquipmentProvisionForm } from 'src/app/equipment/provision/create-equipment-provision.form';
+import { ResourceFormTitleComponent } from '../../lab-resource/common/resource-form-title.component';
 
 export type EquipmentLeaseForm = FormGroup<{
   equipment: FormControl<Equipment | NotFoundValue | null>;
@@ -72,16 +73,27 @@ function equipmentLeaseForm(
     EquipmentTrainingAcknowlegementComponent,
     EquipmentRiskAssessmentFileInputComponent,
     CreateEquipmentProvisionForm,
+    ResourceFormTitleComponent,
   ],
   template: `
   @if (form && funding) {
+    <lab-resource-form-title 
+      resourceType="equipment-lease" 
+      [resourceIndex]="(resourceIndex$ | async) || 'create'"
+      (requestClose)="onRequestClose()"
+      (requestSave)="onRequestSave()"/>
     <form [formGroup]="form">
       <equipment-search 
         formControlName="equipment" required
         allowNotFound
+        required
         [inLab]="lab$ | async"
       >
         <mat-label>Equipment</mat-label>
+
+        @if (equipmentErrors && equipmentErrors['required']) {
+          <mat-error>A Value is required</mat-error>
+        }
       </equipment-search>
 
       @if (newEquimentName$ | async; as newEquipmentName) {
@@ -107,19 +119,23 @@ function equipmentLeaseForm(
         </mat-checkbox>
       }
 
-      <ng-container>
-        <lab-equipment-risk-assessment-file-input />
-      </ng-container>
+      <lab-equipment-risk-assessment-file-input />
     </form>
   }
   `,
+  providers: [
+    EquipmentLeaseService
+  ]
 })
-export class EquipmentLeaseFormComponent extends ResourceFormComponent<EquipmentLease, EquipmentLeaseForm> {
+export class EquipmentLeaseFormComponent extends ResourceFormComponent<EquipmentLease, EquipmentLeaseForm, EquipmentLeasePatch> {
+  readonly resourceType = 'equipment-lease';
   readonly lab$: Observable<Lab | null> = injectMaybeLabFromContext();
   readonly _equipments = inject(EquipmentService);
+  override readonly service = inject(EquipmentLeaseService);
 
   @Input()
   funding: ResearchFunding | null = null;
+
 
   readonly equipmentControl$ = this._formSubject.pipe(
     skipWhile(form => form == null),
@@ -130,7 +146,14 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
     return equipmentLeaseForm(committed);
   }
 
-  async getPatch(patchParams: ResourceParams, value: EquipmentLeaseForm[ 'value' ]): Promise<EquipmentLeaseParams> {
+  get equipmentErrors(): ValidationErrors | null {
+    if (!this.form) {
+      return null;
+    }
+    return this.form.controls[ 'equipment' ].errors;
+  }
+
+  patchFromFormValue(value: EquipmentLeaseForm[ 'value' ]): Partial<EquipmentLeasePatch> {
     const equipmentProvision = this._createdProvisionSubject.value;
 
     let equipment: Equipment | EquipmentCreateRequest;
@@ -143,14 +166,13 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
     }
 
     return {
-      ...patchParams,
       equipment,
       equipmentProvision,
       equipmentTrainingCompleted: new Set(value.equipmentTrainingCompleted!),
       requireSupervision: value.requireSupervision!,
       setupInstructions: value.setupInstructions!,
       usageCostEstimate: value.usageCostEstimate!
-    };
+    } as any;
   }
 
   readonly newEquimentName$ = this.equipmentControl$.pipe(
@@ -185,4 +207,12 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
     switchMap(control => control.valueChanges),
     map(equipment => equipment != null)
   )
+
+  onRequestSave() {
+
+  }
+
+  onRequestClose() {
+
+  }
 }

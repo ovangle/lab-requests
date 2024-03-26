@@ -12,10 +12,19 @@ from db.models.lab.lab_resource import LabResourceType
 from ..base.schemas import ModelView
 
 from .lab_resource import LabResource, LabResourceIndex, LabResourceView
-from .lab_resources.equipment_lease import LabEquipmentLeaseView, LabEquipmentLeaseIndex
-from .lab_resources.software_lease import LabSoftwareLeaseIndex, LabSoftwareLeaseView
-from .lab_resources.input_material import InputMaterialIndex, InputMaterialView
-from .lab_resources.output_material import OutputMaterialIndex, OutputMaterialView
+from .lab_resources.schemas.equipment_lease import (
+    LabEquipmentLeaseView,
+    LabEquipmentLeaseIndex,
+)
+from .lab_resources.schemas.software_lease import (
+    LabSoftwareLeaseIndex,
+    LabSoftwareLeaseView,
+)
+from .lab_resources.schemas.input_material import InputMaterialIndex, InputMaterialView
+from .lab_resources.schemas.output_material import (
+    OutputMaterialIndex,
+    OutputMaterialView,
+)
 
 # TODO: PEP 695
 TResource = TypeVar("TResource", bound=LabResource, contravariant=True)

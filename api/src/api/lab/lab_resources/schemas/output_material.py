@@ -1,7 +1,7 @@
 from sqlalchemy import Select
 from db.models.lab.resources import OutputMaterial
 
-from ..lab_resource import LabResourceView, LabResourceIndex
+from ...lab_resource import LabResourceView, LabResourceIndex
 
 
 class OutputMaterialView(LabResourceView[OutputMaterial]):

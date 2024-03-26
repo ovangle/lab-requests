@@ -296,7 +296,7 @@ class ResearchPlan(LabResourceConsumer, Base):
 
         for i, item in enumerate(items):
             if i < len(tasks):
-                await tasks[i].set_attrs(item)
+                tasks[i].set_attrs(item)
             else:
                 await self.insert_task(start_index + i, item)
 

@@ -1,5 +1,5 @@
 import { Component, Injectable, inject } from '@angular/core';
-import { EquipmentLease } from './equipment-lease';
+import { EquipmentLease, EquipmentLeaseService } from './equipment-lease';
 import { MatTableModule } from '@angular/material/table';
 import { CommonModule } from '@angular/common';
 import { CollectionViewer } from '@angular/cdk/collections';
@@ -16,8 +16,10 @@ import {
 export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<EquipmentLease> {
   override readonly resourceType = 'equipment-lease';
   override readonly resourceTitle = 'Equipment';
+  override readonly resourceService = inject(EquipmentLeaseService);
 
   readonly equipments = inject(EquipmentService);
+
 }
 
 @Component({
@@ -90,10 +92,13 @@ export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<Equip
     </ng-template>
   `,
   providers: [
+    EquipmentLeaseService,
     {
       provide: ResourceTableDataSource,
       useClass: EquipmentLeaseTableDataSource,
     },
   ],
 })
-export class EquipmentLeaseTableComponent { }
+export class EquipmentLeaseTableComponent {
+  readonly equipmentLeaseService = inject(EquipmentLeaseService);
+}

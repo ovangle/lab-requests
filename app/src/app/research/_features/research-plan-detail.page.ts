@@ -30,7 +30,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { LabService } from 'src/app/lab/lab';
 import { LabResourceContainerFormComponent } from 'src/app/lab/lab-resource/resource-container-form.component';
-import { ResourceContainerControl } from 'src/app/lab/lab-resource/resource-container-control';
 import { ResearchPlanForm, researchPlanForm } from '../plan/research-plan-form.component';
 import { DisciplinePipe } from 'src/app/uni/discipline/discipline.pipe';
 import { ResearchPlanForm__TitleField } from '../plan/form/research-plan-form--title-field.component';
@@ -38,6 +37,7 @@ import { ResearchPlanForm__DescriptionField } from '../plan/form/research-plan-f
 import { ResearchPlanForm__CoordinatorField } from '../plan/form/research-plan-form--coordinator-field.component';
 import { ResearchPlanForm__ResearcherField } from '../plan/form/research-plan-form--researcher-field.component';
 import { ReactiveFormsModule } from '@angular/forms';
+import { ResearchPlanForm__FundingField } from '../plan/form/research-plan-form--funding-field.component';
 
 export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
   const activatedRoute = inject(ActivatedRoute);
@@ -69,6 +69,7 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
     DisciplinePipe,
     ResearchPlanForm__TitleField,
     ResearchPlanForm__DescriptionField,
+    ResearchPlanForm__FundingField,
     ResearchPlanForm__CoordinatorField,
     ResearchPlanForm__ResearcherField
   ],
@@ -94,12 +95,6 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
       <div class="page-body">
         <div class="section-title">
           <h2 class="section-title">General</h2>
-          @if (isEditingGeneralInfo) {
-            <button mat-raised-button color="primary" (click)="saveGeneralInfo()">SAVE</button>
-            <button mat-raised-button color="warn" (click)="cancelEditGeneralInfo()">CANCEL</button>
-          } @else {
-            <button mat-raised-button (click)="toggleEditingGeneralInfo(true)">EDIT</button>
-          }
         </div>
 
         <research-plan-form--description-field 
@@ -107,6 +102,12 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
             [contentEditable]="isEditingField('description')"
             (contentEditableToggle)="onContentEditableToggled('description', $event)"
             (contentChange)="onContentChange('description', $event)" />
+
+          <research-plan-form--funding-field
+            [plan]="plan!"
+            [contentEditable]="isEditingField('funding')"
+            (contentEditableToggle)="onContentEditableToggled('funding', $event)"
+            (contentChange)="onContentChange('funding', $event)" />
 
         <research-plan-form--coordinator-field
             [plan]="plan!"
@@ -117,6 +118,7 @@ export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
         <research-plan-form--researcher-field
             [plan]="plan!"
             [contentEditable]="isEditingField('researcher')"
+            (contentEditableToggle)="onContentEditableToggled('researcher', $event)"
             (contentChange)="onContentChange('researcher', $event)" />
 
       </div>

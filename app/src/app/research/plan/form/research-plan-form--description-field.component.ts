@@ -46,7 +46,7 @@ import { MatIconModule } from "@angular/material/icon";
     <div class="field-content">
       <div class="field">
         <div class="field-label">
-          <b>Description</b><br/>
+          <b>Summary</b><br/>
         </div>
         <div class="field-value">
           {{plan!.description}}

@@ -7,7 +7,7 @@ import {
   ResourceType,
   isResourceType,
 } from 'src/app/lab/lab-resource/resource-type';
-import { Resource } from '../../lab-resource/resource';
+import { Resource, ResourceParams, ResourcePatch } from '../../lab-resource/resource';
 import { ResourceContext } from '../../lab-resource/resource-context';
 import { ScaffoldFormPaneControl } from 'src/app/scaffold/form-pane/form-pane-control';
 import { ResourceFormTitleComponent } from '../../lab-resource/common/resource-form-title.component';
@@ -16,9 +16,10 @@ import { CommonModule } from '@angular/common';
 import { InputMaterialFormComponent } from '../input-material/input-material-form.component';
 import { SoftwareLeaseFormComponent } from '../software-lease/software-resource-form.component';
 import { OutputMaterialFormComponent } from '../output-material/output-material-form.component';
-import { ResourceContainerContext, ResourceSplice, resourceContainerAttr } from '../../lab-resource/resource-container';
+import { ResourceContainerContext, resourceContainerAttr } from '../../lab-resource/resource-container';
 import { LabContext } from '../../lab-context';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { EquipmentLeaseService } from '../equipment-lease/equipment-lease';
 
 export function typeIndexFromDetailRoute$(): Observable<
   [ ResourceType, number | 'create' ]
@@ -118,7 +119,7 @@ export class LabResourceFormPage {
 
   readonly funding$ = this._context.funding$;
 
-  readonly _patchSubject = new ReplaySubject(1);
+  readonly _patchSubject = new ReplaySubject<ResourcePatch<any>>(1);
   saveDisabled: boolean = true;
 
   constructor() {
@@ -138,32 +139,23 @@ export class LabResourceFormPage {
     this._formPane.close();
   }
   async saveAndClose() {
+    await this._containerContext.refresh();
+    await this.close();
+    /*
     const [ resourceType, index ] = await firstValueFrom(this._context.committedTypeIndex$);
     const resourcePatch = await firstValueFrom(this._patchSubject);
 
-    let splice: ResourceSplice<any>;
     if (index === 'create') {
-      const containerAttr = resourceContainerAttr(resourceType);
-      if (index === 'create') {
-        const len = await this._containerContext.getResourceCount(resourceType);
-        splice = {
-          start: len,
-          items: [ resourcePatch ]
-        }
-      } else {
-        splice = {
-          start: index,
-          end: index + 1,
-          items: [ resourcePatch ]
-        }
-      }
-
+      await this._containerContext.pushResource(resourceType, resourcePatch);
+    } else {
+      await this._containerContext.replaceResourceAt(resourceType, index, resourcePatch)
     }
 
     await this.close();
+    */
   }
 
-  onPatchChange(patch: Resource) {
+  onPatchChange<T extends Resource>(patch: Partial<ResourcePatch<T>>) {
     this._patchSubject.next(patch);
   }
   onFormHasError(hasError: boolean) {

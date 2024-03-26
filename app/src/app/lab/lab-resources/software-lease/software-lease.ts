@@ -1,8 +1,11 @@
 import { resourceFileAttachmentFromJson } from '../../lab-resource/file-attachment/file-attachment';
-import { ResourceParams, Resource, resourceParamsFromJsonObject } from '../../lab-resource/resource';
+import { ResourceParams, Resource, resourceParamsFromJsonObject, ResourcePatch, ResourceService } from '../../lab-resource/resource';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { Software, softwareFromJsonObject } from '../../software/software';
 import { SoftwareProvision, softwareProvisionFromJsonObject } from '../../software/provision/software-provision';
+import { Injectable } from '@angular/core';
+import { HttpParams } from '@angular/common/http';
+import { ModelQuery } from 'src/app/common/model/model';
 
 export interface SoftwareLeaseParams extends ResourceParams {
   software: Software;
@@ -43,8 +46,27 @@ export function softwareLeaseFromJsonObject(json: JsonObject): SoftwareLease {
   });
 }
 
-export function softwareParamsToJson(software: SoftwareLeaseParams): JsonObject {
+export interface SoftwareLeasePatch extends ResourcePatch<SoftwareLease> {
+
+}
+
+export function softwareLeasePatchToJsonObject(current: SoftwareLease | null, patch: Partial<SoftwareLeasePatch>): JsonObject {
   return {
-    index: software.index,
+    index: current?.index,
   };
+}
+
+@Injectable()
+export class SoftwareLeaseService extends ResourceService<SoftwareLease, SoftwareLeasePatch> {
+  override readonly resourceType = 'software-lease';
+  override resourcePatchToJson(current: SoftwareLease | null, patch: Partial<SoftwareLeasePatch>): JsonObject {
+    return softwareLeasePatchToJsonObject(current, patch)
+  }
+  override modelFromJsonObject(json: JsonObject): SoftwareLease {
+    return softwareLeaseFromJsonObject(json);
+  }
+  override modelQueryToHttpParams(lookup: ModelQuery<SoftwareLease>): HttpParams {
+    throw new Error('Method not implemented.');
+  }
+
 }

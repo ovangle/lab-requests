@@ -1,5 +1,5 @@
-import { Component, Injectable } from '@angular/core';
-import { OutputMaterial } from './output-material';
+import { Component, Injectable, inject } from '@angular/core';
+import { OutputMaterial, OutputMaterialService } from './output-material';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import {
@@ -11,6 +11,7 @@ import {
 export class OutputMaterialTableDataSource extends ResourceTableDataSource<OutputMaterial> {
   override readonly resourceType = 'output-material';
   override readonly resourceTitle = 'Output material';
+  override readonly resourceService = inject(OutputMaterialService);
 }
 
 @Component({
@@ -33,6 +34,7 @@ export class OutputMaterialTableDataSource extends ResourceTableDataSource<Outpu
     <ng-template #detailTemplate> </ng-template>
   `,
   providers: [
+    OutputMaterialService,
     {
       provide: ResourceTableDataSource,
       useClass: OutputMaterialTableDataSource,

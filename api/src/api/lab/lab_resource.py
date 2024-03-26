@@ -32,3 +32,7 @@ class LabResourceLookup(ModelLookup[TResource], Generic[TResource]):
 
     async def get(self, db: LocalSession):
         raise NotImplementedError
+
+
+class LabResourceParams:
+    pass

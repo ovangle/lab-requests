@@ -26,14 +26,19 @@ import { MatIconModule } from "@angular/material/icon";
         <user-search [formControl]="control"
               includeRoles="lab-tech"
               [discipline]="plan!.discipline"
-              createTemporaryIfNotFound
               clearOnFocus
               required >
             <mat-label>Coordinator</mat-label>
 
+
+            <button matIconSuffix mat-icon-button
+                    color="primary"
+                    (click)="onSaveButtonClicked()">
+                <mat-icon>save</mat-icon>
+            </button>
             <button matIconSuffix mat-icon-button 
                     color="warn" 
-                    (click)="onEditButtonClicked()">
+                    (click)="onCancelButtonClicked()">
                 <mat-icon>cancel</mat-icon>
             </button>
             @if (errors && errors['required']) {
@@ -45,13 +50,21 @@ import { MatIconModule } from "@angular/material/icon";
             <div class="field"> 
                 <div class="field-label"><b>Coordinator</b></div>
                 <div class="field-value">
-                    <user-info [user]="plan!.researcher" />
+                    <user-info [user]="plan!.coordinator" />
                 </div>
             </div>
             <div class="controls">
                 <button mat-icon-button (click)="onEditButtonClicked()"><mat-icon>edit</mat-icon></button>
             </div>
         </div>
+    }
+    `,
+    styles: `
+    .field-content {
+        display: flex;
+    }
+    .field {
+        flex-grow: 1;
     }
     `
 })
@@ -68,5 +81,14 @@ export class ResearchPlanForm__CoordinatorField extends AbstractResearchPlanDeta
 
     onEditButtonClicked() {
         this.contentEditableToggle.next(true);
+    }
+
+    onSaveButtonClicked() {
+        this.contentChange.emit(this.control!.value);
+        this.contentEditableToggle.emit(false);
+    }
+    onCancelButtonClicked() {
+        this.control!.reset();
+        this.contentEditableToggle.emit(false);
     }
 }

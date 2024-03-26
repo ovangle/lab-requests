@@ -11,13 +11,18 @@ import {
   hazardClassesFromJson,
   hazardClassesToJson,
 } from '../../lab-resource/hazardous/hazardous';
-import { ResourceParams, Resource, resourceParamsFromJsonObject } from '../../lab-resource/resource';
+import { ResourceParams, Resource, resourceParamsFromJsonObject, ResourcePatch, ResourceService } from '../../lab-resource/resource';
 import {
   ResourceStorage,
   ResourceStorageParams,
   resourceStorageFromJson,
   resourceStorageParamsToJson,
 } from '../../lab-resource/storage/resource-storage';
+import { Injectable } from '@angular/core';
+import { OutputMaterialFormComponent } from './output-material-form.component';
+import { HttpParams } from '@angular/common/http';
+import { ModelQuery } from 'src/app/common/model/model';
+import { inputMaterialPatchToJson } from '../input-material/input-material';
 
 export interface OutputMaterialParams extends ResourceParams {
   name: string;
@@ -100,16 +105,35 @@ export function outputMaterialFromJson(json: JsonObject): OutputMaterial {
   });
 }
 
-export function outputMaterialParamsToJson(
-  outputMaterial: OutputMaterialParams,
-): { [ k: string ]: any } {
+export interface OutputMaterialPatch extends ResourcePatch<OutputMaterial> {
+
+}
+
+export function outputMaterialPatchToJsonObject(
+  outputMaterial: OutputMaterial | null, patch: Partial<OutputMaterialPatch>
+): JsonObject {
   return {
-    id: outputMaterial.id,
-    name: outputMaterial.name,
-    baseUnit: outputMaterial.baseUnit,
-    numUnitsProduced: outputMaterial.numUnitsProduced,
-    storage: resourceStorageParamsToJson(outputMaterial.storage),
-    disposal: resourceDisposalParamsToJson(outputMaterial.disposal),
-    hazardClasses: hazardClassesToJson(outputMaterial.hazardClasses),
+    id: outputMaterial?.id,
+    name: outputMaterial?.name,
+    baseUnit: outputMaterial?.baseUnit,
+    numUnitsProduced: outputMaterial?.numUnitsProduced,
+    storage: resourceStorageParamsToJson(outputMaterial!.storage),
+    disposal: resourceDisposalParamsToJson(outputMaterial!.disposal),
+    hazardClasses: hazardClassesToJson(outputMaterial!.hazardClasses),
   };
+}
+
+@Injectable()
+export class OutputMaterialService extends ResourceService<OutputMaterial, OutputMaterialPatch> {
+  override readonly resourceType = 'output-material';
+  override resourcePatchToJson(current: OutputMaterial | null, patch: Partial<OutputMaterialPatch>): JsonObject {
+    return outputMaterialPatchToJsonObject(current, patch);
+  }
+  override modelFromJsonObject(json: JsonObject): OutputMaterial {
+    return outputMaterialFromJson(json);
+  }
+  override modelQueryToHttpParams(lookup: ModelQuery<OutputMaterial>): HttpParams {
+    throw new Error('Method not implemented.');
+  }
+
 }

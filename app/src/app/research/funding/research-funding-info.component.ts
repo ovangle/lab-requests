@@ -8,15 +8,12 @@ import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
   standalone: true,
   imports: [ CommonModule ],
   template: `
-    {{ fundingModel!.name }}
-    @if (!nameonly) {
-      - {{ fundingModel!.description }}
-    }
+    {{ funding!.name }}
   `,
 })
 export class ResearchFundingInfoComponent {
   @Input({ required: true })
-  fundingModel: ResearchFunding | undefined;
+  funding: ResearchFunding | undefined;
 
   @Input()
   get nameonly(): boolean {

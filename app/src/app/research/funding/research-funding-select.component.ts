@@ -37,6 +37,10 @@ import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
           }
         }
       </mat-select>
+
+      <div matIconSuffix>
+        <ng-content select="[matIconSuffix]"></ng-content>
+      </div>
       <mat-error>
         <ng-content select="mat-error"></ng-content>
       </mat-error>

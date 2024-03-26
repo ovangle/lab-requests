@@ -9,7 +9,7 @@ import {
 } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { InputMaterial, InputMaterialParams } from './input-material';
+import { InputMaterial, InputMaterialParams, InputMaterialPatch, InputMaterialService } from './input-material';
 
 import { CommonMeasurementUnitInputComponent } from 'src/app/common/measurement/common-measurement-unit-input.component';
 import { MeasurementUnitPipe } from 'src/app/common/measurement/common-measurement-unit.pipe';
@@ -62,22 +62,6 @@ function inputMaterialForm(inputMaterial: InputMaterial | null): InputMaterialFo
     storage: resourceStorageForm(),
     hazardClasses: new FormControl<HazardClass[]>([], { nonNullable: true }),
   });
-}
-
-function inputMaterialFromFormValue(patchParams: ResourceParams, value: InputMaterialForm[ 'value' ]): InputMaterial {
-  return new InputMaterial({
-    ...patchParams,
-    name: value.name!,
-    description: value.description || '',
-    baseUnit: value.baseUnit!,
-
-    numUnitsRequired: value.numUnitsRequired!,
-    perUnitCostEstimate: value.perUnitCostEstimate!,
-
-    storage: resourceStorageFromFormValue(value.storage!),
-    hazardClasses: value?.hazardClasses || []
-  })
-
 }
 
 export type InputMaterialFormErrors = ValidationErrors & {
@@ -153,14 +137,22 @@ export type InputMaterialFormErrors = ValidationErrors & {
       }
     `,
   ],
+  providers: [
+    InputMaterialService
+  ]
 })
-export class InputMaterialFormComponent extends ResourceFormComponent<InputMaterial, InputMaterialForm> {
+export class InputMaterialFormComponent extends ResourceFormComponent<InputMaterial, InputMaterialForm, InputMaterialPatch> {
+  override readonly resourceType = 'input-material';
+  override readonly service = inject(InputMaterialService);
+
   override createForm(committed: InputMaterial | null): InputMaterialForm {
     return inputMaterialForm(committed);
   }
-  override async getPatch(patchParams: ResourceParams, value: InputMaterialForm[ 'value' ]): Promise<InputMaterial> {
-    return inputMaterialFromFormValue(patchParams, value);
+  override patchFromFormValue(form: InputMaterialForm[ 'value' ]): Partial<InputMaterialPatch> {
+    throw new Error('Not implemented');
+
   }
+
   readonly _planContext = inject(ResearchPlanContext);
 
   @Input()
@@ -190,4 +182,5 @@ export class InputMaterialFormComponent extends ResourceFormComponent<InputMater
   get endDate(): Date | null {
     return this._durationSubject.value.endDate;
   }
+
 }

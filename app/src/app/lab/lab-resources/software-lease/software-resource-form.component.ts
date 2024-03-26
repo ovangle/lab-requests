@@ -10,20 +10,23 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { SoftwareLease, SoftwareLeaseParams } from './software-lease';
+import { SoftwareLease, SoftwareLeaseParams, SoftwareLeasePatch, SoftwareLeaseService } from './software-lease';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { ResourceContext } from '../../lab-resource/resource-context';
 import { ResourceFormComponent } from '../../lab-resource/abstract-resource-form.component';
-import { ResourceParams } from '../../lab-resource/resource';
+import { ResourceParams, ResourceService } from '../../lab-resource/resource';
 import { SoftwareLike } from '../../software/software-like';
 import { ResearchFundingCostEstimateFormComponent } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
+import { Software } from '../../software/software';
+import { TextFieldModule } from '@angular/cdk/text-field';
 
 export type SoftwareLeaseForm = FormGroup<{
-  software: FormControl<SoftwareLike | null>;
+  name: FormControl<string>;
   description: FormControl<string>;
   minVersion: FormControl<string>;
 
+  isLocalInstall: FormControl<boolean>;
   isLicenseRequired: FormControl<boolean>;
   hasCostEstimates: FormControl<boolean>;
   estimatedCost: FormControl<number | null>;
@@ -31,11 +34,13 @@ export type SoftwareLeaseForm = FormGroup<{
 
 export function softwareLeaseForm(committed: SoftwareLease | null): SoftwareLeaseForm {
   return new FormGroup({
-    software: new FormControl<SoftwareLike | null>(committed?.software || null, {
+    name: new FormControl<string>(committed?.software?.name || '', {
       validators: [ Validators.required ],
+      nonNullable: true,
     }),
     description: new FormControl('', { nonNullable: true }),
     minVersion: new FormControl('', { nonNullable: true }),
+    isLocalInstall: new FormControl(false, { nonNullable: true }),
     isLicenseRequired: new FormControl(false, { nonNullable: true }),
 
     hasCostEstimates: new FormControl<boolean>(false, { nonNullable: true }),
@@ -54,6 +59,7 @@ export type SoftwareLeaseFormErrors = ValidationErrors & {
     CommonModule,
     ReactiveFormsModule,
 
+    TextFieldModule,
     MatCheckboxModule,
     MatFormFieldModule,
     MatInputModule,
@@ -66,16 +72,21 @@ export type SoftwareLeaseFormErrors = ValidationErrors & {
     <form [formGroup]="form">
       <mat-form-field>
         <mat-label>Name</mat-label>
-        <input matInput id="software-name" formControlName="name" />
+        <input matInput id="software-name" formControlName="name" required />
+
+        @if (nameErrors && nameErrors['required']) {
+          <mat-error>A value is required</mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field>
-        <mat-label>Description</mat-label>
+        <mat-label>Usage description</mat-label>
         <textarea
           matInput
           type="text"
           id="software-description"
           formControlName="description"
+          cdkTextareaAutosize
         >
         </textarea>
       </mat-form-field>
@@ -90,9 +101,16 @@ export type SoftwareLeaseFormErrors = ValidationErrors & {
         />
       </mat-form-field>
 
-      <mat-checkbox formControlName="isLicenseRequired">
-        This software requires a licence seat
+      <mat-checkbox formControlName="isLocalInstall">
+        <!-- TODO: Inject lab information -->
+        This software must be installed in the research lab
       </mat-checkbox>
+
+      @if (isLocalInstall) {
+        <mat-checkbox formControlName="isLicenseRequired">
+          This software requires a licence seat
+        </mat-checkbox>
+      }
 
       @if (isLicenseRequired && funding) {
         <research-funding-cost-estimate-form
@@ -111,11 +129,20 @@ export type SoftwareLeaseFormErrors = ValidationErrors & {
       }
     `,
   ],
+  providers: [
+    SoftwareLeaseService
+  ]
 })
-export class SoftwareLeaseFormComponent extends ResourceFormComponent<SoftwareLease, SoftwareLeaseForm> {
+export class SoftwareLeaseFormComponent extends ResourceFormComponent<SoftwareLease, SoftwareLeaseForm, SoftwareLeasePatch> {
+  override readonly resourceType = 'software-lease';
+  override readonly service = inject(SoftwareLeaseService);
 
   @Input()
   funding: ResearchFunding | null = null;
+
+  get isLocalInstall() {
+    return !!this.form?.value.isLocalInstall;
+  }
 
   get isLicenseRequired() {
     return !!this.form!.value.isLicenseRequired;
@@ -124,7 +151,15 @@ export class SoftwareLeaseFormComponent extends ResourceFormComponent<SoftwareLe
   override createForm(committed: SoftwareLease | null): SoftwareLeaseForm {
     return softwareLeaseForm(committed);
   }
-  override async getPatch(patchParams: ResourceParams, value: SoftwareLeaseForm[ 'value' ]): Promise<SoftwareLease> {
-    throw new Error('Not implemented');
+  override patchFromFormValue(value: SoftwareLeaseForm[ 'value' ]): SoftwareLeasePatch {
+    throw new Error('not implemented');
+    /** return { ...patchParams, } **/
+  }
+
+  get nameErrors(): ValidationErrors | null {
+    if (!this.form) {
+      return null;
+    }
+    return this.form.controls[ 'name' ].errors;
   }
 }

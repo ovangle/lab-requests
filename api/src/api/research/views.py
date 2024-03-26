@@ -7,6 +7,7 @@ from api.lab.lab_resource_consumer import (
     resource_type_index_cls,
     resource_type_view_cls,
 )
+from api.lab.lab_resources.views import register_resource_views
 from api.lab.schemas import lookup_lab
 from api.research.schemas import ResearchPlanTaskView
 from api.research.schemas.funding import ResearchFundingView, lookup_research_funding
@@ -120,3 +121,6 @@ async def get_plan_requirement(
     resource_view_t = resource_type_view_cls(resource_type)
     resource = await plan.get_resource_for_id(resource_type, resource_id)
     return await resource_view_t.from_model(resource)
+
+
+register_resource_views(research, "/plans", ResearchPlan.get_for_id)

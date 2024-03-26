@@ -1,5 +1,5 @@
-import { Component, Injectable } from '@angular/core';
-import { InputMaterial } from './input-material';
+import { Component, Injectable, inject } from '@angular/core';
+import { InputMaterial, InputMaterialService } from './input-material';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MeasurementUnitPipe } from 'src/app/common/measurement/common-measurement-unit.pipe';
@@ -14,6 +14,7 @@ import { ResourceStorageDetailsComponent } from '../../lab-resource/storage/reso
 export class InputMaterialTableDataSource extends ResourceTableDataSource<InputMaterial> {
   override readonly resourceType = 'input-material';
   override readonly resourceTitle = 'Input material';
+  override readonly resourceService = inject(InputMaterialService);
 }
 
 @Component({
@@ -70,10 +71,11 @@ export class InputMaterialTableDataSource extends ResourceTableDataSource<InputM
     </ng-template>
   `,
   providers: [
+    InputMaterialService,
     {
       provide: ResourceTableDataSource,
       useClass: InputMaterialTableDataSource,
     },
   ],
 })
-export class InputMaterialTableComponent {}
+export class InputMaterialTableComponent { }

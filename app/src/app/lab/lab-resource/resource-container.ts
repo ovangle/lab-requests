@@ -2,7 +2,7 @@ import { Injectable, inject, ɵɵi18nApply } from '@angular/core';
 import { BehaviorSubject, Observable, ReplaySubject, Subscription, defer, firstValueFrom, map, of, shareReplay, switchMap, tap } from 'rxjs';
 import { ALL_RESOURCE_TYPES, ResourceType } from './resource-type';
 
-import type { Resource } from './resource';
+import type { Resource, ResourceParams } from './resource';
 import {
   Model,
   ModelParams,
@@ -10,22 +10,23 @@ import {
 } from 'src/app/common/model/model';
 import {
   EquipmentLease,
+  EquipmentLeaseService,
   equipmentLeaseFromJson,
-  equipmentLeaseParamsToJson,
+  equipmentLeasePatchToJsonObject,
 } from '../lab-resources/equipment-lease/equipment-lease';
 import {
   InputMaterial,
   inputMaterialFromJson,
   InputMaterialParams,
-  inputMaterialToJson,
+  inputMaterialPatchToJson,
 } from '../lab-resources/input-material/input-material';
 import {
   OutputMaterial,
   outputMaterialFromJson,
   OutputMaterialParams,
-  outputMaterialParamsToJson,
+  outputMaterialPatchToJsonObject,
 } from '../lab-resources/output-material/output-material';
-import { SoftwareLease, softwareLeaseFromJsonObject, softwareParamsToJson } from '../lab-resources/software-lease/software-lease';
+import { SoftwareLease, softwareLeaseFromJsonObject, softwareLeasePatchToJsonObject } from '../lab-resources/software-lease/software-lease';
 import {
   Software,
   softwareFromJsonObject,
@@ -35,8 +36,9 @@ import { ResearchPlan } from 'src/app/research/plan/research-plan';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { isThisSecond } from 'date-fns';
 import { ResearchFunding, ResearchFundingService, researchFundingFromJsonObject } from 'src/app/research/funding/research-funding';
-import { ResourceContainerControl } from './resource-container-control';
 import { Lab, LabService } from '../lab';
+import { ModelService } from 'src/app/common/model/model-service';
+import { ModelContext } from 'src/app/common/model/context';
 
 export interface ResourceContainerParams extends ModelParams {
   equipments: EquipmentLease[];
@@ -91,24 +93,13 @@ export abstract class ResourceContainer extends Model implements ResourceContain
     }
     return resources[ index ];
   }
-  apply(patch: ResourceContainerPatch) {
-    for (const resourceType of ALL_RESOURCE_TYPES) {
-      const attr = resourceContainerAttr(resourceType);
-      if (patch.hasOwnProperty(attr)) {
-        const resources = this[ attr ];
-        for (const s of (patch[ attr ] as Array<ResourceSplice<any>>)) {
-          resources.splice(s.start, resources.length, ...s.items);
-        }
-      }
-    }
-    return this;
-  }
+
 }
 
 
 export function resourceContainerAttr(
   type: ResourceType,
-): keyof ResourceContainerPatch {
+): keyof ResourceContainer {
   switch (type) {
     case 'equipment-lease':
       return 'equipments';
@@ -155,68 +146,11 @@ export function resourceContainerParamsFromJson(json: JsonObject): ResourceConta
   };
 }
 
-export interface ResourceSplice<T> {
-  readonly start: number;
-  readonly end?: number;
-  readonly items: T[];
-}
-
-export interface ResourceContainerPatch {
-  equipments: ResourceSplice<EquipmentLease>[];
-  softwares: ResourceSplice<SoftwareParams>[];
-  inputMaterials: ResourceSplice<InputMaterialParams>[];
-  outputMaterials: ResourceSplice<OutputMaterialParams>[];
-}
-
-export function resourceContainerPatchToJson(
-  patch: ResourceContainerPatch,
-): JsonObject {
-  let json: JsonObject = {};
-  for (const resourceType of ALL_RESOURCE_TYPES) {
-    const resourceToJson = resourceSerializer(resourceType);
-
-    const slices = patch[ resourceContainerAttr(resourceType) ];
-
-    json[ resourceContainerAttr(resourceType) ] = slices.map((slice) => ({
-      ...slice,
-      items: slice.items.map((item) => resourceToJson(item as any)),
-    }));
-  }
-  return json;
-
-  function resourceSerializer(resourceType: ResourceType) {
-    switch (resourceType) {
-      case 'equipment-lease':
-        return equipmentLeaseParamsToJson;
-      case 'software-lease':
-        return softwareParamsToJson;
-      case 'input-material':
-        return inputMaterialToJson;
-      case 'output-material':
-        return outputMaterialParamsToJson;
-    }
-  }
-}
-
-function delResourcePatch<T extends Resource>(
-  resourceType: T[ 'type' ] & ResourceType,
-  toDel: number[],
-): Partial<ResourceContainerPatch> {
-  return {
-    [ resourceContainerAttr(resourceType) ]: toDel.map((toDel) => ({
-      start: toDel,
-      end: toDel + 1,
-      items: [],
-    })),
-  };
-}
-
 @Injectable({ providedIn: 'root' })
 export class ResourceContainerContext<T extends ResourceContainer> {
   readonly _labService = inject(LabService);
-  _control: ResourceContainerControl<T> | undefined;
-  _controlCommitted: Subscription | undefined;
-  _controlFunding: Subscription | undefined;
+
+  _context: ModelContext<T> | undefined;
 
   _committedSubject = new ReplaySubject<ResourceContainer>(1);
   committed$ = this._committedSubject.asObservable();
@@ -238,37 +172,36 @@ export class ResourceContainerContext<T extends ResourceContainer> {
   )
 
 
-  get control(): ResourceContainerControl<T> {
-    if (this._control === undefined) {
+  get context(): ModelContext<T> {
+    if (this._context === undefined) {
       throw new Error('No current control')
     }
-    return this._control;
+    return this._context;
   }
 
-  attachControl(control: ResourceContainerControl<T>) {
-    if (this._control !== undefined) {
-      throw new Error('Can only attach at most one container form to context');
-    }
-    this._control = control;
-    this._controlCommitted = this._control.container$.subscribe(
-      (container) => {
-        this._committedSubject.next(container)
-      }
-    );
-    this._controlFunding = this._control.funding$.subscribe(
-      (funding) => this._fundingSubject.next(funding)
-    );
+  get url$(): Observable<string> {
+    return this.context.url$;
   }
-  detachControl() {
-    this._controlCommitted!.unsubscribe();
-    this._controlFunding!.unsubscribe();
-    this._control = undefined;
+
+  attachContext(context: ModelContext<T>): Subscription {
+    if (this._context !== undefined) {
+      throw new Error('Can only associate at most one model context');
+    }
+    this._context = context;
+
+    const syncCommitted = context.committed$.subscribe(
+      committed => this._committedSubject.next(committed)
+    );
+    return new Subscription(() => {
+      syncCommitted.unsubscribe();
+      this._context = undefined;
+    });
   }
 
   committedResources$<TResource extends Resource>(
     resourceType: ResourceType,
   ): Observable<readonly TResource[]> {
-    return this.control.container$.pipe(
+    return this.committed$.pipe(
       map((committed) =>
         committed ? committed.getResources<TResource>(resourceType) : [],
       ),
@@ -276,30 +209,18 @@ export class ResourceContainerContext<T extends ResourceContainer> {
   }
 
   async getResourceAt<T extends Resource>(resourceType: T[ 'type' ], index: number): Promise<T | undefined> {
-    const committed = await firstValueFrom(this.control.container$);
+    const committed = await firstValueFrom(this.committed$);
     return committed.getResourceAt(resourceType, index);
   }
 
   async getResourceCount(resourceType: ResourceType): Promise<number> {
-    const committed = await firstValueFrom(this.control.container$);
+    const committed = await firstValueFrom(this.committed$);
     return committed.getResources(resourceType).length;
   }
 
-  async commit(patch: ResourceContainerPatch): Promise<ResourceContainer> {
-    const committed = await firstValueFrom(this.control.container$);
-    if (!committed) {
-      throw new Error('Cannot commit resources until container exists');
-    }
-    this.control.commit(patch);
-    return firstValueFrom(this.committed$);
-  }
 
-  async deleteResourceAt(resourceType: ResourceType, index: number) {
-    const committed = await firstValueFrom(this.committed$);
-    if (committed == null) {
-      throw new Error('Cannot delete resources until container');
-    }
-    const patch = delResourcePatch(resourceType, [ index ]);
-    return this.control.commit(patch as ResourceContainerPatch);
+  refresh() {
+    return this.context.refresh();
   }
 }
+

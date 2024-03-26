@@ -1,4 +1,4 @@
-import { SoftwareLease } from './software-lease';
+import { SoftwareLease, SoftwareLeaseService } from './software-lease';
 import { Component, Injectable, inject } from '@angular/core';
 import { MatTableModule } from '@angular/material/table';
 import { CommonModule } from '@angular/common';
@@ -12,6 +12,7 @@ import { ResourceTableInfoHeaderComponent } from '../../lab-resource/common/reso
 export class SoftwareLeaseTableDataSource extends ResourceTableDataSource<SoftwareLease> {
   override readonly resourceType = 'software-lease';
   override readonly resourceTitle = 'Software';
+  override readonly resourceService = inject(SoftwareLeaseService);
 }
 
 @Component({
@@ -58,6 +59,7 @@ export class SoftwareLeaseTableDataSource extends ResourceTableDataSource<Softwa
     </ng-template>
   `,
   providers: [
+    SoftwareLeaseService,
     {
       provide: ResourceTableDataSource,
       useClass: SoftwareLeaseTableDataSource,

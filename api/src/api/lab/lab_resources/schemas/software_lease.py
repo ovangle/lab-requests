@@ -1,8 +1,8 @@
 from sqlalchemy import Select
 from db.models.lab.resources import SoftwareLease
 
-from ...base.schemas import ModelIndexPage
-from ..lab_resource import LabResourceView, LabResourceIndex
+from api.base.schemas import ModelIndexPage
+from api.lab.lab_resource import LabResourceView, LabResourceIndex
 
 
 class LabSoftwareLeaseView(LabResourceView[SoftwareLease]):

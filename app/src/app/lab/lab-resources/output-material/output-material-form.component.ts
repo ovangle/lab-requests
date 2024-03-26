@@ -9,7 +9,7 @@ import {
 } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { OutputMaterial, OutputMaterialParams } from './output-material';
+import { OutputMaterial, OutputMaterialParams, OutputMaterialPatch, OutputMaterialService } from './output-material';
 
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription, first, map } from 'rxjs';
@@ -28,7 +28,7 @@ import {
 } from '../../lab-resource/storage/resource-storage-form.component';
 import { ResourceContext } from '../../lab-resource/resource-context';
 import { ResourceFormComponent } from '../../lab-resource/abstract-resource-form.component';
-import { ResourceParams } from '../../lab-resource/resource';
+import { ResourceParams, ResourceService } from '../../lab-resource/resource';
 
 export type OutputMaterialForm = FormGroup<{
   name: FormControl<string>;
@@ -130,8 +130,16 @@ export function disableDependentControlsWithBaseUnitValidity(
     </form>
   }
   `,
+  providers: [
+    OutputMaterialService
+  ]
 })
-export class OutputMaterialFormComponent extends ResourceFormComponent<OutputMaterial, OutputMaterialForm> {
+export class OutputMaterialFormComponent extends ResourceFormComponent<OutputMaterial, OutputMaterialForm, OutputMaterialPatch> {
+  override readonly resourceType = 'output-material';
+  override readonly service: ResourceService<OutputMaterial, OutputMaterialPatch> = inject(OutputMaterialService);
+  override patchFromFormValue(form: OutputMaterialForm[ 'value' ]): OutputMaterialPatch {
+    throw new Error('Method not implemented.');
+  }
 
 
   get baseUnit(): string {
@@ -141,12 +149,5 @@ export class OutputMaterialFormComponent extends ResourceFormComponent<OutputMat
   override createForm(committed: OutputMaterial | null): OutputMaterialForm {
     return outputMaterialForm(committed);
   }
-  override async getPatch(patchParams: ResourceParams, value: OutputMaterialForm[ 'value' ]): Promise<OutputMaterial> {
-    throw new Error("Method not implemented. ")
-    /*
-    return new OutputMaterial({
-      ...patchParams,
-    });
-    */
-  }
+
 }

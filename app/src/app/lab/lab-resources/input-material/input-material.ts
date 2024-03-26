@@ -1,9 +1,10 @@
+import { Injectable } from '@angular/core';
 import {
   HazardClass,
   hazardClassesFromJson,
   hazardClassesToJson,
 } from '../../lab-resource/hazardous/hazardous';
-import { ResourceParams, Resource, resourceParamsFromJsonObject } from '../../lab-resource/resource';
+import { ResourceParams, Resource, resourceParamsFromJsonObject, ResourcePatch, ResourceService } from '../../lab-resource/resource';
 import {
   ResourceStorage,
   ResourceStorageParams,
@@ -11,6 +12,8 @@ import {
   resourceStorageParamsToJson,
 } from '../../lab-resource/storage/resource-storage';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
+import { HttpParams } from '@angular/common/http';
+import { ModelQuery } from 'src/app/common/model/model';
 
 export interface InputMaterialParams extends ResourceParams {
   name: string;
@@ -93,17 +96,35 @@ export function inputMaterialFromJson(json: JsonObject): InputMaterial {
   });
 }
 
-export function inputMaterialToJson(inputMaterial: InputMaterial): {
-  [ k: string ]: any;
-} {
+export interface InputMaterialPatch extends ResourcePatch<InputMaterial> {
+
+}
+
+export function inputMaterialPatchToJson(inputMaterial: InputMaterial | null, patch: Partial<InputMaterialPatch>): JsonObject {
   return {
-    id: inputMaterial.id,
-    index: inputMaterial.index,
-    name: inputMaterial.name,
-    baseUnit: inputMaterial.baseUnit,
-    numUnitsRequired: inputMaterial.numUnitsRequired,
-    perUnitCostEstimate: inputMaterial.perUnitCostEstimate,
-    storage: resourceStorageParamsToJson(inputMaterial.storage),
-    hazardClasses: hazardClassesToJson(inputMaterial.hazardClasses),
+    id: inputMaterial!.id,
+    index: inputMaterial!.index,
+    name: inputMaterial!.name,
+    baseUnit: inputMaterial!.baseUnit,
+    numUnitsRequired: inputMaterial!.numUnitsRequired,
+    perUnitCostEstimate: inputMaterial!.perUnitCostEstimate,
+    storage: resourceStorageParamsToJson(inputMaterial!.storage),
+    hazardClasses: hazardClassesToJson(inputMaterial!.hazardClasses),
   };
+}
+
+@Injectable()
+export class InputMaterialService extends ResourceService<InputMaterial, InputMaterialPatch> {
+  override readonly resourceType = 'input-material';
+
+  override resourcePatchToJson(current: InputMaterial | null, params: Partial<InputMaterialPatch>): JsonObject {
+    return inputMaterialPatchToJson(current, params);
+  }
+  override modelFromJsonObject(json: JsonObject): InputMaterial {
+    return inputMaterialFromJson(json);
+  }
+  override modelQueryToHttpParams(lookup: ModelQuery<InputMaterial>): HttpParams {
+    throw new Error('Method not implemented.');
+  }
+
 }

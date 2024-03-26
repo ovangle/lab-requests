@@ -30,15 +30,17 @@ import { ResourceTypePipe } from '../resource-type.pipe';
 
   <div class= "form-controls">
       <button mat-icon-button
+              color="primary"
               [disabled]="saveDisabled"
               (click)="requestSave.emit()">
         <mat-icon> save </mat-icon>
       </button>
 
-      <button mat-icon-button (click)="requestClose.emit()">
+      <button mat-icon-button 
+              color="warn"
+              (click)="requestClose.emit()">
         <mat-icon> cancel </mat-icon>
       </button>
-  
   </div>
   `,
   styles: `

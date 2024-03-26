@@ -22,13 +22,17 @@ import {
   injectWorkUnitService,
 } from '../../common/work-unit';
 import { injectModelService } from 'src/app/common/model/model-collection';
-import { ResourceContainerContext } from 'src/app/lab/lab-resource/resource-container';
+import { ResourceContainerContext } from 'src/app/lab/lab-resource/resource-container.old';
 import { Resource } from 'src/app/lab/lab-resource/resource';
 import {
   ALL_RESOURCE_TYPES,
   ResourceType,
 } from 'src/app/lab/lab-resource/resource-type';
 import { ScaffoldFormPaneControl } from 'src/app/scaffold/form-pane/form-pane-control';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { WorkUnitInfoComponent } from '../../common/work-unit-info.component';
+import { WorkUnitDurationInfoComponent } from '../../duration/work-unit-duration-info.component';
 
 class WorkUnitContextError extends Error { }
 
@@ -59,6 +63,16 @@ function workUnitFromDetailRoute(): Observable<WorkUnit> {
 
 @Component({
   selector: 'lab-work-unit-detail-page',
+  standalone: true,
+  imports: [
+    CommonModule,
+    MatButtonModule,
+    MatIconModule,
+
+    WorkUnitBaseInfoComponent,
+    WorkUnitDurationInfoComponent
+
+  ],
   template: `
     <button mat-button (click)="openUpdateForm()">
       <mat-icon>update</mat-icon>
