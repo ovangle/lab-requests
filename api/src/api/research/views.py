@@ -3,11 +3,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from api.base.schemas import ModelView
-from api.lab.lab_resource_consumer import (
-    resource_type_index_cls,
-    resource_type_view_cls,
+
+from api.lab.lab_resources.schemas import resource_index_cls
+from api.lab.lab_resources.views import (
+    _register_resource_views,
+    register_resource_consumer_views,
 )
-from api.lab.lab_resources.views import register_resource_views
 from api.lab.schemas import lookup_lab
 from api.research.schemas import ResearchPlanTaskView
 from api.research.schemas.funding import ResearchFundingView, lookup_research_funding
@@ -101,26 +102,4 @@ async def get_plan_task(plan_id: UUID, index: int, db=Depends(get_db)):
     return await ResearchPlanTaskView.from_model(task)
 
 
-@research.get("/plans/{plan_id}/requirements/{resource_type}")
-async def index_plan_requirements(
-    plan_id: UUID, resource_type: LabResourceType, db=Depends(get_db)
-):
-    task = await ResearchPlan.get_for_id(db, plan_id)
-    resource_index_t = resource_type_index_cls(resource_type)
-    plan_index = resource_index_t(task.select_resources(resource_type))
-
-    return await plan_index.load_page(db, 0)
-
-
-@research.get("/plans/{plan_id}/requirements/{resource_type}/{resource_id}")
-async def get_plan_requirement(
-    plan_id: UUID, resource_type: LabResourceType, resource_id: UUID, db=Depends(get_db)
-):
-    plan = await ResearchPlan.get_for_id(db, plan_id)
-
-    resource_view_t = resource_type_view_cls(resource_type)
-    resource = await plan.get_resource_for_id(resource_type, resource_id)
-    return await resource_view_t.from_model(resource)
-
-
-register_resource_views(research, "/plans", ResearchPlan.get_for_id)
+register_resource_consumer_views(research, "/plans")

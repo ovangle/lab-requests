@@ -8,6 +8,7 @@ from db.models.uni import Campus
 from db.models.lab import Lab
 from db.models.uni.discipline import Discipline
 
+from .lab_resources.views import lab_resources
 from .lab_equipment.views import lab_equipments, lab_equipment_tags
 from .work_unit.views import lab_work_units
 
@@ -18,6 +19,7 @@ labs = APIRouter(prefix="/labs", tags=["labs"])
 labs.include_router(lab_equipments)
 labs.include_router(lab_equipment_tags)
 labs.include_router(lab_work_units)
+labs.include_router(lab_resources)
 
 
 @labs.get("/lab")

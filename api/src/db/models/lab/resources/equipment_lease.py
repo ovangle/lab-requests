@@ -8,9 +8,13 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from db import LocalSession
+from db.models.base.errors import DoesNotExist
+
 from ..lab_resource import LabResource, LabResourceType, lab_resource_pk
 
 if TYPE_CHECKING:
+    from ..lab_resource_container import LabResourceContainer
     from ..lab_equipment import LabEquipment, LabEquipmentProvision
 
 

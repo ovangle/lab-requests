@@ -14,9 +14,12 @@ from uuid import UUID, uuid4
 from sqlalchemy import (
     Column,
     ForeignKey,
+    Insert,
     Select,
     Table,
     UniqueConstraint,
+    Update,
+    insert,
     delete,
     func,
     select,
@@ -29,11 +32,12 @@ from db import LocalSession, local_object_session
 
 from db.models.base.fields import uuid_pk
 from db.models.lab.lab_resource import LabResource, LabResourceType
+from db.models.lab.lab_resource_container import LabResourceConsumer
 from db.models.uni.discipline import Discipline, uni_discipline
 import filestore
 
 from ..base import Base, DoesNotExist
-from ..lab import LabResourceConsumer
+from ..lab import LabResourceContainer
 from .funding import ResearchFunding
 
 if TYPE_CHECKING:
@@ -167,6 +171,8 @@ class ResearchPlan(LabResourceConsumer, Base):
     __tablename__ = "research_plan"
 
     id: Mapped[uuid_pk]
+    container_id: Mapped[UUID] = mapped_column(ForeignKey("lab_resource_container.id"))
+    container: Mapped[LabResourceContainer] = relationship()
 
     discipline: Mapped[uni_discipline]
     title: Mapped[str] = mapped_column(postgresql.VARCHAR(256))
@@ -211,6 +217,20 @@ class ResearchPlan(LabResourceConsumer, Base):
         self, resource_type: LabResourceType
     ) -> Select[tuple[LabResource]]:
         return select(type(self).resources).where(LabResource.type == resource_type)  # type: ignore
+
+    def create_resource(
+        self, resource_type: LabResourceType, at_index: int, **attrs: dict[str, Any]
+    ) -> Insert:
+        return insert(resource_type.py_type).values(
+            type=resource_type, index=at_index, **attrs
+        )
+
+    def update_resource(self, resource: LabResource, **attrs: dict[str, Any]) -> Update:
+        return (
+            update(resource.type.py_type)
+            .where(LabResource.type == resource.type, LabResource.id == resource.id)
+            .values(**attrs)
+        )
 
     def __init__(
         self,

@@ -2,7 +2,7 @@ from sqlalchemy import Select
 from db.models.lab import LabResource
 from db.models.lab.resources.input_material import InputMaterial
 
-from ...lab_resource import LabResourceView, LabResourceIndex
+from ._common import LabResourceParams, LabResourceView, LabResourceIndex
 
 
 class InputMaterialView(LabResourceView[InputMaterial]):
@@ -11,3 +11,7 @@ class InputMaterialView(LabResourceView[InputMaterial]):
 
 class InputMaterialIndex(LabResourceIndex[InputMaterialView]):
     __item_view__ = InputMaterialView
+
+
+class InputMaterialParams(LabResourceParams):
+    pass

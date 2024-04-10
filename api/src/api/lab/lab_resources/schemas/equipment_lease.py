@@ -5,7 +5,7 @@ from db.models.lab import LabResource
 from db.models.lab.resources import EquipmentLease
 
 from ...lab_equipment.schemas import LabEquipmentView, LabEquipmentProvisionView
-from ...lab_resource import LabResourceParams, LabResourceView, LabResourceIndex
+from ._common import LabResourceParams, LabResourceView, LabResourceIndex
 
 
 class LabEquipmentLeaseView(LabResourceView[EquipmentLease]):

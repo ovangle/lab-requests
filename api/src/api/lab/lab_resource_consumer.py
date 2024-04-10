@@ -6,29 +6,21 @@ from typing import Self, TypeVar
 from sqlalchemy.ext.asyncio import async_object_session
 from db import LocalSession
 
-from db.models.lab import LabResourceConsumer
+from db.models.lab import LabResourceContainer, LabResource
 from db.models.lab.lab_resource import LabResourceType
 
 from ..base.schemas import ModelView
 
-from .lab_resource import LabResource, LabResourceIndex, LabResourceView
-from .lab_resources.schemas.equipment_lease import (
+from .lab_resources.schemas import (
     LabEquipmentLeaseView,
-    LabEquipmentLeaseIndex,
-)
-from .lab_resources.schemas.software_lease import (
-    LabSoftwareLeaseIndex,
     LabSoftwareLeaseView,
-)
-from .lab_resources.schemas.input_material import InputMaterialIndex, InputMaterialView
-from .lab_resources.schemas.output_material import (
-    OutputMaterialIndex,
+    InputMaterialView,
     OutputMaterialView,
 )
 
 # TODO: PEP 695
 TResource = TypeVar("TResource", bound=LabResource, contravariant=True)
-TResourceConsumer = TypeVar("TResourceConsumer", bound=LabResourceConsumer)
+TResourceConsumer = TypeVar("TResourceConsumer", bound=LabResourceContainer)
 
 
 class LabResourceConsumerView(ModelView[TResourceConsumer]):
@@ -66,39 +58,3 @@ class LabResourceConsumerView(ModelView[TResourceConsumer]):
             output_materials=output_materials,
             **kwargs,
         )
-
-
-def resource_type_view_cls(
-    resource_type: LabResourceType | type[TResource],
-) -> type[LabResourceView]:
-    if isinstance(resource_type, type):
-        resource_type = resource_type.__lab_resource_type__
-    match resource_type:
-        case LabResourceType.EQUIPMENT_LEASE:
-            return LabEquipmentLeaseView
-        case LabResourceType.SOFTWARE_LEASE:
-            return LabSoftwareLeaseView
-        case LabResourceType.INPUT_MATERIAL:
-            return InputMaterialView
-        case LabResourceType.OUTPUT_MATERIAL:
-            return OutputMaterialView
-        case _:
-            raise ValueError("Unrecognised input type")
-
-
-def resource_type_index_cls(
-    resource_type: LabResourceType | type[TResource],
-) -> type[LabResourceIndex]:
-    if isinstance(resource_type, type):
-        resource_type = resource_type.__lab_resource_type__
-    match resource_type:
-        case LabResourceType.EQUIPMENT_LEASE:
-            return LabEquipmentLeaseIndex
-        case LabResourceType.SOFTWARE_LEASE:
-            return LabSoftwareLeaseIndex
-        case LabResourceType.INPUT_MATERIAL:
-            return InputMaterialIndex
-        case LabResourceType.OUTPUT_MATERIAL:
-            return OutputMaterialIndex
-        case _:
-            raise ValueError("Unrecognised input type")

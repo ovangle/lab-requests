@@ -17,7 +17,7 @@ __all__ = (
     "LabResourceType",
     "LabResource",
     "LabResourceDoesNotExist",
-    "LabResourceConsumer",
+    "LabResourceContainer",
 )
 
 from .lab import Lab, LabDoesNotExist
@@ -41,7 +41,7 @@ from .lab_resource import (
     LabResource,
     LabResourceDoesNotExist,
 )
-from .lab_resource_consumer import LabResourceConsumer
+from .lab_resource_container import LabResourceContainer
 
 from .lab_work_unit import LabWorkUnit
 

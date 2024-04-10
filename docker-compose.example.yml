@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres
+    profiles:
+      - host
+  sensor_data:
+    image: python
+    profiles: -host
+  image_data:
+    image: gcloud
+    profiles:
+      - host
+
+  device_camera:
+    image: python
+    environment:
+      - DEVICE_ID:unset
+    profiles:
+      - device
+  device_sensor:
+    image: python
+    environment:
+      - DEVICE_ID:unset
+    profile:
+      - device

@@ -3,8 +3,8 @@ from abc import abstractmethod
 from enum import Enum
 
 from uuid import UUID
-from typing import TYPE_CHECKING, Annotated, ClassVar
-from sqlalchemy import ForeignKey, Select
+from typing import TYPE_CHECKING, Annotated, Any, ClassVar, TypeVar, cast
+from sqlalchemy import ForeignKey, SQLColumnExpression, Select, select
 from sqlalchemy.dialects import postgresql
 
 from sqlalchemy.ext.asyncio import async_object_session
@@ -18,10 +18,33 @@ from db.models.base.fields import uuid_pk
 
 if TYPE_CHECKING:
     from ..lab import Lab
+    from .lab_resource_container import LabResourceContainer, LabResourceConsumer
 
 
 class LabResourceDoesNotExist(DoesNotExist):
-    pass
+    def __init__(
+        self,
+        *,
+        for_id: UUID | None = None,
+        for_container_index: tuple[LabResourceContainer | UUID, int] | None = None,
+        for_consumer_index: tuple[LabResourceConsumer | UUID, int] | None = None,
+    ):
+        if for_id:
+            return super().__init__(for_id=for_id)
+        if for_container_index:
+            container, index = for_container_index
+            container_id = container if isinstance(container, UUID) else container.id
+            msg = (
+                f"Resource does not exist in container {container_id} at index {index}"
+            )
+            super().__init__(msg)
+        if for_consumer_index:
+            consumer, index = for_consumer_index
+            consumer_id = consumer if isinstance(consumer, UUID) else consumer.id
+
+            msg = f"Resource does not exist in consumer {consumer_id} at index {index}"
+
+        assert False
 
 
 class LabResourceType(Enum):
@@ -29,6 +52,26 @@ class LabResourceType(Enum):
     SOFTWARE_LEASE = "software_lease"
     INPUT_MATERIAL = "input_material"
     OUTPUT_MATERIAL = "output_material"
+
+    @property
+    def py_type(self) -> type[LabResource]:
+        return _lab_resource_py_type(self)
+
+
+def _lab_resource_py_type(type: LabResourceType) -> type[LabResource]:
+    from .resources import EquipmentLease, SoftwareLease, InputMaterial, OutputMaterial
+
+    match type:
+        case LabResourceType.EQUIPMENT_LEASE:
+            return EquipmentLease
+        case LabResourceType.SOFTWARE_LEASE:
+            return SoftwareLease
+        case LabResourceType.INPUT_MATERIAL:
+            return InputMaterial
+        case LabResourceType.OUTPUT_MATERIAL:
+            return OutputMaterial
+        case _:
+            raise ValueError("Resource type has no associated python type")
 
 
 lab_resource_type = Annotated[
@@ -61,6 +104,55 @@ class LabResource(Base):
     lab_id: Mapped[UUID] = mapped_column(ForeignKey("lab.id"))
     lab: Mapped[Lab] = relationship()
 
+    container_id: Mapped[UUID]
+    index: Mapped[int]
+
+    @classmethod
+    async def get_for_id(cls, db: LocalSession, id: UUID):
+        r = await db.get(cls.__lab_resource_type__.py_type, id)
+        if r is None:
+            raise LabResourceDoesNotExist(for_id=id)
+        return r
+
+    @classmethod
+    async def get_for_consumer_index(
+        cls, db: LocalSession, consumer: LabResourceConsumer | UUID, index: int
+    ):
+        from .lab_resource_container import select_mapped_consumer_container_id
+
+        consumer_id = consumer if isinstance(consumer, UUID) else consumer.id
+        resource_type = cls.__lab_resource_type__.py_type
+        resource = await db.scalar(
+            select(resource_type).where(
+                resource_type.container_id.in_(
+                    select_mapped_consumer_container_id(consumer_id).scalar_subquery()
+                ),
+                resource_type.index == index,
+            )
+        )
+        if resource is None:
+            raise LabResourceDoesNotExist(for_consumer_index=(consumer, index))
+        return resource
+
+    @classmethod
+    async def get_for_container_index(
+        cls,
+        db: LocalSession,
+        container: LabResourceContainer | UUID,
+        index: int,
+    ):
+        container_id = container if isinstance(container, UUID) else container.id
+        resource_type = cls.__lab_resource_type__.py_type
+        resource = await db.scalar(
+            select(resource_type).where(
+                resource_type.container_id == container,
+                resource_type.index == index,
+            )
+        )
+        if resource is None:
+            raise LabResourceDoesNotExist(for_container_index=(container, index))
+        return resource
+
     def __init__(self, **kwargs):
         self.type = type(self).__lab_resource_type__
         super().__init__(**kwargs)
@@ -69,3 +161,30 @@ class LabResource(Base):
 lab_resource_pk = Annotated[
     UUID, mapped_column(ForeignKey("lab_resource.id"), primary_key=True)
 ]
+
+
+def select_resources(
+    resource_type: LabResourceType,
+    lab_id: UUID | None = None,
+    consumer_id: UUID | None = None,
+    container_id: UUID | None = None,
+) -> Select[tuple[LabResource]]:
+    model_type = resource_type.py_type
+
+    clauses: list[SQLColumnExpression] = []
+    if container_id:
+        clauses.append(model_type.container_id == container_id)
+
+    elif container_id:
+        clauses.append(
+            model_type.container_id.in_(
+                select(LabResourceConsumer.container_id).where(
+                    LabResourceConsumer.id == consumer_id
+                )
+            )
+        )
+
+    if lab_id:
+        clauses.append(model_type.lab_id == lab_id)
+
+    return select(model_type).where(*clauses)
