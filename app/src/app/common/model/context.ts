@@ -18,6 +18,7 @@ import { Model, ModelCreateRequest, ModelIndexPage, ModelParams, ModelQuery } fr
 import {
   BehaviorSubject,
   Connectable,
+  NEVER,
   Observable,
   ReplaySubject,
   Subscription,
@@ -38,10 +39,12 @@ import { JsonObject } from 'src/app/utils/is-json-object';
 import urlJoin from 'url-join';
 import { TemplateBindingParseResult } from '@angular/compiler';
 
+export interface ReadOnlyModelContext<T extends Model> {
+  readonly committed$: Observable<T>;
+}
+
 @Injectable()
-export abstract class ModelContext<
-  T extends Model
-> {
+export abstract class ModelContext<T extends Model> implements ReadOnlyModelContext<T> {
   abstract readonly service: ModelService<T>;
   readonly _destroyRef = inject(DestroyRef, { optional: true });
 
@@ -192,4 +195,4 @@ export abstract class AbstractModelContextDirective<T extends Model> {
       this.currentViewSubject.complete();
     });
   }
-} 
+}

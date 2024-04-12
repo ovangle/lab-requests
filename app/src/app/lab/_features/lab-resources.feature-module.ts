@@ -8,3 +8,8 @@ export const RESOURCE_FORM_ROUTES: Routes =
       .then(module => module.LabResourceFormPage),
     data: { resourceType },
   }));
+
+
+export function provideResourceContainerContext(): Provider {
+
+}

@@ -1,56 +1,35 @@
 import { Injectable, inject } from "@angular/core";
-import { Observable, ReplaySubject, defer, map, combineLatest, shareReplay, Subscription, tap } from "rxjs";
+import { Observable, ReplaySubject, defer, map, combineLatest, shareReplay, Subscription, tap, BehaviorSubject } from "rxjs";
 import { Resource, ResourceTypeIndex, ResourceParams } from "./resource";
-import { ResourceContainerContext, ResourceContainer } from "../lab-resource-consumer/resource-container";
+import { LabResourceConsumer, LabResourceContainer, LabResourceContainerContext, LabResourceConsumerContext } from "../lab-resource-consumer/resource-container";
 import { ResourceType } from "./resource-type";
 
 @Injectable()
 export class ResourceContext<T extends Resource> {
-    readonly _containerContext = inject(ResourceContainerContext);
+    readonly _consumerContext = inject(LabResourceConsumerContext);
+    readonly consumer$ = this._consumerContext.committed$;
 
-    readonly container$: Observable<ResourceContainer> = this._containerContext.committed$;
-    readonly funding$ = this._containerContext.funding$;
-    readonly lab$ = this._containerContext.lab$;
+    readonly lab$ = this._consumerContext.lab$;
+    readonly funding$ = this._consumerContext.funding$;
 
-    readonly _committedTypeIndexSubject = new ReplaySubject<ResourceTypeIndex>(1);
-    readonly committedTypeIndex$ = this._committedTypeIndexSubject.asObservable();
+    readonly _containerContext = inject(LabResourceContainerContext<T>);
+    readonly resourceType$ = this._containerContext.resourceType$;
+    readonly container$ = this._containerContext.committed$;
 
-    readonly resourceType$: Observable<ResourceType> = defer(() =>
-        this.committedTypeIndex$.pipe(
-            map(([ type, _ ]) => type),
-            shareReplay(1),
-            tap(type => console.log('CONTEXT TYPE', type)),
-        ),
-    );
-    readonly isCreate$ = defer(() =>
-        this.committedTypeIndex$.pipe(map(([ _, index ]) => index === 'create')),
-    );
+    readonly currentIndexSubject = new BehaviorSubject<number>(-1);
+    readonly currentIndex$: Observable<number> = this.currentIndexSubject.asObservable();
 
-    readonly committed$: Observable<T | null> = combineLatest([
+    readonly committed$: Observable<T> = combineLatest([
         this.container$,
-        this.committedTypeIndex$,
+        this.currentIndex$,
     ]).pipe(
-        map(([ container, typeIndex ]: [ ResourceContainer, ResourceTypeIndex ]) => {
-            const [ resourceType, index ] = typeIndex;
-
-            return index === 'create'
-                ? null
-                : container.getResourceAt<T>(resourceType, index);
+        map(([ container, index ]: [ LabResourceContainer<T>, number ]) => {
+            return container.getResourceAt(index)
         }),
         shareReplay(1),
     );
 
-    sendTypeIndex(typeIndex$: Observable<ResourceTypeIndex>): Subscription {
-        typeIndex$.subscribe((typeIndex) => {
-            console.log('received type index', typeIndex);
-            this._committedTypeIndexSubject.next(typeIndex);
-        });
-
-        return new Subscription(() => {
-            this._committedTypeIndexSubject.complete();
-        });
-    }
-
-    async commit(resource: T) {
+    observeResourceIndex(index: Observable<number>): Subscription {
+        return index.subscribe(i => this.currentIndexSubject.next(i));
     }
 }

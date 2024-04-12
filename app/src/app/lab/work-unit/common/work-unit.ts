@@ -27,8 +27,8 @@ import {
   ResearchPlanService,
 } from 'src/app/research/plan/research-plan';
 import {
-  ResourceContainer,
-  ResourceContainerParams,
+  LabResourceConsumer,
+  ResourceConsumerParams,
   resourceContainerParamsFromJson,
 } from '../../lab-resource-consumer/resource-container';
 import { ResourceType } from '../../lab-resource/resource-type';

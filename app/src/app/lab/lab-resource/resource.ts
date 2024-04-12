@@ -18,8 +18,8 @@ import {
 } from 'rxjs';
 import { ResourceType, isResourceType } from './resource-type';
 import {
-  ResourceContainer,
-  ResourceContainerContext,
+  LabResourceConsumer,
+  LabResourceConsumerContext,
 } from '../lab-resource-consumer/resource-container';
 import { Model, ModelParams, modelParamsFromJsonObject } from 'src/app/common/model/model';
 import { JsonObject } from 'src/app/utils/is-json-object';
@@ -73,13 +73,13 @@ export interface ResourcePatch<T extends Resource> {
 }
 
 export abstract class ResourceService<T extends Resource, TPatch extends ResourcePatch<T> = ResourcePatch<T>> extends ModelService<T> {
-  readonly containerContext = inject(ResourceContainerContext);
+  readonly consumerContext = inject(LabResourceConsumerContext);
   abstract readonly resourceType: T[ 'type' ];
 
   abstract resourcePatchToJson(current: T | null, params: Partial<TPatch>): JsonObject;
 
   get indexUrl$(): Observable<string> {
-    return this.containerContext.url$.pipe(
+    return this.consumerContext.url$.pipe(
       map(url => urlJoin(url, 'resources', this.resourceType))
     )
   }
@@ -104,11 +104,6 @@ export abstract class ResourceService<T extends Resource, TPatch extends Resourc
       first(),
       switchMap(indexUrl => this._httpClient.get<JsonObject>(indexUrl, { params }))
     );
-  }
-
-  async getResourceAt(index: number): Promise<T> {
-    const container = await firstValueFrom(this.containerContext.committed$);
-    return container.getResourceAt(this.resourceType, index);
   }
 
   pushResource(patch: Partial<TPatch>): Observable<T> {

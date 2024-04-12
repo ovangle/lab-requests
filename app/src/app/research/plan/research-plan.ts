@@ -21,7 +21,7 @@ import { HttpParams } from '@angular/common/http';
 import { Lab, LabService, labFromJsonObject } from 'src/app/lab/lab';
 import { firstValueFrom, switchMap } from 'rxjs';
 import { Discipline, isDiscipline } from 'src/app/uni/discipline/discipline';
-import { ResourceContainerParams, resourceContainerParamsFromJson, ResourceContainer } from 'src/app/lab/lab-resource-consumer/resource-container';
+import { ResourceConsumerParams, resourceContainerParamsFromJson, LabResourceConsumer } from 'src/app/lab/lab-resource-consumer/resource-container';
 
 export interface ResearchPlanAttachment extends ModelParams {
   readonly id: string;
@@ -39,7 +39,7 @@ export function researchPlanAttachmentFromJsonObject(json: JsonObject) {
   };
 }
 
-export interface ResearchPlanParams extends ResourceContainerParams, ModelParams {
+export interface ResearchPlanParams extends ResourceConsumerParams, ModelParams {
   readonly id: string;
 
   readonly discipline: Discipline;
@@ -126,7 +126,7 @@ export function researchPlanFromJsonObject(json: JsonObject): ResearchPlan {
   });
 }
 
-export class ResearchPlan extends ResourceContainer implements ResearchPlanParams {
+export class ResearchPlan extends LabResourceConsumer implements ResearchPlanParams {
   discipline: Discipline;
   title: string;
   description: string;

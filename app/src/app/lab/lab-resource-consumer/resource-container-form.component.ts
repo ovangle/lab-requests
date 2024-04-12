@@ -5,7 +5,7 @@ import { EquipmentLeaseTableComponent } from "../lab-resource/types/equipment-le
 import { SoftwareLeaseTableComponent } from "../lab-resource/types/software-lease/software-resource-table.component";
 import { InputMaterialTableComponent } from "../lab-resource/types/input-material/input-material-resource-table.component";
 import { OutputMaterialTableComponent } from "../lab-resource/types/output-material/output-material-resource-table.component";
-import { ResourceContainer, ResourceContainerContext } from "./resource-container";
+import { LabResourceConsumer, LabResourceConsumerContext, LabResourceContainerContext } from "./resource-container";
 import { BehaviorSubject, Subscription, filter } from "rxjs";
 import { ResearchFunding } from "src/app/research/funding/research-funding";
 import { ModelContext } from "src/app/common/model/context";
@@ -44,17 +44,17 @@ import { ModelContext } from "src/app/common/model/context";
     }
     `
 })
-export class LabResourceContainerFormComponent<T extends ResourceContainer> {
-    readonly containerContext = inject(ResourceContainerContext<T>);
+export class LabResourceContainerFormComponent<T extends LabResourceConsumer> {
+    readonly consumerContext = inject(LabResourceConsumerContext<T>);
 
     @Input({ required: true })
     modelContext: ModelContext<T> | undefined;
     _attachedContainer: Subscription | undefined;
 
-    readonly funding$ = this.containerContext.funding$;
+    readonly funding$ = this.consumerContext.funding$;
 
     ngOnInit() {
-        this._attachedContainer = this.containerContext.attachContext(this.modelContext!);
+        this._attachedContainer = this.consumerContext.attachContext(this.modelContext!);
     }
 
     ngOnDestroy() {

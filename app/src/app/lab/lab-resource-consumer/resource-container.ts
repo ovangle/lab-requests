@@ -1,11 +1,14 @@
-import { Injectable, inject, ɵɵi18nApply } from '@angular/core';
-import { BehaviorSubject, Observable, ReplaySubject, Subscription, defer, firstValueFrom, map, of, shareReplay, switchMap, tap } from 'rxjs';
+import { DestroyRef, Injectable, inject, ɵɵi18nApply } from '@angular/core';
+import { BehaviorSubject, NEVER, Observable, ReplaySubject, Subscription, combineLatest, defer, filter, firstValueFrom, map, of, shareReplay, switchMap, tap } from 'rxjs';
 import { ALL_RESOURCE_TYPES, ResourceType } from '../lab-resource/resource-type';
 
 import type { Resource, ResourceParams } from '../lab-resource/resource';
 import {
   Model,
+  ModelIndexPage,
   ModelParams,
+  ModelQuery,
+  modelIndexPageFromJsonObject,
   modelParamsFromJsonObject,
 } from 'src/app/common/model/model';
 import {
@@ -24,31 +27,66 @@ import { SoftwareLease, softwareLeaseFromJsonObject, softwareLeasePatchToJsonObj
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { ResearchFunding, ResearchFundingService, researchFundingFromJsonObject } from 'src/app/research/funding/research-funding';
 import { Lab, LabService } from '../lab';
-import { ModelContext } from 'src/app/common/model/context';
+import { ModelContext, ReadOnlyModelContext } from 'src/app/common/model/context';
+import { ModelService } from 'src/app/common/model/model-service';
 
-export interface ResourceContainerParams extends ModelParams {
-  equipments: EquipmentLease[];
-  softwares: SoftwareLease[];
+export interface ResourceConsumerParams extends ModelParams {
 
-  inputMaterials: InputMaterial[];
-  outputMaterials: OutputMaterial[];
+  equipmentLeases: ModelIndexPage<EquipmentLease>;
+  softwareLeases: ModelIndexPage<SoftwareLease>;
+
+  inputMaterials: ModelIndexPage<InputMaterial>;
+  outputMaterials: ModelIndexPage<OutputMaterial>;
 }
 
-export abstract class ResourceContainer extends Model implements ResourceContainerParams {
-  abstract funding: ResearchFunding;
+export function resourceContainerParamsFromJson(json: JsonObject): ResourceConsumerParams {
+  const baseParams = modelParamsFromJsonObject(json);
+
+  if (!isJsonObject(json[ 'equipmentLeases' ])) {
+    throw new Error('Expected a page of equipments leases');
+  }
+  const equipmentLeases = modelIndexPageFromJsonObject(equipmentLeaseFromJson, json[ 'equipmentLeases' ]);
+
+  if (!isJsonObject(json[ 'softwareLeases' ])) {
+    throw new Error("Expected a page of json objects 'softwareLeases'")
+  }
+  const softwareLeases = modelIndexPageFromJsonObject(softwareLeaseFromJsonObject, json[ 'softwareLeases' ]);
+
+  if (!isJsonObject(json[ 'inputMaterials' ])) {
+    throw new Error("Expected a page of json objects 'softwareLeases'")
+  }
+  const inputMaterials = modelIndexPageFromJsonObject(inputMaterialFromJson, json[ 'inputMaterials' ]);
+
+  if (!isJsonObject(json[ 'outputMaterials' ])) {
+    throw new Error("Expected a page of json objects 'softwareLeases'")
+  }
+  const outputMaterials = modelIndexPageFromJsonObject(outputMaterialFromJson, json[ 'outputMaterials' ]);
+
+  return {
+    ...baseParams,
+    equipmentLeases,
+    softwareLeases,
+
+    inputMaterials,
+    outputMaterials
+  };
+}
+
+export abstract class LabResourceConsumer extends Model implements ResourceConsumerParams {
+  abstract funding: ResearchFunding | string;
   abstract lab: Lab | string;
 
-  equipments: EquipmentLease[];
-  softwares: SoftwareLease[];
+  equipmentLeases: ModelIndexPage<EquipmentLease>;
+  softwareLeases: ModelIndexPage<SoftwareLease>;
 
-  inputMaterials: InputMaterial[];
-  outputMaterials: OutputMaterial[];
+  inputMaterials: ModelIndexPage<InputMaterial>;
+  outputMaterials: ModelIndexPage<OutputMaterial>;
 
-  constructor(params: ResourceContainerParams) {
+  constructor(params: ResourceConsumerParams) {
     super(params);
 
-    this.equipments = params.equipments;
-    this.softwares = params.softwares;
+    this.equipmentLeases = params.equipmentLeases;
+    this.softwareLeases = params.softwareLeases;
     this.inputMaterials = params.inputMaterials;
     this.outputMaterials = params.outputMaterials;
   }
@@ -60,153 +98,126 @@ export abstract class ResourceContainer extends Model implements ResourceContain
     return this.lab;
   }
 
-
-  getResources<T extends Resource>(t: ResourceType & T[ 'type' ]): readonly T[] {
-    return this[ resourceContainerAttr(t) ] as any[];
-  }
-
-  countResources(t: ResourceType): number {
-    return this.getResources(t).length;
-  }
-
-  getResourceAt<T extends Resource>(
-    t: ResourceType & T[ 'type' ],
-    index: number,
-  ): T {
-    const resources = this.getResources(t);
-    if (index < 0 || index >= resources.length) {
-      throw new Error(`No resource at ${index}`);
+  async resolveResearchFunding(service: ResearchFundingService): Promise<ResearchFunding> {
+    if (typeof this.funding === 'string') {
+      this.funding = await firstValueFrom(service.fetch(this.funding));
     }
-    return resources[ index ];
+    return this.funding;
   }
 
-}
-
-
-export function resourceContainerAttr(
-  type: ResourceType,
-): keyof ResourceContainer {
-  switch (type) {
-    case 'equipment-lease':
-      return 'equipments';
-    case 'software-lease':
-      return 'softwares';
-    case 'input-material':
-      return 'inputMaterials';
-    case 'output-material':
-      return 'outputMaterials'
+  _getCurrentResourcePage<T extends Resource>(type: ResourceType & T[ 'type' ]): ModelIndexPage<T> {
+    switch (type) {
+      case 'equipment-lease':
+        return this.equipmentLeases as any as ModelIndexPage<T>;
+      case 'software-lease':
+        return this.softwareLeases as any as ModelIndexPage<T>;
+      case 'input-material':
+        return this.inputMaterials as any as ModelIndexPage<T>;
+      case 'output-material':
+        return this.outputMaterials as any as ModelIndexPage<T>;
+      default:
+        throw new Error(`Unrecognised resource type ${type}`)
+    }
   }
-}
 
-export function resourceContainerParamsFromJson(json: JsonObject): ResourceContainerParams {
-  const baseParams = modelParamsFromJsonObject(json);
+  getContainer<T extends Resource>(type: T[ 'type' ] & ResourceType): LabResourceContainer<T> {
+    let resources = this._getCurrentResourcePage(type);
 
-  if (!Array.isArray(json[ 'equipments' ]) || !json[ 'equipments' ].every(isJsonObject)) {
-    throw new Error("Expected a list of json objects 'equipments'")
+    return {
+      ...resources,
+      type,
+      getResourceAt: function (index: number) {
+        return this.items[ index ];
+      }
+    }
+
   }
-  const equipments = json[ 'equipments' ].map(equipmentLeaseFromJson);
-
-  if (!Array.isArray(json[ 'softwares' ]) || !json[ 'softwares' ].every(isJsonObject)) {
-    throw new Error("Expected a list of json objects 'softwares'")
-  }
-  const softwares = json[ 'softwares' ].map(softwareLeaseFromJsonObject);
-
-  if (!Array.isArray(json[ 'inputMaterials' ]) || !json[ 'inputMaterials' ].every(isJsonObject)) {
-    throw new Error("Expected a list of json objects 'inputMaterials'")
-  }
-  const inputMaterials = json[ 'inputMaterials' ].map(inputMaterialFromJson);
-
-  if (!Array.isArray(json[ 'outputMaterials' ]) || !json[ 'outputMaterials' ].every(isJsonObject)) {
-    throw new Error("Expected a list of json objects 'outputMaterials'")
-  }
-  const outputMaterials = json[ 'outputMaterials' ].map(outputMaterialFromJson);
-
-
-  return {
-    ...baseParams,
-    equipments,
-    softwares,
-
-    inputMaterials,
-    outputMaterials
-  };
 }
 
 @Injectable({ providedIn: 'root' })
-export class ResourceContainerContext<T extends ResourceContainer> {
+export class LabResourceConsumerContext<TConsumer extends LabResourceConsumer> implements ReadOnlyModelContext<TConsumer> {
   readonly _labService = inject(LabService);
+  readonly _fundingService = inject(ResearchFundingService);
 
-  _context: ModelContext<T> | undefined;
+  _consumerSubject = new ReplaySubject<TConsumer>(1);
+  readonly committed$: Observable<TConsumer> = this._consumerSubject.asObservable();
 
-  _committedSubject = new ReplaySubject<ResourceContainer>(1);
-  committed$ = this._committedSubject.asObservable();
+  _consumerUrlSubject = new ReplaySubject<string>(1);
+  readonly url$: Observable<string> = this._consumerUrlSubject.asObservable();
 
   readonly lab$ = this.committed$.pipe(
     switchMap(committed => committed.resolveLab(this._labService))
-  )
+  );
 
-  readonly fundingService = inject(ResearchFundingService);
-  _fundingSubject = new ReplaySubject<ResearchFunding | string>(1);
-  funding$ = this._fundingSubject.pipe(
-    switchMap(funding => {
-      if (typeof funding === 'string') {
-        return this.fundingService.fetch(funding)
-      }
-      return of(funding);
-    }),
-    shareReplay(1)
-  )
+  readonly funding$ = this.committed$.pipe(
+    switchMap(funding => funding.resolveLab(this._labService))
+  );
 
-
-  get context(): ModelContext<T> {
-    if (this._context === undefined) {
-      throw new Error('No current control')
-    }
-    return this._context;
-  }
-
-  get url$(): Observable<string> {
-    return this.context.url$;
-  }
-
-  attachContext(context: ModelContext<T>): Subscription {
-    if (this._context !== undefined) {
+  _attachedContext: ModelContext<TConsumer> | null = null;
+  attachContext(context: ModelContext<TConsumer>): Subscription {
+    if (this._attachedContext !== null) {
       throw new Error('Can only associate at most one model context');
     }
-    this._context = context;
+    this._attachedContext = context;
 
     const syncCommitted = context.committed$.subscribe(
-      committed => this._committedSubject.next(committed)
+      committed => this._consumerSubject.next(committed)
     );
+    const syncUrl = context.url$.subscribe(url => this._consumerUrlSubject.next(url));
+
     return new Subscription(() => {
       syncCommitted.unsubscribe();
-      this._context = undefined;
+      syncUrl.unsubscribe();
+      this._attachedContext = null;
     });
   }
 
-  committedResources$<TResource extends Resource>(
-    resourceType: ResourceType,
-  ): Observable<readonly TResource[]> {
-    return this.committed$.pipe(
-      map((committed) =>
-        committed ? committed.getResources<TResource>(resourceType) : [],
-      ),
-    );
+
+  refresh(): Promise<void> {
+    if (this._attachedContext == null) {
+      throw new Error(`No attached context`)
+    }
+    return this._attachedContext.refresh();
   }
 
-  async getResourceAt<T extends Resource>(resourceType: T[ 'type' ], index: number): Promise<T | undefined> {
-    const committed = await firstValueFrom(this.committed$);
-    return committed.getResourceAt(resourceType, index);
-  }
-
-  async getResourceCount(resourceType: ResourceType): Promise<number> {
-    const committed = await firstValueFrom(this.committed$);
-    return committed.getResources(resourceType).length;
-  }
-
-
-  refresh() {
-    return this.context.refresh();
-  }
 }
 
+
+export interface LabResourceContainer<T extends Resource> extends ModelIndexPage<T> {
+  type: T[ 'type' ];
+  getResourceAt(index: number): T;
+}
+
+@Injectable()
+export class LabResourceContainerContext<T extends Resource> {
+  readonly consumerContext = inject(LabResourceConsumerContext);
+
+  readonly resourceTypeSubject = new BehaviorSubject<ResourceType & T[ 'type' ] | null>(null);
+  readonly resourceType$: Observable<ResourceType & T[ 'type' ]> = this.resourceTypeSubject.pipe(
+    filter((t): t is ResourceType & T[ 'type' ] => t != null)
+  );
+
+  constructor() {
+    const _destroyRef = inject(DestroyRef);
+    _destroyRef.onDestroy(() => {
+      this.resourceTypeSubject.complete();
+    })
+  }
+
+  readonly committed$: Observable<LabResourceContainer<T>> = combineLatest([
+    this.consumerContext.committed$,
+    this.resourceTypeSubject
+  ]).pipe(
+    switchMap(([ consumer, containerType ]) => {
+      return containerType != null ? of(consumer.getContainer<T>(containerType)) : NEVER
+    })
+  )
+
+  observeContainerType(type$: Observable<ResourceType>): Subscription {
+    return type$.subscribe((t) => this.resourceTypeSubject.next(t));
+  }
+
+  refresh() {
+    return this.consumerContext.refresh();
+  }
+}

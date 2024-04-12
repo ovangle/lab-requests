@@ -16,7 +16,7 @@ import { EquipmentLeaseFormComponent } from '../lab-resource/types/equipment-lea
 import { InputMaterialFormComponent } from '../lab-resource/types/input-material/input-material-form.component';
 import { SoftwareLeaseFormComponent } from '../lab-resource/types/software-lease/software-resource-form.component';
 import { OutputMaterialFormComponent } from '../lab-resource/types/output-material/output-material-form.component';
-import { ResourceContainerContext, resourceContainerAttr } from '../lab-resource-consumer/resource-container';
+import { ResourceConsumerContext, _resourceConsumerAttr } from '../lab-resource-consumer/resource-container';
 import { LabContext } from '../lab-context';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EquipmentLeaseService } from '../lab-resource/types/equipment-lease/equipment-lease';
@@ -105,17 +105,14 @@ export function typeIndexFromDetailRoute$(): Observable<
 })
 export class LabResourceFormPage {
   readonly _cd = inject(ChangeDetectorRef);
-  readonly _containerContext = inject(ResourceContainerContext);
+  readonly _containerContext = inject(LabResourceContainerContext);
   readonly _labContext = inject(LabContext);
   readonly _context = inject(ResourceContext);
   _contextConnection: Subscription;
 
   readonly _formPane = inject(ScaffoldFormPaneControl);
 
-  readonly typeIndex$ = defer(() => this._context.committedTypeIndex$);
-  readonly resourceType$ = defer(() => this._context.resourceType$).pipe(
-    shareReplay(1)
-  );
+  readonly resourceType$ = this._context.resourceType$;
 
   readonly funding$ = this._context.funding$;
 

@@ -16,7 +16,7 @@ import {
   MatTableModule,
 } from '@angular/material/table';
 import { CollectionViewer, DataSource } from '@angular/cdk/collections';
-import { Observable, firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom, map } from 'rxjs';
 import { ActivatedRoute, RouterLink, RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import {
@@ -28,21 +28,22 @@ import {
 } from '@angular/animations';
 import { MatButtonModule } from '@angular/material/button';
 
-import { ResourceContainerContext } from '../../lab-resource-consumer/resource-container';
+import { LabResourceConsumerContext, LabResourceContainerContext } from '../../lab-resource-consumer/resource-container';
 import type { ResourceType } from '../resource-type';
 import { ResourceTypePipe } from '../resource-type.pipe';
 import { Resource, ResourceService } from '../resource';
 import { ScaffoldFormPaneControl } from 'src/app/scaffold/form-pane/form-pane-control';
+import { Lab } from '../../lab';
 
 @Injectable()
-export abstract class ResourceTableDataSource<
+export class ResourceTableDataSource<
   T extends Resource,
 > extends DataSource<T> {
-  abstract readonly resourceType: ResourceType;
-  abstract readonly resourceTitle: string;
-  abstract readonly resourceService: ResourceService<T>
+  readonly _consumerContext = inject(LabResourceConsumerContext);
 
-  readonly _containerContext = inject(ResourceContainerContext);
+  readonly _containerContext = inject(LabResourceContainerContext);
+
+  readonly resourceType$ = this._containerContext.resourceType$;
   readonly resourceContainer$ = this._containerContext.committed$;
 
   readonly _formPane = inject(ScaffoldFormPaneControl);
@@ -52,28 +53,30 @@ export abstract class ResourceTableDataSource<
   }
 
   async openResourceUpdateFormAt(index: number): Promise<boolean> {
-    return this._formPane.open([
+    const resourceType = await firstValueFrom(this.resourceType$);
+    return await this._formPane.open([
       'lab',
       'resources',
-      this.resourceType,
+      resourceType,
       `${index}`,
     ]);
   }
 
   async getElementAt(elementIndex: number): Promise<T> {
-    return (await this._containerContext.getResourceAt(this.resourceType, elementIndex)) as T;
+    const container = await firstValueFrom(this.resourceContainer$);
+    return container.items[ elementIndex ];
   }
 
   async deleteElementAt(elementIndex: number): Promise<void> {
     const element = await this.getElementAt(elementIndex);
-    return await firstValueFrom(this.resourceService.delete(element));
+    await this._consumerContext.refreshAttachedContext();
   }
 
 
   override connect(
     collectionViewer: CollectionViewer,
   ): Observable<readonly T[]> {
-    return this._containerContext.committedResources$<T>(this.resourceType);
+    return this.resourceContainer$.pipe(map(container => container.items))
   }
 
   override disconnect(collectionViewer: CollectionViewer): void {
@@ -106,6 +109,9 @@ export abstract class ResourceTableDataSource<
       ),
     ]),
   ],
+  providers: [
+    ResourceTableDataSource
+  ]
 })
 export class ResourceTableComponent<T extends Resource>
   implements AfterContentInit {
