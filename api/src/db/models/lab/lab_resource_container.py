@@ -3,8 +3,10 @@ from __future__ import annotations
 from typing import Any, cast
 from uuid import UUID, uuid4
 from sqlalchemy import ForeignKey, Insert, Update, select, Select
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 from sqlalchemy.ext.asyncio import async_object_session
+from sqlalchemy_utils.generic import generic_relationship
 
 from db import LocalSession
 from db.models.base.errors import DoesNotExist
@@ -39,6 +41,12 @@ class LabResourceContainer(Base):
 
     id: Mapped[uuid_pk]
     resources: Mapped[list[LabResource]] = relationship()
+    consumer_type: Mapped[str] = mapped_column(postgresql.VARCHAR(255))
+    consumer_id: Mapped[UUID] = mapped_column(postgresql.UUID)
+    consumer = generic_relationship(consumer_type, consumer_id)
+
+    def __init__(self, consumer: LabResourceConsumer, id: UUID | None = None):
+        super().__init__(id=id, consumer=consumer)
 
     def select_resources(
         self, resource_type: LabResourceType
@@ -136,8 +144,7 @@ class LabResourceConsumer(Base):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if not self.container_id:
-            container = LabResourceContainer(id=uuid4())
-            self.container = container
+            self.container = LabResourceContainer(self)
 
     def create_resource(
         self, resource_type: LabResourceType, at_index: int, **attrs: dict[str, Any]

@@ -3,14 +3,14 @@ import {
   HazardClass,
   hazardClassesFromJson,
   hazardClassesToJson,
-} from '../../lab-resource/hazardous/hazardous';
-import { ResourceParams, Resource, resourceParamsFromJsonObject, ResourcePatch, ResourceService } from '../../lab-resource/resource';
+} from '../../hazardous/hazardous';
+import { ResourceParams, Resource, resourceParamsFromJsonObject, ResourcePatch, ResourceService } from '../../resource';
 import {
   ResourceStorage,
   ResourceStorageParams,
   resourceStorageFromJson,
   resourceStorageParamsToJson,
-} from '../../lab-resource/storage/resource-storage';
+} from '../../storage/resource-storage';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { HttpParams } from '@angular/common/http';
 import { ModelQuery } from 'src/app/common/model/model';

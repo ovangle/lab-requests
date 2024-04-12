@@ -6,9 +6,9 @@ import { MeasurementUnitPipe } from 'src/app/common/measurement/common-measureme
 import {
   ResourceTableDataSource,
   ResourceTableComponent,
-} from '../../lab-resource/common/resource-table.component';
-import { HazardClassLabelsComponent } from '../../lab-resource/hazardous/hazard-classes-labels.component';
-import { ResourceStorageDetailsComponent } from '../../lab-resource/storage/resource-storage-details.component';
+} from '../../common/resource-table.component';
+import { HazardClassLabelsComponent } from '../../hazardous/hazard-classes-labels.component';
+import { ResourceStorageDetailsComponent } from '../../storage/resource-storage-details.component';
 
 @Injectable()
 export class InputMaterialTableDataSource extends ResourceTableDataSource<InputMaterial> {

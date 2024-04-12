@@ -104,8 +104,10 @@ class LabResource(Base):
     lab_id: Mapped[UUID] = mapped_column(ForeignKey("lab.id"))
     lab: Mapped[Lab] = relationship()
 
-    container_id: Mapped[UUID]
-    index: Mapped[int]
+    container_id: Mapped[UUID] = mapped_column(
+        ForeignKey("lab_resource_container.id", name="lab_resource_container_fk")
+    )
+    index: Mapped[int] = mapped_column(postgresql.INTEGER)
 
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID):

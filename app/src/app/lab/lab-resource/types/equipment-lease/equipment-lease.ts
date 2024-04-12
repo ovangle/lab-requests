@@ -1,5 +1,8 @@
-import { validate as validateIsUUID } from 'uuid';
+import { Injectable } from '@angular/core';
+import { HttpParams } from '@angular/common/http';
 
+import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
+import { ModelQuery } from 'src/app/common/model/model';
 import {
   Equipment,
   EquipmentCreateRequest,
@@ -10,12 +13,7 @@ import {
   EquipmentProvision,
   equipmentProvisionFromJsonObject
 } from 'src/app/equipment/provision/equipment-provision';
-import { Resource, ResourceParams, resourceParamsFromJsonObject, ResourcePatch, ResourceService } from '../../lab-resource/resource';
-import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
-import { Injectable } from '@angular/core';
-import { HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { ModelQuery } from 'src/app/common/model/model';
+import { Resource, ResourceParams, resourceParamsFromJsonObject, ResourcePatch, ResourceService } from '../../resource';
 
 export interface EquipmentLeaseParams extends ResourceParams {
   equipment: Equipment | EquipmentCreateRequest;

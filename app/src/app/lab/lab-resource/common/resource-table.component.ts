@@ -28,7 +28,7 @@ import {
 } from '@angular/animations';
 import { MatButtonModule } from '@angular/material/button';
 
-import { ResourceContainerContext } from '../resource-container';
+import { ResourceContainerContext } from '../../lab-resource-consumer/resource-container';
 import type { ResourceType } from '../resource-type';
 import { ResourceTypePipe } from '../resource-type.pipe';
 import { Resource, ResourceService } from '../resource';

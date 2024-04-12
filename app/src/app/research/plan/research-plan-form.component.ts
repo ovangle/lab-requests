@@ -1,3 +1,6 @@
+
+import { Observable, distinctUntilChanged, firstValueFrom, map, of, switchMap } from 'rxjs';
+
 import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
 import { CommonModule } from '@angular/common';
 import {
@@ -7,27 +10,27 @@ import {
   Output,
   inject,
 } from '@angular/core';
+
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { CampusSearchComponent } from 'src/app/uni/campus/campus-search.component';
 import { DisciplineSelectComponent } from 'src/app/uni/discipline/discipline-select.component';
+import { UserSearchComponent } from 'src/app/user/common/user-search.component';
 
-import { ResearchPlan, CreateResearchPlan, ResearchPlanService, UpdateResearchPlan } from './research-plan';
+import { Lab, LabService } from 'src/app/lab/lab';
+import { User } from 'src/app/user/common/user';
 import { ResearchFunding } from '../funding/research-funding';
 import { ResearchFundingSelectComponent } from '../funding/research-funding-select.component';
-import { User } from 'src/app/user/common/user';
-import { ResearchPlanTaskForm, ResearchPlanTaskFormComponent, createResearchPlanTaskFromForm, initialTasksFromFormArray, researchPlanTaskForm, researchPlanTaskSlicesFromFormArray } from './task/research-plan-task-form.component';
-import { MatIconModule } from '@angular/material/icon';
-import { UserSearchComponent } from 'src/app/user/common/user-search.component';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { LabResourceContainerFormComponent } from 'src/app/lab/lab-resource/resource-container-form.component';
-import { Observable, distinctUntilChanged, firstValueFrom, map, of, startWith, switchMap } from 'rxjs';
-import { Lab, LabService } from 'src/app/lab/lab';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CreateResearchPlan, ResearchPlan, ResearchPlanService, UpdateResearchPlan } from './research-plan';
+import { ResearchPlanTaskForm, ResearchPlanTaskFormComponent, initialTasksFromFormArray, researchPlanTaskForm, researchPlanTaskSlicesFromFormArray } from './task/research-plan-task-form.component';
+import { LabResourceContainerFormComponent } from 'src/app/lab/lab-resource-consumer/resource-container-form.component';
 
 export type ResearchPlanForm = FormGroup<{
   title: FormControl<string>;

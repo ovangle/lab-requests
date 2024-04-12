@@ -32,7 +32,7 @@ export const LAB_ROUTES: Routes = [
   },
   {
     path: 'resources',
-    loadChildren: () => import('../lab-resources/_features/lab-resources.feature-module')
+    loadChildren: () => import('./lab-resources.feature-module')
       .then((module) => module.RESOURCE_FORM_ROUTES)
   },
 ];
@@ -40,7 +40,7 @@ export const LAB_ROUTES: Routes = [
 export const LAB_FORM_ROUTES = [
   {
     path: 'resources',
-    loadChildren: () => import('../lab-resources/_features/lab-resources.feature-module')
+    loadChildren: () => import('./lab-resources.feature-module')
       .then(module => module.RESOURCE_FORM_ROUTES)
   }
 ]

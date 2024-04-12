@@ -30,7 +30,7 @@ import {
   ResourceContainer,
   ResourceContainerParams,
   resourceContainerParamsFromJson,
-} from '../../lab-resource/resource-container';
+} from '../../lab-resource-consumer/resource-container';
 import { ResourceType } from '../../lab-resource/resource-type';
 import { StoredFile } from 'src/app/common/file/stored-file';
 import { Discipline, formatDiscipline, isDiscipline } from 'src/app/uni/discipline/discipline';

@@ -4,25 +4,22 @@ import {
   ResourceDisposalParams,
   resourceDisposalFromJson,
   resourceDisposalParamsToJson,
-} from '../../lab-resource/disposal/resource-disposal';
-import { resourceFileAttachmentFromJson } from '../../lab-resource/file-attachment/file-attachment';
+} from '../../disposal/resource-disposal';
 import {
   HazardClass,
   hazardClassesFromJson,
   hazardClassesToJson,
-} from '../../lab-resource/hazardous/hazardous';
-import { ResourceParams, Resource, resourceParamsFromJsonObject, ResourcePatch, ResourceService } from '../../lab-resource/resource';
+} from '../../hazardous/hazardous';
+import { ResourceParams, Resource, resourceParamsFromJsonObject, ResourcePatch, ResourceService } from '../../resource';
 import {
   ResourceStorage,
   ResourceStorageParams,
   resourceStorageFromJson,
   resourceStorageParamsToJson,
-} from '../../lab-resource/storage/resource-storage';
+} from '../../storage/resource-storage';
 import { Injectable } from '@angular/core';
-import { OutputMaterialFormComponent } from './output-material-form.component';
 import { HttpParams } from '@angular/common/http';
 import { ModelQuery } from 'src/app/common/model/model';
-import { inputMaterialPatchToJson } from '../input-material/input-material';
 
 export interface OutputMaterialParams extends ResourceParams {
   name: string;

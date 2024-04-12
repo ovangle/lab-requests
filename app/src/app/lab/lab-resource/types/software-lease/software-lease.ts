@@ -1,11 +1,12 @@
-import { resourceFileAttachmentFromJson } from '../../lab-resource/file-attachment/file-attachment';
-import { ResourceParams, Resource, resourceParamsFromJsonObject, ResourcePatch, ResourceService } from '../../lab-resource/resource';
-import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
-import { Software, softwareFromJsonObject } from '../../software/software';
-import { SoftwareProvision, softwareProvisionFromJsonObject } from '../../software/provision/software-provision';
 import { Injectable } from '@angular/core';
 import { HttpParams } from '@angular/common/http';
+
 import { ModelQuery } from 'src/app/common/model/model';
+import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
+
+import { ResourceParams, Resource, resourceParamsFromJsonObject, ResourcePatch, ResourceService } from '../../resource';
+import { Software, softwareFromJsonObject } from '../../../software/software';
+import { SoftwareProvision, softwareProvisionFromJsonObject } from '../../../software/provision/software-provision';
 
 export interface SoftwareLeaseParams extends ResourceParams {
   software: Software;

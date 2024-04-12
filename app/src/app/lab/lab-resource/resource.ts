@@ -20,7 +20,7 @@ import { ResourceType, isResourceType } from './resource-type';
 import {
   ResourceContainer,
   ResourceContainerContext,
-} from './resource-container';
+} from '../lab-resource-consumer/resource-container';
 import { Model, ModelParams, modelParamsFromJsonObject } from 'src/app/common/model/model';
 import { JsonObject } from 'src/app/utils/is-json-object';
 import { RelatedModelService } from 'src/app/common/model/context';

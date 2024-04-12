@@ -1,10 +1,10 @@
 import { CommonModule } from "@angular/common";
 import { Component, Input, inject } from "@angular/core";
 import { FormGroup, ReactiveFormsModule } from "@angular/forms";
-import { EquipmentLeaseTableComponent } from "../lab-resources/equipment-lease/equipment-lease-table.component";
-import { SoftwareLeaseTableComponent } from "../lab-resources/software-lease/software-resource-table.component";
-import { InputMaterialTableComponent } from "../lab-resources/input-material/input-material-resource-table.component";
-import { OutputMaterialTableComponent } from "../lab-resources/output-material/output-material-resource-table.component";
+import { EquipmentLeaseTableComponent } from "../lab-resource/types/equipment-lease/equipment-lease-table.component";
+import { SoftwareLeaseTableComponent } from "../lab-resource/types/software-lease/software-resource-table.component";
+import { InputMaterialTableComponent } from "../lab-resource/types/input-material/input-material-resource-table.component";
+import { OutputMaterialTableComponent } from "../lab-resource/types/output-material/output-material-resource-table.component";
 import { ResourceContainer, ResourceContainerContext } from "./resource-container";
 import { BehaviorSubject, Subscription, filter } from "rxjs";
 import { ResearchFunding } from "src/app/research/funding/research-funding";

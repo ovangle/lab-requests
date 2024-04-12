@@ -9,26 +9,26 @@ import {
 } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { OutputMaterial, OutputMaterialParams, OutputMaterialPatch, OutputMaterialService } from './output-material';
+import { OutputMaterial, OutputMaterialPatch, OutputMaterialService } from './output-material';
 
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription, first, map } from 'rxjs';
 import { groupDisabledStateToggler } from 'src/app/utils/forms/disable-state-toggler';
+
+import { ResourceService } from '../../resource';
 import {
   ResourceDisposalForm,
   resourceDisposalForm,
   ResourceDisposalFormComponent,
-} from '../../lab-resource/disposal/resource-disposal-form.component';
-import { HazardClassesSelectComponent } from '../../lab-resource/hazardous/hazard-classes-select.component';
-import { HazardClass } from '../../lab-resource/hazardous/hazardous';
+} from '../../disposal/resource-disposal-form.component';
+import { HazardClassesSelectComponent } from '../../hazardous/hazard-classes-select.component';
+import { HazardClass } from '../../hazardous/hazardous';
 import {
   ResourceStorageForm,
   resourceStorageForm,
   ResourceStorageFormComponent,
-} from '../../lab-resource/storage/resource-storage-form.component';
-import { ResourceContext } from '../../lab-resource/resource-context';
-import { ResourceFormComponent } from '../../lab-resource/abstract-resource-form.component';
-import { ResourceParams, ResourceService } from '../../lab-resource/resource';
+} from '../../storage/resource-storage-form.component';
+import { ResourceFormComponent } from '../../abstract-resource-form.component';
 
 export type OutputMaterialForm = FormGroup<{
   name: FormControl<string>;

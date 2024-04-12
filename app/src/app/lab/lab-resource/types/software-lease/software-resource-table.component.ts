@@ -5,8 +5,8 @@ import { CommonModule } from '@angular/common';
 import {
   ResourceTableComponent,
   ResourceTableDataSource,
-} from '../../lab-resource/common/resource-table.component';
-import { ResourceTableInfoHeaderComponent } from '../../lab-resource/common/resource-table-info-header.component';
+} from '../../common/resource-table.component';
+import { ResourceTableInfoHeaderComponent } from '../../common/resource-table-info-header.component';
 
 @Injectable()
 export class SoftwareLeaseTableDataSource extends ResourceTableDataSource<SoftwareLease> {

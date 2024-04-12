@@ -16,13 +16,8 @@ from .schemas import LabIndex, LabIndexPage, LabView
 
 labs = APIRouter(prefix="/labs", tags=["labs"])
 
-labs.include_router(lab_equipments)
-labs.include_router(lab_equipment_tags)
-labs.include_router(lab_work_units)
-labs.include_router(lab_resources)
 
-
-@labs.get("/lab")
+@labs.get("/")
 async def index_labs(
     search: str | None = None,
     campus: UUID | None = None,
@@ -58,7 +53,16 @@ async def index_labs(
     return await campus_index.load_page(db, page_index=page_index)
 
 
-@labs.get("/lab/{lab_id}")
+lab_detail = APIRouter(prefix="/{lab_id}")
+lab_detail.include_router(lab_equipments)
+lab_detail.include_router(lab_equipment_tags)
+lab_detail.include_router(lab_work_units)
+lab_detail.include_router(lab_resources)
+
+labs.include_router(lab_detail)
+
+
+@labs.get("/{lab_id}")
 async def read_lab(lab_id: UUID, db=Depends(get_db)) -> LabView:
     lab = await Lab.get_for_id(db, lab_id)
     return await LabView.from_model(lab)

@@ -1,8 +1,8 @@
 import { Injectable, inject, ɵɵi18nApply } from '@angular/core';
 import { BehaviorSubject, Observable, ReplaySubject, Subscription, defer, firstValueFrom, map, of, shareReplay, switchMap, tap } from 'rxjs';
-import { ALL_RESOURCE_TYPES, ResourceType } from './resource-type';
+import { ALL_RESOURCE_TYPES, ResourceType } from '../lab-resource/resource-type';
 
-import type { Resource, ResourceParams } from './resource';
+import type { Resource, ResourceParams } from '../lab-resource/resource';
 import {
   Model,
   ModelParams,
@@ -10,34 +10,20 @@ import {
 } from 'src/app/common/model/model';
 import {
   EquipmentLease,
-  EquipmentLeaseService,
   equipmentLeaseFromJson,
-  equipmentLeasePatchToJsonObject,
-} from '../lab-resources/equipment-lease/equipment-lease';
+} from '../lab-resource/types/equipment-lease/equipment-lease';
 import {
   InputMaterial,
   inputMaterialFromJson,
-  InputMaterialParams,
-  inputMaterialPatchToJson,
-} from '../lab-resources/input-material/input-material';
+} from '../lab-resource/types/input-material/input-material';
 import {
   OutputMaterial,
   outputMaterialFromJson,
-  OutputMaterialParams,
-  outputMaterialPatchToJsonObject,
-} from '../lab-resources/output-material/output-material';
-import { SoftwareLease, softwareLeaseFromJsonObject, softwareLeasePatchToJsonObject } from '../lab-resources/software-lease/software-lease';
-import {
-  Software,
-  softwareFromJsonObject,
-  SoftwareParams,
-} from '../software/software';
-import { ResearchPlan } from 'src/app/research/plan/research-plan';
+} from '../lab-resource/types/output-material/output-material';
+import { SoftwareLease, softwareLeaseFromJsonObject, softwareLeasePatchToJsonObject } from '../lab-resource/types/software-lease/software-lease';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
-import { isThisSecond } from 'date-fns';
 import { ResearchFunding, ResearchFundingService, researchFundingFromJsonObject } from 'src/app/research/funding/research-funding';
 import { Lab, LabService } from '../lab';
-import { ModelService } from 'src/app/common/model/model-service';
 import { ModelContext } from 'src/app/common/model/context';
 
 export interface ResourceContainerParams extends ModelParams {

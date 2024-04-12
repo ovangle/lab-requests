@@ -16,15 +16,14 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { EquipmentRiskAssessmentFileInputComponent } from './risk-assessment-file-input.component';
 import { Equipment, EquipmentCreateRequest, EquipmentService } from 'src/app/equipment/equipment';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
-import { injectMaybeLabFromContext } from '../../lab-context';
-import { Lab } from '../../lab';
-import { EquipmentProvision } from '../../../equipment/provision/equipment-provision';
-import { ResourceFormComponent } from '../../lab-resource/abstract-resource-form.component';
-import { ResourceParams } from '../../lab-resource/resource';
 import { NotFoundValue } from 'src/app/common/model/search/search-control';
 import { EquipmentTrainingAcknowlegementComponent } from 'src/app/equipment/training/training-acknowlegment-input.component';
 import { CreateEquipmentProvisionForm } from 'src/app/equipment/provision/create-equipment-provision.form';
-import { ResourceFormTitleComponent } from '../../lab-resource/common/resource-form-title.component';
+import { EquipmentProvision } from 'src/app/equipment/provision/equipment-provision';
+import { Lab } from 'src/app/lab/lab';
+import { injectMaybeLabFromContext } from 'src/app/lab/lab-context';
+import { ResourceFormComponent } from '../../abstract-resource-form.component';
+import { ResourceFormTitleComponent } from '../../common/resource-form-title.component';
 
 export type EquipmentLeaseForm = FormGroup<{
   equipment: FormControl<Equipment | NotFoundValue | null>;

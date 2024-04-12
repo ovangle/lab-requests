@@ -5,7 +5,7 @@ import { MatTableModule } from '@angular/material/table';
 import {
   ResourceTableComponent,
   ResourceTableDataSource,
-} from '../../lab-resource/common/resource-table.component';
+} from '../../common/resource-table.component';
 
 @Injectable()
 export class OutputMaterialTableDataSource extends ResourceTableDataSource<OutputMaterial> {

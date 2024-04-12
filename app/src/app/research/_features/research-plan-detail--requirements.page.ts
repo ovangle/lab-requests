@@ -1,8 +1,8 @@
 import { Component, inject } from "@angular/core";
-import { LabResourceContainerFormComponent } from "src/app/lab/lab-resource/resource-container-form.component";
 import { ResearchPlanContext } from "../plan/research-plan-context";
 import { firstValueFrom } from "rxjs";
 import { ResearchPlan, ResearchPlanService } from "../plan/research-plan";
+import { LabResourceContainerFormComponent } from "src/app/lab/lab-resource-consumer/resource-container-form.component";
 
 @Component({
     standalone: true,

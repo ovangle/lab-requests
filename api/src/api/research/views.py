@@ -51,7 +51,10 @@ async def get_research_funding(
     return await ResearchFundingView.from_model(funding)
 
 
-@research.get("/plans")
+research_plans = APIRouter(prefix="/plans")
+
+
+@research_plans.get("")
 async def index_plans(
     researcher: Optional[UUID] = None,
     coordinator: Optional[UUID] = None,
@@ -63,7 +66,7 @@ async def index_plans(
     return await plan_index.load_page(db, 0)
 
 
-@research.post("/plans")
+@research_plans.post("")
 async def create_plan(
     request: ResearchPlanCreateRequest, db=Depends(get_db)
 ) -> ResearchPlanView:
@@ -72,13 +75,16 @@ async def create_plan(
     return await ResearchPlanView.from_model(created)
 
 
-@research.get("/plans/{plan_id}")
+research_plan_detail = APIRouter(prefix="/{plan_id}")
+
+
+@research_plan_detail.get("/")
 async def get_plan(plan_id: UUID, db=Depends(get_db)) -> ResearchPlanView:
     plan = await ResearchPlan.get_for_id(db, plan_id)
     return await ResearchPlanView.from_model(plan)
 
 
-@research.put("/plans/{plan_id}")
+@research_plan_detail.put("/")
 async def update_plan(
     plan_id: UUID, request: ResearchPlanUpdateRequest, db=Depends(get_db)
 ) -> ResearchPlanView:
@@ -87,7 +93,7 @@ async def update_plan(
     return await ResearchPlanView.from_model(plan)
 
 
-@research.get("/{plan_id}/tasks")
+@research_plan_detail.get("/tasks")
 async def index_plan_tasks(plan_id: UUID, db=Depends(get_db)):
     assert await ResearchPlan.get_for_id(db, plan_id)
     task_index = ResearchPlanTaskIndex(
@@ -96,10 +102,15 @@ async def index_plan_tasks(plan_id: UUID, db=Depends(get_db)):
     return await task_index.load_page(db, 0)
 
 
-@research.get("/plans/{plan_id}/tasks/{index}")
+@research_plan_detail.get("/tasks/{index}")
 async def get_plan_task(plan_id: UUID, index: int, db=Depends(get_db)):
     task = await ResearchPlanTask.get_for_plan_and_index(db, plan_id, index)
     return await ResearchPlanTaskView.from_model(task)
 
 
-register_resource_consumer_views(research, "/plans")
+research_plan_resources = APIRouter(prefix="/resources")
+register_resource_consumer_views(research_plan_resources, "plan_id")
+research_plan_detail.include_router(research_plan_resources)
+
+research_plans.include_router(research_plan_detail)
+research.include_router(research_plans)

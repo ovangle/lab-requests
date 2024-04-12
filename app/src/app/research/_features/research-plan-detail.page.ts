@@ -1,7 +1,11 @@
+import { CommonModule } from '@angular/common';
 import {
   Component,
   inject,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ReactiveFormsModule } from '@angular/forms';
+import { MatTabsModule } from "@angular/material/tabs";
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import {
   Observable,
@@ -9,35 +13,23 @@ import {
   distinctUntilChanged,
   firstValueFrom,
   map,
-  shareReplay,
-  switchMap,
+  switchMap
 } from 'rxjs';
-import { MatTabsModule } from "@angular/material/tabs";
+import { LabService } from 'src/app/lab/lab';
+import { DisciplinePipe } from 'src/app/uni/discipline/discipline.pipe';
 import { BodyScrollbarHidingService } from 'src/app/utils/body-scrollbar-hiding.service';
+import { ResearchPlanForm__CoordinatorField } from '../plan/form/research-plan-form--coordinator-field.component';
+import { ResearchPlanForm__DescriptionField } from '../plan/form/research-plan-form--description-field.component';
+import { ResearchPlanForm__FundingField } from '../plan/form/research-plan-form--funding-field.component';
+import { ResearchPlanForm__ResearcherField } from '../plan/form/research-plan-form--researcher-field.component';
+import { ResearchPlanForm__TitleField } from '../plan/form/research-plan-form--title-field.component';
 import {
   ResearchPlan,
   ResearchPlanService,
 } from '../plan/research-plan';
-import { CommonModule } from '@angular/common';
-import { MatCardModule } from '@angular/material/card';
-import { ResearchPlanDetailConfig, injectResearchPlanDetailConfig } from './research-plan-detail.state';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ResearchPlanContext } from '../plan/research-plan-context';
-import { UserInfoComponent } from 'src/app/user/user-info.component';
-import { MatListModule } from '@angular/material/list';
-import { ResearchPlanTaskCardComponent } from '../plan/task/research-plan-task-card.component';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { LabService } from 'src/app/lab/lab';
-import { LabResourceContainerFormComponent } from 'src/app/lab/lab-resource/resource-container-form.component';
 import { ResearchPlanForm, researchPlanForm } from '../plan/research-plan-form.component';
-import { DisciplinePipe } from 'src/app/uni/discipline/discipline.pipe';
-import { ResearchPlanForm__TitleField } from '../plan/form/research-plan-form--title-field.component';
-import { ResearchPlanForm__DescriptionField } from '../plan/form/research-plan-form--description-field.component';
-import { ResearchPlanForm__CoordinatorField } from '../plan/form/research-plan-form--coordinator-field.component';
-import { ResearchPlanForm__ResearcherField } from '../plan/form/research-plan-form--researcher-field.component';
-import { ReactiveFormsModule } from '@angular/forms';
-import { ResearchPlanForm__FundingField } from '../plan/form/research-plan-form--funding-field.component';
+import { injectResearchPlanDetailConfig } from './research-plan-detail.state';
 
 export function researchPlanContextFromDetailRoute(): Observable<ResearchPlan> {
   const activatedRoute = inject(ActivatedRoute);

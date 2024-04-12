@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { CommonModule } from '@angular/common';
 import { Observable, ReplaySubject, Subscription, combineLatest, defer, firstValueFrom, map, of, shareReplay, tap } from 'rxjs';
 
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
@@ -7,19 +8,18 @@ import {
   ResourceType,
   isResourceType,
 } from 'src/app/lab/lab-resource/resource-type';
-import { Resource, ResourceParams, ResourcePatch } from '../../lab-resource/resource';
-import { ResourceContext } from '../../lab-resource/resource-context';
+import { ResourceContext } from '../lab-resource/resource-context';
 import { ScaffoldFormPaneControl } from 'src/app/scaffold/form-pane/form-pane-control';
-import { ResourceFormTitleComponent } from '../../lab-resource/common/resource-form-title.component';
-import { EquipmentLeaseFormComponent } from '../equipment-lease/equipment-lease-form.component';
-import { CommonModule } from '@angular/common';
-import { InputMaterialFormComponent } from '../input-material/input-material-form.component';
-import { SoftwareLeaseFormComponent } from '../software-lease/software-resource-form.component';
-import { OutputMaterialFormComponent } from '../output-material/output-material-form.component';
-import { ResourceContainerContext, resourceContainerAttr } from '../../lab-resource/resource-container';
-import { LabContext } from '../../lab-context';
+import { Resource, ResourceParams, ResourcePatch } from '../lab-resource/resource';
+import { ResourceFormTitleComponent } from '../lab-resource/common/resource-form-title.component';
+import { EquipmentLeaseFormComponent } from '../lab-resource/types/equipment-lease/equipment-lease-form.component';
+import { InputMaterialFormComponent } from '../lab-resource/types/input-material/input-material-form.component';
+import { SoftwareLeaseFormComponent } from '../lab-resource/types/software-lease/software-resource-form.component';
+import { OutputMaterialFormComponent } from '../lab-resource/types/output-material/output-material-form.component';
+import { ResourceContainerContext, resourceContainerAttr } from '../lab-resource-consumer/resource-container';
+import { LabContext } from '../lab-context';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { EquipmentLeaseService } from '../equipment-lease/equipment-lease';
+import { EquipmentLeaseService } from '../lab-resource/types/equipment-lease/equipment-lease';
 
 export function typeIndexFromDetailRoute$(): Observable<
   [ ResourceType, number | 'create' ]

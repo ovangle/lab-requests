@@ -1,7 +1,7 @@
 import { Injectable, inject } from "@angular/core";
 import { Observable, ReplaySubject, defer, map, combineLatest, shareReplay, Subscription, tap } from "rxjs";
 import { Resource, ResourceTypeIndex, ResourceParams } from "./resource";
-import { ResourceContainerContext, ResourceContainer } from "./resource-container";
+import { ResourceContainerContext, ResourceContainer } from "../lab-resource-consumer/resource-container";
 import { ResourceType } from "./resource-type";
 
 @Injectable()

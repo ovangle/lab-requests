@@ -18,19 +18,15 @@ import {
 } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { BehaviorSubject, first } from 'rxjs';
-import { HazardClassesSelectComponent } from '../../lab-resource/hazardous/hazard-classes-select.component';
-import { HazardClass } from '../../lab-resource/hazardous/hazardous';
+import { HazardClassesSelectComponent } from '../../hazardous/hazard-classes-select.component';
+import { HazardClass } from '../../hazardous/hazardous';
 import {
   ResourceStorageForm,
   resourceStorageForm,
   ResourceStorageFormComponent,
   resourceStorageFromFormValue,
-} from '../../lab-resource/storage/resource-storage-form.component';
-import { WorkUnitContext } from '../../work-unit/common/work-unit';
-import { ResourceContext } from '../../lab-resource/resource-context';
-import { ResourceFormComponent } from '../../lab-resource/abstract-resource-form.component';
-import { CostEstimate } from 'src/app/research/funding/cost-estimate/cost-estimate';
-import { ResourceParams } from '../../lab-resource/resource';
+} from '../../storage/resource-storage-form.component';
+import { ResourceFormComponent } from '../../abstract-resource-form.component';
 import { ResearchPlanContext } from 'src/app/research/plan/research-plan-context';
 
 export type InputMaterialForm = FormGroup<{

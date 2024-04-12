@@ -6,11 +6,11 @@ import { CollectionViewer } from '@angular/cdk/collections';
 import { Observable, forkJoin, switchMap } from 'rxjs';
 import { EquipmentLeaseDetailComponent } from './equipment-lease-detail.component';
 import { EquipmentService } from 'src/app/equipment/equipment';
-import { ResourceTableInfoHeaderComponent } from '../../lab-resource/common/resource-table-info-header.component';
+import { ResourceTableInfoHeaderComponent } from '../../common/resource-table-info-header.component';
 import {
   ResourceTableDataSource,
   ResourceTableComponent,
-} from '../../lab-resource/common/resource-table.component';
+} from '../../common/resource-table.component';
 
 @Injectable()
 export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<EquipmentLease> {

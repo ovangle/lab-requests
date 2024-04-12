@@ -41,16 +41,19 @@ lab_equipments = APIRouter(prefix="/equipment", tags=["lab-equipments"])
 
 @lab_equipments.get("/")
 async def index_equipments(
+    lab_id: UUID | None = None,
     name_startswith: Optional[str] = None,
     name: Optional[str] = None,
     has_tags: set[str] | str | None = None,
     page_index: int = 0,
-    lab: UUID | None = None,
     db=Depends(get_db),
 ) -> LabEquipmentIndexPage:
     equipment_index = LabEquipmentIndex(
         query_equipments(
-            lab=lab, name_istartswith=name_startswith, name_eq=name, has_tags=has_tags
+            lab=lab_id,
+            name_istartswith=name_startswith,
+            name_eq=name,
+            has_tags=has_tags,
         )
     )
     return await equipment_index.load_page(db, page_index)

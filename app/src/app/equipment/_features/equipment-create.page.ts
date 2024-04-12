@@ -1,10 +1,7 @@
-import { STANDARD_DROPDOWN_BELOW_POSITIONS } from "@angular/cdk/overlay";
 import { Component, inject } from "@angular/core";
 import { ActivatedRoute, Router, RouterModule } from "@angular/router";
-import { EquipmentLeaseFormComponent } from "src/app/lab/lab-resources/equipment-lease/equipment-lease-form.component";
 import { EquipmentForm } from "../equipment-form.component";
 import { Equipment } from "../equipment";
-import { ScaffoldContentLayout } from "src/app/scaffold/scaffold-content.directive";
 
 
 @Component({
@@ -29,7 +26,7 @@ export class EquipmentCreatePage {
 
   async _onEquipmentSave(equipment: Equipment) {
     await this.router.navigate(
-      ['..', equipment.id],
+      [ '..', equipment.id ],
       { relativeTo: this.activatedRoute }
     );
   }

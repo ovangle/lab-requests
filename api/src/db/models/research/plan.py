@@ -171,7 +171,9 @@ class ResearchPlan(LabResourceConsumer, Base):
     __tablename__ = "research_plan"
 
     id: Mapped[uuid_pk]
-    container_id: Mapped[UUID] = mapped_column(ForeignKey("lab_resource_container.id"))
+    container_id: Mapped[UUID] = mapped_column(
+        ForeignKey("lab_resource_container.id", name="research_plan_container_fk")
+    )
     container: Mapped[LabResourceContainer] = relationship()
 
     discipline: Mapped[uni_discipline]

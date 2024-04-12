@@ -12,13 +12,9 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { SoftwareLease, SoftwareLeaseParams, SoftwareLeasePatch, SoftwareLeaseService } from './software-lease';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { ResourceContext } from '../../lab-resource/resource-context';
-import { ResourceFormComponent } from '../../lab-resource/abstract-resource-form.component';
-import { ResourceParams, ResourceService } from '../../lab-resource/resource';
-import { SoftwareLike } from '../../software/software-like';
+import { ResourceFormComponent } from '../../abstract-resource-form.component';
 import { ResearchFundingCostEstimateFormComponent } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
-import { Software } from '../../software/software';
 import { TextFieldModule } from '@angular/cdk/text-field';
 
 export type SoftwareLeaseForm = FormGroup<{

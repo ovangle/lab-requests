@@ -16,12 +16,12 @@ import {
 } from 'src/app/common/model/model-service';
 
 import { ModelContext } from 'src/app/common/model/context';
-import { ResourceContainer, ResourceContainerParams, resourceContainerParamsFromJson } from 'src/app/lab/lab-resource/resource-container';
 import { CreateResearchPlanTask, ResearchPlanTask, ResearchPlanTaskParams, ResearchPlanTaskSlice, researchPlanTaskFromJson, researchPlanTaskSliceToJson } from './task/research-plan-task';
 import { HttpParams } from '@angular/common/http';
 import { Lab, LabService, labFromJsonObject } from 'src/app/lab/lab';
 import { firstValueFrom, switchMap } from 'rxjs';
 import { Discipline, isDiscipline } from 'src/app/uni/discipline/discipline';
+import { ResourceContainerParams, resourceContainerParamsFromJson, ResourceContainer } from 'src/app/lab/lab-resource-consumer/resource-container';
 
 export interface ResearchPlanAttachment extends ModelParams {
   readonly id: string;
