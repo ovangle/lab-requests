@@ -1,5 +1,6 @@
-import { Routes } from '@angular/router';
+import { ActivatedRoute, Routes } from '@angular/router';
 import { ALL_RESOURCE_TYPES, ResourceType } from 'src/app/lab/lab-resource/resource-type';
+import { LabResourceContainerContext } from '../lab-resource-consumer/resource-container';
 
 export const RESOURCE_FORM_ROUTES: Routes =
   ALL_RESOURCE_TYPES.map((resourceType: ResourceType) => ({
@@ -9,7 +10,3 @@ export const RESOURCE_FORM_ROUTES: Routes =
     data: { resourceType },
   }));
 
-
-export function provideResourceContainerContext(): Provider {
-
-}

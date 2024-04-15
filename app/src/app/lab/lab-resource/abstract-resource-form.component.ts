@@ -12,11 +12,8 @@ export abstract class ResourceFormComponent<T extends Resource, TForm extends Fo
     readonly context: ResourceContext<T> = inject(ResourceContext<T>)
     abstract readonly service: ResourceService<T, TPatch>;
 
-    readonly initial: Promise<T | null> = firstValueFrom(this.context.committed$);
-
-    readonly resourceIndex$ = this.context.committed$.pipe(
-        map(committed => committed ? committed.index : 'create')
-    );
+    readonly initial: Promise<T | null> = firstValueFrom(this.context.maybeCommitted$);
+    readonly resourceIndex$ = this.context.currentIndex$;
 
     readonly _formSubject = new BehaviorSubject<TForm | null>(null);
     get form(): TForm | null {

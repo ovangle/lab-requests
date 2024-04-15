@@ -1,11 +1,11 @@
 <div class="table-header">
   <div>
-    <h3 class="table-title">{{ dataSource.resourceTitle }}</h3>
+    <h3 class="table-title">{{ dataSource.resourceType$ | async | resourceType}}</h3>
     <ng-content select="lab-req-resource-table-info-header"></ng-content>
   </div>
   <div class="table-actions">
     <a mat-button (click)="openResourceCreateForm($event)" [disabled]="isActionsDisabled">
-      + Add {{ dataSource.resourceType | resourceType }}
+      + Add {{ dataSource.resourceType$ | async | resourceType }}
     </a>
   </div>
 </div>
@@ -60,7 +60,7 @@
     <td class="mat-mdc-cell mdc-data-table__cell" [attr.colspan]="displayedColumnsWithElementActions.length">
       <div class="no-data-info">
         <mat-icon>lists</mat-icon>
-        <em>No {{ dataSource.resourceType | resourceType }} required</em>
+        <em>No {{ dataSource.resourceType$ | async | resourceType }} required</em>
       </div>
     </td>
   </tr>

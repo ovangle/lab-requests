@@ -7,13 +7,7 @@ import {
   ResourceTableDataSource,
 } from '../../common/resource-table.component';
 import { ResourceTableInfoHeaderComponent } from '../../common/resource-table-info-header.component';
-
-@Injectable()
-export class SoftwareLeaseTableDataSource extends ResourceTableDataSource<SoftwareLease> {
-  override readonly resourceType = 'software-lease';
-  override readonly resourceTitle = 'Software';
-  override readonly resourceService = inject(SoftwareLeaseService);
-}
+import { LabResourceContainerContext } from 'src/app/lab/lab-resource-consumer/resource-container';
 
 @Component({
   selector: 'lab-software-lease-table',
@@ -27,6 +21,7 @@ export class SoftwareLeaseTableDataSource extends ResourceTableDataSource<Softwa
   ],
   template: `
     <lab-resource-table
+      resourceType="software-lease"
       [displayedColumns]="['name', 'min-version']"
       [detailTemplate]="detailTemplate"
     >
@@ -58,12 +53,6 @@ export class SoftwareLeaseTableDataSource extends ResourceTableDataSource<Softwa
       {{ element.description }}
     </ng-template>
   `,
-  providers: [
-    SoftwareLeaseService,
-    {
-      provide: ResourceTableDataSource,
-      useClass: SoftwareLeaseTableDataSource,
-    },
-  ],
 })
-export class SoftwareLeaseTableComponent { }
+export class SoftwareLeaseTableComponent {
+}

@@ -5,7 +5,7 @@ import { EquipmentLeaseTableComponent } from "../lab-resource/types/equipment-le
 import { SoftwareLeaseTableComponent } from "../lab-resource/types/software-lease/software-resource-table.component";
 import { InputMaterialTableComponent } from "../lab-resource/types/input-material/input-material-resource-table.component";
 import { OutputMaterialTableComponent } from "../lab-resource/types/output-material/output-material-resource-table.component";
-import { LabResourceConsumer, LabResourceConsumerContext, LabResourceContainerContext } from "./resource-container";
+import { LabResourceConsumer, LabResourceConsumerContext, LabResourceContainerContext, LabResourceConsumerDelegateContext } from "./resource-container";
 import { BehaviorSubject, Subscription, filter } from "rxjs";
 import { ResearchFunding } from "src/app/research/funding/research-funding";
 import { ModelContext } from "src/app/common/model/context";
@@ -42,13 +42,13 @@ import { ModelContext } from "src/app/common/model/context";
     } @else {
         <p>Requirements not available until funding has been set for the research plan</p>
     }
-    `
+    `,
 })
 export class LabResourceContainerFormComponent<T extends LabResourceConsumer> {
     readonly consumerContext = inject(LabResourceConsumerContext<T>);
 
     @Input({ required: true })
-    modelContext: ModelContext<T> | undefined;
+    modelContext: LabResourceConsumerDelegateContext<T> | undefined;
     _attachedContainer: Subscription | undefined;
 
     readonly funding$ = this.consumerContext.funding$;

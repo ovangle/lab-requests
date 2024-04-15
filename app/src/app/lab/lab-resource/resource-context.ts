@@ -16,20 +16,23 @@ export class ResourceContext<T extends Resource> {
     readonly resourceType$ = this._containerContext.resourceType$;
     readonly container$ = this._containerContext.committed$;
 
-    readonly currentIndexSubject = new BehaviorSubject<number>(-1);
-    readonly currentIndex$: Observable<number> = this.currentIndexSubject.asObservable();
+    readonly currentIndexSubject = new BehaviorSubject<number | 'create'>('create');
+    readonly currentIndex$ = this.currentIndexSubject.asObservable();
 
-    readonly committed$: Observable<T> = combineLatest([
+    readonly maybeCommitted$: Observable<T | null> = combineLatest([
         this.container$,
         this.currentIndex$,
     ]).pipe(
-        map(([ container, index ]: [ LabResourceContainer<T>, number ]) => {
+        map(([ container, index ]: [ LabResourceContainer<T>, number | 'create' ]) => {
+            if (index === 'create') {
+                return null;
+            }
             return container.getResourceAt(index)
         }),
         shareReplay(1),
     );
 
-    observeResourceIndex(index: Observable<number>): Subscription {
+    observeResourceIndex(index: Observable<number | 'create'>): Subscription {
         return index.subscribe(i => this.currentIndexSubject.next(i));
     }
 }

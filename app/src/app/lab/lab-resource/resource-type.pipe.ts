@@ -5,7 +5,11 @@ export type ResourceTypeFormatOption = 'titleCase' | 'plural';
 
 @Pipe({ name: 'resourceType', standalone: true })
 export class ResourceTypePipe implements PipeTransform {
-  transform(value: ResourceType, ...args: ResourceTypeFormatOption[]) {
+  transform(value: ResourceType | null, ...args: ResourceTypeFormatOption[]): string {
+    if (value == null) {
+      return '';
+    }
+
     let fmtValue: string = value;
     if (args.includes('plural')) {
       fmtValue += 's';

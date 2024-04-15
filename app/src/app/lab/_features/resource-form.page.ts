@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Provider, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Observable, ReplaySubject, Subscription, combineLatest, defer, firstValueFrom, map, of, shareReplay, tap } from 'rxjs';
@@ -16,31 +16,29 @@ import { EquipmentLeaseFormComponent } from '../lab-resource/types/equipment-lea
 import { InputMaterialFormComponent } from '../lab-resource/types/input-material/input-material-form.component';
 import { SoftwareLeaseFormComponent } from '../lab-resource/types/software-lease/software-resource-form.component';
 import { OutputMaterialFormComponent } from '../lab-resource/types/output-material/output-material-form.component';
-import { ResourceConsumerContext, _resourceConsumerAttr } from '../lab-resource-consumer/resource-container';
+import { LabResourceContainerContext, resourceTypeFromActivatedRoute } from '../lab-resource-consumer/resource-container';
 import { LabContext } from '../lab-context';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EquipmentLeaseService } from '../lab-resource/types/equipment-lease/equipment-lease';
 
-export function typeIndexFromDetailRoute$(): Observable<
-  [ ResourceType, number | 'create' ]
-> {
-  const activatedRoute = inject(ActivatedRoute);
 
-  return combineLatest([ activatedRoute.paramMap, activatedRoute.data ]).pipe(
-    map(([ paramMap, data ]) => {
-      const resourceType = data[ 'resourceType' ];
-      if (!isResourceType(resourceType)) {
-        throw new Error('No resource type in route data');
+export function resourceIndexFromRoute(): Observable<number | 'create'> {
+  const activatedRoute = inject(ActivatedRoute);
+  return activatedRoute.paramMap.pipe(
+    map((paramMap) => {
+      const index = paramMap.get('resource_index');
+      if (index === 'create') {
+        return index;
+      } else if (index === null) {
+        throw new Error('No index in route');
       }
-      let index: number | 'create' = Number.parseInt(
-        paramMap.get('resource_index')!,
-      );
-      if (Number.isNaN(index)) {
-        index = 'create';
+      const numIndex = +index;
+      if (Number.isNaN(numIndex)) {
+        throw new Error('No index in route')
       }
-      return [ resourceType, index ];
-    }),
-  );
+      return numIndex;
+    })
+  )
 }
 
 @Component({
@@ -55,10 +53,11 @@ export function typeIndexFromDetailRoute$(): Observable<
     OutputMaterialFormComponent
   ],
   template: `
-    @if (_context.committedTypeIndex$ | async; as typeIndex) {
+    @if (_context.resourceType$ | async; as resourceType) {
+      @if (_context.currentIndex$ | async; as currentIndex) {
       <lab-resource-form-title
-        [resourceType]="typeIndex[0]"
-        [resourceIndex]="typeIndex[1]"
+        [resourceType]="resourceType"
+        [resourceIndex]="currentIndex"
         [saveDisabled]="saveDisabled"
         (requestClose)="close()"
         (requestSave)="saveAndClose()"
@@ -96,19 +95,20 @@ export function typeIndexFromDetailRoute$(): Observable<
         }
       }
     }
+  }
   `,
   providers: [
     LabContext,
+    LabResourceContainerContext,
     ResourceContext
   ],
   //changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LabResourceFormPage {
   readonly _cd = inject(ChangeDetectorRef);
-  readonly _containerContext = inject(LabResourceContainerContext);
   readonly _labContext = inject(LabContext);
+  readonly _containerContext = inject(LabResourceContainerContext);
   readonly _context = inject(ResourceContext);
-  _contextConnection: Subscription;
 
   readonly _formPane = inject(ScaffoldFormPaneControl);
 
@@ -120,36 +120,18 @@ export class LabResourceFormPage {
   saveDisabled: boolean = true;
 
   constructor() {
-    this._contextConnection = this._context.sendTypeIndex(
-      typeIndexFromDetailRoute$(),
-    );
+    this._containerContext.observeContainerType(resourceTypeFromActivatedRoute())
     this._labContext.sendCommitted(this._context.lab$.pipe(
       takeUntilDestroyed()
     ));
   }
 
-  ngOnDestroy() {
-    this._contextConnection!.unsubscribe();
+  async saveAndClose() {
+
   }
 
   async close() {
     this._formPane.close();
-  }
-  async saveAndClose() {
-    await this._containerContext.refresh();
-    await this.close();
-    /*
-    const [ resourceType, index ] = await firstValueFrom(this._context.committedTypeIndex$);
-    const resourcePatch = await firstValueFrom(this._patchSubject);
-
-    if (index === 'create') {
-      await this._containerContext.pushResource(resourceType, resourcePatch);
-    } else {
-      await this._containerContext.replaceResourceAt(resourceType, index, resourcePatch)
-    }
-
-    await this.close();
-    */
   }
 
   onPatchChange<T extends Resource>(patch: Partial<ResourcePatch<T>>) {

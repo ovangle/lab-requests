@@ -4,15 +4,9 @@ import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import {
   ResourceTableComponent,
-  ResourceTableDataSource,
 } from '../../common/resource-table.component';
+import { LabResourceContainerContext } from 'src/app/lab/lab-resource-consumer/resource-container';
 
-@Injectable()
-export class OutputMaterialTableDataSource extends ResourceTableDataSource<OutputMaterial> {
-  override readonly resourceType = 'output-material';
-  override readonly resourceTitle = 'Output material';
-  override readonly resourceService = inject(OutputMaterialService);
-}
 
 @Component({
   selector: 'lab-output-material-table',
@@ -20,6 +14,7 @@ export class OutputMaterialTableDataSource extends ResourceTableDataSource<Outpu
   imports: [ CommonModule, MatTableModule, ResourceTableComponent ],
   template: `
     <lab-resource-table
+      resourceType="output-material"
       [displayedColumns]="['name']"
       [detailTemplate]="detailTemplate"
     >
@@ -33,12 +28,6 @@ export class OutputMaterialTableDataSource extends ResourceTableDataSource<Outpu
 
     <ng-template #detailTemplate> </ng-template>
   `,
-  providers: [
-    OutputMaterialService,
-    {
-      provide: ResourceTableDataSource,
-      useClass: OutputMaterialTableDataSource,
-    },
-  ],
 })
-export class OutputMaterialTableComponent { }
+export class OutputMaterialTableComponent {
+}

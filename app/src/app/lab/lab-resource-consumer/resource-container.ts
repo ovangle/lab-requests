@@ -1,8 +1,8 @@
-import { DestroyRef, Injectable, inject, ɵɵi18nApply } from '@angular/core';
+import { DestroyRef, Injectable, Provider, inject, ɵɵi18nApply } from '@angular/core';
 import { BehaviorSubject, NEVER, Observable, ReplaySubject, Subscription, combineLatest, defer, filter, firstValueFrom, map, of, shareReplay, switchMap, tap } from 'rxjs';
-import { ALL_RESOURCE_TYPES, ResourceType } from '../lab-resource/resource-type';
+import { ALL_RESOURCE_TYPES, ResourceType, isResourceType } from '../lab-resource/resource-type';
 
-import type { Resource, ResourceParams } from '../lab-resource/resource';
+import type { Resource, ResourceParams, ResourcePatch } from '../lab-resource/resource';
 import {
   Model,
   ModelIndexPage,
@@ -29,6 +29,7 @@ import { ResearchFunding, ResearchFundingService, researchFundingFromJsonObject 
 import { Lab, LabService } from '../lab';
 import { ModelContext, ReadOnlyModelContext } from 'src/app/common/model/context';
 import { ModelService } from 'src/app/common/model/model-service';
+import { ActivatedRoute } from '@angular/router';
 
 export interface ResourceConsumerParams extends ModelParams {
 
@@ -134,6 +135,13 @@ export abstract class LabResourceConsumer extends Model implements ResourceConsu
   }
 }
 
+export interface LabResourceConsumerDelegateContext<TConsumer extends LabResourceConsumer> extends ModelContext<TConsumer> {
+  appendResource<T extends Resource>(resourceType: ResourceType & T[ 'type' ], params: ResourcePatch<T>): Promise<TConsumer>;
+  insertResourceAt<T extends Resource>(resourceType: ResourceType & T[ 'type' ], index: number, params: ResourcePatch<T>): Promise<TConsumer>;
+  updateResourceAt<T extends Resource>(resourceType: ResourceType & T[ 'type' ], index: number, params: ResourcePatch<T>): Promise<TConsumer>;
+  deleteResourceAt(resourceType: ResourceType, index: number): Promise<TConsumer>;
+}
+
 @Injectable({ providedIn: 'root' })
 export class LabResourceConsumerContext<TConsumer extends LabResourceConsumer> implements ReadOnlyModelContext<TConsumer> {
   readonly _labService = inject(LabService);
@@ -150,11 +158,11 @@ export class LabResourceConsumerContext<TConsumer extends LabResourceConsumer> i
   );
 
   readonly funding$ = this.committed$.pipe(
-    switchMap(funding => funding.resolveLab(this._labService))
+    switchMap(funding => funding.resolveResearchFunding(this._fundingService))
   );
 
-  _attachedContext: ModelContext<TConsumer> | null = null;
-  attachContext(context: ModelContext<TConsumer>): Subscription {
+  _attachedContext: LabResourceConsumerDelegateContext<TConsumer> | null = null;
+  attachContext(context: LabResourceConsumerDelegateContext<TConsumer>): Subscription {
     if (this._attachedContext !== null) {
       throw new Error('Can only associate at most one model context');
     }
@@ -172,6 +180,13 @@ export class LabResourceConsumerContext<TConsumer extends LabResourceConsumer> i
     });
   }
 
+  get service(): ModelService<TConsumer> {
+    if (this._attachedContext == null) {
+      throw new Error(`No attached context`);
+    }
+    return this._attachedContext.service;
+  }
+
 
   refresh(): Promise<void> {
     if (this._attachedContext == null) {
@@ -180,6 +195,30 @@ export class LabResourceConsumerContext<TConsumer extends LabResourceConsumer> i
     return this._attachedContext.refresh();
   }
 
+  appendResource<T extends Resource>(resourceType: ResourceType & T[ 'type' ], params: ResourcePatch<T>): Promise<TConsumer> {
+    if (this._attachedContext == null) {
+      throw new Error(`No attached context`);
+    }
+    return this._attachedContext.appendResource(resourceType, params);
+  }
+  insertResourceAt<T extends Resource>(resourceType: ResourceType & T[ 'type' ], index: number, params: ResourcePatch<T>): Promise<TConsumer> {
+    if (this._attachedContext == null) {
+      throw new Error(`No attached context`);
+    }
+    return this._attachedContext.insertResourceAt(resourceType, index, params);
+  }
+  updateResourceAt<T extends Resource>(resourceType: ResourceType & T[ 'type' ], index: number, params: ResourcePatch<T>): Promise<TConsumer> {
+    if (this._attachedContext == null) {
+      throw new Error(`No attached context`);
+    }
+    return this._attachedContext.updateResourceAt(resourceType, index, params);
+  }
+  deleteResourceAt(resourceType: ResourceType, index: number): Promise<TConsumer> {
+    if (this._attachedContext == null) {
+      throw new Error(`No attached context`);
+    }
+    return this._attachedContext.deleteResourceAt(resourceType, index);
+  }
 }
 
 
@@ -213,11 +252,66 @@ export class LabResourceContainerContext<T extends Resource> {
     })
   )
 
+  nextContainerType(type: ResourceType) {
+    return this.resourceTypeSubject.next(type);
+  }
+
   observeContainerType(type$: Observable<ResourceType>): Subscription {
     return type$.subscribe((t) => this.resourceTypeSubject.next(t));
   }
 
   refresh() {
     return this.consumerContext.refresh();
+  }
+
+
+  async appendResource(params: ResourcePatch<T>): Promise<LabResourceContainer<T>> {
+    const resourceType = await firstValueFrom(this.resourceType$);
+    const consumer = await this.consumerContext.appendResource(resourceType, params);
+    return consumer.getContainer(resourceType);
+  }
+  async insertResourceAt(index: number, params: ResourcePatch<T>): Promise<LabResourceContainer<T>> {
+    const resourceType = await firstValueFrom(this.resourceType$);
+    const consumer = await this.consumerContext.insertResourceAt(resourceType, index, params);
+    return consumer.getContainer(resourceType);
+  }
+  async updateResourceAt(index: number, params: ResourcePatch<T>): Promise<LabResourceContainer<T>> {
+    const resourceType = await firstValueFrom(this.resourceType$);
+    const consumer = await this.consumerContext.updateResourceAt(resourceType, index, params);
+    return consumer.getContainer(resourceType);
+
+  }
+  async deleteResourceAt(index: number): Promise<LabResourceContainer<T>> {
+    const resourceType = await firstValueFrom(this.resourceType$);
+    const consumer = await this.consumerContext.deleteResourceAt(resourceType, index);
+    return consumer.getContainer(resourceType);
+  }
+
+}
+
+export function resourceTypeFromActivatedRoute(): Observable<ResourceType> {
+  const activatedRoute = inject(ActivatedRoute);
+
+  return activatedRoute.data.pipe(
+    map((data) => {
+      const resourceType = data[ 'resourceType' ];
+      if (!isResourceType(resourceType)) {
+        throw new Error('No resource type in route data');
+      }
+      return resourceType;
+    })
+  );
+}
+
+function provideResourceContainerContext(): Provider {
+  return {
+    provide: LabResourceContainerContext,
+    useFactory: () => {
+      const resourceType$ = resourceTypeFromActivatedRoute();
+      const context = new LabResourceContainerContext();
+      context.observeContainerType(resourceType$);
+      return context;
+    },
+    deps: []
   }
 }

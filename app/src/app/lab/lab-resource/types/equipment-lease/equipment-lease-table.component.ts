@@ -1,26 +1,15 @@
-import { Component, Injectable, inject } from '@angular/core';
-import { EquipmentLease, EquipmentLeaseService } from './equipment-lease';
+import { Component, inject } from '@angular/core';
+import { EquipmentLeaseService } from './equipment-lease';
 import { MatTableModule } from '@angular/material/table';
 import { CommonModule } from '@angular/common';
-import { CollectionViewer } from '@angular/cdk/collections';
-import { Observable, forkJoin, switchMap } from 'rxjs';
 import { EquipmentLeaseDetailComponent } from './equipment-lease-detail.component';
-import { EquipmentService } from 'src/app/equipment/equipment';
 import { ResourceTableInfoHeaderComponent } from '../../common/resource-table-info-header.component';
 import {
   ResourceTableDataSource,
   ResourceTableComponent,
 } from '../../common/resource-table.component';
-
-@Injectable()
-export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<EquipmentLease> {
-  override readonly resourceType = 'equipment-lease';
-  override readonly resourceTitle = 'Equipment';
-  override readonly resourceService = inject(EquipmentLeaseService);
-
-  readonly equipments = inject(EquipmentService);
-
-}
+import { LabResourceContainerContext } from 'src/app/lab/lab-resource-consumer/resource-container';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'lab-equipment-lease-table',
@@ -35,6 +24,7 @@ export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<Equip
   ],
   template: `
     <lab-resource-table
+      resourceType="equipment-lease"
       [displayedColumns]="[
         'name',
         'is-trained',
@@ -91,14 +81,6 @@ export class EquipmentLeaseTableDataSource extends ResourceTableDataSource<Equip
       <lab-equipment-lease-detail [lease]="element" />
     </ng-template>
   `,
-  providers: [
-    EquipmentLeaseService,
-    {
-      provide: ResourceTableDataSource,
-      useClass: EquipmentLeaseTableDataSource,
-    },
-  ],
 })
 export class EquipmentLeaseTableComponent {
-  readonly equipmentLeaseService = inject(EquipmentLeaseService);
 }

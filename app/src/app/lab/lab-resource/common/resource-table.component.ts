@@ -29,19 +29,17 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 
 import { LabResourceConsumerContext, LabResourceContainerContext } from '../../lab-resource-consumer/resource-container';
-import type { ResourceType } from '../resource-type';
 import { ResourceTypePipe } from '../resource-type.pipe';
 import { Resource, ResourceService } from '../resource';
 import { ScaffoldFormPaneControl } from 'src/app/scaffold/form-pane/form-pane-control';
-import { Lab } from '../../lab';
+import { ResourceType } from '../resource-type';
 
 @Injectable()
 export class ResourceTableDataSource<
   T extends Resource,
 > extends DataSource<T> {
   readonly _consumerContext = inject(LabResourceConsumerContext);
-
-  readonly _containerContext = inject(LabResourceContainerContext);
+  readonly _containerContext = inject(LabResourceContainerContext<T>);
 
   readonly resourceType$ = this._containerContext.resourceType$;
   readonly resourceContainer$ = this._containerContext.committed$;
@@ -49,7 +47,8 @@ export class ResourceTableDataSource<
   readonly _formPane = inject(ScaffoldFormPaneControl);
 
   async openResourceCreateForm(): Promise<boolean> {
-    return this._formPane.open([ 'lab-forms', 'resources', this.resourceType, 'create' ]);
+    const resourceType = await firstValueFrom(this.resourceType$);
+    return this._formPane.open([ 'lab-forms', 'resources', resourceType, 'create' ]);
   }
 
   async openResourceUpdateFormAt(index: number): Promise<boolean> {
@@ -64,14 +63,12 @@ export class ResourceTableDataSource<
 
   async getElementAt(elementIndex: number): Promise<T> {
     const container = await firstValueFrom(this.resourceContainer$);
-    return container.items[ elementIndex ];
+    return container.getResourceAt(elementIndex);
   }
 
-  async deleteElementAt(elementIndex: number): Promise<void> {
-    const element = await this.getElementAt(elementIndex);
-    await this._consumerContext.refreshAttachedContext();
+  async deleteElementAt(elementIndex: number): Promise<any> {
+    return await this._containerContext.deleteResourceAt(elementIndex);
   }
-
 
   override connect(
     collectionViewer: CollectionViewer,
@@ -110,15 +107,20 @@ export class ResourceTableDataSource<
     ]),
   ],
   providers: [
+    LabResourceContainerContext,
     ResourceTableDataSource
   ]
 })
 export class ResourceTableComponent<T extends Resource>
   implements AfterContentInit {
+  readonly _containerContext = inject(LabResourceContainerContext);
   readonly dataSource: ResourceTableDataSource<T> = inject(ResourceTableDataSource<T>);
 
   route = inject(ActivatedRoute);
   _formPane = inject(ScaffoldFormPaneControl);
+
+  @Input({ required: true })
+  resourceType: ResourceType | undefined;
 
   @Input()
   get displayedColumns(): string[] {
@@ -146,6 +148,10 @@ export class ResourceTableComponent<T extends Resource>
   private childColumnDefs: QueryList<MatColumnDef> | undefined = undefined;
 
   expandedElement: T | null = null;
+
+  ngOnInit() {
+    this._containerContext.nextContainerType(this.resourceType!);
+  }
 
   ngAfterContentInit(): void {
     this.childColumnDefs!.forEach((defn) => this.table!.addColumnDef(defn));

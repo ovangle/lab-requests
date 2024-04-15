@@ -19,9 +19,11 @@ import { ModelContext } from 'src/app/common/model/context';
 import { CreateResearchPlanTask, ResearchPlanTask, ResearchPlanTaskParams, ResearchPlanTaskSlice, researchPlanTaskFromJson, researchPlanTaskSliceToJson } from './task/research-plan-task';
 import { HttpParams } from '@angular/common/http';
 import { Lab, LabService, labFromJsonObject } from 'src/app/lab/lab';
-import { firstValueFrom, switchMap } from 'rxjs';
+import { Observable, firstValueFrom, switchMap } from 'rxjs';
 import { Discipline, isDiscipline } from 'src/app/uni/discipline/discipline';
 import { ResourceConsumerParams, resourceContainerParamsFromJson, LabResourceConsumer } from 'src/app/lab/lab-resource-consumer/resource-container';
+import { Resource, ResourcePatch } from 'src/app/lab/lab-resource/resource';
+import { ResourceType } from 'src/app/lab/lab-resource/resource-type';
 
 export interface ResearchPlanAttachment extends ModelParams {
   readonly id: string;
@@ -233,4 +235,36 @@ export class ResearchPlanService extends RestfulService<ResearchPlan, ResearchPl
     };
     return this._alterTasks(task, [ slice ]);
   }
+
+  appendResource<T extends Resource>(
+    plan: ResearchPlan,
+    resourceType: ResourceType & T[ 'type' ],
+    params: ResourcePatch<T>
+  ): Observable<ResearchPlan> {
+    throw new Error("Method not implemented");
+  }
+  insertResourceAt<T extends Resource>(
+    plan: ResearchPlan,
+    resourceType: ResourceType & T[ "type" ],
+    index: number,
+    params: ResourcePatch<T>
+  ): Observable<ResearchPlan> {
+    throw new Error("Method not implemented.");
+  }
+  updateResourceAt<T extends Resource>(
+    plan: ResearchPlan,
+    resourceType: ResourceType & T[ "type" ],
+    index: number,
+    params: ResourcePatch<T>
+  ): Observable<ResearchPlan> {
+    throw new Error("Method not implemented.");
+  }
+  deleteResourceAt(
+    plan: ResearchPlan,
+    resourceType: ResourceType,
+    index: number
+  ): Observable<ResearchPlan> {
+    throw new Error("Method not implemented.");
+  }
+
 }

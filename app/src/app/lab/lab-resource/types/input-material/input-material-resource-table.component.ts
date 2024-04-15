@@ -9,13 +9,7 @@ import {
 } from '../../common/resource-table.component';
 import { HazardClassLabelsComponent } from '../../hazardous/hazard-classes-labels.component';
 import { ResourceStorageDetailsComponent } from '../../storage/resource-storage-details.component';
-
-@Injectable()
-export class InputMaterialTableDataSource extends ResourceTableDataSource<InputMaterial> {
-  override readonly resourceType = 'input-material';
-  override readonly resourceTitle = 'Input material';
-  override readonly resourceService = inject(InputMaterialService);
-}
+import { LabResourceContainerContext } from 'src/app/lab/lab-resource-consumer/resource-container';
 
 @Component({
   selector: 'lab-input-material-table',
@@ -32,6 +26,7 @@ export class InputMaterialTableDataSource extends ResourceTableDataSource<InputM
   ],
   template: `
     <lab-resource-table
+      resourceType="input-material"
       [displayedColumns]="['name', 'numUnitsRequired', 'storage', 'hazards']"
       [detailTemplate]="detailTemplate"
     >
@@ -70,12 +65,6 @@ export class InputMaterialTableDataSource extends ResourceTableDataSource<InputM
       <lab-resource-storage [storage]="element.storage"> </lab-resource-storage>
     </ng-template>
   `,
-  providers: [
-    InputMaterialService,
-    {
-      provide: ResourceTableDataSource,
-      useClass: InputMaterialTableDataSource,
-    },
-  ],
 })
-export class InputMaterialTableComponent { }
+export class InputMaterialTableComponent {
+}
