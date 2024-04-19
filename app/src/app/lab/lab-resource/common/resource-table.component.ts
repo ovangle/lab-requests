@@ -39,7 +39,7 @@ export class ResourceTableDataSource<
   T extends Resource,
 > extends DataSource<T> {
   readonly _consumerContext = inject(LabResourceConsumerContext);
-  readonly _containerContext = inject(LabResourceContainerContext<T>);
+  readonly _containerContext = inject(LabResourceContainerContext<T, any>);
 
   readonly resourceType$ = this._containerContext.resourceType$;
   readonly resourceContainer$ = this._containerContext.committed$;

@@ -53,49 +53,32 @@ export function resourceIndexFromRoute(): Observable<number | 'create'> {
     OutputMaterialFormComponent
   ],
   template: `
-    @if (_context.resourceType$ | async; as resourceType) {
-      @if (_context.currentIndex$ | async; as currentIndex) {
-      <lab-resource-form-title
-        [resourceType]="resourceType"
-        [resourceIndex]="currentIndex"
-        [saveDisabled]="saveDisabled"
-        (requestClose)="close()"
-        (requestSave)="saveAndClose()"
-      >
-      </lab-resource-form-title>
-    
-      @switch (resourceType$ | async) {
-        @case ('equipment-lease') {
-          <lab-equipment-lease-form 
-              [funding]="funding$ | async" 
-              (patchChange)="onPatchChange($event)"
-              (hasError)="onFormHasError($event)"/>
-        }
+    @switch (resourceType$ | async) {
+      @case ('equipment_lease') {
+        <lab-equipment-lease-form 
+            [funding]="funding$ | async" 
+            (requestClose)="close($event)"/>
+      }
 
-        @case ('software-lease') {
-          <lab-software-lease-form 
-              (patchChange)="onPatchChange($event)"
-              (hasError)="onFormHasError($event)"/>
-        }
+      @case ('software_lease') {
+        <lab-software-lease-form 
+          (requestClose)="close($event)"/>
+      }
 
-        @case ('input-material') {
-          <lab-input-material-form 
-              (patchChange)="onPatchChange($event)"
-              (hasError)="onFormHasError($event)"/>
-        }
+      @case ('input_material') {
+        <lab-input-material-form 
+          (requestClose)="close($event)"/>
+      }
 
-        @case ('output-material') {
-          <lab-output-material-form 
-              (patchChange)="onPatchChange($event)"
-              (hasError)="onFormHasError($event)" />
-        }
+      @case ('output_material') {
+        <lab-output-material-form 
+          (requestClose)="close($event)"/>
+      }
 
-        @default {
-          No type index specified
-        }
+      @default {
+        No resource type available
       }
     }
-  }
   `,
   providers: [
     LabContext,
@@ -113,6 +96,7 @@ export class LabResourceFormPage {
   readonly _formPane = inject(ScaffoldFormPaneControl);
 
   readonly resourceType$ = this._context.resourceType$;
+  readonly resourceIndex$ = this._context.resourceIndex$;
 
   readonly funding$ = this._context.funding$;
 
@@ -126,11 +110,8 @@ export class LabResourceFormPage {
     ));
   }
 
-  async saveAndClose() {
-
-  }
-
-  async close() {
+  async close(reason: string) {
+    console.log('closing form pane:  ' + reason);
     this._formPane.close();
   }
 

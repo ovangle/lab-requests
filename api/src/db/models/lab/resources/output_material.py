@@ -1,6 +1,8 @@
 from __future__ import annotations
+from uuid import UUID
 
-from sqlalchemy.orm import Mapped
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 from ..lab_resource import LabResource, LabResourceType, lab_resource_pk
 
 
@@ -10,4 +12,7 @@ class OutputMaterial(LabResource):
         "polymorphic_identity": LabResourceType.OUTPUT_MATERIAL,
     }
 
-    id: Mapped[lab_resource_pk]
+    id: Mapped[UUID] = mapped_column(
+        ForeignKey("lab_resource.id", name="output_material_resource_fk"),
+        primary_key=True,
+    )

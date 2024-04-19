@@ -1,15 +1,14 @@
 from __future__ import annotations
 import asyncio
 
-from typing import Self, TypeVar
+from typing import Generic, Self, TypeVar
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import async_object_session
 from api.lab.lab_resources.schemas.equipment_lease import LabEquipmentLeaseIndex
 from api.lab.lab_resources.schemas.input_material import InputMaterialIndex
 from api.lab.lab_resources.schemas.output_material import OutputMaterialIndex
 from api.lab.lab_resources.schemas.software_lease import LabSoftwareLeaseIndex
-from db import LocalSession, local_object_session
+from db import local_object_session
 
 from db.models.lab import LabResourceContainer, LabResource
 from db.models.lab.lab_resource import LabResourceType
@@ -19,17 +18,23 @@ from db.models.lab.resources.input_material import InputMaterial
 from db.models.lab.resources.output_material import OutputMaterial
 from db.models.lab.resources.software_lease import SoftwareLease
 
-from ..base.schemas import ModelIndexPage, ModelView
+from ..base.schemas import BaseModel, ModelIndexPage, ModelUpdateRequest, ModelView
 
 from .lab_resources.schemas import (
     LabEquipmentLeaseView,
+    LabEquipmentLeasePatch,
     LabSoftwareLeaseView,
+    LabSoftwareLeasePatch,
     InputMaterialView,
+    InputMaterialPatch,
     OutputMaterialView,
+    OutputMaterialPatch,
+    LabResourcePatch,
 )
 
 # TODO: PEP 695
 TResource = TypeVar("TResource", bound=LabResource, contravariant=True)
+TResourcePatch = TypeVar("TResourcePatch", bound=LabResourcePatch)
 TResourceConsumer = TypeVar("TResourceConsumer", bound=LabResourceConsumer)
 
 
@@ -82,3 +87,53 @@ class LabResourceConsumerView(ModelView[TResourceConsumer]):
             output_materials=output_material_page,
             **kwargs,
         )
+
+
+class ResourceContainerSlice(BaseModel, Generic[TResource, TResourcePatch]):
+    type: LabResourceType
+    start_index: int
+    end_index: int | None = None
+
+    items: list[TResourcePatch]
+
+    async def do_update(self, model: LabResourceContainer):
+        item_attrs = [item.as_attrs() for item in self.items]
+        await model.splice_resources(
+            self.type, self.start_index, self.end_index, item_attrs
+        )
+
+
+class UpdateLabResourceConsumer(ModelUpdateRequest[TResourceConsumer]):
+    equipment_leases: list[
+        ResourceContainerSlice[EquipmentLease, LabEquipmentLeasePatch]
+    ] | None = None
+    software_leases: list[
+        ResourceContainerSlice[SoftwareLease, LabSoftwareLeasePatch]
+    ] | None = None
+
+    input_materials: list[
+        ResourceContainerSlice[InputMaterial, InputMaterialPatch]
+    ] | None = None
+    output_materials: list[
+        ResourceContainerSlice[OutputMaterial, OutputMaterialPatch]
+    ] | None = None
+
+    async def _do_update_resource(
+        self, model: TResourceConsumer, slices: list[ResourceContainerSlice]
+    ):
+        container = await model.awaitable_attrs.container
+        for slice in slices:
+            await slice.do_update(container)
+
+    async def do_update(self, model: TResourceConsumer, **kwargs):
+        if self.equipment_leases is not None:
+            await self._do_update_resource(model, self.equipment_leases)
+
+        if self.software_leases is not None:
+            await self._do_update_resource(model, self.software_leases)
+
+        if self.input_materials is not None:
+            await self._do_update_resource(model, self.input_materials)
+
+        if self.output_materials is not None:
+            await self._do_update_resource(model, self.output_materials)

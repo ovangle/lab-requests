@@ -3,19 +3,19 @@ __all__ = (
     "LabResourceView",
     "LabResourceIndex",
     "LabResourceIndexPage",
-    "LabResourceParams",
+    "LabResourcePatch",
     "LabEquipmentLeaseIndex",
     "LabEquipmentLeaseView",
-    "LabEquipmentLeaseParams",
+    "LabEquipmentLeasePatch",
     "LabSoftwareLeaseIndex",
     "LabSoftwareLeaseView",
-    "LabSoftwareLeaseParams",
+    "LabSoftwareLeasePatch",
     "InputMaterialIndex",
     "InputMaterialView",
-    "InputMaterialParams",
+    "InputMaterialPatch",
     "OutputMaterialIndex",
     "OutputMaterialView",
-    "OutputMaterialParams",
+    "OutputMaterialPatch",
     "resource_view_cls",
     "resource_index_cls",
     "resource_params_cls",
@@ -27,27 +27,27 @@ from ._common import (
     LabResourceView,
     LabResourceIndex,
     LabResourceIndexPage,
-    LabResourceParams,
+    LabResourcePatch,
 )
 from .equipment_lease import (
     LabEquipmentLeaseIndex,
     LabEquipmentLeaseView,
-    LabEquipmentLeaseParams,
+    LabEquipmentLeasePatch,
 )
 from .software_lease import (
     LabSoftwareLeaseIndex,
     LabSoftwareLeaseView,
-    LabSoftwareLeaseParams,
+    LabSoftwareLeasePatch,
 )
 from .input_material import (
     InputMaterialIndex,
     InputMaterialView,
-    InputMaterialParams,
+    InputMaterialPatch,
 )
 from .output_material import (
     OutputMaterialIndex,
     OutputMaterialView,
-    OutputMaterialParams,
+    OutputMaterialPatch,
 )
 
 
@@ -75,13 +75,13 @@ def resource_index_cls(resource_type: LabResourceType) -> type[LabResourceIndex]
             return OutputMaterialIndex
 
 
-def resource_params_cls(resource_type: LabResourceType) -> type[LabResourceParams]:
+def resource_params_cls(resource_type: LabResourceType) -> type[LabResourcePatch]:
     match resource_type:
         case LabResourceType.EQUIPMENT_LEASE:
-            return LabEquipmentLeaseParams
+            return LabEquipmentLeasePatch
         case LabResourceType.SOFTWARE_LEASE:
-            return LabSoftwareLeaseParams
+            return LabSoftwareLeasePatch
         case LabResourceType.INPUT_MATERIAL:
-            return InputMaterialParams
+            return InputMaterialPatch
         case LabResourceType.OUTPUT_MATERIAL:
-            return OutputMaterialParams
+            return OutputMaterialPatch

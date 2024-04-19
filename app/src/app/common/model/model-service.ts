@@ -123,7 +123,7 @@ export abstract class RestfulService<
   abstract actionToJsonObject?(model: T, request: Partial<TUpdate>): JsonObject;
 
   get indexUrl(): string {
-    return urlJoin(this._apiBaseUrl, this.path);
+    return urlJoin(this._apiBaseUrl, this.path) + '/';
   }
 
   /** A static RPC method on the resource index.

@@ -1,13 +1,17 @@
 from __future__ import annotations
-from abc import abstractmethod
 from enum import Enum
 
 from uuid import UUID
-from typing import TYPE_CHECKING, Annotated, Any, ClassVar, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    ClassVar,
+    TypedDict,
+)
 from sqlalchemy import ForeignKey, SQLColumnExpression, Select, select
 from sqlalchemy.dialects import postgresql
 
-from sqlalchemy.ext.asyncio import async_object_session
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from db import LocalSession
@@ -77,6 +81,11 @@ def _lab_resource_py_type(type: LabResourceType) -> type[LabResource]:
 lab_resource_type = Annotated[
     LabResourceType, mapped_column(postgresql.ENUM(LabResourceType))
 ]
+
+
+class LabResourceAttrs(TypedDict, total=False):
+    container_id: UUID | None
+    index: int | None
 
 
 class LabResource(Base):
@@ -155,9 +164,9 @@ class LabResource(Base):
             raise LabResourceDoesNotExist(for_container_index=(container, index))
         return resource
 
-    def __init__(self, **kwargs):
+    def __init__(self, params: LabResourceAttrs):
         self.type = type(self).__lab_resource_type__
-        super().__init__(**kwargs)
+        super().__init__(**params)
 
 
 lab_resource_pk = Annotated[

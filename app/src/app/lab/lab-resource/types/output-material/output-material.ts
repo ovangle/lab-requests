@@ -31,7 +31,7 @@ export interface OutputMaterialParams extends ResourceParams {
 }
 
 export class OutputMaterial extends Resource {
-  override readonly type = 'output-material';
+  override readonly type = 'output_material';
 
   name: string;
   baseUnit: string;
@@ -122,7 +122,7 @@ export function outputMaterialPatchToJsonObject(
 
 @Injectable()
 export class OutputMaterialService extends ResourceService<OutputMaterial, OutputMaterialPatch> {
-  override readonly resourceType = 'output-material';
+  override readonly resourceType = 'output_material';
   override resourcePatchToJson(current: OutputMaterial | null, patch: Partial<OutputMaterialPatch>): JsonObject {
     return outputMaterialPatchToJsonObject(current, patch);
   }

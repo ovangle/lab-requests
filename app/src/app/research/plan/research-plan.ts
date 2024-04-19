@@ -19,11 +19,12 @@ import { ModelContext } from 'src/app/common/model/context';
 import { CreateResearchPlanTask, ResearchPlanTask, ResearchPlanTaskParams, ResearchPlanTaskSlice, researchPlanTaskFromJson, researchPlanTaskSliceToJson } from './task/research-plan-task';
 import { HttpParams } from '@angular/common/http';
 import { Lab, LabService, labFromJsonObject } from 'src/app/lab/lab';
-import { Observable, firstValueFrom, switchMap } from 'rxjs';
+import { Observable, first, firstValueFrom, switchMap } from 'rxjs';
 import { Discipline, isDiscipline } from 'src/app/uni/discipline/discipline';
-import { ResourceConsumerParams, resourceContainerParamsFromJson, LabResourceConsumer } from 'src/app/lab/lab-resource-consumer/resource-container';
+import { ResourceConsumerParams, resourceContainerParamsFromJson, LabResourceConsumer, LabResourceConsumerPatch, resourceConsumerPatchToJsonObject } from 'src/app/lab/lab-resource-consumer/resource-container';
 import { Resource, ResourcePatch } from 'src/app/lab/lab-resource/resource';
 import { ResourceType } from 'src/app/lab/lab-resource/resource-type';
+import urlJoin from 'url-join';
 
 export interface ResearchPlanAttachment extends ModelParams {
   readonly id: string;
@@ -167,7 +168,7 @@ function createResearchPlanToJsonObject(plan: CreateResearchPlan) {
   return { ...plan };
 }
 
-export interface UpdateResearchPlan {
+export interface UpdateResearchPlan extends LabResourceConsumerPatch {
   title: string;
   description: string;
   funding: ResearchFunding | null;
@@ -182,11 +183,14 @@ function updateResearchPlanToJsonObject(plan: ResearchPlan, patch: Partial<Updat
     funding = plan.funding;
   }
 
+  const resourceConsumerAttrs = resourceConsumerPatchToJsonObject(plan, patch)
+
   return {
     title: typeof patch.title === 'string' ? patch.title : plan.title,
     description: typeof patch.description === 'string' ? patch.description : plan.description,
     funding: funding?.id,
-    tasks: Array.isArray(patch.tasks) ? patch.tasks.map(t => researchPlanTaskSliceToJson(t)) : []
+    tasks: Array.isArray(patch.tasks) ? patch.tasks.map(t => researchPlanTaskSliceToJson(t)) : [],
+    ...resourceConsumerAttrs
   };
 }
 
@@ -236,35 +240,10 @@ export class ResearchPlanService extends RestfulService<ResearchPlan, ResearchPl
     return this._alterTasks(task, [ slice ]);
   }
 
-  appendResource<T extends Resource>(
-    plan: ResearchPlan,
-    resourceType: ResourceType & T[ 'type' ],
-    params: ResourcePatch<T>
-  ): Observable<ResearchPlan> {
-    throw new Error("Method not implemented");
+  _resourceIndexUrl$(plan: ResearchPlan, resourceType: string) {
+    return this.modelUrl(plan).pipe(
+      first(),
+      switchMap(modelUrl => urlJoin(modelUrl, resourceType) + '/')
+    )
   }
-  insertResourceAt<T extends Resource>(
-    plan: ResearchPlan,
-    resourceType: ResourceType & T[ "type" ],
-    index: number,
-    params: ResourcePatch<T>
-  ): Observable<ResearchPlan> {
-    throw new Error("Method not implemented.");
-  }
-  updateResourceAt<T extends Resource>(
-    plan: ResearchPlan,
-    resourceType: ResourceType & T[ "type" ],
-    index: number,
-    params: ResourcePatch<T>
-  ): Observable<ResearchPlan> {
-    throw new Error("Method not implemented.");
-  }
-  deleteResourceAt(
-    plan: ResearchPlan,
-    resourceType: ResourceType,
-    index: number
-  ): Observable<ResearchPlan> {
-    throw new Error("Method not implemented.");
-  }
-
 }

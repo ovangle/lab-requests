@@ -1,10 +1,10 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
 const _ALL_RESOURCE_TYPES = [
-  'equipment-lease',
-  'software-lease',
-  'input-material',
-  'output-material',
+  'equipment_lease',
+  'software_lease',
+  'input_material',
+  'output_material',
 ] as const;
 
 export type ResourceType = (typeof _ALL_RESOURCE_TYPES)[ number ];

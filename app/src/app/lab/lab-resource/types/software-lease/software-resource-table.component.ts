@@ -21,7 +21,7 @@ import { LabResourceContainerContext } from 'src/app/lab/lab-resource-consumer/r
   ],
   template: `
     <lab-resource-table
-      resourceType="software-lease"
+      resourceType="software_lease"
       [displayedColumns]="['name', 'min-version']"
       [detailTemplate]="detailTemplate"
     >

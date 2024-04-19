@@ -26,7 +26,7 @@ import { LabResourceContainerContext } from 'src/app/lab/lab-resource-consumer/r
   ],
   template: `
     <lab-resource-table
-      resourceType="input-material"
+      resourceType="input_material"
       [displayedColumns]="['name', 'numUnitsRequired', 'storage', 'hazards']"
       [detailTemplate]="detailTemplate"
     >

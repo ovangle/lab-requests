@@ -33,8 +33,7 @@ from db import LocalSession, local_object_session
 from db.models.base.fields import uuid_pk
 from db.models.lab.lab_resource import LabResource, LabResourceType
 from db.models.lab.lab_resource_container import LabResourceConsumer
-from db.models.uni.discipline import Discipline, uni_discipline
-import filestore
+from db.models.uni.discipline import uni_discipline
 
 from ..base import Base, DoesNotExist
 from ..lab import LabResourceContainer

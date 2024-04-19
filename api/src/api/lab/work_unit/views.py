@@ -39,7 +39,7 @@ async def index_work_units(
             supervisor=supervisor,
         )
     )
-    return await work_unit_index.load_page(db, 0)
+    return await work_unit_index.load_page(db, 1)
 
 
 # @lab_work_units.get(

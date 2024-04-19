@@ -9,32 +9,24 @@ import { ResourceType } from "./resource-type";
 @Directive()
 export abstract class ResourceFormComponent<T extends Resource, TForm extends FormGroup<any>, TPatch extends ResourcePatch<T>> {
     abstract readonly resourceType: ResourceType & T[ 'type' ];
-    readonly context: ResourceContext<T> = inject(ResourceContext<T>)
+    readonly context: ResourceContext<T, TPatch> = inject(ResourceContext<T, TPatch>)
     abstract readonly service: ResourceService<T, TPatch>;
 
     readonly initial: Promise<T | null> = firstValueFrom(this.context.maybeCommitted$);
-    readonly resourceIndex$ = this.context.currentIndex$;
-
+    readonly resourceIndex$ = this.context.resourceIndex$;
     readonly _formSubject = new BehaviorSubject<TForm | null>(null);
     get form(): TForm | null {
         return this._formSubject.value;
     }
 
     abstract createForm(committed: T | null): TForm;
-    abstract patchFromFormValue(form: TForm[ 'value' ]): Partial<TPatch>;
+    abstract patchFromFormValue(form: TForm[ 'value' ]): TPatch;
 
     @Output()
-    patchChange = new EventEmitter<Partial<TPatch>>();
+    save = new EventEmitter<T>();
 
     @Output()
-    hasError: Observable<boolean> = this._formSubject.pipe(
-        takeUntilDestroyed(),
-        switchMap(form => form?.statusChanges || NEVER),
-        tap((form) => {
-            console.log('form valid', form);
-        }),
-        map(status => status === 'VALID')
-    )
+    requestClose = new EventEmitter<string>();
 
     constructor() {
         this.initial.then(committed => this._formSubject.next(this.createForm(committed)));
@@ -42,5 +34,19 @@ export abstract class ResourceFormComponent<T extends Resource, TForm extends Fo
 
     ngOnDestroy() {
         this._formSubject.complete();
+    }
+
+    async saveAndClose() {
+        if (!(this.form && this.form.valid)) {
+            throw new Error('Invalid form has no patch');
+        }
+        const patch = this.patchFromFormValue(this.form.value);
+        const saved = await this.context.save(patch);
+        this.save.next(saved);
+        this.close('saved');
+    }
+
+    close(reason: string) {
+        this.requestClose.emit(reason);
     }
 }

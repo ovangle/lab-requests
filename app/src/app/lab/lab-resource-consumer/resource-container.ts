@@ -13,17 +13,23 @@ import {
 } from 'src/app/common/model/model';
 import {
   EquipmentLease,
+  EquipmentLeasePatch,
   equipmentLeaseFromJson,
+  equipmentLeasePatchToJsonObject,
 } from '../lab-resource/types/equipment-lease/equipment-lease';
 import {
   InputMaterial,
+  InputMaterialPatch,
   inputMaterialFromJson,
+  inputMaterialPatchToJsonObject,
 } from '../lab-resource/types/input-material/input-material';
 import {
   OutputMaterial,
+  OutputMaterialPatch,
   outputMaterialFromJson,
+  outputMaterialPatchToJsonObject,
 } from '../lab-resource/types/output-material/output-material';
-import { SoftwareLease, softwareLeaseFromJsonObject, softwareLeasePatchToJsonObject } from '../lab-resource/types/software-lease/software-lease';
+import { SoftwareLease, SoftwareLeasePatch, softwareLeaseFromJsonObject, softwareLeasePatchToJsonObject } from '../lab-resource/types/software-lease/software-lease';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { ResearchFunding, ResearchFundingService, researchFundingFromJsonObject } from 'src/app/research/funding/research-funding';
 import { Lab, LabService } from '../lab';
@@ -83,6 +89,19 @@ export abstract class LabResourceConsumer extends Model implements ResourceConsu
   inputMaterials: ModelIndexPage<InputMaterial>;
   outputMaterials: ModelIndexPage<OutputMaterial>;
 
+  static consumerAttr(type: ResourceType): keyof ResourceConsumerParams {
+    switch (type) {
+      case 'equipment_lease':
+        return 'equipmentLeases';
+      case 'software_lease':
+        return 'softwareLeases';
+      case 'input_material':
+        return 'inputMaterials';
+      case 'output_material':
+        return 'outputMaterials';
+    }
+  }
+
   constructor(params: ResourceConsumerParams) {
     super(params);
 
@@ -108,13 +127,13 @@ export abstract class LabResourceConsumer extends Model implements ResourceConsu
 
   _getCurrentResourcePage<T extends Resource>(type: ResourceType & T[ 'type' ]): ModelIndexPage<T> {
     switch (type) {
-      case 'equipment-lease':
+      case 'equipment_lease':
         return this.equipmentLeases as any as ModelIndexPage<T>;
-      case 'software-lease':
+      case 'software_lease':
         return this.softwareLeases as any as ModelIndexPage<T>;
-      case 'input-material':
+      case 'input_material':
         return this.inputMaterials as any as ModelIndexPage<T>;
-      case 'output-material':
+      case 'output_material':
         return this.outputMaterials as any as ModelIndexPage<T>;
       default:
         throw new Error(`Unrecognised resource type ${type}`)
@@ -135,11 +154,42 @@ export abstract class LabResourceConsumer extends Model implements ResourceConsu
   }
 }
 
+export interface LabResourceConsumerPatch {
+  equipmentLeases?: LabResourceContainerSlice<EquipmentLease, EquipmentLeasePatch>[];
+  softwareLeases?: LabResourceContainerSlice<SoftwareLease, SoftwareLeasePatch>[];
+  inputMaterials?: LabResourceContainerSlice<InputMaterial, InputMaterialPatch>[];
+  outputMaterials?: LabResourceContainerSlice<OutputMaterial, OutputMaterialPatch>[];
+}
+
+export function resourceConsumerPatchToJsonObject(consumer: LabResourceConsumer, patch: Partial<LabResourceConsumerPatch>) {
+  const json: JsonObject = {};
+  if (patch.equipmentLeases) {
+    const container = consumer.getContainer('equipment_lease');
+    json[ 'equipmentLeases' ] = patch.equipmentLeases
+      .map(lease => resourceContainerPatchToJson(container, lease));
+  }
+  if (Array.isArray(patch.softwareLeases)) {
+    const container = consumer.getContainer('software_lease');
+    json[ 'softwareLeases' ] = patch.softwareLeases
+      .map(lease => resourceContainerPatchToJson(container, lease));
+  }
+  if (Array.isArray(patch.inputMaterials)) {
+    const container = consumer.getContainer('input_material');
+    json[ 'softwareLeases' ] = patch.inputMaterials
+      .map(lease => resourceContainerPatchToJson(container, lease));
+  }
+  if (Array.isArray(patch.outputMaterials)) {
+    const container = consumer.getContainer('output_material');
+    json[ 'softwareLeases' ] = patch.outputMaterials
+      .map(lease => resourceContainerPatchToJson(container, lease));
+  }
+
+  return json;
+
+}
+
 export interface LabResourceConsumerDelegateContext<TConsumer extends LabResourceConsumer> extends ModelContext<TConsumer> {
-  appendResource<T extends Resource>(resourceType: ResourceType & T[ 'type' ], params: ResourcePatch<T>): Promise<TConsumer>;
-  insertResourceAt<T extends Resource>(resourceType: ResourceType & T[ 'type' ], index: number, params: ResourcePatch<T>): Promise<TConsumer>;
-  updateResourceAt<T extends Resource>(resourceType: ResourceType & T[ 'type' ], index: number, params: ResourcePatch<T>): Promise<TConsumer>;
-  deleteResourceAt(resourceType: ResourceType, index: number): Promise<TConsumer>;
+  applyResourceConsumerPatch(patch: LabResourceConsumerPatch): Observable<TConsumer>;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -195,29 +245,11 @@ export class LabResourceConsumerContext<TConsumer extends LabResourceConsumer> i
     return this._attachedContext.refresh();
   }
 
-  appendResource<T extends Resource>(resourceType: ResourceType & T[ 'type' ], params: ResourcePatch<T>): Promise<TConsumer> {
+  applyResourceConsumerPatch(patch: LabResourceConsumerPatch) {
     if (this._attachedContext == null) {
-      throw new Error(`No attached context`);
+      throw new Error(`No attached context`)
     }
-    return this._attachedContext.appendResource(resourceType, params);
-  }
-  insertResourceAt<T extends Resource>(resourceType: ResourceType & T[ 'type' ], index: number, params: ResourcePatch<T>): Promise<TConsumer> {
-    if (this._attachedContext == null) {
-      throw new Error(`No attached context`);
-    }
-    return this._attachedContext.insertResourceAt(resourceType, index, params);
-  }
-  updateResourceAt<T extends Resource>(resourceType: ResourceType & T[ 'type' ], index: number, params: ResourcePatch<T>): Promise<TConsumer> {
-    if (this._attachedContext == null) {
-      throw new Error(`No attached context`);
-    }
-    return this._attachedContext.updateResourceAt(resourceType, index, params);
-  }
-  deleteResourceAt(resourceType: ResourceType, index: number): Promise<TConsumer> {
-    if (this._attachedContext == null) {
-      throw new Error(`No attached context`);
-    }
-    return this._attachedContext.deleteResourceAt(resourceType, index);
+    return this._attachedContext.applyResourceConsumerPatch(patch);
   }
 }
 
@@ -227,8 +259,48 @@ export interface LabResourceContainer<T extends Resource> extends ModelIndexPage
   getResourceAt(index: number): T;
 }
 
+export interface LabResourceContainerSlice<T extends Resource, TPatch extends ResourcePatch<T>> {
+  readonly type: T[ 'type' ];
+  start: number;
+  end?: number;
+  items: TPatch[];
+}
+
+export function resourceContainerPatchToJson<T extends Resource, TPatch extends ResourcePatch<T>>(
+  container: LabResourceContainer<T> | null,
+  slice: LabResourceContainerSlice<T, TPatch>
+) {
+  function resourcePatchToJsonObject(index: number, patch: TPatch) {
+    let current: T | null = null;
+    if (container && index < container.totalItemCount) {
+      current = container.getResourceAt(index);
+    }
+
+    switch (slice.type) {
+      case 'equipment_lease':
+        return equipmentLeasePatchToJsonObject(current as any, patch);
+      case 'software_lease':
+        return softwareLeasePatchToJsonObject(current as any, patch);
+      case 'input_material':
+        return inputMaterialPatchToJsonObject(current as any, patch);
+      case 'output_material':
+        return outputMaterialPatchToJsonObject(current as any, patch);
+      default:
+        throw new Error(`Unrecognised resource type ${slice.type}`)
+    }
+  }
+  return {
+    type: slice.type,
+    startIndex: slice.start,
+    endIndex: slice.end,
+    items: slice.items.map(
+      (item, i) => resourcePatchToJsonObject(slice.start + i, item)
+    )
+  };
+}
+
 @Injectable()
-export class LabResourceContainerContext<T extends Resource> {
+export class LabResourceContainerContext<T extends Resource, TPatch extends ResourcePatch<T>> {
   readonly consumerContext = inject(LabResourceConsumerContext);
 
   readonly resourceTypeSubject = new BehaviorSubject<ResourceType & T[ 'type' ] | null>(null);
@@ -264,27 +336,56 @@ export class LabResourceContainerContext<T extends Resource> {
     return this.consumerContext.refresh();
   }
 
+  async _updateContainer(slices: LabResourceContainerSlice<T, TPatch>[]): Promise<LabResourceContainer<T>> {
+    const type = await firstValueFrom(this.resourceType$);
+    const patch = {
+      [ LabResourceConsumer.consumerAttr(type) ]: slices
+    };
+    const consumer = await firstValueFrom(this.consumerContext.applyResourceConsumerPatch(patch));
+    return consumer.getContainer(type);
+  }
 
-  async appendResource(params: ResourcePatch<T>): Promise<LabResourceContainer<T>> {
-    const resourceType = await firstValueFrom(this.resourceType$);
-    const consumer = await this.consumerContext.appendResource(resourceType, params);
-    return consumer.getContainer(resourceType);
+  async appendResource(params: TPatch): Promise<LabResourceContainer<T>> {
+    const type = await firstValueFrom(this.resourceType$);
+    const container = await firstValueFrom(this.committed$);
+    return this._updateContainer([
+      {
+        type,
+        start: container.totalItemCount,
+        items: [ params ]
+      }
+    ])
   }
-  async insertResourceAt(index: number, params: ResourcePatch<T>): Promise<LabResourceContainer<T>> {
-    const resourceType = await firstValueFrom(this.resourceType$);
-    const consumer = await this.consumerContext.insertResourceAt(resourceType, index, params);
-    return consumer.getContainer(resourceType);
-  }
-  async updateResourceAt(index: number, params: ResourcePatch<T>): Promise<LabResourceContainer<T>> {
-    const resourceType = await firstValueFrom(this.resourceType$);
-    const consumer = await this.consumerContext.updateResourceAt(resourceType, index, params);
-    return consumer.getContainer(resourceType);
+
+  async insertResourceAt(index: number, params: TPatch): Promise<LabResourceContainer<T>> {
+    const type = await firstValueFrom(this.resourceType$);
+    return this._updateContainer([
+      {
+        type,
+        start: index,
+        end: index,
+        items: [ params ]
+      }
+    ]);
 
   }
+  async updateResourceAt(index: number, params: TPatch): Promise<LabResourceContainer<T>> {
+    const type = await firstValueFrom(this.resourceType$);
+    return this._updateContainer([
+      {
+        type,
+        start: index,
+        end: index + 1,
+        items: [ params ]
+      }
+    ])
+  }
+
   async deleteResourceAt(index: number): Promise<LabResourceContainer<T>> {
-    const resourceType = await firstValueFrom(this.resourceType$);
-    const consumer = await this.consumerContext.deleteResourceAt(resourceType, index);
-    return consumer.getContainer(resourceType);
+    const type = await firstValueFrom(this.resourceType$);
+    return this._updateContainer([
+      { type, start: index, end: index + 1, items: [] }
+    ]);
   }
 
 }
@@ -301,17 +402,4 @@ export function resourceTypeFromActivatedRoute(): Observable<ResourceType> {
       return resourceType;
     })
   );
-}
-
-function provideResourceContainerContext(): Provider {
-  return {
-    provide: LabResourceContainerContext,
-    useFactory: () => {
-      const resourceType$ = resourceTypeFromActivatedRoute();
-      const context = new LabResourceContainerContext();
-      context.observeContainerType(resourceType$);
-      return context;
-    },
-    deps: []
-  }
 }

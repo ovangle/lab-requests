@@ -2,18 +2,23 @@ from __future__ import annotations
 
 from typing import Any, cast
 from uuid import UUID, uuid4
-from sqlalchemy import ForeignKey, Insert, Update, select, Select
+from sqlalchemy import ForeignKey, Insert, Update, delete, select, Select, update
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 from sqlalchemy.ext.asyncio import async_object_session
 from sqlalchemy_utils.generic import generic_relationship
 
-from db import LocalSession
+from db import LocalSession, local_object_session
 from db.models.base.errors import DoesNotExist
 
 from ..base import Base, fields
 from ..base.fields import uuid_pk
-from .lab_resource import LabResourceDoesNotExist, LabResourceType, LabResource
+from .lab_resource import (
+    LabResourceAttrs,
+    LabResourceDoesNotExist,
+    LabResourceType,
+    LabResource,
+)
 from .resources import EquipmentLease, SoftwareLease, InputMaterial, OutputMaterial
 
 
@@ -63,20 +68,18 @@ class LabResourceContainer(Base):
     def update_resource(self, resource: LabResource, **attrs: dict[str, Any]) -> Update:
         raise NotImplementedError
 
-    def __get_session(self):
-        session = async_object_session(self)
-        if not isinstance(session, LocalSession):
-            raise RuntimeError("Instance detached from session")
-        return session
-
     def _get_resources(self, resource_type: LabResourceType):
-        session = self.__get_session()
+        session = local_object_session(self)
         return session.scalars(self.select_resources(resource_type))
+
+    async def _get_resource_count(self, type: LabResourceType) -> int:
+        session = local_object_session(self)
+        raise NotImplementedError
 
     async def get_resource_for_id(
         self, resource_type: LabResourceType, id: UUID
     ) -> LabResource:
-        db = self.__get_session()
+        db = local_object_session(self)
         r = await db.get(resource_type.py_type, id)
         if r is None:
             raise LabResourceDoesNotExist(for_id=id)
@@ -86,7 +89,7 @@ class LabResourceContainer(Base):
         self, resource_type: LabResourceType, index: int
     ) -> LabResource:
         return await resource_type.py_type.get_for_container_index(
-            self.__get_session(), self, index
+            local_object_session(self), self, index
         )
 
     @property
@@ -98,6 +101,9 @@ class LabResourceContainer(Base):
 
     async def get_equipment_lease_for_id(self, id: UUID):
         return await self.get_resource_for_id(LabResourceType.EQUIPMENT_LEASE, id)
+
+    def get_equipment_lease_count(self):
+        return self._get_resource_count(LabResourceType.EQUIPMENT_LEASE)
 
     @property
     async def software_leases(self) -> list[SoftwareLease]:
@@ -119,6 +125,67 @@ class LabResourceContainer(Base):
             list[OutputMaterial],
             list(await self._get_resources(LabResourceType.OUTPUT_MATERIAL)),
         )
+
+    async def insert_resource_at(self, at_index: int, attrs: LabResourceAttrs):
+        raise NotImplementedError
+
+    async def _delete_resources(
+        self, type: LabResourceType, start_index: int, count: int | None = None
+    ):
+        db = local_object_session(self)
+        model = type.py_type
+
+        clauses = [
+            LabResource.container_id == self.id,
+            LabResource.index >= start_index,
+        ]
+        if count:
+            clauses.append(LabResource.index < start_index + count)
+        to_delete = select(model).where(*clauses)
+        await db.execute(to_delete)
+
+        if count:
+            update_indices = (
+                update(LabResource)
+                .where(
+                    LabResource.container_id == self.id,
+                    LabResource.index >= start_index + count,
+                )
+                .values(index=LabResource.index - count)
+            )
+            await db.execute(update_indices)
+
+    async def _insert_resources(
+        self, type: LabResourceType, at_index: int, items: list[LabResourceAttrs]
+    ):
+        db = local_object_session(self)
+        model = type.py_type
+
+        update_indices = (
+            update(LabResource)
+            .where(LabResource.container_id == self.id, LabResource.index >= at_index)
+            .values(index=LabResource.index + len(items))
+        )
+        await db.execute(update_indices)
+        await db.commit()
+
+        for i, attrs in enumerate(items):
+            attrs["container_id"] = self.id
+            attrs["index"] = at_index + i
+            db.add(model(attrs))
+
+        await db.commit()
+
+    async def splice_resources(
+        self,
+        resource_type: LabResourceType,
+        start_index: int,
+        end_index: int | None,
+        items: list[LabResourceAttrs],
+    ):
+        delete_count = end_index - start_index if end_index is not None else None
+        await self._delete_resources(resource_type, start_index, delete_count)
+        await self._insert_resources(resource_type, start_index, items)
 
 
 def select_mapped_consumer_container_id(consumer_id: UUID) -> Select[tuple[UUID]]:

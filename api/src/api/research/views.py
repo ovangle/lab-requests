@@ -63,7 +63,7 @@ async def index_plans(
     plan_index = ResearchPlanIndex(
         query_research_plans(researcher=researcher, coordinator=coordinator)
     )
-    return await plan_index.load_page(db, 0)
+    return await plan_index.load_page(db, 1)
 
 
 @research_plans.post("")
@@ -99,7 +99,7 @@ async def index_plan_tasks(plan_id: UUID, db=Depends(get_db)):
     task_index = ResearchPlanTaskIndex(
         select(ResearchPlanTask).where(ResearchPlanTask.plan_id == plan_id)
     )
-    return await task_index.load_page(db, 0)
+    return await task_index.load_page(db, 1)
 
 
 @research_plan_detail.get("/tasks/{index}")

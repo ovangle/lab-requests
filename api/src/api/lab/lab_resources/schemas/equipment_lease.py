@@ -2,10 +2,11 @@ from datetime import date
 
 from sqlalchemy import Select
 from db.models.lab import LabResource
+from db.models.lab.lab_resource import LabResourceAttrs
 from db.models.lab.resources import EquipmentLease
 
 from ...lab_equipment.schemas import LabEquipmentView, LabEquipmentProvisionView
-from ._common import LabResourceParams, LabResourceView, LabResourceIndex
+from ._common import LabResourcePatch, LabResourceView, LabResourceIndex
 
 
 class LabEquipmentLeaseView(LabResourceView[EquipmentLease]):
@@ -49,5 +50,6 @@ class LabEquipmentLeaseIndex(LabResourceIndex[LabEquipmentLeaseView]):
     __item_view__ = LabEquipmentLeaseView
 
 
-class LabEquipmentLeaseParams(LabResourceParams):
-    pass
+class LabEquipmentLeasePatch(LabResourcePatch):
+    def as_attrs(self) -> LabResourceAttrs:
+        return {}

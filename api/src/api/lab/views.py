@@ -9,12 +9,14 @@ from db.models.lab import Lab
 from db.models.uni.discipline import Discipline
 
 from .lab_resources.views import lab_resources
-from .lab_equipment.views import lab_equipments, lab_equipment_tags
+from .lab_equipment.views import all_equipments, lab_equipments, lab_equipment_tags
 from .work_unit.views import lab_work_units
 
 from .schemas import LabIndex, LabIndexPage, LabView
 
 labs = APIRouter(prefix="/labs", tags=["labs"])
+
+labs.include_router(all_equipments)
 
 
 @labs.get("/")
@@ -25,7 +27,7 @@ async def index_labs(
     campus_code: str | None = None,
     discipline: Discipline | None = None,
     ids: str | None = None,
-    page_index: int = 0,
+    page: int = 1,
     db=Depends(get_db),
 ) -> LabIndexPage:
     campus_lookup: CampusLookup | UUID | None = None
@@ -50,7 +52,7 @@ async def index_labs(
         id_in=id_in,
     )
     campus_index = LabIndex(labs)
-    return await campus_index.load_page(db, page_index=page_index)
+    return await campus_index.load_page(db, page_index=page)
 
 
 lab_detail = APIRouter(prefix="/{lab_id}")

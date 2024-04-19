@@ -138,7 +138,7 @@ export type InputMaterialFormErrors = ValidationErrors & {
   ]
 })
 export class InputMaterialFormComponent extends ResourceFormComponent<InputMaterial, InputMaterialForm, InputMaterialPatch> {
-  override readonly resourceType = 'input-material';
+  override readonly resourceType = 'input_material';
   override readonly service = inject(InputMaterialService);
 
   override createForm(committed: InputMaterial | null): InputMaterialForm {

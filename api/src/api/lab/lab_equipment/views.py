@@ -35,17 +35,21 @@ lab_equipment_tags = APIRouter(
 #         query_equipment_tags(name_istartswith=name_startswith),
 #     )
 
+all_equipments = APIRouter(prefix="/equipment")
 
+
+# EQuipments that are specific to a given lab
 lab_equipments = APIRouter(prefix="/equipment", tags=["lab-equipments"])
 
 
+@all_equipments.get("/")
 @lab_equipments.get("/")
 async def index_equipments(
     lab_id: UUID | None = None,
     name_startswith: Optional[str] = None,
     name: Optional[str] = None,
     has_tags: set[str] | str | None = None,
-    page_index: int = 0,
+    page: int = 0,
     db=Depends(get_db),
 ) -> LabEquipmentIndexPage:
     equipment_index = LabEquipmentIndex(
@@ -56,7 +60,7 @@ async def index_equipments(
             has_tags=has_tags,
         )
     )
-    return await equipment_index.load_page(db, page_index)
+    return await equipment_index.load_page(db, page)
 
 
 @lab_equipments.post("/")

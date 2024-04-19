@@ -24,7 +24,7 @@ import { of } from 'rxjs';
   ],
   template: `
     <lab-resource-table
-      resourceType="equipment-lease"
+      resourceType="equipment_lease"
       [displayedColumns]="[
         'name',
         'is-trained',

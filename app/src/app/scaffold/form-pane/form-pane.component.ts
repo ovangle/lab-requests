@@ -27,7 +27,7 @@ export class ScaffoldFormPaneDeactivation {
   `,
   styles: `
   .container.visible {
-    min-width: 40em;
+    min-width: 40vw;
     padding: 1em 2em;
     box-sizing: border-box;
   }

@@ -28,7 +28,7 @@ export interface InputMaterialParams extends ResourceParams {
 }
 
 export class InputMaterial extends Resource {
-  override readonly type = 'input-material';
+  override readonly type = 'input_material';
 
   name: string;
   description: string;
@@ -100,7 +100,7 @@ export interface InputMaterialPatch extends ResourcePatch<InputMaterial> {
 
 }
 
-export function inputMaterialPatchToJson(inputMaterial: InputMaterial | null, patch: Partial<InputMaterialPatch>): JsonObject {
+export function inputMaterialPatchToJsonObject(inputMaterial: InputMaterial | null, patch: Partial<InputMaterialPatch>): JsonObject {
   return {
     id: inputMaterial!.id,
     index: inputMaterial!.index,
@@ -115,10 +115,10 @@ export function inputMaterialPatchToJson(inputMaterial: InputMaterial | null, pa
 
 @Injectable()
 export class InputMaterialService extends ResourceService<InputMaterial, InputMaterialPatch> {
-  override readonly resourceType = 'input-material';
+  override readonly resourceType = 'input_material';
 
   override resourcePatchToJson(current: InputMaterial | null, params: Partial<InputMaterialPatch>): JsonObject {
-    return inputMaterialPatchToJson(current, params);
+    return inputMaterialPatchToJsonObject(current, params);
   }
   override modelFromJsonObject(json: JsonObject): InputMaterial {
     return inputMaterialFromJson(json);

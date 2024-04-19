@@ -14,7 +14,6 @@ from db.models.base.errors import DoesNotExist
 from ..lab_resource import LabResource, LabResourceType, lab_resource_pk
 
 if TYPE_CHECKING:
-    from ..lab_resource_container import LabResourceContainer
     from ..lab_equipment import LabEquipment, LabEquipmentProvision
 
 
@@ -24,11 +23,14 @@ class EquipmentLease(LabResource):
     required by a research plan
     """
 
-    __tablename__ = "lab_equipment_lease"
+    __tablename__ = "lab_resource__equipment_lease"
     __mapper_args__ = {
         "polymorphic_identity": LabResourceType.EQUIPMENT_LEASE,
     }
-    id: Mapped[lab_resource_pk]
+    id: Mapped[UUID] = mapped_column(
+        ForeignKey("lab_resource.id", name="equipment_lease_resource_fk"),
+        primary_key=True,
+    )
 
     equipment_id: Mapped[UUID] = mapped_column(ForeignKey("lab_equipment.id"))
     equipment: Mapped[LabEquipment] = relationship()

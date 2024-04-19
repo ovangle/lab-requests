@@ -1,10 +1,10 @@
 import { Injectable, Provider, inject } from "@angular/core";
 import { ModelContext } from "src/app/common/model/context";
-import { ResearchPlan, ResearchPlanService } from "./research-plan";
+import { ResearchPlan, ResearchPlanService, UpdateResearchPlan } from "./research-plan";
 import { ActivatedRoute } from "@angular/router";
 import { roundToNearestMinutes } from "date-fns";
-import { firstValueFrom, map, tap } from "rxjs";
-import { LabResourceConsumerDelegateContext } from "src/app/lab/lab-resource-consumer/resource-container";
+import { Observable, first, firstValueFrom, map, switchMap, tap } from "rxjs";
+import { LabResourceConsumerDelegateContext, LabResourceConsumerPatch } from "src/app/lab/lab-resource-consumer/resource-container";
 import { Resource, ResourcePatch } from "src/app/lab/lab-resource/resource";
 import { ResourceType } from "src/app/lab/lab-resource/resource-type";
 
@@ -14,31 +14,20 @@ import { ResourceType } from "src/app/lab/lab-resource/resource-type";
 export class ResearchPlanContext extends ModelContext<ResearchPlan> implements LabResourceConsumerDelegateContext<ResearchPlan> {
     override readonly service = inject(ResearchPlanService);
 
-    async appendResource<T extends Resource>(resourceType: ResourceType & T[ "type" ], params: ResourcePatch<T>): Promise<ResearchPlan> {
-        const plan = await firstValueFrom(this.committed$);
-        return await firstValueFrom(
-            this.service.appendResource(plan, resourceType, params).pipe(
-                tap(updated => this.nextCommitted(updated))
-            )
+    applyResourceConsumerPatch(patch: LabResourceConsumerPatch): Observable<ResearchPlan> {
+        return this.committed$.pipe(
+            first(),
+            map(plan => [
+                plan,
+                {
+                    title: plan.title,
+                    description: plan.description,
+                    funding: plan.funding,
+                    ...patch
+                }
+            ] as [ ResearchPlan, UpdateResearchPlan ]),
+            switchMap(([ plan, request ]) => this.service.update(plan, request))
         );
-    }
-    async insertResourceAt<T extends Resource>(resourceType: ResourceType & T[ "type" ], index: number, params: ResourcePatch<T>): Promise<ResearchPlan> {
-        const plan = await firstValueFrom(this.committed$);
-        return await firstValueFrom(this.service.insertResourceAt(plan, resourceType, index, params).pipe(
-            tap((updated) => this.nextCommitted(updated))
-        ));
-    }
-    async updateResourceAt<T extends Resource>(resourceType: ResourceType & T[ "type" ], index: number, params: ResourcePatch<T>): Promise<ResearchPlan> {
-        const plan = await firstValueFrom(this.committed$);
-        return await firstValueFrom(this.service.updateResourceAt(plan, resourceType, index, params).pipe(
-            tap((updated) => this.nextCommitted(updated))
-        ));
-    }
-    async deleteResourceAt(resourceType: ResourceType, index: number): Promise<ResearchPlan> {
-        const plan = await firstValueFrom(this.committed$);
-        return await firstValueFrom(this.service.deleteResourceAt(plan, resourceType, index).pipe(
-            tap((updated) => this.nextCommitted(updated))
-        ));
     }
 }
 

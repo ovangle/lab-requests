@@ -31,7 +31,10 @@ from ...base.schemas import (
 )
 from ...user.schemas.user import UserLookup, UserView, lookup_user
 from ...lab.schemas import LabLookup
-from ...lab.lab_resource_consumer import LabResourceConsumerView
+from ...lab.lab_resource_consumer import (
+    UpdateLabResourceConsumer,
+    LabResourceConsumerView,
+)
 
 from .funding import (
     ResearchFundingCreateRequest,
@@ -332,12 +335,13 @@ class ResearchPlanTaskSlice(ModelUpdateRequest[ResearchPlan]):
         return model
 
 
-class ResearchPlanUpdateRequest(ModelUpdateRequest[ResearchPlan]):
+class ResearchPlanUpdateRequest(UpdateLabResourceConsumer[ResearchPlan]):
     title: str
     description: str
     tasks: list[ResearchPlanTaskSlice]
 
     async def do_update(self, model: ResearchPlan, **kwargs) -> ResearchPlan:
+        await super().do_update(model, **kwargs)
         db = local_object_session(model)
 
         if model.title != self.title:
@@ -352,14 +356,15 @@ class ResearchPlanUpdateRequest(ModelUpdateRequest[ResearchPlan]):
 
         all_tasks = await model.awaitable_attrs.tasks
 
-        for task_slice in self.tasks:
-            await task_slice.do_update(
-                model,
-                tasks=all_tasks,
-                default_supervisor=await model.awaitable_attrs.coordinator,
-                default_lab=await model.awaitable_attrs.lab,
-                db=db,
-            )
+        if self.tasks is not None:
+            for task_slice in self.tasks:
+                await task_slice.do_update(
+                    model,
+                    tasks=all_tasks,
+                    default_supervisor=await model.awaitable_attrs.coordinator,
+                    default_lab=await model.awaitable_attrs.lab,
+                    db=db,
+                )
         await db.refresh(model)
         return model
 

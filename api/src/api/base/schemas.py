@@ -107,6 +107,8 @@ class ModelIndex(Generic[TModelView]):
     async def load_page(
         self, db: LocalSession, page_index: int
     ) -> ModelIndexPage[TModelView]:
+        if page_index <= 0:
+            raise IndexError("Pages are 1-indexed")
         total_item_count = (
             await db.scalar(
                 self.selection.order_by(None).with_only_columns(
@@ -117,7 +119,7 @@ class ModelIndex(Generic[TModelView]):
         )
         total_page_count = total_item_count // self.page_size
 
-        selection = self.selection.offset(page_index * self.page_size).limit(
+        selection = self.selection.offset((page_index - 1) * self.page_size).limit(
             self.page_size
         )
         items = await self._gather_items(await db.scalars(selection))

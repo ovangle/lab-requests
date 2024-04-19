@@ -1,7 +1,7 @@
 from sqlalchemy import Select
 from db.models.lab.resources import OutputMaterial
 
-from ._common import LabResourceParams, LabResourceView, LabResourceIndex
+from ._common import LabResourcePatch, LabResourceView, LabResourceIndex
 
 
 class OutputMaterialView(LabResourceView[OutputMaterial]):
@@ -12,5 +12,6 @@ class OutputMaterialIndex(LabResourceIndex[OutputMaterialView]):
     __item_view__ = OutputMaterialView
 
 
-class OutputMaterialParams(LabResourceParams):
-    pass
+class OutputMaterialPatch(LabResourcePatch):
+    def as_attrs(self):
+        return {}

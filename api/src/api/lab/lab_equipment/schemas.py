@@ -51,7 +51,7 @@ class LabEquipmentView(ModelView[LabEquipment]):
                 LabEquipmentInstallation.provision_status == ProvisionStatus.INSTALLED,
             )
         )
-        installations = await installation_index.load_page(db, 0)
+        installations = await installation_index.load_page(db, 1)
 
         active_provision_index = LabEquipmentProvisionIndex(
             select(LabEquipmentProvision).where(
@@ -63,7 +63,7 @@ class LabEquipmentView(ModelView[LabEquipment]):
                 ),
             )
         )
-        active_provisions = await active_provision_index.load_page(db, 0)
+        active_provisions = await active_provision_index.load_page(db, 1)
 
         return cls(
             id=cast(UUID, equipment.id),

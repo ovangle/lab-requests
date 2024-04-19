@@ -1,4 +1,5 @@
 from __future__ import annotations
+from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 from uuid import UUID
 
@@ -7,7 +8,7 @@ from sqlalchemy import Select
 from db import LocalSession
 
 from db.models.lab import LabResource
-from db.models.lab.lab_resource import LabResourceType
+from db.models.lab.lab_resource import LabResourceAttrs, LabResourceType
 from api.base.schemas import (
     BaseModel,
     ModelIndexPage,
@@ -71,5 +72,7 @@ class LabResourceLookup(ModelLookup[TResource], Generic[TResource]):
         raise NotImplementedError
 
 
-class LabResourceParams(BaseModel):
-    pass
+class LabResourcePatch(BaseModel, ABC):
+    @abstractmethod
+    def as_attrs(self) -> LabResourceAttrs:
+        raise NotImplementedError

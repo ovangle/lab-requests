@@ -33,7 +33,7 @@ class LabView(ModelView[Lab]):
     supervisors: list[UserView]
 
     @classmethod
-    async def _from_model(cls, lab: Lab, **kwargs):
+    async def _from_model(cls, lab: Lab, **kwargs) -> LabView:
         campus = await CampusView.from_model(await lab.awaitable_attrs.campus)
 
         supervisor_models = await lab.awaitable_attrs.supervisors
@@ -98,14 +98,14 @@ LabIndexPage = ModelIndexPage[LabView]
 #                 LabEquipmentInstallation.provision_status == "installed",
 #             )
 #         )
-#         equipment_installations = await equipment_installation_index.load_page(db, 0)
+#         equipment_installations = await equipment_installation_index.load_page(db, 1)
 #         equipment_provision_index = LabEquipmentProvisionIndex(
 #             select(LabEquipmentProvision).where(
 #                 LabEquipmentProvision.lab_id == model.id,
 #                 not_(LabEquipmentProvision.status.in_(["installed", "cancelled"])),
 #             )
 #         )
-#         equipment_provisions = await equipment_provision_index.load_page(db, 0)
+#         equipment_provisions = await equipment_provision_index.load_page(db, 1)
 
 #         return await super()._from_model(
 #             model,

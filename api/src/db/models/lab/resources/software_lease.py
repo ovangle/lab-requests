@@ -23,7 +23,10 @@ class SoftwareLease(LabResource):
     __mapper_args__ = {
         "polymorphic_identity": LabResourceType.SOFTWARE_LEASE,
     }
-    id: Mapped[lab_resource_pk]
+    id: Mapped[UUID] = mapped_column(
+        ForeignKey("lab_resource.id", name="software_lease_resource_fk"),
+        primary_key=True,
+    )
 
     software_id: Mapped[UUID] = mapped_column(
         ForeignKey("lab_software.id"), nullable=True

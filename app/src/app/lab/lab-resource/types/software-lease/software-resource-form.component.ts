@@ -130,7 +130,7 @@ export type SoftwareLeaseFormErrors = ValidationErrors & {
   ]
 })
 export class SoftwareLeaseFormComponent extends ResourceFormComponent<SoftwareLease, SoftwareLeaseForm, SoftwareLeasePatch> {
-  override readonly resourceType = 'software-lease';
+  override readonly resourceType = 'software_lease';
   override readonly service = inject(SoftwareLeaseService);
 
   @Input()

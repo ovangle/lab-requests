@@ -2,7 +2,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime
 from http import HTTPStatus
-from typing import Set
+from typing import Self, Set
 
 from typing_extensions import override
 from uuid import UUID
@@ -40,7 +40,7 @@ class UserView(ModelView[User]):
     roles: set[str]
 
     @classmethod
-    async def from_model(cls, model: User, **kwargs):
+    async def from_model(cls, model: User, **kwargs) -> Self:
         return cls(
             id=model.id,
             domain=model.domain,

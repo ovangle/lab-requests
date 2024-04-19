@@ -3,10 +3,10 @@ import { Resource } from './resource';
 import { ResourceType } from './resource-type';
 import { MatCardModule } from '@angular/material/card';
 import { CommonModule } from '@angular/common';
-import { EquipmentLeaseTableComponent } from '../lab-resources/equipment-lease/equipment-lease-table.component';
-import { SoftwareLeaseTableComponent } from '../lab-resources/software-lease/software-resource-table.component';
-import { InputMaterialTableComponent } from '../lab-resources/input-material/input-material-resource-table.component';
-import { OutputMaterialTableComponent } from '../lab-resources/output-material/output-material-resource-table.component';
+import { EquipmentLeaseTableComponent } from './types/equipment-lease/equipment-lease-table.component';
+import { SoftwareLeaseTableComponent } from './types/software-lease/software-resource-table.component';
+import { InputMaterialTableComponent } from './types/input-material/input-material-resource-table.component';
+import { OutputMaterialTableComponent } from './types/output-material/output-material-resource-table.component';
 
 @Component({
   selector: 'lab-resource-card',
@@ -22,16 +22,16 @@ import { OutputMaterialTableComponent } from '../lab-resources/output-material/o
   ],
   template: `
     @switch (resourceType) {
-      @case ('equipment-lease') {
+      @case ('equipment_lease') {
         <lab-equipment-lease-table />
       }
-      @case ('software-lease') {
+      @case ('software_lease') {
         <lab-software-lease-table />
       }
-      @case ('input-material') {
+      @case ('input_material') {
         <lab-input-material-table />
       }
-      @case ('output-material') {
+      @case ('output_material') {
         <lab-output-material-table />
       }
     }

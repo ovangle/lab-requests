@@ -14,7 +14,7 @@ export interface SoftwareLeaseParams extends ResourceParams {
 }
 
 export class SoftwareLease extends Resource {
-  override readonly type = 'software-lease';
+  override readonly type = 'software_lease';
 
   software: Software;
   softwareProvision: SoftwareProvision | null;
@@ -59,7 +59,7 @@ export function softwareLeasePatchToJsonObject(current: SoftwareLease | null, pa
 
 @Injectable()
 export class SoftwareLeaseService extends ResourceService<SoftwareLease, SoftwareLeasePatch> {
-  override readonly resourceType = 'software-lease';
+  override readonly resourceType = 'software_lease';
   override resourcePatchToJson(current: SoftwareLease | null, patch: Partial<SoftwareLeasePatch>): JsonObject {
     return softwareLeasePatchToJsonObject(current, patch)
   }

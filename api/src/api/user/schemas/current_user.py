@@ -27,11 +27,11 @@ class CurrentUserView(UserView):
         db = local_object_session(model)
 
         lab_pages = LabIndex(select(Lab).where(Lab.supervisors.contains(model)))
-        labs = await lab_pages.load_page(db, 0)
+        labs = await lab_pages.load_page(db, 1)
 
         plan_pages = ResearchPlanIndex(
             select(ResearchPlan).where(ResearchPlan.coordinator == model)
         )
-        plans = await plan_pages.load_page(db, 0)
+        plans = await plan_pages.load_page(db, 1)
 
         return await super().from_model(model, labs=labs, plans=plans)

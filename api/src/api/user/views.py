@@ -49,7 +49,7 @@ async def index_users(
             search=search, include_roles=include_role_set, discipline=discipline
         )
     )
-    return await index.load_page(db, 0)
+    return await index.load_page(db, 1)
 
 
 @users.get("/me")

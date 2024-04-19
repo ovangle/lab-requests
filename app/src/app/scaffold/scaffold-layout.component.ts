@@ -20,20 +20,24 @@ import { map } from 'rxjs';
     ScaffoldFormPaneComponent
   ],
   template: `
-    <scaffold-toolbar />
-    <mat-sidenav-container>
-      <mat-sidenav mode="side" [opened]="isSidenavOpen$ | async">
-        <scaffold-sidenav-menu />
-      </mat-sidenav>
-      <mat-sidenav-content>
-        <ng-content select=".content" />
-      </mat-sidenav-content>
-      
-    </mat-sidenav-container>
+    <div class="form-pane-background" [class.overlay-open]="isFormPaneOpen$ | async">
+      <scaffold-toolbar />
+      <mat-sidenav-container>
+        <mat-sidenav mode="side" [opened]="isSidenavOpen$ | async">
+          <scaffold-sidenav-menu />
+        </mat-sidenav>
+        <mat-sidenav-content>
+          <ng-content select=".content" />
+        </mat-sidenav-content>
+        
+      </mat-sidenav-container>
+    </div>
     <scaffold-form-pane>
       <ng-content select=".form-pane-content">
       </ng-content>
     </scaffold-form-pane>
+    <div class="form-pane-overlay" [class.overlay-open]="isFormPaneOpen$ | async">
+    </div>
   `,
   styleUrls: [ './scaffold-layout.scss' ]
 })
@@ -44,6 +48,9 @@ export class ScaffoldLayoutComponent {
   readonly isSidenavOpen$ = this.state.isSidenavDisabled$.pipe(
     map(disabled => !disabled)
   );
+  readonly isFormPaneOpen$ = this.state.isFormPaneOpen$.pipe(
+    map(isOpen => isOpen)
+  )
 
   ngOnInit() {
     const stateConnection = this.state.connect(this);

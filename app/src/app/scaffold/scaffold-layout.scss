@@ -35,3 +35,32 @@ scaffold-form-pane {
   background-color: white;
   z-index: 100;
 }
+
+scaffold-form-pane {
+  z-index: 1100;
+}
+
+.form-pane-overlay,
+.form-pane-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.form-pane-background.overlay-open {
+  cursor: not-allowed !important;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.form-pane-overlay.overlay-open {
+  z-index: 0;
+  background-color: rgb(30, 30, 30);
+  opacity: 0.4;
+}
+
+scaffold-form-pane {
+  z-index: 1000;
+}

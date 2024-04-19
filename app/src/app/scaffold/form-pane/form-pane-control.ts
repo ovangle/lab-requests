@@ -1,6 +1,6 @@
 import { Injectable, inject } from "@angular/core";
 import { ActivatedRoute, ActivatedRouteSnapshot, ChildActivationEnd, NavigationEnd, Router, RouterEvent, UrlSegment } from "@angular/router";
-import { BehaviorSubject, Observable, Subject, Subscription, buffer, combineLatest, endWith, filter, map } from "rxjs";
+import { BehaviorSubject, Observable, Subject, Subscription, buffer, combineLatest, endWith, filter, map, tap } from "rxjs";
 
 export interface ScaffoldFormPane {
   toggleIsOpen(formPath: UrlSegment[] | null): void
@@ -9,28 +9,27 @@ export interface ScaffoldFormPane {
 @Injectable({ providedIn: 'root' })
 export class ScaffoldFormPaneControl {
   _router = inject(Router);
+  readonly _isOpenSubject = new BehaviorSubject<boolean>(false);
 
   connect(formPane: ScaffoldFormPane): Subscription {
     const navigationEnd = this._router.events.pipe(filter(isNavigationEnd));
 
-    const isOpen = this._router.events.pipe(
+    return this._router.events.pipe(
       filter(isFormRouteActivationEnd),
       buffer(navigationEnd),
       map(activations => activations[ 0 ] || null),
       endWith(null),
-    ).subscribe((activation: ChildActivationEnd | null) => {
-      if (activation == null) {
-        formPane.toggleIsOpen(null);
-      } else {
-        const formPath = formPathFromChildActivation(activation);
-        console.log('formPath', formPath);
-        formPane.toggleIsOpen(formPath);
-      }
-    });
-
-    return new Subscription(() => {
-      isOpen.unsubscribe();
-    });
+      tap((activation: ChildActivationEnd | null) => {
+        if (activation == null) {
+          formPane.toggleIsOpen(null);
+        } else {
+          const formPath = formPathFromChildActivation(activation);
+          console.log('formPath', formPath);
+          formPane.toggleIsOpen(formPath);
+        }
+      }),
+      map(activation => activation != null)
+    ).subscribe((isOpen) => this._isOpenSubject.next(isOpen));
   }
 
   async open(formPath: any[]): Promise<boolean> {
@@ -39,6 +38,10 @@ export class ScaffoldFormPaneControl {
 
   async close(): Promise<boolean> {
     return this._router.navigate([ { outlets: { form: null } } ]);
+  }
+
+  get isOpen(): boolean {
+    return this._isOpenSubject.value;
   }
 }
 

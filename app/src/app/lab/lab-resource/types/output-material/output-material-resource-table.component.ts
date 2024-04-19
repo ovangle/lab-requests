@@ -14,7 +14,7 @@ import { LabResourceContainerContext } from 'src/app/lab/lab-resource-consumer/r
   imports: [ CommonModule, MatTableModule, ResourceTableComponent ],
   template: `
     <lab-resource-table
-      resourceType="output-material"
+      resourceType="output_material"
       [displayedColumns]="['name']"
       [detailTemplate]="detailTemplate"
     >

@@ -77,10 +77,11 @@ function equipmentLeaseForm(
   template: `
   @if (form && funding) {
     <lab-resource-form-title 
-      resourceType="equipment-lease" 
+      resourceType="equipment_lease" 
       [resourceIndex]="(resourceIndex$ | async) || 'create'"
-      (requestClose)="onRequestClose()"
-      (requestSave)="onRequestSave()"/>
+      (requestClose)="close('close button click')"
+      (requestSave)="saveAndClose()"
+      [saveDisabled]="!form.valid" />
     <form [formGroup]="form">
       <equipment-search 
         formControlName="equipment" required
@@ -127,7 +128,7 @@ function equipmentLeaseForm(
   ]
 })
 export class EquipmentLeaseFormComponent extends ResourceFormComponent<EquipmentLease, EquipmentLeaseForm, EquipmentLeasePatch> {
-  readonly resourceType = 'equipment-lease';
+  readonly resourceType = 'equipment_lease';
   readonly lab$: Observable<Lab | null> = injectMaybeLabFromContext();
   readonly _equipments = inject(EquipmentService);
   override readonly service = inject(EquipmentLeaseService);
@@ -152,7 +153,7 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
     return this.form.controls[ 'equipment' ].errors;
   }
 
-  patchFromFormValue(value: EquipmentLeaseForm[ 'value' ]): Partial<EquipmentLeasePatch> {
+  patchFromFormValue(value: EquipmentLeaseForm[ 'value' ]): EquipmentLeasePatch {
     const equipmentProvision = this._createdProvisionSubject.value;
 
     let equipment: Equipment | EquipmentCreateRequest;
@@ -206,12 +207,4 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
     switchMap(control => control.valueChanges),
     map(equipment => equipment != null)
   )
-
-  onRequestSave() {
-
-  }
-
-  onRequestClose() {
-
-  }
 }

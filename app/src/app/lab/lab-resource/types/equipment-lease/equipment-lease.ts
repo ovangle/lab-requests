@@ -26,7 +26,7 @@ export interface EquipmentLeaseParams extends ResourceParams {
 }
 
 export class EquipmentLease extends Resource {
-  override readonly type = 'equipment-lease';
+  override readonly type = 'equipment_lease';
 
   equipment: Equipment;
   equipmentProvision: EquipmentProvision | null;
@@ -127,7 +127,7 @@ export function equipmentLeasePatchToJsonObject(committed: EquipmentLease | null
 
 @Injectable()
 export class EquipmentLeaseService extends ResourceService<EquipmentLease, EquipmentLeasePatch> {
-  override resourceType: 'equipment-lease' = 'equipment-lease';
+  override resourceType: 'equipment_lease' = 'equipment_lease';
   override resourcePatchToJson(current: EquipmentLease | null, patch: Partial<EquipmentLeasePatch>): JsonObject {
     return equipmentLeasePatchToJsonObject(current, patch)
   }
