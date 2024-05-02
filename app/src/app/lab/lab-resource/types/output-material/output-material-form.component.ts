@@ -137,7 +137,7 @@ export function disableDependentControlsWithBaseUnitValidity(
 export class OutputMaterialFormComponent extends ResourceFormComponent<OutputMaterial, OutputMaterialForm, OutputMaterialPatch> {
   override readonly resourceType = 'output_material';
   override readonly service: ResourceService<OutputMaterial, OutputMaterialPatch> = inject(OutputMaterialService);
-  override patchFromFormValue(form: OutputMaterialForm[ 'value' ]): OutputMaterialPatch {
+  override patchFromFormValue(form: OutputMaterialForm[ 'value' ]): Promise<OutputMaterialPatch> {
     throw new Error('Method not implemented.');
   }
 

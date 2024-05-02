@@ -152,45 +152,24 @@ function equipmentProvisionQueryToHttpParams(query: EquipmentProvisionQuery) {
 
 
 export interface CreateEquipmentProvisionRequest extends ModelCreateRequest<EquipmentProvision> {
-    equipment: Equipment | EquipmentCreateRequest;
-
-    // The status of the newly created request.
-    // It is possible for a newly created provision to skip previous steps
-    // if conditions are met for them.
-    status?: ProvisionStatus;
+    status: 'requested';
+    equipment: Equipment;
+    lab: Lab;
 
     // The number of equipments required 
     quantityRequired: number;
 
     // The reason that the equipment is needed.
     reason: string;
-
-    // The lab to install the equipment into.
-    // `null` if it can be installed into any lab.
-    lab: Lab | null;
-
-    // The funding source that will provide the project budget, if known
-    funding: ResearchFunding | null;
-
-    // The estimated cost of the equipment, if known.
-    estimatedCost?: number | null;
-
-
-    // A url from which the equipment purchase can be arranged.
-    purchaseUrl: string;
 }
 
 export function createEquipmentProvisionRequestToJson(request: CreateEquipmentProvisionRequest) {
     return {
-        status: request.status || 'requested',
+        status: 'requested',
         reason: request.reason,
 
-        lab: request.lab?.id || null,
-        funding: request.funding?.id || null,
-
-        estimatedCost: request.estimatedCost,
+        lab: request.lab.id,
         quantityRequired: request.quantityRequired,
-        purchaseUrl: request.purchaseUrl
     };
 }
 

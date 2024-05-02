@@ -1,13 +1,13 @@
 import { CommonModule } from "@angular/common";
 import { Component, EventEmitter, Input, Output, inject } from "@angular/core";
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { AbstractControlDirective, ControlContainer, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatRadioModule } from "@angular/material/radio";
 import { Lab } from "src/app/lab/lab";
 import { LabSearchComponent } from "src/app/lab/lab-search.component";
 import { ResearchFunding } from "src/app/research/funding/research-funding";
 import { ResearchFundingCostEstimateFormComponent } from "src/app/research/funding/cost-estimate/cost-estimate-form.component";
-import { BehaviorSubject, Observable, combineLatest, filter, firstValueFrom, map, of, switchMap } from "rxjs";
+import { BehaviorSubject, Observable, combineLatest, defer, filter, firstValueFrom, map, of, switchMap } from "rxjs";
 import { EquipmentInstallation } from "../installation/equipment-installation";
 import { EquipmentInstallationInfoComponent } from "../installation/equipment-installation-info.component";
 import { EquipmentProvisionInfoComponent } from "./equipment-provision-info.component";
@@ -22,6 +22,38 @@ import { MatButtonModule } from "@angular/material/button";
 import { CostEstimate } from "src/app/research/funding/cost-estimate/cost-estimate";
 import { LabEquipmentProvisionService } from "src/app/lab/equipment/provision/lab-equipment-provision";
 
+export function createEquipmentProvisionForm(
+  lab: Lab | null = null
+) {
+  return new FormGroup({
+    status: new FormControl<ProvisionStatus>('requested', { nonNullable: true }),
+    reason: new FormControl<string>('', { nonNullable: true }),
+
+    lab: new FormControl<Lab | null>(lab, {
+      validators: (c) => {
+        if (c.parent?.value.status === 'requested') {
+          return Validators.required(c);
+        }
+        return null;
+      }
+    }),
+    funding: new FormControl<ResearchFunding | null>(null, {
+      validators: (c) => {
+        const isFundingRequired = [ 'requested', 'installed' ].includes(c.parent?.value.status!);
+        if (isFundingRequired) {
+          return Validators.required(c)
+        }
+
+        return null;
+      }
+    }),
+    cost: new FormControl<number | null>(null),
+    quantityRequired: new FormControl<number>(1, {
+      nonNullable: true,
+      validators: [ Validators.required, Validators.min(1) ]
+    })
+  });
+}
 
 @Component({
   selector: 'equipment-create-equipment-provision-form',
@@ -149,6 +181,7 @@ export class CreateEquipmentProvisionForm {
 
   readonly equipmentSubject = new BehaviorSubject<Equipment | EquipmentCreateRequest | undefined>(undefined);
   readonly equipment$ = this.equipmentSubject.asObservable();
+  readonly _controlContainer = inject(ControlContainer, { optional: true })
 
   readonly isNewEquipment$ = this.equipment$.pipe(
     map(equipment => !(equipment instanceof Equipment))
@@ -164,32 +197,16 @@ export class CreateEquipmentProvisionForm {
 
   readonly provisionService = inject(AbstractEquipmentProvisionService);
 
-  readonly form = new FormGroup({
-    status: new FormControl<ProvisionStatus>('requested', { nonNullable: true }),
-    reason: new FormControl<string>('', { nonNullable: true }),
+  form: ReturnType<typeof createEquipmentProvisionForm>;
 
-    lab: new FormControl<Lab | null>(null, {
-      validators: (c) => {
-        if (this.form && this.isLabRequired) {
-          return Validators.required(c);
-        }
-        return null;
-      }
-    }),
-    funding: new FormControl<ResearchFunding | null>(null, {
-      validators: (c) => {
-        if (this.form && this.isFundingRequired) {
-          return Validators.required(c);
-        }
-        return null;
-      }
-    }),
-    cost: new FormControl<number | null>(null),
-    quantityRequired: new FormControl<number>(1, {
-      nonNullable: true,
-      validators: [ Validators.required, Validators.min(1) ]
-    })
-  });
+  constructor() {
+    const controlContainer = inject(ControlContainer, { optional: true });
+    if (controlContainer == null) {
+      this.form = createEquipmentProvisionForm();
+    } else {
+      this.form = (controlContainer.formDirective as any).form;
+    }
+  }
 
   @Input()
   set lab(lab: Lab | null) {
@@ -208,12 +225,12 @@ export class CreateEquipmentProvisionForm {
     return this.form.value.status!;
   }
 
-  readonly provisionLab$ = this.form.valueChanges.pipe(
+  readonly provisionLab$ = defer(() => this.form.valueChanges.pipe(
     map(value => value.lab || null),
     filter((value): value is Lab => value != null)
-  );
+  ));
 
-  readonly activeProvision$ = combineLatest([
+  readonly activeProvision$ = defer(() => combineLatest([
     this.equipment$,
     this.provisionLab$
   ]).pipe(
@@ -223,9 +240,9 @@ export class CreateEquipmentProvisionForm {
       }
       return null;
     })
-  )
+  ))
 
-  readonly currentLabInstallation$: Observable<EquipmentInstallation | null> = combineLatest([
+  readonly currentLabInstallation$: Observable<EquipmentInstallation | null> = defer(() => combineLatest([
     this.equipment$,
     this.provisionLab$,
   ]).pipe(
@@ -235,7 +252,7 @@ export class CreateEquipmentProvisionForm {
       }
       return null;
     })
-  );
+  ));
 
   @Input()
   get funding() {
@@ -262,6 +279,7 @@ export class CreateEquipmentProvisionForm {
 
   async _onFormSubmit() {
     const equipment = await firstValueFrom(this.equipment$);
+    /*
     const provision = await firstValueFrom(
       this.provisionService.create({
         equipment: equipment!,
@@ -275,6 +293,7 @@ export class CreateEquipmentProvisionForm {
       })
     );
     this.save.emit(provision);
+    */
   }
 
   _onCostEstimateChange(estimate: CostEstimate) {

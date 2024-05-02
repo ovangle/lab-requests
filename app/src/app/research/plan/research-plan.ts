@@ -172,7 +172,7 @@ export interface UpdateResearchPlan extends LabResourceConsumerPatch {
   title: string;
   description: string;
   funding: ResearchFunding | null;
-  tasks: ResearchPlanTaskSlice[];
+  tasks?: ResearchPlanTaskSlice[];
 }
 
 function updateResearchPlanToJsonObject(plan: ResearchPlan, patch: Partial<UpdateResearchPlan>) {

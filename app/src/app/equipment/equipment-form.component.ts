@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import {
   Component,
   EventEmitter,
+  Injectable,
   Input,
   Output,
   TemplateRef,
@@ -10,6 +11,8 @@ import {
 } from '@angular/core';
 import {
   AbstractControl,
+  AsyncValidator,
+  ControlContainer,
   FormBuilder,
   FormControl,
   FormGroup,
@@ -25,21 +28,79 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { EquipmentTagInputComponent } from './tag/equipment-tag-input.component';
 import { EquipmentTrainingDescriptionsInputComponent } from './training/training-descriptions-input.component';
-import { Equipment, EquipmentUpdateRequest, EquipmentService, equipmentQueryToHttpParams } from './equipment';
+import { Equipment, EquipmentUpdateRequest, EquipmentService, equipmentQueryToHttpParams, EquipmentCreateRequest } from './equipment';
 import { ResizeTextareaOnInputDirective } from 'src/app/common/forms/resize-textarea-on-input.directive';
 import { EquipmentContext } from 'src/app/equipment/equipment-context';
 import { HttpParams } from '@angular/common/http';
-import { Observable, debounceTime, firstValueFrom, map, shareReplay, switchMap } from 'rxjs';
+import { BehaviorSubject, Observable, debounceTime, distinctUntilChanged, firstValueFrom, map, of, shareReplay, switchMap } from 'rxjs';
 import { EquipmentSearchComponent } from './equipment-search.component';
 import { NotFoundValue } from '../common/model/search/search-control';
 import { RouterModule } from '@angular/router';
 
 export interface EquipmentFormControls {
-  name: FormControl<Equipment | NotFoundValue | null>;
+  name: FormControl<string>;
   description: FormControl<string>;
   tags: FormControl<string[]>;
   trainingDescriptions: FormControl<string[]>;
 };
+
+@Injectable({ providedIn: 'root' })
+export class EquipmentNameUniqueValidator implements AsyncValidator {
+  readonly equipments = inject(EquipmentService);
+  readonly valueSubject = new BehaviorSubject<string>('');
+
+  readonly matches = this.valueSubject.pipe(
+    distinctUntilChanged(),
+    debounceTime(300),
+    switchMap(value => this.equipments.query({ name: value })),
+    shareReplay(1)
+  );
+
+  async validate(control: AbstractControl<any, any>): Promise<ValidationErrors | null> {
+    const value = control.value;
+    if (typeof value === 'string') {
+      this.valueSubject.next(value);
+    }
+    const matches = await firstValueFrom(this.matches);
+    if (matches.length > 0) {
+      return { unique: 'equipment name not unqiue' };
+    }
+    return null;
+  }
+}
+
+export type EquipmentFormGroup = FormGroup<EquipmentFormControls>;
+export function equipmentFormGroup(validateNameUnique: EquipmentNameUniqueValidator): EquipmentFormGroup {
+
+  return new FormGroup({
+    name: new FormControl<string>('', {
+      nonNullable: true,
+      validators: [ Validators.required ],
+      asyncValidators: [
+        (c) => validateNameUnique.validate(c)
+      ]
+    }),
+    description: new FormControl<string>('', { nonNullable: true }),
+    tags: new FormControl<string[]>([], { nonNullable: true }),
+    trainingDescriptions: new FormControl<string[]>(
+      [],
+      { nonNullable: true }
+    ),
+  });
+}
+
+export function equipmentCreateRequestFromForm(form: EquipmentFormGroup): EquipmentCreateRequest {
+  if (!form.valid) {
+    throw new Error('Invalid form has no value');
+  }
+  return {
+    name: form.value.name!,
+    description: form.value.description,
+    tags: form.value.tags,
+    trainingDescriptions: form.value.trainingDescriptions
+  };
+
+}
 
 @Component({
   selector: 'equipment-form',
@@ -78,31 +139,39 @@ export interface EquipmentFormControls {
         </mat-form-field>
       }
 
-      <mat-form-field>
-        <mat-label>Description</mat-label>
-        <textarea matInput formControlName="description" resizeOnInput>
-        </textarea>
-      </mat-form-field>
+      @if (!_disableFields.has('description')) {
+        <mat-form-field>
+          <mat-label>Description</mat-label>
+          <textarea matInput formControlName="description" resizeOnInput>
+          </textarea>
+        </mat-form-field>
+      }
 
-      <equipment-tags-input formControlName="tags">
-        <mat-label>Tags</mat-label>
-      </equipment-tags-input>
+      @if (!_disableFields.has('tags')) {
+        <equipment-tags-input formControlName="tags">
+          <mat-label>Tags</mat-label>
+        </equipment-tags-input>
+      }
 
-      <lab-equipment-training-descriptions-input
-        formControlName="trainingDescriptions"
-      >
-      </lab-equipment-training-descriptions-input>
-
-      <div class="form-actions">
-        <button
-          mat-raised-button
-          type="submit"
-          color="primary"
-          [disabled]="!form!.valid"
+      @if (!_disableFields.has('trainingDescriptions')) {
+        <lab-equipment-training-descriptions-input
+          formControlName="trainingDescriptions"
         >
-          <mat-icon>save</mat-icon> save
-        </button>
-      </div>
+        </lab-equipment-training-descriptions-input>
+      }
+
+      @if (!_isStandaloneForm) {
+        <div class="form-actions">
+          <button
+            mat-raised-button
+            type="submit"
+            color="primary"
+            [disabled]="!form!.valid"
+          >
+            <mat-icon>save</mat-icon> save
+          </button>
+        </div>
+      }
     </form>
   `,
   styles: [
@@ -114,7 +183,7 @@ export interface EquipmentFormControls {
   ],
   exportAs: 'form',
 })
-export class EquipmentForm {
+export class EquipmentFormComponent {
   readonly equipmentService = inject(EquipmentService);
 
   @Input()
@@ -136,24 +205,37 @@ export class EquipmentForm {
   }
   _equipment: Equipment | null = null;
 
+  @Input()
+  get disableFields() {
+    return [ ...this._disableFields ];
+  }
+  set disableFields(value: (keyof EquipmentFormGroup[ 'controls' ])[]) {
+    this._disableFields = new Set(value);
+
+    if (this._disableFields.has('name')) {
+      throw new Error('Cannot disable name field of equipment form');
+    }
+  }
+
+  _disableFields = new Set<keyof EquipmentFormGroup[ 'controls' ]>();
+
   @Output()
   save = new EventEmitter<Equipment>();
 
-  form = new FormGroup({
-    name: new FormControl<string>('', {
-      nonNullable: true,
-      validators: [Validators.required],
-      asyncValidators: (control: AbstractControl<any>) => {
-        return this._validateNameUnique(control as FormControl<string>);
-      }
-    }),
-    description: new FormControl<string>('', { nonNullable: true }),
-    tags: new FormControl<string[]>([], { nonNullable: true }),
-    trainingDescriptions: new FormControl<string[]>(
-      [],
-      { nonNullable: true }
-    ),
-  });
+  form: EquipmentFormGroup;
+  _isStandaloneForm: boolean;
+
+  constructor() {
+    const controlContainer = inject(ControlContainer, { optional: true });
+    if (controlContainer) {
+      this.form = (controlContainer.formDirective as any).form!;
+      this._isStandaloneForm = false;
+    } else {
+      const nameValidator = inject(EquipmentNameUniqueValidator);
+      this.form = equipmentFormGroup(nameValidator);
+      this._isStandaloneForm = true;
+    }
+  }
 
   get currentPatch(): EquipmentUpdateRequest | null {
     if (!this.form.valid) {
@@ -169,42 +251,14 @@ export class EquipmentForm {
   get nameErrors(): ValidationErrors | null {
     return this.form!.controls.name.errors;
   }
-  readonly _matchEquipmentName: Observable<Equipment[]> = this.form.controls.name.valueChanges.pipe(
-    debounceTime(300),
-    switchMap(name => {
-      return this.equipmentService.query({ name: name })
-    }),
-    shareReplay(1)
-  );
-
-  async _validateNameUnique(c: FormControl<string>): Promise<ValidationErrors | null> {
-    if (this.equipment) {
-      return null;
-    }
-    const nameMatches = await firstValueFrom(this._matchEquipmentName);
-    if (nameMatches.length > 0) {
-      return { unique: false };
-    }
-    return null;
-  }
 
   get trainingDescripionsFormArr(): FormControl<string[]> {
     return this.form!.controls.trainingDescriptions;
   }
 
   async _doCreateEquipment(): Promise<Equipment> {
-    if (!this.form.valid) {
-      throw new Error('Invalid form has no value');
-    }
-    const value = this.form.value;
-    const create = this.equipmentService.create({
-      name: this.form.value.name!,
-      description: value.description!,
-      tags: value.tags!,
-      trainingDescriptions: value.trainingDescriptions!
-    });
-
-    return firstValueFrom(create);
+    const request = equipmentCreateRequestFromForm(this.form);
+    return firstValueFrom(this.equipmentService.create(request));
   }
 
   async _doUpdateEquipment(equipment: Equipment): Promise<Equipment> {

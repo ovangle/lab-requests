@@ -5,9 +5,10 @@ from uuid import UUID
 
 from sqlalchemy import Select
 
-from db import LocalSession
+from db import LocalSession, local_object_session
 
 from db.models.lab import LabResource
+from db.models.lab.lab import Lab
 from db.models.lab.lab_resource import LabResourceAttrs, LabResourceType
 from api.base.schemas import (
     BaseModel,
@@ -16,6 +17,7 @@ from api.base.schemas import (
     ModelView,
     ModelIndex,
 )
+from db.models.lab.lab_resource_container import LabResourceContainer
 
 TResource = TypeVar("TResource", bound=LabResource)
 
@@ -73,6 +75,12 @@ class LabResourceLookup(ModelLookup[TResource], Generic[TResource]):
 
 
 class LabResourcePatch(BaseModel, ABC):
+    lab: UUID
+
     @abstractmethod
-    def as_attrs(self) -> LabResourceAttrs:
-        raise NotImplementedError
+    async def as_attrs(
+        self, container: LabResourceContainer, index: int
+    ) -> LabResourceAttrs:
+        db = local_object_session(container)
+        lab = await Lab.get_for_id(db, self.lab)
+        return {"lab": lab, "container": container, "index": index}

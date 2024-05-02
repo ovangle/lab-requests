@@ -6,7 +6,7 @@ import { ResourceType } from "./resource-type";
 import { C } from "@angular/cdk/keycodes";
 
 @Injectable()
-export class ResourceContext<T extends Resource, TPatch extends ResourcePatch<T>> {
+export class ResourceContext<T extends Resource, TPatch extends ResourcePatch> {
     readonly _consumerContext = inject(LabResourceConsumerContext);
     readonly consumer$ = this._consumerContext.committed$;
 

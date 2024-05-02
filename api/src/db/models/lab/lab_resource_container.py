@@ -170,9 +170,9 @@ class LabResourceContainer(Base):
         await db.commit()
 
         for i, attrs in enumerate(items):
-            attrs["container_id"] = self.id
+            attrs["container"] = self
             attrs["index"] = at_index + i
-            db.add(model(attrs))
+            db.add(model(**attrs))
 
         await db.commit()
 

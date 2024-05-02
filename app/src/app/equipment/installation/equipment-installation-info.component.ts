@@ -12,9 +12,7 @@ import { EquipmentInstallation } from "./equipment-installation";
   @if (pendingInstallation) {
     <p>{{pendingInstallation.numInstalled || 0}} after provision</p>
   }
-
   `
-
 })
 export class EquipmentInstallationInfoComponent {
   @Input({ required: true })

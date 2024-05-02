@@ -1,6 +1,6 @@
 import { Component, inject } from "@angular/core";
 import { ActivatedRoute, Router, RouterModule } from "@angular/router";
-import { EquipmentForm } from "../equipment-form.component";
+import { EquipmentFormComponent } from "../equipment-form.component";
 import { Equipment } from "../equipment";
 
 
@@ -9,7 +9,7 @@ import { Equipment } from "../equipment";
   standalone: true,
   imports: [
     RouterModule,
-    EquipmentForm
+    EquipmentFormComponent
   ],
   host: {
     '[class.scaffold-content-full-width]': 'true'

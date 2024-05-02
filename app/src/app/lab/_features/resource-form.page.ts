@@ -55,9 +55,12 @@ export function resourceIndexFromRoute(): Observable<number | 'create'> {
   template: `
     @switch (resourceType$ | async) {
       @case ('equipment_lease') {
-        <lab-equipment-lease-form 
-            [funding]="funding$ | async" 
-            (requestClose)="close($event)"/>
+        @if (lab$ | async; as lab) {
+          <lab-equipment-lease-form 
+              [lab]="lab"
+              [funding]="funding$ | async" 
+              (requestClose)="close($event)"/>
+        }
       }
 
       @case ('software_lease') {
@@ -98,9 +101,10 @@ export class LabResourceFormPage {
   readonly resourceType$ = this._context.resourceType$;
   readonly resourceIndex$ = this._context.resourceIndex$;
 
+  readonly lab$ = this._context.lab$;
   readonly funding$ = this._context.funding$;
 
-  readonly _patchSubject = new ReplaySubject<ResourcePatch<any>>(1);
+  readonly _patchSubject = new ReplaySubject<ResourcePatch>(1);
   saveDisabled: boolean = true;
 
   constructor() {
@@ -115,7 +119,7 @@ export class LabResourceFormPage {
     this._formPane.close();
   }
 
-  onPatchChange<T extends Resource>(patch: Partial<ResourcePatch<T>>) {
+  onPatchChange(patch: ResourcePatch) {
     this._patchSubject.next(patch);
   }
   onFormHasError(hasError: boolean) {

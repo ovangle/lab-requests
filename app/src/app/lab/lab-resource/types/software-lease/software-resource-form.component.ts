@@ -147,7 +147,7 @@ export class SoftwareLeaseFormComponent extends ResourceFormComponent<SoftwareLe
   override createForm(committed: SoftwareLease | null): SoftwareLeaseForm {
     return softwareLeaseForm(committed);
   }
-  override patchFromFormValue(value: SoftwareLeaseForm[ 'value' ]): SoftwareLeasePatch {
+  override patchFromFormValue(value: SoftwareLeaseForm[ 'value' ]): Promise<SoftwareLeasePatch> {
     throw new Error('not implemented');
     /** return { ...patchParams, } **/
   }

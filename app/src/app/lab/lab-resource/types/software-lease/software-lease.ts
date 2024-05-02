@@ -4,7 +4,7 @@ import { HttpParams } from '@angular/common/http';
 import { ModelQuery } from 'src/app/common/model/model';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 
-import { ResourceParams, Resource, resourceParamsFromJsonObject, ResourcePatch, ResourceService } from '../../resource';
+import { ResourceParams, Resource, resourceParamsFromJsonObject, ResourcePatch, ResourceService, resourcePatchToJsonObject } from '../../resource';
 import { Software, softwareFromJsonObject } from '../../../software/software';
 import { SoftwareProvision, softwareProvisionFromJsonObject } from '../../../software/provision/software-provision';
 
@@ -47,20 +47,20 @@ export function softwareLeaseFromJsonObject(json: JsonObject): SoftwareLease {
   });
 }
 
-export interface SoftwareLeasePatch extends ResourcePatch<SoftwareLease> {
+export interface SoftwareLeasePatch extends ResourcePatch {
 
 }
 
-export function softwareLeasePatchToJsonObject(current: SoftwareLease | null, patch: Partial<SoftwareLeasePatch>): JsonObject {
+export function softwareLeasePatchToJsonObject(current: SoftwareLease | null, patch: SoftwareLeasePatch): JsonObject {
   return {
-    index: current?.index,
+    ...resourcePatchToJsonObject(patch)
   };
 }
 
 @Injectable()
 export class SoftwareLeaseService extends ResourceService<SoftwareLease, SoftwareLeasePatch> {
   override readonly resourceType = 'software_lease';
-  override resourcePatchToJson(current: SoftwareLease | null, patch: Partial<SoftwareLeasePatch>): JsonObject {
+  override patchToJsonObject(current: SoftwareLease | null, patch: SoftwareLeasePatch): JsonObject {
     return softwareLeasePatchToJsonObject(current, patch)
   }
   override modelFromJsonObject(json: JsonObject): SoftwareLease {

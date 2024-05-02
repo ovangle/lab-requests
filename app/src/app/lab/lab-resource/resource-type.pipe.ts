@@ -18,6 +18,6 @@ export class ResourceTypePipe implements PipeTransform {
       fmtValue =
         fmtValue.substring(0, 1).toLocaleUpperCase() + fmtValue.substring(1);
     }
-    return fmtValue.replace('-', ' ');
+    return fmtValue.replace('_', ' ');
   }
 }

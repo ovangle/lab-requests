@@ -144,9 +144,8 @@ export class InputMaterialFormComponent extends ResourceFormComponent<InputMater
   override createForm(committed: InputMaterial | null): InputMaterialForm {
     return inputMaterialForm(committed);
   }
-  override patchFromFormValue(form: InputMaterialForm[ 'value' ]): Partial<InputMaterialPatch> {
+  override patchFromFormValue(form: InputMaterialForm[ 'value' ]): Promise<InputMaterialPatch> {
     throw new Error('Not implemented');
-
   }
 
   readonly _planContext = inject(ResearchPlanContext);

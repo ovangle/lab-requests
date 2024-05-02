@@ -22,14 +22,16 @@ import {
   LabResourceConsumerContext,
 } from '../lab-resource-consumer/resource-container';
 import { Model, ModelParams, modelParamsFromJsonObject } from 'src/app/common/model/model';
-import { JsonObject } from 'src/app/utils/is-json-object';
+import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { RelatedModelService } from 'src/app/common/model/context';
 import urlJoin from 'url-join';
 import { ModelService } from 'src/app/common/model/model-service';
 import { HttpParams } from '@angular/common/http';
 import { DomElementSchemaRegistry } from '@angular/compiler';
+import { Lab, labFromJsonObject } from '../lab';
 
 export interface ResourceParams extends ModelParams {
+  lab: Lab | string;
   index: number;
 }
 
@@ -40,6 +42,15 @@ export function resourceParamsFromJsonObject(json: JsonObject): ResourceParams {
     throw new Error("Expected a resource type 'resourceType'")
   }
 
+  let lab: Lab | string;
+  if (isJsonObject(json[ 'lab' ])) {
+    lab = labFromJsonObject(json[ 'lab' ]);
+  } else if (typeof json[ 'lab' ] === 'string') {
+    lab = json[ 'lab' ]
+  } else {
+    throw new Error("Expected a json object or string \'lab\'")
+  }
+
   if (typeof json[ 'id' ] !== 'number') {
     throw new Error("Expected a stirng 'id'");
   }
@@ -48,11 +59,9 @@ export function resourceParamsFromJsonObject(json: JsonObject): ResourceParams {
     throw new Error('Expected a number \'index\'');
   }
 
-  if (typeof json[ 'labId' ] !== 'string' || !validateIsUUID(json[ 'labId' ])) {
-    throw new Error("Expected a uuid 'labId'")
-  }
   return {
     ...baseParams,
+    lab,
     index: json[ 'index' ],
   }
 }
@@ -68,15 +77,21 @@ export abstract class Resource extends Model {
   }
 }
 
-export interface ResourcePatch<T extends Resource> {
-
+export interface ResourcePatch {
+  lab: Lab;
 }
 
-export abstract class ResourceService<T extends Resource, TPatch extends ResourcePatch<T> = ResourcePatch<T>> extends ModelService<T> {
+export function resourcePatchToJsonObject(patch: ResourcePatch) {
+  return {
+    lab: patch.lab.id
+  }
+}
+
+export abstract class ResourceService<T extends Resource, TPatch extends ResourcePatch = ResourcePatch> extends ModelService<T> {
   readonly consumerContext = inject(LabResourceConsumerContext);
   abstract readonly resourceType: T[ 'type' ];
 
-  abstract resourcePatchToJson(current: T | null, params: Partial<TPatch>): JsonObject;
+  abstract patchToJsonObject(current: T | null, params: Partial<TPatch>): JsonObject;
 
   get indexUrl$(): Observable<string> {
     return this.consumerContext.url$.pipe(
@@ -112,7 +127,7 @@ export abstract class ResourceService<T extends Resource, TPatch extends Resourc
       map(resourceIndex => urlJoin(resourceIndex, 'add')),
       switchMap(pushResourceUrl => this._httpClient.post<JsonObject>(
         pushResourceUrl,
-        this.resourcePatchToJson(null, patch)
+        this.patchToJsonObject(null, patch)
       )),
       map(created => this.modelFromJsonObject(created))
     )
@@ -122,7 +137,7 @@ export abstract class ResourceService<T extends Resource, TPatch extends Resourc
     return this.modelUrl(resource).pipe(
       switchMap(([ replaceResourceUrl ]) => this._httpClient.post<JsonObject>(
         replaceResourceUrl,
-        this.resourcePatchToJson(resource, patch)
+        this.patchToJsonObject(resource, patch)
       )),
       map(updated => this.modelFromJsonObject(updated))
     )

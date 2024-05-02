@@ -10,13 +10,20 @@ import {
   EquipmentService,
 } from 'src/app/equipment/equipment';
 import {
+  CreateEquipmentProvisionRequest,
   EquipmentProvision,
   equipmentProvisionFromJsonObject
 } from 'src/app/equipment/provision/equipment-provision';
-import { Resource, ResourceParams, resourceParamsFromJsonObject, ResourcePatch, ResourceService } from '../../resource';
+import { Resource, ResourceParams, resourceParamsFromJsonObject, ResourcePatch, resourcePatchToJsonObject, ResourceService } from '../../resource';
+import { EquipmentInstallation, equipmentInstallationFromJsonObject } from 'src/app/equipment/installation/equipment-installation';
+import { Lab, LabService } from 'src/app/lab/lab';
+import { firstValueFrom } from 'rxjs';
 
 export interface EquipmentLeaseParams extends ResourceParams {
-  equipment: Equipment | EquipmentCreateRequest;
+  lab: Lab | string;
+
+  equipment: Equipment;
+  equipmentInstallation: EquipmentInstallation;
   equipmentProvision: EquipmentProvision | null;
   equipmentTrainingCompleted: ReadonlySet<string>;
   requireSupervision: boolean;
@@ -28,7 +35,10 @@ export interface EquipmentLeaseParams extends ResourceParams {
 export class EquipmentLease extends Resource {
   override readonly type = 'equipment_lease';
 
+  lab: Lab | string;
+
   equipment: Equipment;
+  equipmentInstallation: EquipmentInstallation | null;
   equipmentProvision: EquipmentProvision | null;
 
   equipmentTrainingCompleted: string[];
@@ -44,11 +54,10 @@ export class EquipmentLease extends Resource {
   constructor(params: EquipmentLeaseParams) {
     super(params);
 
-    if (!(params.equipment instanceof Equipment)) {
-      throw new Error("Patch must be created on server");
-    }
+    this.lab = params.lab;
 
     this.equipment = params.equipment;
+    this.equipmentInstallation = params.equipmentInstallation;
     this.equipmentProvision = params.equipmentProvision;
 
     this.equipmentTrainingCompleted = Array.from(
@@ -58,15 +67,28 @@ export class EquipmentLease extends Resource {
     this.setupInstructions = params.setupInstructions!;
     this.usageCostEstimate = params.usageCostEstimate || null;
   }
+
+  async resolveLab(service: LabService) {
+    if (typeof this.lab === 'string') {
+      this.lab = await firstValueFrom(service.fetch(this.lab));
+    }
+    return this.lab;
+  }
 }
 
 export function equipmentLeaseFromJson(json: JsonObject): EquipmentLease {
   const resourceParams = resourceParamsFromJsonObject(json);
 
+
   if (!isJsonObject(json[ 'equipment' ])) {
     throw new Error("Expected a json object 'equipment'");
   }
   const equipment = equipmentFromJsonObject(json[ 'equipment' ]);
+  if (!isJsonObject(json[ 'equipmentInstallation' ])) {
+    throw new Error("Expected a json object 'equipmentInstallation'")
+  }
+  const equipmentInstallation = equipmentInstallationFromJsonObject(json[ 'equipmentInstallation' ]);
+
   if (!isJsonObject(json[ 'equipmentProvision' ]) && json[ 'equipmentProvision' ] !== null) {
     throw new Error("Expected a json object or null 'equipmentProvision'");
   }
@@ -90,6 +112,7 @@ export function equipmentLeaseFromJson(json: JsonObject): EquipmentLease {
   return new EquipmentLease({
     ...resourceParams,
     equipment,
+    equipmentInstallation,
     equipmentProvision,
     equipmentTrainingCompleted: new Set(json[ 'equipmentTrainingCompleted' ]),
     requireSupervision: json[ 'requireSupervision' ],
@@ -98,9 +121,10 @@ export function equipmentLeaseFromJson(json: JsonObject): EquipmentLease {
   });
 }
 
-export interface EquipmentLeasePatch extends ResourcePatch<EquipmentLease> {
-  equipment: Equipment | EquipmentCreateRequest;
-  equipmentProvision: EquipmentProvision | null;
+export interface EquipmentLeasePatch extends ResourcePatch {
+  equipment: EquipmentCreateRequest | Equipment | null;
+  equipmentInstallation: EquipmentInstallation | null;
+  equipmentProvision: EquipmentProvision | CreateEquipmentProvisionRequest | null;
 
   equipmentTrainingCompleted: Set<string>;
   requireSupervision: boolean;
@@ -109,18 +133,26 @@ export interface EquipmentLeasePatch extends ResourcePatch<EquipmentLease> {
   usageCostEstimate: number;
 }
 
-export function equipmentLeasePatchToJsonObject(committed: EquipmentLease | null, patch: Partial<EquipmentLeasePatch>): JsonObject {
-  let json: JsonObject = {};
+export function equipmentLeasePatchToJsonObject(committed: EquipmentLease | null, patch: EquipmentLeasePatch): JsonObject {
+  let json: JsonObject = {
+    ...resourcePatchToJsonObject(patch)
+  };
 
-  if (patch.equipment instanceof Equipment) {
-    json[ 'equipment' ] = patch.equipment.id;
-  } else if (patch.equipment) {
-    json[ 'equipment' ] = patch.equipment;
-  } else if (committed?.equipment) {
-    json[ 'equipment' ] = committed.equipment.id;
+  if (patch.equipmentInstallation instanceof EquipmentInstallation) {
+    json[ 'equipmentInstallation' ] = patch.equipmentInstallation.id;
+  } else if (committed != null) {
+    json[ 'equipmentInstallation' ] = null;
   }
+
+  if (patch.equipmentProvision instanceof EquipmentProvision) {
+    json[ 'equipmentProvision' ] = patch.equipmentProvision.id
+  } else if (isJsonObject(patch.equipmentProvision)) {
+    json[ 'equipmentProvision' ] = patch.equipmentProvision;
+  }
+
   json[ 'equipmentTrainingCompleted' ] = patch.equipmentTrainingCompleted;
   json[ 'requireSupervision' ] = patch.requireSupervision;
+  json[ 'setupInstructions' ] = patch.setupInstructions;
 
   return json;
 }
@@ -128,7 +160,7 @@ export function equipmentLeasePatchToJsonObject(committed: EquipmentLease | null
 @Injectable()
 export class EquipmentLeaseService extends ResourceService<EquipmentLease, EquipmentLeasePatch> {
   override resourceType: 'equipment_lease' = 'equipment_lease';
-  override resourcePatchToJson(current: EquipmentLease | null, patch: Partial<EquipmentLeasePatch>): JsonObject {
+  override patchToJsonObject(current: EquipmentLease | null, patch: EquipmentLeasePatch): JsonObject {
     return equipmentLeasePatchToJsonObject(current, patch)
   }
   override modelFromJsonObject(json: JsonObject): EquipmentLease {

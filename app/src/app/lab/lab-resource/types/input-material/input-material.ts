@@ -4,7 +4,7 @@ import {
   hazardClassesFromJson,
   hazardClassesToJson,
 } from '../../hazardous/hazardous';
-import { ResourceParams, Resource, resourceParamsFromJsonObject, ResourcePatch, ResourceService } from '../../resource';
+import { ResourceParams, Resource, resourceParamsFromJsonObject, ResourcePatch, ResourceService, resourcePatchToJsonObject } from '../../resource';
 import {
   ResourceStorage,
   ResourceStorageParams,
@@ -96,14 +96,13 @@ export function inputMaterialFromJson(json: JsonObject): InputMaterial {
   });
 }
 
-export interface InputMaterialPatch extends ResourcePatch<InputMaterial> {
+export interface InputMaterialPatch extends ResourcePatch {
 
 }
 
-export function inputMaterialPatchToJsonObject(inputMaterial: InputMaterial | null, patch: Partial<InputMaterialPatch>): JsonObject {
+export function inputMaterialPatchToJsonObject(inputMaterial: InputMaterial | null, patch: InputMaterialPatch): JsonObject {
   return {
-    id: inputMaterial!.id,
-    index: inputMaterial!.index,
+    ...resourcePatchToJsonObject(patch),
     name: inputMaterial!.name,
     baseUnit: inputMaterial!.baseUnit,
     numUnitsRequired: inputMaterial!.numUnitsRequired,
@@ -117,7 +116,7 @@ export function inputMaterialPatchToJsonObject(inputMaterial: InputMaterial | nu
 export class InputMaterialService extends ResourceService<InputMaterial, InputMaterialPatch> {
   override readonly resourceType = 'input_material';
 
-  override resourcePatchToJson(current: InputMaterial | null, params: Partial<InputMaterialPatch>): JsonObject {
+  override patchToJsonObject(current: InputMaterial | null, params: InputMaterialPatch): JsonObject {
     return inputMaterialPatchToJsonObject(current, params);
   }
   override modelFromJsonObject(json: JsonObject): InputMaterial {

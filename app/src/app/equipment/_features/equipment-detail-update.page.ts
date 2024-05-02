@@ -1,5 +1,5 @@
 import { Component, inject } from "@angular/core";
-import { EquipmentForm } from "../equipment-form.component";
+import { EquipmentFormComponent } from "../equipment-form.component";
 import { CommonModule } from "@angular/common";
 import { EquipmentContext } from "../equipment-context";
 import { Equipment } from "../equipment";
@@ -10,7 +10,7 @@ import { EquipmentDetailSubpage, EquipmentDetailStateService } from "./equipment
   standalone: true,
   imports: [
     CommonModule,
-    EquipmentForm
+    EquipmentFormComponent
   ],
   template: `
   @if (equipment$ | async; as equipment) {

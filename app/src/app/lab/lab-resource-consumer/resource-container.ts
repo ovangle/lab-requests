@@ -259,14 +259,14 @@ export interface LabResourceContainer<T extends Resource> extends ModelIndexPage
   getResourceAt(index: number): T;
 }
 
-export interface LabResourceContainerSlice<T extends Resource, TPatch extends ResourcePatch<T>> {
+export interface LabResourceContainerSlice<T extends Resource, TPatch extends ResourcePatch> {
   readonly type: T[ 'type' ];
   start: number;
   end?: number;
   items: TPatch[];
 }
 
-export function resourceContainerPatchToJson<T extends Resource, TPatch extends ResourcePatch<T>>(
+export function resourceContainerPatchToJson<T extends Resource, TPatch extends ResourcePatch>(
   container: LabResourceContainer<T> | null,
   slice: LabResourceContainerSlice<T, TPatch>
 ) {
@@ -278,13 +278,13 @@ export function resourceContainerPatchToJson<T extends Resource, TPatch extends 
 
     switch (slice.type) {
       case 'equipment_lease':
-        return equipmentLeasePatchToJsonObject(current as any, patch);
+        return equipmentLeasePatchToJsonObject(current as any, patch as any);
       case 'software_lease':
-        return softwareLeasePatchToJsonObject(current as any, patch);
+        return softwareLeasePatchToJsonObject(current as any, patch as any);
       case 'input_material':
-        return inputMaterialPatchToJsonObject(current as any, patch);
+        return inputMaterialPatchToJsonObject(current as any, patch as any);
       case 'output_material':
-        return outputMaterialPatchToJsonObject(current as any, patch);
+        return outputMaterialPatchToJsonObject(current as any, patch as any);
       default:
         throw new Error(`Unrecognised resource type ${slice.type}`)
     }
@@ -300,7 +300,7 @@ export function resourceContainerPatchToJson<T extends Resource, TPatch extends 
 }
 
 @Injectable()
-export class LabResourceContainerContext<T extends Resource, TPatch extends ResourcePatch<T>> {
+export class LabResourceContainerContext<T extends Resource, TPatch extends ResourcePatch> {
   readonly consumerContext = inject(LabResourceConsumerContext);
 
   readonly resourceTypeSubject = new BehaviorSubject<ResourceType & T[ 'type' ] | null>(null);

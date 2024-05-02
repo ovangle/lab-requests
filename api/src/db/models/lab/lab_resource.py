@@ -8,6 +8,7 @@ from typing import (
     Any,
     ClassVar,
     TypedDict,
+    Unpack,
 )
 from sqlalchemy import ForeignKey, SQLColumnExpression, Select, select
 from sqlalchemy.dialects import postgresql
@@ -83,9 +84,10 @@ lab_resource_type = Annotated[
 ]
 
 
-class LabResourceAttrs(TypedDict, total=False):
-    container_id: UUID | None
-    index: int | None
+class LabResourceAttrs(TypedDict):
+    lab: Lab
+    container: LabResourceContainer
+    index: int
 
 
 class LabResource(Base):
@@ -164,9 +166,14 @@ class LabResource(Base):
             raise LabResourceDoesNotExist(for_container_index=(container, index))
         return resource
 
-    def __init__(self, params: LabResourceAttrs):
+    def __init__(self, **attrs: Unpack[LabResourceAttrs]):
         self.type = type(self).__lab_resource_type__
-        super().__init__(**params)
+
+        self.lab_id = attrs["lab"].id
+        self.container_id = attrs["container"].id
+        self.index = attrs["index"]
+
+        super().__init__(**attrs)
 
 
 lab_resource_pk = Annotated[
