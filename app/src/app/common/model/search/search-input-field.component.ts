@@ -92,12 +92,14 @@ export class ModelSearchInputComponent {
     _autocomplete: ModelSearchAutocompleteComponent | undefined;
 
     _onSearchInputFocus() {
-        if (this.clearOnFocus && !this._valueChangedSinceLastClear) {
+
+        if (this.clearOnFocus && this._valueChangedSinceLastClear) {
             this.search?.searchControl.reset();
 
             // Choosing a value from the autocomplete refocuses the element, triggering a clear of the input.
             // If we clear once, wait until a value is selected before we clear again.
             this._valueChangedSinceLastClear = false;
+
             this.search?.searchControl.valueChanges.pipe(
                 distinctUntilChanged(),
                 first()

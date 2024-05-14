@@ -11,7 +11,7 @@ import {
 } from './equipment';
 import { Lab } from '../lab/lab';
 import { ModelSearchAutocompleteComponent } from 'src/app/common/model/search/search-autocomplete.component';
-import { ModelSearchComponent, ModelSearchControl, provideModelSearchValueAccessor } from 'src/app/common/model/search/search-control';
+import { ModelSearchComponent, ModelSearchControl, NotFoundValue, provideModelSearchValueAccessor } from 'src/app/common/model/search/search-control';
 import { ModelSearchInputComponent } from 'src/app/common/model/search/search-input-field.component';
 import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
 
@@ -68,5 +68,8 @@ export class EquipmentSearchComponent implements ModelSearchComponent<Equipment>
   }
   formatModel(equipment: Equipment) {
     return equipment.name;
+  }
+  formatNotFoundValue(notFoundValue: NotFoundValue) {
+    return '(new) ' + notFoundValue.searchInput;
   }
 }

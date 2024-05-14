@@ -1,23 +1,20 @@
 import { Component, EventEmitter, Input, Output, inject } from "@angular/core";
-import { Equipment } from "../equipment";
+import { Equipment, EquipmentCreateRequest } from "../equipment";
 import { Lab } from "src/app/lab/lab";
 import { ControlContainer, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
-import { ProvisionStatus } from "./provision-status";
 import { CommonModule } from "@angular/common";
 import { EquipmentInstallation } from "../installation/equipment-installation";
 import { MatRadioModule } from "@angular/material/radio";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { NumberInput, coerceNumberProperty } from "@angular/cdk/coercion";
 import { MatInputModule } from "@angular/material/input";
 import { TextFieldModule } from "@angular/cdk/text-field";
-import { ResearchFunding } from "src/app/research/funding/research-funding";
-import { AbstractEquipmentProvisionService, EquipmentProvision } from "./equipment-provision";
+import { AbstractEquipmentProvisionService, CreateEquipmentProvisionRequest, EquipmentProvision } from "./equipment-provision";
 import { firstValueFrom } from "rxjs";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 
-function equipmentProvisionCreateFormGroup() {
+export function equipmentProvisionCreateFormGroup() {
     return new FormGroup({
         reason: new FormControl<string>('', { nonNullable: true }),
         quantityRequired: new FormControl<number>(1, { nonNullable: true, validators: [ Validators.min(1) ] }),
@@ -27,8 +24,36 @@ function equipmentProvisionCreateFormGroup() {
 
 export type EquipmentProvisionCreateFormGroup = ReturnType<typeof equipmentProvisionCreateFormGroup>;
 
+function isEquipmentProvisionCreateFormGroup(o: unknown): o is EquipmentProvisionCreateFormGroup {
+    if (!(o instanceof FormGroup)) {
+        return false;
+    }
+    const controlKeys = new Set(Object.keys(o.controls));
+    return controlKeys.has('reason')
+        && controlKeys.has('quantityRequired')
+        && controlKeys.has('fundingSource');
+}
+
+export function equipmentProvisionCreateRequestFromForm(
+    equipment: Equipment | EquipmentCreateRequest,
+    lab: Lab,
+    form: EquipmentProvisionCreateFormGroup
+): CreateEquipmentProvisionRequest {
+    if (!form.valid) {
+        throw new Error('Invalid form has no value')
+    }
+    const value = form.value;
+    return {
+        status: 'requested',
+        equipment: equipment,
+        lab: lab,
+        quantityRequired: value.quantityRequired || 1,
+        reason: value.reason!,
+    }
+}
+
 @Component({
-    selector: 'equipment-create-provision-form-2',
+    selector: 'equipment-provision-create-form',
     standalone: true,
     imports: [
         CommonModule,
@@ -42,7 +67,7 @@ export type EquipmentProvisionCreateFormGroup = ReturnType<typeof equipmentProvi
         MatInputModule,
     ],
     template: `
-        <form [formGroup]="form" (ngSubmit)="_onFormSubmit()">
+    <form [formGroup]="form" (ngSubmit)="_onFormSubmit()">
         <!--
             This is really not for an equipment requester to know or care about. 
             It should be on provision approval 
@@ -88,10 +113,11 @@ export type EquipmentProvisionCreateFormGroup = ReturnType<typeof equipmentProvi
     `
 })
 export class EquipmentProvisionCreateFormComponent {
-    _provisionService = inject(AbstractEquipmentProvisionService);
+    _provisionService = inject(AbstractEquipmentProvisionService, { optional: true });
+    _controlContainer = inject(ControlContainer, { optional: true })
 
     @Input({ required: true })
-    equipment: Equipment | undefined;
+    equipment: Equipment | EquipmentCreateRequest | undefined;
 
     @Input({ required: true })
     lab: Lab | undefined;
@@ -110,30 +136,40 @@ export class EquipmentProvisionCreateFormComponent {
     readonly save = new EventEmitter<EquipmentProvision>();
 
     get installation(): EquipmentInstallation | null {
-        return this.equipment!.currentLabInstallation(this.lab!);
-    }
-
-    get isNewInstallation(): boolean {
-        return this.installation !== null && this.installation.numInstalled > 0
-    }
-
-    form: EquipmentProvisionCreateFormGroup;
-    _isStandaloneForm: boolean;
-
-    constructor() {
-        const controlContainer = inject(ControlContainer, { optional: true });
-        if (controlContainer) {
-            this.form = (controlContainer.formDirective as any).form;
-            this._isStandaloneForm = false;
-        } else {
-            this.form = equipmentProvisionCreateFormGroup();
-            this._isStandaloneForm = true;
+        if (this.equipment instanceof Equipment) {
+            return this.equipment!.currentLabInstallation(this.lab!);
         }
+        return null;
+    }
+    get isNewInstallation(): boolean {
+        return this.installation === null || this.installation.numInstalled === 0;
+    }
+
+    get form(): EquipmentProvisionCreateFormGroup {
+        if (this._controlContainer != null) {
+            const c = this._controlContainer.control;
+            if (!isEquipmentProvisionCreateFormGroup(c)) {
+                throw new Error(`control container must be bound to equipment provision create form`)
+            }
+            return c;
+        }
+        if (this._standaloneFormGroup == null) {
+            this._standaloneFormGroup = equipmentProvisionCreateFormGroup();
+        }
+        return this._standaloneFormGroup;
+    }
+    _standaloneFormGroup: EquipmentProvisionCreateFormGroup | undefined;
+    get _isStandaloneForm() {
+        return this._controlContainer == null;
     }
 
     async _onFormSubmit() {
         if (!this.form.valid) {
             throw new Error('Invalid form has no value')
+        }
+
+        if (!this._provisionService) {
+            throw new Error('Standalone form requires an equipment context');
         }
 
         const created = await firstValueFrom(

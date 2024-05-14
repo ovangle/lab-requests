@@ -9,5 +9,4 @@ export class ProvisionStatusPipe implements PipeTransform {
     transform(value: ProvisionStatus, ...args: any[]): string {
         return value;
     }
-
 }

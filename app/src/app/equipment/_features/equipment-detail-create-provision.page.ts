@@ -2,10 +2,8 @@ import { Component, Input, inject } from "@angular/core";
 import { EquipmentContext } from "../equipment-context";
 import { ActivatedRoute, Router } from "@angular/router";
 import { CommonModule } from "@angular/common";
-import { Observable, map, of } from "rxjs";
-import { Equipment } from "../equipment";
 import { AbstractEquipmentProvisionService, EquipmentProvision, EquipmentProvisionService } from "../provision/equipment-provision";
-import { CreateEquipmentProvisionForm } from "../provision/create-equipment-provision.form";
+import { CreateEquipmentProvisionFormComponent } from "../provision/create-equipment-provision.form";
 import { EquipmentDetailStateService, EquipmentDetailSubpage } from "./equipment-detail.state";
 
 
@@ -13,7 +11,7 @@ import { EquipmentDetailStateService, EquipmentDetailSubpage } from "./equipment
   standalone: true,
   imports: [
     CommonModule,
-    CreateEquipmentProvisionForm
+    CreateEquipmentProvisionFormComponent
   ],
   template: `
   <h2>New provision</h2>

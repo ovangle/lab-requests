@@ -15,6 +15,7 @@ import {
   ControlContainer,
   FormBuilder,
   FormControl,
+  FormControlStatus,
   FormGroup,
   ReactiveFormsModule,
   ValidationErrors,
@@ -32,7 +33,7 @@ import { Equipment, EquipmentUpdateRequest, EquipmentService, equipmentQueryToHt
 import { ResizeTextareaOnInputDirective } from 'src/app/common/forms/resize-textarea-on-input.directive';
 import { EquipmentContext } from 'src/app/equipment/equipment-context';
 import { HttpParams } from '@angular/common/http';
-import { BehaviorSubject, Observable, debounceTime, distinctUntilChanged, firstValueFrom, map, of, shareReplay, switchMap } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription, debounceTime, distinctUntilChanged, firstValueFrom, map, of, shareReplay, switchMap } from 'rxjs';
 import { EquipmentSearchComponent } from './equipment-search.component';
 import { NotFoundValue } from '../common/model/search/search-control';
 import { RouterModule } from '@angular/router';
@@ -71,7 +72,6 @@ export class EquipmentNameUniqueValidator implements AsyncValidator {
 
 export type EquipmentFormGroup = FormGroup<EquipmentFormControls>;
 export function equipmentFormGroup(validateNameUnique: EquipmentNameUniqueValidator): EquipmentFormGroup {
-
   return new FormGroup({
     name: new FormControl<string>('', {
       nonNullable: true,
@@ -122,7 +122,7 @@ export function equipmentCreateRequestFromForm(form: EquipmentFormGroup): Equipm
     EquipmentTrainingDescriptionsInputComponent,
   ],
   template: `
-    <form [formGroup]="form!" (ngSubmit)="_onFormSubmit()">
+    <form [formGroup]="form" (ngSubmit)="_onFormSubmit()">
       @if (!equipment) {
         <mat-form-field>
           <mat-label>Name</mat-label>
@@ -160,13 +160,13 @@ export function equipmentCreateRequestFromForm(form: EquipmentFormGroup): Equipm
         </lab-equipment-training-descriptions-input>
       }
 
-      @if (!_isStandaloneForm) {
+      @if (_isStandaloneForm) {
         <div class="form-actions">
           <button
             mat-raised-button
             type="submit"
             color="primary"
-            [disabled]="!form!.valid"
+            [disabled]="!form.valid"
           >
             <mat-icon>save</mat-icon> save
           </button>
@@ -185,6 +185,26 @@ export function equipmentCreateRequestFromForm(form: EquipmentFormGroup): Equipm
 })
 export class EquipmentFormComponent {
   readonly equipmentService = inject(EquipmentService);
+  readonly _validateNameUnique = inject(EquipmentNameUniqueValidator);
+  readonly _controlContainer = inject(ControlContainer, { optional: true });
+
+  get form(): EquipmentFormGroup {
+    if (this._form === undefined) {
+      if (this._controlContainer) {
+        this._form = this._controlContainer.control as EquipmentFormGroup;
+      } else {
+        this._form = equipmentFormGroup(this._validateNameUnique);
+        this._isStandaloneForm = true;
+      }
+      this._formStatusSubscription = this._form.statusChanges.subscribe(status => {
+        this.formStatus.emit(status)
+      });
+    }
+    return this._form;
+  }
+  _isStandaloneForm: boolean = false;
+  _form: EquipmentFormGroup | undefined;
+  _formStatusSubscription: Subscription | undefined;
 
   @Input()
   get equipment() {
@@ -219,23 +239,15 @@ export class EquipmentFormComponent {
 
   _disableFields = new Set<keyof EquipmentFormGroup[ 'controls' ]>();
 
+  /**
+   * Fired when the model is saved. Only active if standalone form.
+   */
   @Output()
   save = new EventEmitter<Equipment>();
 
-  form: EquipmentFormGroup;
-  _isStandaloneForm: boolean;
+  @Output()
+  readonly formStatus = new EventEmitter<FormControlStatus>();
 
-  constructor() {
-    const controlContainer = inject(ControlContainer, { optional: true });
-    if (controlContainer) {
-      this.form = (controlContainer.formDirective as any).form!;
-      this._isStandaloneForm = false;
-    } else {
-      const nameValidator = inject(EquipmentNameUniqueValidator);
-      this.form = equipmentFormGroup(nameValidator);
-      this._isStandaloneForm = true;
-    }
-  }
 
   get currentPatch(): EquipmentUpdateRequest | null {
     if (!this.form.valid) {
@@ -249,11 +261,17 @@ export class EquipmentFormComponent {
   }
 
   get nameErrors(): ValidationErrors | null {
-    return this.form!.controls.name.errors;
+    return this.form.controls.name.errors;
   }
 
   get trainingDescripionsFormArr(): FormControl<string[]> {
-    return this.form!.controls.trainingDescriptions;
+    return this.form.controls.trainingDescriptions;
+  }
+
+  ngOnDestroy() {
+    if (this._formStatusSubscription) {
+      this._formStatusSubscription.unsubscribe();
+    }
   }
 
   async _doCreateEquipment(): Promise<Equipment> {

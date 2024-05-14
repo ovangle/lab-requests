@@ -76,7 +76,8 @@
             }
           },
           "options": {
-            "proxyConfig": "src/proxy.conf.json"
+            "proxyConfig": "src/proxy.conf.json",
+            "host": "0.0.0.0"
           },
           "defaultConfiguration": "development"
         },

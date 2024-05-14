@@ -1,7 +1,7 @@
 import { CommonModule } from "@angular/common";
 import { Component, Input, TemplateRef, ViewChild, inject } from "@angular/core";
 import { MatAutocomplete, MatAutocompleteModule } from "@angular/material/autocomplete";
-import { ModelSearchControl } from "./search-control";
+import { ModelSearchControl, NotFoundValue } from "./search-control";
 import { ModelSearchInputComponent } from "./search-input-field.component";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 
@@ -13,7 +13,7 @@ import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
         MatAutocompleteModule
     ],
     template: `
-    <mat-autocomplete [displayWith]="displayValue">
+    <mat-autocomplete [displayWith]="displayValue" >
         @if (search!.modelOptions$ | async; as modelOptions) {
             @for (model of modelOptions; track model.id) {
                 <mat-option [value]="model">

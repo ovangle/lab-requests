@@ -1,6 +1,5 @@
 services:
   app:
-    command: serve
     ports:
       - 3000:3000
   api: {}
@@ -13,5 +12,3 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt/:rw
       - /var/lib/letsencrypt:/var/lib/letsencrypt/:rw
       - /var/www/certbot:/var/www/certbot/:rw
-
-

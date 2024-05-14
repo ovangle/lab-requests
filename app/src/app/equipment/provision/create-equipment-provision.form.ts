@@ -14,13 +14,13 @@ import { EquipmentProvisionInfoComponent } from "./equipment-provision-info.comp
 import { ResizeTextareaOnInputDirective } from "src/app/common/forms/resize-textarea-on-input.directive";
 import { EquipmentProvision, EquipmentProvisionService, CreateEquipmentProvisionRequest, AbstractEquipmentProvisionService } from "./equipment-provision";
 import { Equipment, EquipmentCreateRequest } from "../equipment";
-import { ProvisionStatus, isProvisionStatus } from "./provision-status";
-import { ProvisionStatusPipe } from "./provision-status.pipe";
 import { MatInputModule } from "@angular/material/input";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { CostEstimate } from "src/app/research/funding/cost-estimate/cost-estimate";
 import { LabEquipmentProvisionService } from "src/app/lab/equipment/provision/lab-equipment-provision";
+import { ProvisionStatus } from "src/app/common/provisionable/provision-status";
+import { ProvisionStatusPipe } from "src/app/common/provisionable/provision-status.pipe";
 
 export function createEquipmentProvisionForm(
   lab: Lab | null = null
@@ -54,6 +54,8 @@ export function createEquipmentProvisionForm(
     })
   });
 }
+
+
 
 @Component({
   selector: 'equipment-create-equipment-provision-form',
@@ -177,7 +179,7 @@ export function createEquipmentProvisionForm(
     }
   ]
 })
-export class CreateEquipmentProvisionForm {
+export class CreateEquipmentProvisionFormComponent {
 
   readonly equipmentSubject = new BehaviorSubject<Equipment | EquipmentCreateRequest | undefined>(undefined);
   readonly equipment$ = this.equipmentSubject.asObservable();

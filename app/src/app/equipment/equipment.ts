@@ -57,18 +57,19 @@ export class Equipment extends Model {
     this.installationsPage = params.installationPage;
   }
 
-  labInstallations(lab: Lab): EquipmentInstallation[] {
+  labInstallations(lab: Lab | string): EquipmentInstallation[] {
+    const labId = (lab instanceof Lab) ? lab.id : lab;
     return this.installations.filter(
-      install => install.labId === lab.id
+      install => install.labId === labId
     );
   }
 
-  currentLabInstallation(lab: Lab): EquipmentInstallation | null {
+  currentLabInstallation(lab: Lab | string): EquipmentInstallation | null {
     return this.labInstallations(lab)
       .find(install => install.isInstalled) || null;
   }
 
-  pendingLabInstallation(lab: Lab): EquipmentInstallation | null {
+  pendingLabInstallation(lab: Lab | string): EquipmentInstallation | null {
     return this.labInstallations(lab)
       .find(install => install.isPendingInstallation) || null;
   }
@@ -157,7 +158,14 @@ export interface EquipmentCreateRequest extends ModelCreateRequest<Equipment> {
   initialProvisions?: CreateEquipmentProvisionRequest[];
 }
 
-export function equipmentCreateToJsonObject(request: EquipmentCreateRequest): JsonObject {
+export function isEquipmentCreateRequest(obj: unknown): obj is EquipmentCreateRequest {
+  if (!isJsonObject(obj)) {
+    return false;
+  }
+  return typeof obj[ 'name' ] === 'string';
+}
+
+export function equipmentCreateRequestToJsonObject(request: EquipmentCreateRequest): JsonObject {
   return {
     ...request
   };
@@ -190,7 +198,7 @@ export class EquipmentService extends RestfulService<Equipment, EquipmentQuery, 
   override path = '/labs/equipment';
   override readonly modelFromJsonObject = equipmentFromJsonObject;
   override readonly modelQueryToHttpParams = equipmentQueryToHttpParams;
-  override readonly createToJsonObject = equipmentCreateToJsonObject;
+  override readonly createToJsonObject = equipmentCreateRequestToJsonObject;
   override readonly actionToJsonObject = equipmentPatchToJsonObject;
 }
 

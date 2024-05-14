@@ -1,12 +1,12 @@
 import { Component, Input, inject } from "@angular/core";
 import { EquipmentProvision } from "./equipment-provision";
-import { ProvisionStatus } from "./provision-status";
 import { BehaviorSubject } from "rxjs";
 import { CommonModule } from "@angular/common";
 import { EquipmentProvisionInstallFormComponent } from "./equipment-provision-install.form";
 import { EquipmentProvisionApprovalFormComponent } from "./equipment-provision-approval.form";
 import { EquipmentProvisionPurchaseFormComponent } from "./equipment-provision-purchase.form";
 import { EquipmentContext } from "../equipment-context";
+import { ProvisionStatus } from "src/app/common/provisionable/provision-status";
 
 @Component({
   selector: 'equipment-provision-info',

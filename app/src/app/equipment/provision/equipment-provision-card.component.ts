@@ -2,10 +2,10 @@ import { CommonModule } from "@angular/common";
 import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { MatCardModule } from "@angular/material/card";
 import { EquipmentProvision } from "./equipment-provision";
-import { ProvisionStatusPipe } from "./provision-status.pipe";
 import { MatButtonModule } from "@angular/material/button";
 import { ResearchFundingCostEstimateComponent } from "src/app/research/funding/cost-estimate/cost-estimate.component";
 import { EquipmentProvisionPurchaseCostEstimateForm } from "./equipment-provision-purchase-cost-estimate.form";
+import { ProvisionStatusPipe } from "src/app/common/provisionable/provision-status.pipe";
 
 
 @Component({

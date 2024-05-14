@@ -6,8 +6,8 @@ import { ActivatedRoute } from "@angular/router";
 import { Observable, combineLatest, map, shareReplay, switchMap, withLatestFrom } from "rxjs";
 import { LabService } from "src/app/lab/lab";
 import { EquipmentProvision } from "../provision/equipment-provision";
-import { ProvisionStatusPipe } from "../provision/provision-status.pipe";
 import { EquipmentProvisionCardComponent } from "../provision/equipment-provision-card.component";
+import { ProvisionStatusPipe } from "src/app/common/provisionable/provision-status.pipe";
 
 
 @Component({

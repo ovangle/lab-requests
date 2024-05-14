@@ -3,7 +3,9 @@ services:
   app:
     build: './app'
     image: ghcr.io/cqueng/lab-requests-app
-    command: npm run start
+    volumes:
+      - "ng_build_cache:/home/node/.angular/cache:rw"
+
     ports:
       - "4200:4200"
 
@@ -51,3 +53,4 @@ volumes:
   pgdata: {}
   pgadmin_data: {}
   lab_work_attachments: {}
+  ng_build_cache: {}

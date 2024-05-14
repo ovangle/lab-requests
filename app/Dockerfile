@@ -4,16 +4,16 @@ FROM node:18.17
 RUN npm i -g @angular/cli@>=${NG_VERSION}
 
 USER node
-WORKDIR /home/node
+ENV PROJECT_DIR="/home/node/app/"
+WORKDIR ${PROJECT_DIR}
 
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/home/node/.npm,uid=1000 \
     npm ci
 
-COPY . .
+COPY --chown=node . .
 RUN --mount=type=cache,target=/home/node/.angular/cache,uid=1000 \
     ng build
 
 EXPOSE 3000
-ENTRYPOINT ["npm", "run"]
-CMD ["start"]
+CMD ["npm", "run", "start"]

@@ -1,15 +1,15 @@
 import { Model, ModelCreateRequest, ModelParams, ModelQuery, ModelUpdateRequest, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
-import { Equipment, EquipmentCreateRequest, equipmentFromJsonObject, EquipmentService } from "../equipment";
+import { Equipment, EquipmentCreateRequest, equipmentCreateRequestToJsonObject, equipmentFromJsonObject, EquipmentService, isEquipmentCreateRequest } from "../equipment";
 import { ResearchFunding, ResearchFundingService, researchFundingFromJsonObject } from "src/app/research/funding/research-funding";
 import { Lab, LabService, labFromJsonObject } from "../../lab/lab";
 import { Observable, first, firstValueFrom, map, switchMap } from "rxjs";
 import { EquipmentInstallation, equipmentInstallationFromJsonObject } from "../installation/equipment-installation";
-import { ProvisionStatus, isProvisionStatus } from "./provision-status";
 import { HttpParams } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { EquipmentContext } from "../equipment-context";
 import { RelatedModelService } from "src/app/common/model/context";
+import { ProvisionStatus, isProvisionStatus } from "src/app/common/provisionable/provision-status";
 
 export interface EquipmentProvisionParams extends ModelParams {
     status: ProvisionStatus;
@@ -153,7 +153,7 @@ function equipmentProvisionQueryToHttpParams(query: EquipmentProvisionQuery) {
 
 export interface CreateEquipmentProvisionRequest extends ModelCreateRequest<EquipmentProvision> {
     status: 'requested';
-    equipment: Equipment;
+    equipment: Equipment | EquipmentCreateRequest;
     lab: Lab;
 
     // The number of equipments required 
@@ -164,13 +164,19 @@ export interface CreateEquipmentProvisionRequest extends ModelCreateRequest<Equi
 }
 
 export function createEquipmentProvisionRequestToJson(request: CreateEquipmentProvisionRequest) {
-    return {
+    const json: JsonObject = {
         status: 'requested',
         reason: request.reason,
 
         lab: request.lab.id,
         quantityRequired: request.quantityRequired,
     };
+    if (request.equipment instanceof Equipment) {
+        json[ 'equipment' ] = request.equipment.id;
+    } else if (isEquipmentCreateRequest(request.equipment)) {
+        json[ 'equipment' ] = equipmentCreateRequestToJsonObject(request.equipment);
+    }
+    return json;
 }
 
 export interface EquipmentProvisionApprovalRequest extends ModelUpdateRequest<EquipmentProvision> {

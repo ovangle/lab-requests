@@ -8,13 +8,6 @@ import { of } from "rxjs";
 @Injectable()
 export class EquipmentContext extends ModelContext<Equipment> {
     override readonly service = inject(EquipmentService);
-
-    constructor() {
-        super();
-        this.committed$.subscribe(equipment => {
-            console.log('context equipment', equipment);
-        })
-    }
 }
 
 function equipmentIndexFromRoot(route: ActivatedRoute): ActivatedRoute | undefined {

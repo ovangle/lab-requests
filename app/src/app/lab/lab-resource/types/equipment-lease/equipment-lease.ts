@@ -6,8 +6,10 @@ import { ModelQuery } from 'src/app/common/model/model';
 import {
   Equipment,
   EquipmentCreateRequest,
+  equipmentCreateRequestToJsonObject,
   equipmentFromJsonObject,
   EquipmentService,
+  isEquipmentCreateRequest,
 } from 'src/app/equipment/equipment';
 import {
   CreateEquipmentProvisionRequest,
@@ -18,12 +20,12 @@ import { Resource, ResourceParams, resourceParamsFromJsonObject, ResourcePatch, 
 import { EquipmentInstallation, equipmentInstallationFromJsonObject } from 'src/app/equipment/installation/equipment-installation';
 import { Lab, LabService } from 'src/app/lab/lab';
 import { firstValueFrom } from 'rxjs';
+import { formatISO } from 'date-fns';
 
 export interface EquipmentLeaseParams extends ResourceParams {
   lab: Lab | string;
 
   equipment: Equipment;
-  equipmentInstallation: EquipmentInstallation;
   equipmentProvision: EquipmentProvision | null;
   equipmentTrainingCompleted: ReadonlySet<string>;
   requireSupervision: boolean;
@@ -38,7 +40,6 @@ export class EquipmentLease extends Resource {
   lab: Lab | string;
 
   equipment: Equipment;
-  equipmentInstallation: EquipmentInstallation | null;
   equipmentProvision: EquipmentProvision | null;
 
   equipmentTrainingCompleted: string[];
@@ -56,8 +57,11 @@ export class EquipmentLease extends Resource {
 
     this.lab = params.lab;
 
+    if (!(params.equipment instanceof Equipment)) {
+      throw new Error('Lease equipment must exist');
+    }
+
     this.equipment = params.equipment;
-    this.equipmentInstallation = params.equipmentInstallation;
     this.equipmentProvision = params.equipmentProvision;
 
     this.equipmentTrainingCompleted = Array.from(
@@ -66,6 +70,10 @@ export class EquipmentLease extends Resource {
     this.requireSupervision = params.requireSupervision!;
     this.setupInstructions = params.setupInstructions!;
     this.usageCostEstimate = params.usageCostEstimate || null;
+  }
+
+  get equipmentInstallation(): EquipmentInstallation | null {
+    return this.equipment.currentLabInstallation(this.lab);
   }
 
   async resolveLab(service: LabService) {
@@ -79,15 +87,10 @@ export class EquipmentLease extends Resource {
 export function equipmentLeaseFromJson(json: JsonObject): EquipmentLease {
   const resourceParams = resourceParamsFromJsonObject(json);
 
-
   if (!isJsonObject(json[ 'equipment' ])) {
     throw new Error("Expected a json object 'equipment'");
   }
   const equipment = equipmentFromJsonObject(json[ 'equipment' ]);
-  if (!isJsonObject(json[ 'equipmentInstallation' ])) {
-    throw new Error("Expected a json object 'equipmentInstallation'")
-  }
-  const equipmentInstallation = equipmentInstallationFromJsonObject(json[ 'equipmentInstallation' ]);
 
   if (!isJsonObject(json[ 'equipmentProvision' ]) && json[ 'equipmentProvision' ] !== null) {
     throw new Error("Expected a json object or null 'equipmentProvision'");
@@ -112,7 +115,6 @@ export function equipmentLeaseFromJson(json: JsonObject): EquipmentLease {
   return new EquipmentLease({
     ...resourceParams,
     equipment,
-    equipmentInstallation,
     equipmentProvision,
     equipmentTrainingCompleted: new Set(json[ 'equipmentTrainingCompleted' ]),
     requireSupervision: json[ 'requireSupervision' ],
@@ -122,9 +124,13 @@ export function equipmentLeaseFromJson(json: JsonObject): EquipmentLease {
 }
 
 export interface EquipmentLeasePatch extends ResourcePatch {
-  equipment: EquipmentCreateRequest | Equipment | null;
-  equipmentInstallation: EquipmentInstallation | null;
+  equipment: EquipmentCreateRequest | Equipment;
+
+  // The pending provision before this lease can begin.
   equipmentProvision: EquipmentProvision | CreateEquipmentProvisionRequest | null;
+
+  startDate: Date | null;
+  endDate: Date | null;
 
   equipmentTrainingCompleted: Set<string>;
   requireSupervision: boolean;
@@ -138,10 +144,10 @@ export function equipmentLeasePatchToJsonObject(committed: EquipmentLease | null
     ...resourcePatchToJsonObject(patch)
   };
 
-  if (patch.equipmentInstallation instanceof EquipmentInstallation) {
-    json[ 'equipmentInstallation' ] = patch.equipmentInstallation.id;
-  } else if (committed != null) {
-    json[ 'equipmentInstallation' ] = null;
+  if (patch.equipment instanceof Equipment) {
+    json[ 'equipment' ] = patch.equipment.id;
+  } else if (isEquipmentCreateRequest(patch.equipment)) {
+    json[ 'equipment' ] = equipmentCreateRequestToJsonObject(patch.equipment)
   }
 
   if (patch.equipmentProvision instanceof EquipmentProvision) {
@@ -149,6 +155,9 @@ export function equipmentLeasePatchToJsonObject(committed: EquipmentLease | null
   } else if (isJsonObject(patch.equipmentProvision)) {
     json[ 'equipmentProvision' ] = patch.equipmentProvision;
   }
+
+  json[ 'startDate' ] = patch.startDate != null ? formatISO(patch.startDate, { representation: "date" }) : null;
+  json[ 'endDate' ] = patch.endDate != null ? formatISO(patch.endDate, { representation: "date" }) : null;
 
   json[ 'equipmentTrainingCompleted' ] = patch.equipmentTrainingCompleted;
   json[ 'requireSupervision' ] = patch.requireSupervision;

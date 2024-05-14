@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, EventEmitter, Input, Output, ViewChild, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, inject } from '@angular/core';
 import {
   FormArray,
   FormControl,
@@ -11,7 +11,7 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { EquipmentLease, EquipmentLeaseParams, EquipmentLeasePatch, EquipmentLeaseService } from './equipment-lease';
-import { BehaviorSubject, Observable, combineLatest, defer, filter, firstValueFrom, map, of, skipWhile, startWith, switchMap, tap } from 'rxjs';
+import { BehaviorSubject, Observable, combineLatest, defer, distinctUntilChanged, filter, firstValueFrom, map, of, shareReplay, skipWhile, startWith, switchMap, tap, withLatestFrom } from 'rxjs';
 import { EquipmentSearchComponent } from 'src/app/equipment/equipment-search.component';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { EquipmentRiskAssessmentFileInputComponent } from './risk-assessment-file-input.component';
@@ -19,10 +19,8 @@ import { Equipment, EquipmentCreateRequest, EquipmentService } from 'src/app/equ
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { NotFoundValue } from 'src/app/common/model/search/search-control';
 import { EquipmentTrainingAcknowlegementComponent } from 'src/app/equipment/training/training-acknowlegment-input.component';
-import { CreateEquipmentProvisionForm, createEquipmentProvisionForm } from 'src/app/equipment/provision/create-equipment-provision.form';
-import { EquipmentProvision, EquipmentProvisionParams } from 'src/app/equipment/provision/equipment-provision';
+import { CreateEquipmentProvisionRequest, EquipmentProvision } from 'src/app/equipment/provision/equipment-provision';
 import { Lab } from 'src/app/lab/lab';
-import { injectMaybeLabFromContext } from 'src/app/lab/lab-context';
 import { ResourceFormComponent } from '../../abstract-resource-form.component';
 import { ResourceFormTitleComponent } from '../../common/resource-form-title.component';
 import { EquipmentInstallation, EquipmentInstallationService } from 'src/app/equipment/installation/equipment-installation';
@@ -31,14 +29,15 @@ import { EquipmentContext } from 'src/app/equipment/equipment-context';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { ProvisionStatusPipe } from 'src/app/equipment/provision/provision-status.pipe';
-import { EquipmentFormGroup, EquipmentNameUniqueValidator, equipmentFormGroup } from 'src/app/equipment/equipment-form.component';
+import { EquipmentFormComponent, EquipmentFormGroup, EquipmentNameUniqueValidator, equipmentCreateRequestFromForm, equipmentFormGroup } from 'src/app/equipment/equipment-form.component';
+import { EquipmentProvisionCreateFormComponent, EquipmentProvisionCreateFormGroup, equipmentProvisionCreateFormGroup, equipmentProvisionCreateRequestFromForm } from 'src/app/equipment/provision/equipment-create-provision-form.component';
+import { CreateEquipmentProvisionFormComponent } from 'src/app/equipment/provision/create-equipment-provision.form';
+import { MatIconModule } from '@angular/material/icon';
 
 export type EquipmentLeaseForm = FormGroup<{
-  lab: FormControl<Lab>;
   equipment: FormControl<Equipment | NotFoundValue | null>;
   newEquipments: FormArray<EquipmentFormGroup>;
-  equipmentProvisions: FormArray<any>;
+  equipmentProvisions: FormArray<EquipmentProvisionCreateFormGroup>;
   equipmentTrainingCompleted: FormControl<string[]>;
   requireSupervision: FormControl<boolean>;
 
@@ -58,13 +57,15 @@ export type EquipmentLeaseForm = FormGroup<{
     MatCardModule,
     MatCheckboxModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
 
+    EquipmentFormComponent,
     EquipmentSearchComponent,
     EquipmentInstallationInfoComponent,
     EquipmentTrainingAcknowlegementComponent,
     EquipmentRiskAssessmentFileInputComponent,
-    CreateEquipmentProvisionForm,
+    EquipmentProvisionCreateFormComponent,
     ResourceFormTitleComponent,
   ],
   template: `
@@ -79,7 +80,7 @@ export type EquipmentLeaseForm = FormGroup<{
     }
     <form [formGroup]="form">
       <equipment-search 
-        formControlName="equipment" required
+        formControlName="equipment"
         allowNotFound
         required
         [inLab]="lab!"
@@ -91,38 +92,47 @@ export type EquipmentLeaseForm = FormGroup<{
         }
       </equipment-search>
 
-      @if (isNewEquipment$ | async; as newEquipmentName) {
+      @if (isNewEquipment$ | async) {
         <div formArrayName="newEquipments">
-          @for (newEquipmentForm of newEquipments.controls; track newEquipmentForm) {
-            <equipment-form formGroupName="$index" />
+          @for (_ of newEquipments.controls; track _) {
+            <mat-card>
+              <mat-card-header>New equipment type</mat-card-header>
+              <mat-card-content>
+                <equipment-form [formGroupName]="$index" 
+                                [disableFields]="['tags', 'trainingDescriptions']" />
+              </mat-card-content>
+            </mat-card>
           }
         </div>
-        
-        <!--
-        <equipment-create-equipment-provision-form
-          [equipment]="{name: newEquipmentName}"
-          [lab]="lab!">
-        </equipment-create-equipment-provision-form>
-        -->
       }
 
       @if (selectedEquipment$ | async; as equipment) {
         <div class="install-info">
           <equipment-installation-info [equipment]="equipment" [lab]="lab!"/>
 
+          @if (hasAdditionalProvision$ | async) {
+            <button mat-button
+              (click)="clearAdditionalProvision()">
+                <mat-icon>close</mat-icon>Cancel
+            </button>
           <button mat-button 
             [disabled]="hasAdditionalProvision$ | async"
             (click)="addAdditionalProvision()">
             + Request extra equipment
           </button>
+          } @else {
+            
+          }
         </div>
+      }
 
-        <div formArrayName="equipmentProvisions">
-          @for (city of equipmentProvisions.controls; track city) {
+      @if (effectiveEquipment$ | async; as equipment) {
+        <div class="equipment-provisions" formArrayName="equipmentProvisions">
+          @for (_ of equipmentProvisions.controls; track _) {
             <mat-card>
-              <mat-card-header>Index: {{$index}}</mat-card-header>
+              <mat-card-header>Provisioning</mat-card-header>
               <mat-card-content>
-                <equipment-create-equipment-provision-form
+                <equipment-provision-create-form
                   [equipment]="equipment"
                   [lab]="lab!"
                   [formGroupName]="$index" />
@@ -132,23 +142,25 @@ export type EquipmentLeaseForm = FormGroup<{
         </div>
       }
 
-      @if (
-        selectedEquipmentTrainingDescriptions$ | async;
-        as trainingDescriptions
-      ) {
-        <lab-equipment-training-acknowledgement
-          [trainingDescriptions]="trainingDescriptions"
-          formControlName="equipmentTrainingCompleted"
-        />
-      }
+      @if (effectiveEquipment$ | async; as equipment) {
+        <mat-card>
+          <mat-card-header>Training/competency</mat-card-header>
+          <mat-card-content>
+            @if (selectedEquipmentTrainingDescriptions$ | async; as trainingDescriptions) {
+              <lab-equipment-training-acknowledgement
+                [trainingDescriptions]="trainingDescriptions"
+                formControlName="equipmentTrainingCompleted"
+              />
+            }
 
-      @if (hasSelection$ | async; as equipment) {
-        <mat-checkbox formControlName="requireSupervision">
-          I require additional assistance using this equipment
-        </mat-checkbox>
-      }
+            <mat-checkbox formControlName="requireSupervision">
+              I require additional assistance using this equipment
+            </mat-checkbox>
+          </mat-card-content>
+        </mat-card>
 
-      <lab-equipment-risk-assessment-file-input />
+        <lab-equipment-risk-assessment-file-input />
+      }
     </form>
   }
   `,
@@ -189,8 +201,8 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
     switchMap(control => control.valueChanges)
   );
 
-  get equipmentProvisions() {
-    return this.form!.get('equipmentProvisions') as FormArray<any>;
+  get equipmentProvisions(): FormArray<EquipmentProvisionCreateFormGroup> {
+    return this.form!.controls.equipmentProvisions;
   }
 
   constructor() {
@@ -204,28 +216,14 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
       if (equipment instanceof NotFoundValue) {
         this.setEquipmentNotFound(equipment);
       }
-    })
-
-    /*
-    this.selectedEquipment$.pipe(
-      takeUntilDestroyed()
-    ).subscribe(equipment => {
-      if (equipment !== null) {
-        this._equipmentContext.nextCommitted(equipment)
-      }
-    })
-    */
+    });
+    this.createEquipmentRequest$.subscribe((request) => {
+      console.log('create equipment request', request)
+    });
   }
 
   createForm(lease: EquipmentLease | null) {
     return new FormGroup({
-      lab: new FormControl<Lab>(
-        this.lab!,
-        {
-          nonNullable: true,
-          validators: Validators.required
-        }
-      ),
       equipment: new FormControl<Equipment | NotFoundValue | null>(
         lease?.equipment || null,
         { validators: [ Validators.required ] },
@@ -259,9 +257,12 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
   )
 
   readonly hasAdditionalProvision$ = this.form$.pipe(
-    map(form => {
+    switchMap(form => {
       const provisions = (form.value.equipmentProvisions || []);
-      return provisions.length > 0;
+      return form.valueChanges.pipe(
+        map(() => provisions.length > 0),
+        tap((hasProvisions) => console.log('has additional provisions', hasProvisions))
+      );
     })
   );
 
@@ -277,31 +278,27 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
     if (value.equipment instanceof Equipment) {
       equipment = value.equipment;
     } else if (value.equipment instanceof NotFoundValue) {
-      equipment = { name: value.equipment.searchInput };
+      if (this.newEquipments.controls.length === 0) {
+        throw new Error('No new equipment submform')
+      }
+      const newEquipmentSubform = this.newEquipments.controls[ 0 ];
+      equipment = equipmentCreateRequestFromForm(newEquipmentSubform);
     } else {
       throw new Error('Expected an equipment or NotFoundValue in form value');
     }
 
-    let lab = value.lab;
-    if (!lab) {
-      throw new Error('Lab uninitialized on form');
-    }
-
-    let equipmentInstallation: EquipmentInstallation | null = null;
-    if (value.equipment instanceof NotFoundValue) {
-      equipmentInstallation = null;
-    } else if (value.equipment instanceof Equipment) {
-      const _fetchInstall = this._equipmentInstallations.fetchForLabEquipment(lab, value.equipment!);
-      equipmentInstallation = await firstValueFrom(_fetchInstall);
-    }
-
-
-    let equipmentProvision: EquipmentProvision | null = null;
-    if (value.equipment instanceof NotFoundValue) {
-
+    let equipmentProvision: CreateEquipmentProvisionRequest | null = null;
+    if (this.equipmentProvisions.length > 0) {
+      const equipmentProvisionControl = this.equipmentProvisions.controls[ 0 ];
+      equipmentProvision = equipmentProvisionCreateRequestFromForm(
+        equipment,
+        this.lab!,
+        equipmentProvisionControl
+      );
     }
 
     return {
+      lab: this.lab!,
       equipment,
       equipmentProvision,
       equipmentTrainingCompleted: new Set(value.equipmentTrainingCompleted!),
@@ -319,7 +316,10 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
     return this.form!.controls.newEquipments;
   }
 
-  readonly selectedEquipment$ = this.equipmentControl$.pipe(
+  /**
+   * The existing equipment which was selected via the equipment control
+   */
+  readonly selectedEquipment$: Observable<Equipment | null> = this.equipmentControl$.pipe(
     switchMap(control => control.valueChanges),
     map(value => {
       if (value instanceof Equipment) {
@@ -328,6 +328,34 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
       return null;
     })
   )
+
+  /**
+   * The CreateEquipmentRequest which is associated with selecting 'not found'
+   * from equipment control.
+   */
+  readonly createEquipmentRequest$: Observable<EquipmentCreateRequest> = this.form$.pipe(
+    map(f => f.controls.newEquipments),
+    switchMap((control) => {
+      return control.valueChanges.pipe(
+        map(_ => control.length >= 1 ? control.controls[ 0 ] : null),
+        filter((f): f is EquipmentFormGroup => f != null && f.valid),
+        distinctUntilChanged(),
+      )
+    }),
+    tap(c => console.log('create equipment form 2', c)),
+    map(f => equipmentCreateRequestFromForm(f)),
+    shareReplay(1)
+  );
+
+  readonly effectiveEquipment$: Observable<Equipment | EquipmentCreateRequest | null> = combineLatest([
+    this.selectedEquipment$,
+    this.createEquipmentRequest$.pipe(startWith(null))
+  ]).pipe(
+    map(([ selected, createRequest ]) => {
+      console.log('selected', selected, 'createRequest', createRequest);
+      return selected || createRequest || null;
+    })
+  );
 
   readonly _createdProvisionSubject = new BehaviorSubject<EquipmentProvision | null>(null);
   readonly createdProvision$ = this._createdProvisionSubject.pipe(
@@ -349,10 +377,19 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
 
   readonly hasSelection$ = this.equipmentControl$.pipe(
     switchMap(control => control.valueChanges),
-    map(equipment => equipment != null)
+    map(equipment => equipment != null),
   )
 
+  readonly isCreatingEquipment$ = this.form$.pipe(
+    map(f => f.controls.newEquipments),
+    map(control => control.length >= 1)
+  );
+
+
   setEquipmentNotFound(notFoundValue: NotFoundValue) {
+    const equipments = this.form!.controls.equipment;
+    equipments.disable({ emitEvent: false });
+
     const newEquipments: FormArray<EquipmentFormGroup> = this.form!.controls.newEquipments;
     let formGroup: EquipmentFormGroup;
     if (newEquipments.length < 1) {
@@ -362,14 +399,34 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
       formGroup = newEquipments.controls[ 0 ];
     }
     formGroup.patchValue({ name: notFoundValue.searchInput });
+    this.addAdditionalProvision();
+    this._cd.detectChanges();
+  }
+  clearEquipmentNotFound() {
+    const equipments = this.form!.controls.equipment;
+    equipments.enable({ emitEvent: false });
+
+    if (this.newEquipments.length > 0) {
+      this.newEquipments.clear();
+    }
+    this.clearAdditionalProvision();
     this._cd.detectChanges();
   }
 
   addAdditionalProvision() {
     const equipmentProvisions: FormArray<any> = this.form!.controls.equipmentProvisions;
-    equipmentProvisions.push(
-      createEquipmentProvisionForm(this.lab)
-    );
+    if (equipmentProvisions.length < 1) {
+      equipmentProvisions.push(
+        equipmentProvisionCreateFormGroup()
+      );
+      this._cd.detectChanges();
+    }
+  }
+
+  clearAdditionalProvision() {
+    if (this.equipmentProvisions.length >= 0) {
+      this.equipmentProvisions.clear();
+    }
     this._cd.detectChanges();
   }
 }
