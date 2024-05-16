@@ -7,7 +7,7 @@ import { Observable, combineLatest, map, shareReplay, switchMap, withLatestFrom 
 import { LabService } from "src/app/lab/lab";
 import { EquipmentProvision } from "../provision/equipment-provision";
 import { EquipmentProvisionCardComponent } from "../provision/equipment-provision-card.component";
-import { ProvisionStatusPipe } from "src/app/common/provisionable/provision-status.pipe";
+import { ProvisionStatusPipe } from "src/app/lab/common/provisionable/provision-status.pipe";
 
 
 @Component({

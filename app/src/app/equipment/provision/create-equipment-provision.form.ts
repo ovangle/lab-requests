@@ -18,9 +18,9 @@ import { MatInputModule } from "@angular/material/input";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { CostEstimate } from "src/app/research/funding/cost-estimate/cost-estimate";
-import { LabEquipmentProvisionService } from "src/app/lab/equipment/provision/lab-equipment-provision";
-import { ProvisionStatus } from "src/app/common/provisionable/provision-status";
-import { ProvisionStatusPipe } from "src/app/common/provisionable/provision-status.pipe";
+import { ProvisionStatus } from "src/app/lab/common/provisionable/provision-status";
+import { ProvisionStatusPipe } from "src/app/lab/common/provisionable/provision-status.pipe";
+import { LabEquipmentProvisionService } from "src/app/lab/lab-equipment/provision/lab-equipment-provision";
 
 export function createEquipmentProvisionForm(
   lab: Lab | null = null

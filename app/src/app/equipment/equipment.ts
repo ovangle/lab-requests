@@ -199,6 +199,6 @@ export class EquipmentService extends RestfulService<Equipment, EquipmentQuery, 
   override readonly modelFromJsonObject = equipmentFromJsonObject;
   override readonly modelQueryToHttpParams = equipmentQueryToHttpParams;
   override readonly createToJsonObject = equipmentCreateRequestToJsonObject;
-  override readonly actionToJsonObject = equipmentPatchToJsonObject;
+  override readonly updateToJsonObject = equipmentPatchToJsonObject;
 }
 

@@ -207,7 +207,7 @@ export class ResearchPlanService extends RestfulService<ResearchPlan, ResearchPl
   override readonly modelFromJsonObject = researchPlanFromJsonObject;
   override readonly modelQueryToHttpParams = researchPlanQueryToHttpParams;
   override readonly createToJsonObject = createResearchPlanToJsonObject;
-  override readonly actionToJsonObject = updateResearchPlanToJsonObject;
+  override readonly updateToJsonObject = updateResearchPlanToJsonObject;
   override path = '/research/plans';
 
   _alterTasks(task: ResearchPlanTask, slices: ResearchPlanTaskSlice[]) {

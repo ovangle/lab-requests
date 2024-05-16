@@ -21,7 +21,7 @@ import {
   ModelUpdateRequest,
 } from './model';
 import urlJoin from 'url-join';
-import { Observable, Subject, map, of, tap } from 'rxjs';
+import { Observable, Subject, map, of, tap, timer } from 'rxjs';
 import { JsonObject } from 'src/app/utils/is-json-object';
 
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL');
@@ -47,8 +47,19 @@ export abstract class ModelService<T extends Model, TQuery extends ModelQuery<T>
     return doFetch();
   }
 
+  protected findCache(search: (value: T) => boolean): Observable<T | undefined> {
+    return timer(0).pipe(
+      map(() => {
+        for (const v of this._cache.values()) {
+          if (search(v)) return v;
+        }
+        return undefined;
+      })
+    );
+  }
+
   abstract modelFromJsonObject(json: JsonObject): T;
-  abstract modelQueryToHttpParams(lookup: TQuery): HttpParams;
+  abstract modelQueryToHttpParams(lookup: Partial<TQuery>): HttpParams;
   abstract modelUrl(model: T): Observable<string>;
 
   modelIndexPageFromJsonObject(json: JsonObject): ModelIndexPage<T> {
@@ -74,11 +85,11 @@ export abstract class ModelService<T extends Model, TQuery extends ModelQuery<T>
    * @param lookup
    * @returns
    */
-  query(params: TQuery): Observable<T[]> {
+  query(params: Partial<TQuery>): Observable<T[]> {
     return this.queryPage(params).pipe(map((page) => page.items));
   }
 
-  queryOne(params: TQuery): Observable<T | null> {
+  queryOne(params: Partial<TQuery>): Observable<T | null> {
     return this.query(params).pipe(
       map((items) => {
         if (items.length > 1) {
@@ -91,7 +102,7 @@ export abstract class ModelService<T extends Model, TQuery extends ModelQuery<T>
 
   protected abstract _doQueryPage(params: HttpParams): Observable<JsonObject>;
 
-  queryPage(lookup: TQuery, pageNum = 1): Observable<ModelIndexPage<T>> {
+  queryPage(lookup: Partial<TQuery>, pageNum = 1): Observable<ModelIndexPage<T>> {
     let params = this.modelQueryToHttpParams(lookup);
     params = params.set('page', pageNum);
 
@@ -120,7 +131,7 @@ export abstract class RestfulService<
   abstract readonly path: string;
 
   abstract createToJsonObject?(request: TCreate): JsonObject;
-  abstract actionToJsonObject?(model: T, request: Partial<TUpdate>): JsonObject;
+  abstract updateToJsonObject?(model: T, request: Partial<TUpdate>): JsonObject;
 
   get indexUrl(): string {
     return urlJoin(this._apiBaseUrl, this.path) + '/';
@@ -183,10 +194,10 @@ export abstract class RestfulService<
   }
 
   update(model: T, request: Partial<TUpdate>) {
-    if (this.actionToJsonObject === undefined) {
+    if (this.updateToJsonObject === undefined) {
       throw new Error('service defines no updateRequestToJsonObject method');
     }
-    const body = this.actionToJsonObject(model, request);
+    const body = this.updateToJsonObject(model, request);
     return this._httpClient.put<JsonObject>(this.resourceUrl(model.id), body).pipe(
       map(response => this.modelFromJsonObject(response)),
       this._cacheOne

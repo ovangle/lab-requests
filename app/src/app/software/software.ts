@@ -1,10 +1,15 @@
 import { Injectable } from "@angular/core";
 import { Model, ModelCreateRequest, ModelIndexPage, ModelParams, ModelQuery, ModelUpdateRequest, modelIndexPageFromJsonObject, modelParamsFromJsonObject } from "../common/model/model";
 import { JsonObject, isJsonObject } from "../utils/is-json-object";
-import { SoftwareInstallation, softwareInstallationFromJsonObject } from "./installation/software-installation";
+import { SoftwareInstallation, SoftwareInstallationService, softwareInstallationFromJsonObject } from "./installation/software-installation";
 import { ModelService, RestfulService } from "../common/model/model-service";
 import { HttpParams } from "@angular/common/http";
 import { Observable } from "rxjs";
+import { Installable } from "../lab/common/installable/installable";
+import { Provisionable } from "../lab/common/provisionable/provisionable";
+import { SoftwareProvision } from "../lab/lab-software/provision/software-provision";
+import { Lab } from "../lab/lab";
+import { LabProvisionService, LabProvisionQuery } from "../lab/common/provisionable/provision";
 
 
 export interface SoftwareParams extends ModelParams {
@@ -15,7 +20,7 @@ export interface SoftwareParams extends ModelParams {
     installationsPage: ModelIndexPage<SoftwareInstallation>;
 }
 
-export class Software extends Model implements SoftwareParams {
+export class Software extends Model implements SoftwareParams, Installable<SoftwareInstallation>, Provisionable<SoftwareInstallation, SoftwareProvision> {
     name: string;
     description: string;
     tags: string[];
@@ -29,6 +34,13 @@ export class Software extends Model implements SoftwareParams {
         this.tags = [ ...params.tags ];
 
         this.installationsPage = params.installationsPage;
+    }
+
+    getCurrentProvision(provisionService: LabProvisionService<SoftwareInstallation, SoftwareProvision, LabProvisionQuery<SoftwareInstallation, SoftwareProvision>>, lab: Lab): Observable<SoftwareProvision> {
+        throw new Error("Method not implemented.");
+    }
+    getCurrentInstallation(lab: Lab, service: SoftwareInstallationService): Observable<SoftwareInstallation | null> {
+        return service.fetchForInstallableLab(this, lab);
     }
 }
 
@@ -88,5 +100,8 @@ export class SoftwareService extends RestfulService<Software, SoftwareQuery, Sof
     override readonly modelFromJsonObject = softwareFromJsonObject;
     override readonly modelQueryToHttpParams = softwareQueryToHttpParams;
     override readonly createToJsonObject = softwareCreateRequestToJsonObject;
-    override readonly actionToJsonObject = softwareUpdateRequestToJsonObject;
+    override readonly updateToJsonObject = softwareUpdateRequestToJsonObject;
+
+
+
 }

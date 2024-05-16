@@ -10,7 +10,7 @@ import {
 import { RestfulService } from 'src/app/common/model/model-service';
 import { JsonObject } from 'src/app/utils/is-json-object';
 
-export const FUNDING_MODEL_NAMES = ['student_project'];
+export const FUNDING_MODEL_NAMES = [ 'student_project' ];
 
 export interface ResearchFundingParams extends ModelParams {
   name: string;
@@ -36,16 +36,16 @@ export function researchFundingFromJsonObject(
   json: JsonObject,
 ): ResearchFunding {
   const baseParams = modelParamsFromJsonObject(json);
-  if (typeof json['name'] !== 'string') {
+  if (typeof json[ 'name' ] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
-  if (typeof json['description'] !== 'string') {
+  if (typeof json[ 'description' ] !== 'string') {
     throw new Error("Expected a string 'description'");
   }
   return new ResearchFunding({
     ...baseParams,
-    name: json['name'],
-    description: json['description'],
+    name: json[ 'name' ],
+    description: json[ 'description' ],
   });
 }
 
@@ -108,7 +108,7 @@ export class ResearchFundingService extends RestfulService<ResearchFunding, Rese
   override readonly modelFromJsonObject = researchFundingFromJsonObject;
   override readonly modelQueryToHttpParams = researchFundingQueryToHttpParams;
   override readonly createToJsonObject = undefined;
-  override readonly actionToJsonObject = undefined;
+  override readonly updateToJsonObject = undefined;
 
   override readonly path: string = '/research/funding';
 

@@ -9,7 +9,7 @@ import { HttpParams } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { EquipmentContext } from "../equipment-context";
 import { RelatedModelService } from "src/app/common/model/context";
-import { ProvisionStatus, isProvisionStatus } from "src/app/common/provisionable/provision-status";
+import { ProvisionStatus, isProvisionStatus } from "src/app/lab/common/provisionable/provision-status";
 
 export interface EquipmentProvisionParams extends ModelParams {
     status: ProvisionStatus;

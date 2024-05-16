@@ -9,7 +9,7 @@ import { EquipmentContext } from '../equipment-context';
 import { Equipment, EquipmentService, equipmentFromJsonObject } from '../equipment';
 import { HttpParams } from '@angular/common/http';
 import { RelatedModelService } from 'src/app/common/model/context';
-import { ProvisionStatus, isProvisionStatus } from 'src/app/common/provisionable/provision-status';
+import { ProvisionStatus, isProvisionStatus } from 'src/app/lab/common/provisionable/provision-status';
 
 export interface EquipmentInstallationParams extends ModelParams {
     equipmentName: string;

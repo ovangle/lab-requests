@@ -2,7 +2,7 @@ import { Type, inject } from '@angular/core';
 import { parseISO } from 'date-fns';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { ModelService } from './model-service';
-import { Connectable, Observable, ReplaySubject, connectable, switchMap } from 'rxjs';
+import { Connectable, Observable, ReplaySubject, connectable, of, switchMap } from 'rxjs';
 
 export abstract class Model {
   readonly id: string;
@@ -23,19 +23,19 @@ export interface ModelParams {
 }
 
 export function modelParamsFromJsonObject(json: JsonObject): ModelParams {
-  const id = json['id'];
+  const id = json[ 'id' ];
   if (typeof id !== 'string') {
     throw new Error("Expected a string 'id'");
   }
-  if (typeof json['createdAt'] !== 'string') {
+  if (typeof json[ 'createdAt' ] !== 'string') {
     throw new Error("Expected string 'createdAt'");
   }
-  const createdAt = parseISO(json['createdAt']);
+  const createdAt = parseISO(json[ 'createdAt' ]);
 
-  if (typeof json['updatedAt'] !== 'string') {
+  if (typeof json[ 'updatedAt' ] !== 'string') {
     throw new Error("Expected string 'createdAt'");
   }
-  const updatedAt = parseISO(json['updatedAt']);
+  const updatedAt = parseISO(json[ 'updatedAt' ]);
 
   return { id, createdAt, updatedAt };
 }
@@ -53,32 +53,32 @@ export function modelIndexPageFromJsonObject<T extends Model>(
   modelFromJsonObject: (obj: JsonObject) => T,
   json: JsonObject,
 ): ModelIndexPage<T> {
-  if (typeof json['totalItemCount'] !== 'number') {
+  if (typeof json[ 'totalItemCount' ] !== 'number') {
     throw new Error("ModelIndexPage: 'totalItemCount' must be a number");
   }
-  if (typeof json['totalPageCount'] !== 'number') {
+  if (typeof json[ 'totalPageCount' ] !== 'number') {
     throw new Error("ModelIndexPage: 'totalPageCount' must be a number");
   }
-  if (typeof json['pageIndex'] !== 'number') {
+  if (typeof json[ 'pageIndex' ] !== 'number') {
     throw new Error("ModelIndexPage: 'pageIndex' must be a number");
   }
-  if (typeof json['pageSize'] !== 'number') {
+  if (typeof json[ 'pageSize' ] !== 'number') {
     throw new Error("ModelIndexPage: 'pageSize' must be a number");
   }
-  if (!Array.isArray(json['items']) || !json['items'].every(isJsonObject)) {
+  if (!Array.isArray(json[ 'items' ]) || !json[ 'items' ].every(isJsonObject)) {
     throw new Error("ModelIndexPage: 'items' must be an array of json objects");
   }
 
-  const items = Array.from(json['items']).map((itemJson) =>
+  const items = Array.from(json[ 'items' ]).map((itemJson) =>
     modelFromJsonObject(itemJson),
   );
 
   return {
     items,
-    totalItemCount: json['totalItemCount'],
-    totalPageCount: json['totalPageCount'],
-    pageIndex: json['pageIndex'],
-    pageSize: json['pageSize'],
+    totalItemCount: json[ 'totalItemCount' ],
+    totalPageCount: json[ 'totalPageCount' ],
+    pageIndex: json[ 'pageIndex' ],
+    pageSize: json[ 'pageSize' ],
   };
 }
 
@@ -105,3 +105,18 @@ export interface ModelCreateRequest<T extends Model> {
 export interface ModelUpdateRequest<T extends Model> {
 }
 
+export type ModelRef<T extends Model> = T | string;
+
+export function modelId(ref: ModelRef<any>): string;
+export function modelId(ref: ModelRef<any> | null): string | null;
+
+export function modelId(ref: ModelRef<any> | null): string | null {
+  return typeof ref === 'string' ? ref : ref.id;
+}
+
+export function resolveRef<T extends Model>(ref: ModelRef<T>, service: ModelService<T>): Observable<T>;
+export function resolveRef<T extends Model>(ref: ModelRef<T> | null, service: ModelService<T>): Observable<T | null>;
+
+export function resolveRef<T extends Model>(ref: ModelRef<T> | null, service: ModelService<T>): Observable<T | null> {
+  return typeof ref === 'string' ? service.fetch(ref) : of(ref);
+}

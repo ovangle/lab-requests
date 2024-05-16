@@ -147,5 +147,5 @@ export class LabService extends RestfulService<Lab>{
   override readonly modelFromJsonObject = labFromJsonObject;
   override readonly modelQueryToHttpParams = labQueryToHttpParams;
   override readonly createToJsonObject = undefined;
-  override readonly actionToJsonObject = undefined;
+  override readonly updateToJsonObject = undefined;
 }

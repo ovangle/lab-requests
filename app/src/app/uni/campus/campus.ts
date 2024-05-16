@@ -128,7 +128,7 @@ export class CampusService extends RestfulService<Campus, CampusQuery> {
   override readonly modelFromJsonObject = campusFromJsonObject;
   override readonly modelQueryToHttpParams = campusQueryToHttpParams;
   override readonly createToJsonObject = undefined;
-  override readonly actionToJsonObject = undefined;
+  override readonly updateToJsonObject = undefined;
   override path = '/uni/campuses';
 
   lookup(lookup: string | CampusLookup, { useCache } = { useCache: true }): Observable<Campus | null> {

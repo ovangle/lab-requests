@@ -4,6 +4,7 @@ import { HttpParams } from '@angular/common/http';
 import {
   Model,
   ModelParams,
+  modelId,
   modelParamsFromJsonObject,
 } from 'src/app/common/model/model';
 import {
@@ -12,6 +13,14 @@ import {
 } from 'src/app/common/model/model-service';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { ModelContext } from 'src/app/common/model/context';
+import { Installable } from '../common/installable/installable';
+import { SoftwareInstallation, SoftwareInstallationService } from 'src/app/software/installation/software-installation';
+import { Provisionable } from '../common/provisionable/provisionable';
+import { Lab } from '../lab';
+import { Observable, of } from 'rxjs';
+import { SoftwareProvision } from './provision/software-provision';
+import { LabProvisionService } from '../common/provisionable/provision';
+import { SoftwareProvisionService } from 'src/app/software/provision/software-provision';
 
 export interface SoftwareParams extends ModelParams {
   readonly id: string;
@@ -22,17 +31,17 @@ export interface SoftwareParams extends ModelParams {
 export function softwareFromJsonObject(json: JsonObject) {
   const baseParams = modelParamsFromJsonObject(json);
 
-  if (typeof json['name'] !== 'string') {
+  if (typeof json[ 'name' ] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
 
   return new Software({
     ...baseParams,
-    name: json['name'],
+    name: json[ 'name' ],
   });
 }
 
-export class Software extends Model {
+export class Software extends Model implements Installable<SoftwareInstallation>, Provisionable<SoftwareInstallation, SoftwareProvision> {
   readonly type = 'software';
 
   name: string;
@@ -88,7 +97,7 @@ export class SoftwareService extends RestfulService<Software> {
   override modelFromJsonObject = softwareFromJsonObject;
   override readonly modelQueryToHttpParams = softwareQueryToHttpParams;
   override readonly createToJsonObject = undefined;
-  override readonly actionToJsonObject = undefined;
+  override readonly updateToJsonObject = undefined;
 
   override path: string = '/lab/softwares';
 }

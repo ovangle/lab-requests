@@ -6,7 +6,7 @@ import { EquipmentProvisionInstallFormComponent } from "./equipment-provision-in
 import { EquipmentProvisionApprovalFormComponent } from "./equipment-provision-approval.form";
 import { EquipmentProvisionPurchaseFormComponent } from "./equipment-provision-purchase.form";
 import { EquipmentContext } from "../equipment-context";
-import { ProvisionStatus } from "src/app/common/provisionable/provision-status";
+import { ProvisionStatus } from "src/app/lab/common/provisionable/provision-status";
 
 @Component({
   selector: 'equipment-provision-info',
