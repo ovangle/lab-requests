@@ -1,9 +1,11 @@
 import { Observable } from "rxjs";
-import { Lab } from "../../lab";
-import { LabInstallation } from "./installation";
-import { ModelParams } from "src/app/common/model/model";
+import { Lab, LabService } from "../../lab";
+import { LabInstallation, LabInstallationService } from "./installation";
+import { Model, ModelParams, ModelQuery, ModelRef, modelId } from "src/app/common/model/model";
+import { Injectable, inject } from "@angular/core";
+import { ModelService, RestfulService } from "src/app/common/model/model-service";
 
 
-export interface Installable<TInstallation extends LabInstallation> extends ModelParams {
-    getCurrentInstallation(lab: Lab): Observable<TInstallation | null>;
+export interface Installable<TInstallation extends LabInstallation<any>> extends ModelParams {
+    getCurrentInstallation(lab: Lab | string, service: LabInstallationService<any, TInstallation>): Promise<TInstallation | null>;
 }

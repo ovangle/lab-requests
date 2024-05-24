@@ -1,36 +1,26 @@
 import { Model, ModelCreateRequest, ModelParams, ModelQuery, ModelUpdateRequest, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { Software, SoftwareService, softwareFromJsonObject } from "../software";
 import { firstValueFrom } from "rxjs";
-import { Lab, LabService, labFromJsonObject } from "src/app/lab/lab";
-import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
-import { ModelContext, RelatedModelService } from "src/app/common/model/context";
+import { JsonObject } from "src/app/utils/is-json-object";
 import { HttpParams } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
-import { SoftwareContext } from "../software-context";
 import { LabInstallation, LabInstallationParams, LabInstallationService, labInstallationParamsFromJsonObject } from "src/app/lab/common/installable/installation";
-import { Installable } from "src/app/lab/common/installable/installable";
 
 
-export interface SoftwareInstallationParams extends LabInstallationParams {
+export interface SoftwareInstallationParams extends LabInstallationParams<Software> {
     software: Software | string;
 
     version: string;
 }
 
-export class SoftwareInstallation extends LabInstallation implements SoftwareInstallationParams {
+export class SoftwareInstallation extends LabInstallation<Software> implements SoftwareInstallationParams {
     software: Software | string;
-
     version: string;
-
-    get installable() {
-        return this.software as Installable<this>;
-    }
 
     constructor(params: SoftwareInstallationParams) {
         super(params);
-        this.software = params.software;
-        this.lab = params.lab;
 
+        this.software = params.software;
         this.version = params.version;
     }
 
@@ -43,17 +33,14 @@ export class SoftwareInstallation extends LabInstallation implements SoftwareIns
 }
 
 
-export function softwareInstallationFromJsonObject(json: JsonObject) {
-    const baseParams = labInstallationParamsFromJsonObject(json);
+export function softwareInstallationFromJsonObject(json: JsonObject): SoftwareInstallation {
+    const baseParams = labInstallationParamsFromJsonObject(
+        softwareFromJsonObject,
+        'software',
+        json
+    );
 
-    let software: Software | string;
-    if (typeof json[ 'software' ] === 'string') {
-        software = json[ 'software' ]
-    } else if (isJsonObject(json[ 'software' ])) {
-        software = softwareFromJsonObject(json[ 'software' ])
-    } else {
-        throw new Error("Expected a string or json object 'software'");
-    }
+    const software: Software | string = baseParams.installable;
 
     if (typeof json[ 'version' ] !== 'string') {
         throw new Error("Expected a string 'version'")
@@ -73,7 +60,7 @@ function softwareInstallationQueryToHttpParams() {
 }
 
 @Injectable()
-export class SoftwareInstallationService extends LabInstallationService<SoftwareInstallation> {
+export class SoftwareInstallationService extends LabInstallationService<Software, SoftwareInstallation> {
     override readonly path = '/installations';
     override readonly modelFromJsonObject = softwareInstallationFromJsonObject;
     override readonly modelQueryToHttpParams = softwareInstallationQueryToHttpParams;

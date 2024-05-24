@@ -1,19 +1,24 @@
-import { Model, ModelCreateRequest, ModelParams, ModelQuery, ModelUpdateRequest, modelId, modelParamsFromJsonObject } from "src/app/common/model/model";
+import { Model, ModelCreateRequest, ModelParams, ModelQuery, ModelUpdateRequest, modelId, modelParamsFromJsonObject, resolveRef } from "src/app/common/model/model";
 import { Lab, LabService, labFromJsonObject } from "../../lab";
 import { NEVER, Observable, first, firstValueFrom, map, of, race, switchMap, timer } from "rxjs";
 import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
 import { HttpParams } from "@angular/common/http";
-import { Injectable } from "@angular/core";
+import { Injectable, inject } from "@angular/core";
 import { ModelService, RestfulService } from "src/app/common/model/model-service";
 import { Installable } from "./installable";
 import { ModelContext, RelatedModelService } from "src/app/common/model/context";
 
 
-export interface LabInstallationParams extends ModelParams {
+export interface LabInstallationParams<TInstallable extends Installable<any>> extends ModelParams {
     lab: Lab | string;
+    installable: TInstallable | string;
 }
 
-export function labInstallationParamsFromJsonObject(json: JsonObject): LabInstallationParams {
+export function labInstallationParamsFromJsonObject<TInstallable extends Installable<any>>(
+    installableFromJsonObject: (json: JsonObject) => TInstallable,
+    installableKey: string,
+    json: JsonObject
+): LabInstallationParams<TInstallable> {
     const baseParams = modelParamsFromJsonObject(json);
 
     let lab: Lab | string;
@@ -25,37 +30,48 @@ export function labInstallationParamsFromJsonObject(json: JsonObject): LabInstal
         throw new Error("Expected a string or json object 'lab'");
     }
 
-    return { ...baseParams, lab };
+    let installable: TInstallable | string;
+    const jsonInstallable = json[ installableKey ];
+    if (typeof jsonInstallable === 'string') {
+        installable = jsonInstallable;
+    } else if (isJsonObject(jsonInstallable)) {
+        installable = installableFromJsonObject(jsonInstallable);
+    } else {
+        throw new Error(`Expected a string or json object '${installableKey}'`)
+    }
+
+    return { ...baseParams, lab, installable };
 }
 
 /**
  * Represents an item which can be 'installed' into a lab.
  */
-export abstract class LabInstallation extends Model implements LabInstallationParams {
+export abstract class LabInstallation<TInstallable extends Installable<any>> extends Model implements LabInstallationParams<TInstallable> {
     lab: Lab | string;
+    installable: TInstallable | string;
 
-    abstract readonly installable: Installable<this> | string;
-
-    constructor(params: LabInstallationParams) {
+    constructor(params: LabInstallationParams<TInstallable>) {
         super(params);
 
         this.lab = params.lab;
+        this.installable = params.installable;
     }
 
-    async resolveLab(service: LabService): Promise<Lab> {
-        if (typeof this.lab === 'string') {
-            this.lab = await firstValueFrom(service.fetch(this.lab));
-        }
-        return this.lab;
+    resolveLab(service: LabService): Promise<Lab> {
+        return firstValueFrom(resolveRef(this.lab, service));
+    }
+
+    resolveInstallable(service: ModelService<TInstallable>): Promise<TInstallable> {
+        return firstValueFrom(resolveRef(this.installable, service));
     }
 }
 
-export interface LabInstallationQuery<T extends LabInstallation> extends ModelQuery<T> {
+export interface LabInstallationQuery<TInstallable extends Installable<any>, T extends LabInstallation<TInstallable>> extends ModelQuery<T> {
     lab?: Lab | string;
-    installable?: Installable<T> | string;
+    installable?: TInstallable | string;
 }
 
-export function labInstallationQueryToHttpParams(query: LabInstallationQuery<any>, installableParam: string) {
+export function labInstallationQueryToHttpParams(query: LabInstallationQuery<any, any>, installableParam: string) {
     let params = new HttpParams();
     if (query.lab) {
         params = params.set('lab', modelId(query.lab));
@@ -68,17 +84,22 @@ export function labInstallationQueryToHttpParams(query: LabInstallationQuery<any
 
 @Injectable()
 export abstract class LabInstallationService<
-    TInstallation extends LabInstallation,
-    TInstallationQuery extends LabInstallationQuery<TInstallation> = LabInstallationQuery<TInstallation>
+    TInstallable extends Installable<any>,
+    TInstallation extends LabInstallation<TInstallable>,
+    TInstallationQuery extends LabInstallationQuery<TInstallable, TInstallation> = LabInstallationQuery<TInstallable, TInstallation>
 > extends RestfulService<TInstallation, TInstallationQuery> {
-    fetchForInstallableLab(installable: Installable<TInstallation> | string, lab: Lab | string): Observable<TInstallation | null> {
+    labService = inject(LabService);
+
+    fetchForInstallableLab(installable: TInstallable | string, lab: Lab | string): Observable<TInstallation | null> {
         const labId = modelId(lab);
         const installableId = modelId(installable);
-        const fromCache = this.findCache(value =>
-            modelId(value.installable) === installableId && modelId(value.lab) === labId
+
+        const fromCache = this.findCache(
+            value => modelId(value.installable) === installableId && modelId(value.lab) === labId
         ).pipe(
             switchMap(value => value != null ? of(value) : NEVER)
-        )
+        );
+
         const fromServer = this.queryOne({
             lab,
             installable: installable
