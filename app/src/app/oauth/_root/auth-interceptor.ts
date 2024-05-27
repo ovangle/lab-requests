@@ -1,10 +1,4 @@
-import {
-  HTTP_INTERCEPTORS,
-  HttpEvent,
-  HttpHandler,
-  HttpInterceptor,
-  HttpRequest,
-} from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
 import { Injectable, InjectionToken, Provider, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, from, switchMap, takeUntil, takeWhile, tap } from 'rxjs';

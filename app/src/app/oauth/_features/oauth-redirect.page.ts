@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { HttpClientModule } from '@angular/common/http';
+import {} from '@angular/common/http';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { LoginContext } from '../login-context';
 import { CommonModule } from '@angular/common';

@@ -6,12 +6,10 @@ import {
   OAUTH_FEATURE_PATH,
   USER_HOME_PAGE_DEFAULT,
 } from '../utils';
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { authorizationInterceptorProviders } from './auth-interceptor';
 
-@NgModule({
-  imports: [HttpClientModule],
-})
+@NgModule({ imports: [], providers: [provideHttpClient(withInterceptorsFromDi())] })
 export class OauthRootModule {
   static forRoot(
     routes: {

@@ -1,8 +1,4 @@
-import {
-  HttpClient,
-  HttpParams,
-  HttpParamsOptions,
-} from '@angular/common/http';
+import { HttpClient, HttpParams, HttpParamsOptions } from '@angular/common/http';
 import {
   Inject,
   Injectable,

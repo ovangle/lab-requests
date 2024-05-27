@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -29,54 +29,40 @@ import {
 import { ScaffoldLayoutComponent } from './scaffold/scaffold-layout.component';
 import { provideAppBaseUrl } from './utils/app-base-url';
 
-@NgModule({
-  declarations: [ AppComponent ],
-  imports: [
-    BrowserModule,
-    AppRoutingModule,
-    BrowserAnimationsModule,
-    HttpClientModule,
-
-    MatButtonModule,
-    MatDateFnsModule,
-    OauthRootModule.forRoot(
-      {
-        publicPage: '/public',
-        oauthFeature: '/oauth',
-        defaultUserHomePage: '/user/home',
-      },
-      APP_OAUTH_PROVIDER_PARAMS,
-    ),
-    ScaffoldLayoutComponent,
-  ],
-  providers: [
-    {
-      provide: APP_BASE_HREF,
-      useFactory: (s: PlatformLocation) => s.getBaseHrefFromDOM(),
-      deps: [ PlatformLocation ]
-    },
-    provideAppBaseUrl(),
-    {
-      provide: API_BASE_URL,
-      useValue: '/api',
-    },
-
-    ...provideLocalStorage(),
-    { provide: MAT_DATE_LOCALE, useValue: enAU },
-    { provide: MAT_DATE_FORMATS, useValue: MAT_DATE_FNS_FORMATS },
-    BodyScrollbarHidingService,
-
-    {
-      provide: AUTHORIZED_API_URL_MATCHER,
-      multi: true,
-      useFactory: (apiBaseUrl: string) =>
-        baseUrlMatcherFn(apiBaseUrl, [ '/oauth/token' ]),
-      deps: [ API_BASE_URL ],
-    },
-    provideAppOauthProviderParams(),
-
-    FileUploadService,
-  ],
-  bootstrap: [ AppComponent ],
-})
+@NgModule({ declarations: [AppComponent],
+    bootstrap: [AppComponent], imports: [BrowserModule,
+        AppRoutingModule,
+        BrowserAnimationsModule,
+        MatButtonModule,
+        MatDateFnsModule,
+        OauthRootModule.forRoot({
+            publicPage: '/public',
+            oauthFeature: '/oauth',
+            defaultUserHomePage: '/user/home',
+        }, APP_OAUTH_PROVIDER_PARAMS),
+        ScaffoldLayoutComponent], providers: [
+        {
+            provide: APP_BASE_HREF,
+            useFactory: (s: PlatformLocation) => s.getBaseHrefFromDOM(),
+            deps: [PlatformLocation]
+        },
+        provideAppBaseUrl(),
+        {
+            provide: API_BASE_URL,
+            useValue: '/api',
+        },
+        ...provideLocalStorage(),
+        { provide: MAT_DATE_LOCALE, useValue: enAU },
+        { provide: MAT_DATE_FORMATS, useValue: MAT_DATE_FNS_FORMATS },
+        BodyScrollbarHidingService,
+        {
+            provide: AUTHORIZED_API_URL_MATCHER,
+            multi: true,
+            useFactory: (apiBaseUrl: string) => baseUrlMatcherFn(apiBaseUrl, ['/oauth/token']),
+            deps: [API_BASE_URL],
+        },
+        provideAppOauthProviderParams(),
+        FileUploadService,
+        provideHttpClient(withInterceptorsFromDi()),
+    ] })
 export class AppModule { }

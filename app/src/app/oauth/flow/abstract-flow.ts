@@ -9,12 +9,7 @@ import {
   timeout,
 } from 'rxjs';
 import { OauthProviderParams } from '../oauth-provider';
-import {
-  HttpClient,
-  HttpErrorResponse,
-  HttpHeaders,
-  HttpRequest,
-} from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpRequest } from '@angular/common/http';
 import {
   AccessTokenData,
   AccessTokenResponse,
