@@ -1,5 +1,5 @@
 ARG NG_VERSION
-FROM node:18.17
+FROM node:20.13
 
 RUN npm i -g @angular/cli@>=${NG_VERSION}
 

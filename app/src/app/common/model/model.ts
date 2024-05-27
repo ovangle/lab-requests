@@ -1,18 +1,24 @@
 import { Type, inject } from '@angular/core';
 import { parseISO } from 'date-fns';
+import { validate as validateIsUUID } from 'uuid';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { ModelService } from './model-service';
-import { Connectable, Observable, ReplaySubject, connectable, of, switchMap } from 'rxjs';
+import { Connectable, Observable, ReplaySubject, connectable, firstValueFrom, of, switchMap } from 'rxjs';
 
 export abstract class Model {
   readonly id: string;
 
   readonly createdAt: Date;
   readonly updatedAt: Date;
+
+  readonly _resolvedRefs: Map<string, Model>;
+
   constructor(params: ModelParams) {
     this.id = params.id;
     this.createdAt = params.createdAt;
     this.updatedAt = params.updatedAt;
+
+    this._resolvedRefs = new Map();
   }
 }
 
@@ -106,6 +112,9 @@ export interface ModelUpdateRequest<T extends Model> {
 }
 
 export type ModelRef<T extends Model> = T | string;
+export type ModelOf<T> = T extends ModelRef<infer U> ?
+  (U extends T ? U : never)
+  : never;
 
 export function modelId(ref: ModelRef<any>): string;
 export function modelId(ref: ModelRef<any> | null): string | null;
@@ -119,4 +128,47 @@ export function resolveRef<T extends Model>(ref: ModelRef<T> | null, service: Mo
 
 export function resolveRef<T extends Model>(ref: ModelRef<T> | null, service: ModelService<T>): Observable<T | null> {
   return typeof ref === 'string' ? service.fetch(ref) : of(ref);
+}
+
+export async function resolveModelRef<
+  TModel extends Model,
+  K extends keyof TModel,
+  TRelated extends ModelOf<TModel[ K ]>
+>(
+  on: TModel,
+  attr: K,
+  usingModelService: ModelService<TRelated, any>
+): Promise<TRelated> {
+  const value = on[ attr ];
+  if (typeof value === 'string') {
+    if (!on._resolvedRefs.has(value)) {
+      const resolvedValue = await firstValueFrom(usingModelService.fetch(value));
+      on._resolvedRefs.set(value, resolvedValue);
+    }
+    return on._resolvedRefs.get(value)! as TRelated;
+  } else {
+    return value as TRelated;
+  }
+}
+
+export function modelRefJsonDecoder<T extends Model>(key: string, modelFromJsonObject: (json: JsonObject) => T): (json: JsonObject) => ModelRef<T>;
+export function modelRefJsonDecoder<T extends Model>(key: string, modelFromJsonObject: (json: JsonObject) => T, nullable: true): (json: JsonObject) => ModelRef<T> | null;
+
+export function modelRefJsonDecoder<T extends Model>(key: string, modelFromJsonObject: (json: JsonObject) => T, nullable?: boolean): (json: JsonObject) => ModelRef<T> | null {
+  return (json: JsonObject) => {
+    const value = json[ key ];
+    if (nullable && value == null) {
+      return null;
+    } else if (typeof value === 'string' && validateIsUUID(value)) {
+      return value;
+    } else if (isJsonObject(value)) {
+      return modelFromJsonObject(value);
+    } else {
+      if (nullable) {
+        throw new Error(`Expected a UUID, json object or null '${key}'.`);
+      } else {
+        throw new Error(`Expected a UUID or json object '${key}'.`);
+      }
+    }
+  }
 }

@@ -1,4 +1,4 @@
-import { Model, ModelCreateRequest, ModelParams, ModelQuery, ModelUpdateRequest, modelId, modelParamsFromJsonObject, resolveRef } from "src/app/common/model/model";
+import { Model, ModelCreateRequest, ModelParams, ModelQuery, ModelUpdateRequest, modelId, modelParamsFromJsonObject, resolveModelRef, resolveRef } from "src/app/common/model/model";
 import { Lab, LabService, labFromJsonObject } from "../../lab";
 import { NEVER, Observable, first, firstValueFrom, map, of, race, switchMap, timer } from "rxjs";
 import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
@@ -61,8 +61,8 @@ export abstract class LabInstallation<TInstallable extends Installable<any>> ext
         return firstValueFrom(resolveRef(this.lab, service));
     }
 
-    resolveInstallable(service: ModelService<TInstallable>): Promise<TInstallable> {
-        return firstValueFrom(resolveRef(this.installable, service));
+    resolveInstallable(service: ModelService<TInstallable & Model>): Promise<TInstallable> {
+        return resolveModelRef(this, 'installable', service as any);
     }
 }
 

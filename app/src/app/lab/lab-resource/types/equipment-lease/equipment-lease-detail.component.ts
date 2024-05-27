@@ -9,8 +9,7 @@ import {
 } from 'src/app/equipment/equipment';
 import { EquipmentProvision } from 'src/app/equipment/provision/equipment-provision';
 import { EquipmentInfoComponent } from 'src/app/equipment/equipment-info.component';
-
-import { LabEquipmentProvisionInfoComponent } from 'src/app/lab/equipment/equipment-provision-card.component';
+import { LabEquipmentProvisionInfoComponent } from 'src/app/lab/lab-equipment/equipment-provision-card.component';
 
 @Component({
   selector: 'lab-equipment-lease-detail',

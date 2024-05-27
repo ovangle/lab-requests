@@ -16,6 +16,7 @@ import { ResourceFormComponent } from '../../abstract-resource-form.component';
 import { ResearchFundingCostEstimateFormComponent } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { TextFieldModule } from '@angular/cdk/text-field';
+import { Software } from 'src/app/software/software';
 
 export type SoftwareLeaseForm = FormGroup<{
   name: FormControl<string>;
@@ -29,8 +30,10 @@ export type SoftwareLeaseForm = FormGroup<{
 }>;
 
 export function softwareLeaseForm(committed: SoftwareLease | null): SoftwareLeaseForm {
+  const softwareName = committed?.software instanceof Software ? committed?.software.name : '';
+
   return new FormGroup({
-    name: new FormControl<string>(committed?.software?.name || '', {
+    name: new FormControl<string>(softwareName, {
       validators: [ Validators.required ],
       nonNullable: true,
     }),

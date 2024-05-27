@@ -118,7 +118,7 @@ export function researchPlanTaskFromJson(json: JsonObject): ResearchPlanTask {
   });
 }
 
-export interface ResearchPlanTaskQuery extends ModelQuery<ResearchPlanTaskParams> {
+export interface ResearchPlanTaskQuery extends ModelQuery<ResearchPlanTask> {
 
 }
 
@@ -162,7 +162,7 @@ export function researchPlanTaskSliceToJson(slice: ResearchPlanTaskSlice): JsonO
 
 
 @Injectable()
-export class ResearchPlanTaskService extends RelatedModelService<ResearchPlan, ResearchPlanTaskParams, ResearchPlanTaskQuery> {
+export class ResearchPlanTaskService extends RelatedModelService<ResearchPlan, ResearchPlanTask, ResearchPlanTaskQuery> {
   override readonly context = inject(ResearchPlanContext);
   override readonly modelFromJsonObject = researchPlanTaskFromJson;
   override readonly modelQueryToHttpParams = researchPlanTaskQueryToHttpParams;

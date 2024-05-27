@@ -37,8 +37,6 @@ export interface EquipmentLeaseParams extends ResourceParams {
 export class EquipmentLease extends Resource {
   override readonly type = 'equipment_lease';
 
-  lab: Lab | string;
-
   equipment: Equipment;
   equipmentProvision: EquipmentProvision | null;
 
@@ -54,8 +52,6 @@ export class EquipmentLease extends Resource {
 
   constructor(params: EquipmentLeaseParams) {
     super(params);
-
-    this.lab = params.lab;
 
     if (!(params.equipment instanceof Equipment)) {
       throw new Error('Lease equipment must exist');
@@ -74,13 +70,6 @@ export class EquipmentLease extends Resource {
 
   get equipmentInstallation(): EquipmentInstallation | null {
     return this.equipment.currentLabInstallation(this.lab);
-  }
-
-  async resolveLab(service: LabService) {
-    if (typeof this.lab === 'string') {
-      this.lab = await firstValueFrom(service.fetch(this.lab));
-    }
-    return this.lab;
   }
 }
 

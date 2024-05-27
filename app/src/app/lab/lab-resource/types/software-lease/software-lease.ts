@@ -1,23 +1,24 @@
 import { Injectable } from '@angular/core';
 import { HttpParams } from '@angular/common/http';
 
-import { ModelQuery } from 'src/app/common/model/model';
+import { ModelOf, ModelQuery, ModelRef, modelRefJsonDecoder, resolveModelRef, resolveRef } from 'src/app/common/model/model';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 
 import { ResourceParams, Resource, resourceParamsFromJsonObject, ResourcePatch, ResourceService, resourcePatchToJsonObject } from '../../resource';
-import { Software, softwareFromJsonObject } from '../../../software/software';
-import { SoftwareProvision, softwareProvisionFromJsonObject } from '../../../software/provision/software-provision';
+import { SoftwareProvision, SoftwareProvisionService, softwareProvisionFromJsonObject } from 'src/app/software/provision/software-provision';
+import { Software, SoftwareService, softwareFromJsonObject } from 'src/app/software/software';
+import { ModelService } from 'src/app/common/model/model-service';
 
 export interface SoftwareLeaseParams extends ResourceParams {
-  software: Software;
-  softwareProvision: SoftwareProvision | null;
+  software: ModelRef<Software>;
+  softwareProvision: ModelRef<SoftwareProvision> | null;
 }
 
-export class SoftwareLease extends Resource {
+export class SoftwareLease extends Resource implements SoftwareLeaseParams {
   override readonly type = 'software_lease';
 
-  software: Software;
-  softwareProvision: SoftwareProvision | null;
+  software: ModelRef<Software>;
+  softwareProvision: ModelRef<SoftwareProvision> | null;
 
   constructor(params: SoftwareLeaseParams) {
     super(params);
@@ -25,25 +26,26 @@ export class SoftwareLease extends Resource {
     this.software = params.software;
     this.softwareProvision = params.softwareProvision;
   }
+
+  resolveSoftware(service: SoftwareService) {
+    return resolveModelRef(this, 'software', service as any);
+  }
+
+  resolveSoftwareProvision(service: SoftwareProvisionService) {
+    return resolveModelRef(this, 'softwareProvision', service as any);
+  }
 }
 
 export function softwareLeaseFromJsonObject(json: JsonObject): SoftwareLease {
   const resourceParams = resourceParamsFromJsonObject(json);
 
-  if (!isJsonObject(json[ 'software' ])) {
-    throw new Error("Expected a json object 'software'")
-  }
-  const software = softwareFromJsonObject(json[ 'software' ]);
-
-  if (!isJsonObject(json[ 'softwareProvision' ]) && json[ 'softwareProvision' ] !== null) {
-    throw new Error("Expected a json object or null 'softwareProvision'");
-  }
-  const softwareProvision = json[ 'softwareProvision' ] && softwareProvisionFromJsonObject(json[ 'softwareProvision' ]);
+  const softwareFromJson = modelRefJsonDecoder('software', softwareFromJsonObject);
+  const softwareProvisionFromJson = modelRefJsonDecoder('softwareProvision', softwareProvisionFromJsonObject);
 
   return new SoftwareLease({
     ...resourceParams,
-    software,
-    softwareProvision
+    software: softwareFromJson(json),
+    softwareProvision: softwareProvisionFromJson(json)
   });
 }
 

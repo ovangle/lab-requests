@@ -1,34 +1,21 @@
-import { Injectable, InjectionToken, forwardRef, inject } from '@angular/core';
-import { validate as validateIsUUID } from 'uuid';
 import {
   Observable,
-  ReplaySubject,
-  Subscription,
-  combineLatest,
-  defer,
-  filter,
   first,
   firstValueFrom,
-  from,
   map,
-  shareReplay,
   switchMap,
-  tap,
-  withLatestFrom,
 } from 'rxjs';
-import { ResourceType, isResourceType } from './resource-type';
-import {
-  LabResourceConsumer,
-  LabResourceConsumerContext,
-} from '../lab-resource-consumer/resource-container';
-import { Model, ModelParams, modelParamsFromJsonObject } from 'src/app/common/model/model';
-import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
-import { RelatedModelService } from 'src/app/common/model/context';
-import urlJoin from 'url-join';
-import { ModelService } from 'src/app/common/model/model-service';
+import { inject } from '@angular/core';
 import { HttpParams } from '@angular/common/http';
-import { DomElementSchemaRegistry } from '@angular/compiler';
-import { Lab, labFromJsonObject } from '../lab';
+import urlJoin from 'url-join';
+
+import { Model, ModelParams, ModelRef, modelParamsFromJsonObject, resolveModelRef } from 'src/app/common/model/model';
+import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
+
+import { ModelService } from 'src/app/common/model/model-service';
+import { Lab, LabService, labFromJsonObject } from '../lab';
+import { LabResourceConsumerContext, } from '../lab-resource-consumer/resource-container';
+import { ResourceType, isResourceType } from './resource-type';
 
 export interface ResourceParams extends ModelParams {
   lab: Lab | string;
@@ -70,11 +57,21 @@ export abstract class Resource extends Model {
   abstract readonly type: ResourceType;
 
   readonly index: number;
+  lab: ModelRef<Lab>;
 
   constructor(params: ResourceParams) {
     super(params);
     this.index = params.index;
+    this.lab = params.lab;
   }
+
+  async resolveLab(using: LabService): Promise<Lab> {
+    if (typeof this.lab === 'string') {
+      this.lab = await firstValueFrom(using.fetch(this.lab));
+    }
+    return this.lab;
+  }
+
 }
 
 export interface ResourcePatch {
