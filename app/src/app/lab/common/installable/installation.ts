@@ -1,4 +1,4 @@
-import { Model, ModelCreateRequest, ModelParams, ModelQuery, ModelUpdateRequest, modelId, modelParamsFromJsonObject, resolveModelRef, resolveRef } from "src/app/common/model/model";
+import { Model, ModelCreateRequest, ModelIndexPage, ModelParams, ModelQuery, ModelUpdateRequest, modelId, modelParamsFromJsonObject, resolveModelRef, resolveRef } from "src/app/common/model/model";
 import { Lab, LabService, labFromJsonObject } from "../../lab";
 import { NEVER, Observable, first, firstValueFrom, map, of, race, switchMap, timer } from "rxjs";
 import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
@@ -7,9 +7,10 @@ import { Injectable, inject } from "@angular/core";
 import { ModelService, RestfulService } from "src/app/common/model/model-service";
 import { Installable } from "./installable";
 import { ModelContext, RelatedModelService } from "src/app/common/model/context";
+import { Provisionable, ProvisionableParams } from "../provisionable/provisionable";
 
 
-export interface LabInstallationParams<TInstallable extends Installable<any>> extends ModelParams {
+export interface LabInstallationParams<TInstallable extends Installable<any>> extends ModelParams, ProvisionableParams<any> {
     lab: Lab | string;
     installable: TInstallable | string;
 }
@@ -22,16 +23,16 @@ export function labInstallationParamsFromJsonObject<TInstallable extends Install
     const baseParams = modelParamsFromJsonObject(json);
 
     let lab: Lab | string;
-    if (typeof json[ 'lab' ] === 'string') {
-        lab = json[ 'lab' ]
-    } else if (isJsonObject(json[ 'lab' ])) {
-        lab = labFromJsonObject(json[ 'lab' ]);
+    if (typeof json['lab'] === 'string') {
+        lab = json['lab']
+    } else if (isJsonObject(json['lab'])) {
+        lab = labFromJsonObject(json['lab']);
     } else {
         throw new Error("Expected a string or json object 'lab'");
     }
 
     let installable: TInstallable | string;
-    const jsonInstallable = json[ installableKey ];
+    const jsonInstallable = json[installableKey];
     if (typeof jsonInstallable === 'string') {
         installable = jsonInstallable;
     } else if (isJsonObject(jsonInstallable)) {
@@ -46,15 +47,17 @@ export function labInstallationParamsFromJsonObject<TInstallable extends Install
 /**
  * Represents an item which can be 'installed' into a lab.
  */
-export abstract class LabInstallation<TInstallable extends Installable<any>> extends Model implements LabInstallationParams<TInstallable> {
+export abstract class LabInstallation<TInstallable extends Installable<any>> extends Model {
     lab: Lab | string;
     installable: TInstallable | string;
+    currentProvisions: readonly any[];
 
     constructor(params: LabInstallationParams<TInstallable>) {
         super(params);
 
         this.lab = params.lab;
         this.installable = params.installable;
+        this.currentProvisions = params.currentProvisions;
     }
 
     resolveLab(service: LabService): Promise<Lab> {
@@ -64,6 +67,7 @@ export abstract class LabInstallation<TInstallable extends Installable<any>> ext
     resolveInstallable(service: ModelService<TInstallable & Model>): Promise<TInstallable> {
         return resolveModelRef(this, 'installable', service as any);
     }
+
 }
 
 export interface LabInstallationQuery<TInstallable extends Installable<any>, T extends LabInstallation<TInstallable>> extends ModelQuery<T> {

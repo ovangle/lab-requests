@@ -5,23 +5,29 @@ import { JsonObject } from "src/app/utils/is-json-object";
 import { HttpParams } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { LabInstallation, LabInstallationParams, LabInstallationService, labInstallationParamsFromJsonObject } from "src/app/lab/common/installable/installation";
+import { Provisionable } from "src/app/lab/common/provisionable/provisionable";
+import { SoftwareProvision } from "../provision/software-provision";
 
 
 export interface SoftwareInstallationParams extends LabInstallationParams<Software> {
     software: Software | string;
 
     version: string;
+
+    currentProvisions: SoftwareProvision[];
 }
 
-export class SoftwareInstallation extends LabInstallation<Software> implements SoftwareInstallationParams {
+export class SoftwareInstallation extends LabInstallation<Software> implements SoftwareInstallationParams, Provisionable<SoftwareProvision> {
     software: Software | string;
     version: string;
+    override readonly currentProvisions: readonly SoftwareProvision[];
 
     constructor(params: SoftwareInstallationParams) {
         super(params);
 
         this.software = params.software;
         this.version = params.version;
+        this.currentProvisions = [...params.currentProvisions];
     }
 
     async resolveSoftware(service: SoftwareService) {
@@ -42,14 +48,14 @@ export function softwareInstallationFromJsonObject(json: JsonObject): SoftwareIn
 
     const software: Software | string = baseParams.installable;
 
-    if (typeof json[ 'version' ] !== 'string') {
+    if (typeof json['version'] !== 'string') {
         throw new Error("Expected a string 'version'")
     }
 
     return new SoftwareInstallation({
         ...baseParams,
         software,
-        version: json[ 'version' ]
+        version: json['version']
     });
 }
 

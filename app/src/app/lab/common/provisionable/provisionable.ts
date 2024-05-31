@@ -3,11 +3,16 @@ import { Lab } from "../../lab";
 import { Installable } from "../installable/installable";
 import { LabInstallation } from "../installable/installation";
 import { LabProvision, LabProvisionService } from "./provision";
-import { ModelParams } from "src/app/common/model/model";
+import { Model, ModelIndexPage, ModelParams } from "src/app/common/model/model";
+import { Injectable } from "@angular/core";
+import { ModelService } from "src/app/common/model/model-service";
+import { ModelContext } from "src/app/common/model/context";
+
 
 export interface Provisionable<
-    TInstallation extends LabInstallation<any>,
-    TProvision extends LabProvision<any, TInstallation>
-> extends Installable<TInstallation> {
-    getCurrentProvision(lab: Lab | string, service: LabProvisionService<any, TInstallation, TProvision>): Promise<TProvision>;
+    TProvision extends LabProvision<any>
+> extends Model {
+    currentProvisions: ReadonlyArray<TProvision>;
+
+    // allProvisions(service: ModelService<TProvision>): ModelIndexPage<TProvision>;
 }

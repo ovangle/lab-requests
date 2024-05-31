@@ -4,159 +4,156 @@ import { Injectable } from "@angular/core";
 import { HttpParams } from "@angular/common/http";
 import { LabInstallation, LabInstallationService } from "../installable/installation";
 import { Observable, firstValueFrom } from "rxjs";
-import { RestfulService as RelatedModelService } from "src/app/common/model/model-service";
-import { Model, ModelCreateRequest, ModelParams, ModelQuery, ModelUpdateRequest, modelParamsFromJsonObject, resolveRef } from "src/app/common/model/model";
+import { ModelService, RestfulService as RelatedModelService } from "src/app/common/model/model-service";
+import { Model, ModelCreateRequest, ModelParams, ModelQuery, ModelRef, ModelUpdateRequest, modelParamsFromJsonObject, resolveRef } from "src/app/common/model/model";
 import { Installable } from "../installable/installable";
 import { Provisionable } from "./provisionable";
 
 export interface LabProvisionParams<
-    TProvisionable extends Provisionable<any, any>,
-    TInstallation extends LabInstallation<TProvisionable>
+    TProvisionable extends Provisionable<any>
 > extends ModelParams {
+    type: string;
     status: ProvisionStatus;
-    installation: TInstallation | string | null;
+    target: ModelRef<TProvisionable>;
 }
 
 export function labProvisionParamsFromJsonObject<
-    TProvisionable extends Provisionable<any, any>,
-    TInstallation extends LabInstallation<TProvisionable>
+    TProvisionable extends Provisionable<any>,
 >(
-    labInstallationFromJsonObject: (json: JsonObject) => TInstallation,
+    typeFromString: (type: string) => string,
+    targetFromJsonObject: (json: JsonObject) => TProvisionable,
     json: JsonObject
-): LabProvisionParams<TProvisionable, TInstallation> {
+): LabProvisionParams<TProvisionable> {
     const baseParams = modelParamsFromJsonObject(json);
 
-    if (!isProvisionStatus(json[ 'status' ])) {
+    if (!isProvisionStatus(json['status'])) {
         throw new Error("Expected a provision status 'status'");
     }
 
-    let installation: TInstallation | string | null;
-    if (json[ 'installation' ] === null) {
-        installation = null;
-    } else if (typeof json[ 'installation' ] === 'string') {
-        installation = json[ 'installation' ];
-    } else if (isJsonObject(json[ 'installation' ])) {
-        installation = labInstallationFromJsonObject(json[ 'installation' ]);
+    if (typeof json['type'] !== 'string') {
+        throw new Error("Expected a string 'type'");
+    }
+
+    let target: TProvisionable | string;
+    if (typeof json['target'] === 'string') {
+        target = json['target'];
+    } else if (isJsonObject(json['target'])) {
+        target = targetFromJsonObject(json['target']);
     } else {
         throw new Error("Expected a string or json object (or null)")
     }
 
     return {
         ...baseParams,
-        status: json[ 'status' ],
-        installation
+        type: typeFromString(json['type']),
+        status: json['status'],
+        target
     };
 }
 
 export abstract class LabProvision<
-    TProvisionable extends Provisionable<any, any>,
-    TInstallation extends LabInstallation<TProvisionable>
-> extends Model implements LabProvisionParams<TProvisionable, TInstallation> {
+    TProvisionable extends Provisionable<any>,
+> extends Model implements LabProvisionParams<TProvisionable> {
+    type: string;
     status: ProvisionStatus;
-    installation: TInstallation | string | null;
+    target: TProvisionable | string;
 
-    constructor(params: LabProvisionParams<TProvisionable, TInstallation>) {
+    constructor(params: LabProvisionParams<TProvisionable>) {
         super(params);
+        this.type = params.type;
         this.status = params.status;
-        this.installation = params.installation;
+        this.target = params.target;
     }
 
-    async resolveInstallation(service: LabInstallationService<TProvisionable, TInstallation>): Promise<TInstallation | null> {
-        if (typeof this.installation === 'string') {
-            this.installation = await firstValueFrom(service.fetch(this.installation));
+    async resoleTarget(service: ModelService<TProvisionable>): Promise<TProvisionable> {
+        if (typeof this.target === 'string') {
+            this.target = await firstValueFrom(service.fetch(this.target));
         }
-        return this.installation as TInstallation | null;
+        return this.target;
     }
 }
 
 export interface LabProvisionQuery<
-    TProvisionable extends Provisionable<any, any>,
-    TInstallation extends LabInstallation<TProvisionable>,
-    TProvision extends LabProvision<TProvisionable, TInstallation>
+    TProvisionable extends Provisionable<any>,
+    TProvision extends LabProvision<TProvisionable>
 > extends ModelQuery<TProvision> {
 
 }
-export function labProvisionQueryToHttpParams(request: LabProvisionQuery<any, any, any>): HttpParams {
+export function labProvisionQueryToHttpParams(request: LabProvisionQuery<any, any>): HttpParams {
     const params = new HttpParams();
     return params;
 }
 export interface LabProvisionCreateRequest<
-    TProvisionable extends Provisionable<any, any>,
-    TInstallation extends LabInstallation<TProvisionable>,
-    TProvision extends LabProvision<TProvisionable, TInstallation>
+    TProvisionable extends Provisionable<any>,
+    TProvision extends LabProvision<TProvisionable>
 > extends ModelCreateRequest<TProvision> {
-
+    readonly type: string;
 }
-export function labProvisionCreateRequestToJsonObject(request: LabProvisionCreateRequest<any, any, any>): JsonObject {
+
+export function labProvisionCreateRequestToJsonObject(request: LabProvisionCreateRequest<any, any>): JsonObject {
     return {};
 }
 
 interface LabProvisionUpdateRequest<
-    TProvisionable extends Provisionable<any, any>,
-    TInstallation extends LabInstallation<TProvisionable>,
-    TProvision extends LabProvision<TProvisionable, TInstallation>
+    TProvisionable extends Provisionable<any>,
+    TProvision extends LabProvision<TProvisionable>
 > extends ModelUpdateRequest<TProvision> {
     readonly type: string;
 }
 
 export interface LabProvisionApprovalRequest<
-    TProvisionable extends Provisionable<any, any>,
-    TInstallation extends LabInstallation<TProvisionable>,
-    TProvision extends LabProvision<TProvisionable, TInstallation>
-> extends LabProvisionUpdateRequest<TProvisionable, TInstallation, TProvision> {
+    TProvisionable extends Provisionable<any>,
+    TProvision extends LabProvision<TProvisionable>
+> extends LabProvisionUpdateRequest<TProvisionable, TProvision> {
     readonly type: 'approve';
 }
-export function provisionApprovalRequestToJsonObject(request: LabProvisionApprovalRequest<any, any, any>): JsonObject {
+export function provisionApprovalRequestToJsonObject(request: LabProvisionApprovalRequest<any, any>): JsonObject {
     return {};
 }
 
 export interface LabProvisionPurchaseRequest<
-    TProvisionable extends Provisionable<any, any>,
-    TInstallation extends LabInstallation<TProvisionable>,
-    TProvision extends LabProvision<TProvisionable, TInstallation>
-> extends LabProvisionUpdateRequest<TProvisionable, TInstallation, TProvision> {
+    TProvisionable extends Provisionable<any>,
+    TProvision extends LabProvision<TProvisionable>
+> extends LabProvisionUpdateRequest<TProvisionable, TProvision> {
     readonly type: 'purchase';
 }
-export function provisionPurchaseRequestToJsonObject(request: LabProvisionPurchaseRequest<any, any, any>): JsonObject {
+export function provisionPurchaseRequestToJsonObject(request: LabProvisionPurchaseRequest<any, any>): JsonObject {
     return {};
 }
 export interface LabProvisionInstallRequest<
-    TProvisionable extends Provisionable<any, any>,
-    TInstallation extends LabInstallation<TProvisionable>,
-    TProvision extends LabProvision<TProvisionable, TInstallation>
-> extends LabProvisionUpdateRequest<TProvisionable, TInstallation, TProvision> {
+    TProvisionable extends Provisionable<any>,
+    TProvision extends LabProvision<TProvisionable>
+> extends LabProvisionUpdateRequest<TProvisionable, TProvision> {
     readonly type: 'install';
 }
-export function provisionInstallRequestToJsonObject(request: LabProvisionInstallRequest<any, any, any>): JsonObject {
+export function provisionInstallRequestToJsonObject(request: LabProvisionInstallRequest<any, any>): JsonObject {
     return {};
 }
 
 export interface LabProvisionCancellationRequest<
-    TProvisionable extends Provisionable<any, any>,
-    TInstallation extends LabInstallation<TProvisionable>,
-    TProvision extends LabProvision<TProvisionable, TInstallation>
-> extends LabProvisionUpdateRequest<TProvisionable, TInstallation, TProvision> {
+    TProvisionable extends Provisionable<any>,
+    TProvision extends LabProvision<TProvisionable>
+> extends LabProvisionUpdateRequest<TProvisionable, TProvision> {
     readonly type: 'cancel';
 }
-export function provisionCancellationRequestToJsonObject(request: LabProvisionCancellationRequest<any, any, any>): JsonObject {
+export function provisionCancellationRequestToJsonObject(request: LabProvisionCancellationRequest<any, any>): JsonObject {
     return {};
 }
 
 @Injectable()
 export abstract class LabProvisionService<
-    TProvisionable extends Provisionable<any, any>,
-    TInstallation extends LabInstallation<TProvisionable>,
-    TProvision extends LabProvision<TProvisionable, TInstallation>,
-    TQueryProvision extends LabProvisionQuery<TProvisionable, TInstallation, TProvision> = LabProvisionQuery<TProvisionable, TInstallation, TProvision>,
+    TProvisionable extends Provisionable<any>,
+    TProvision extends LabProvision<TProvisionable>,
+    TQueryProvision extends LabProvisionQuery<TProvisionable, TProvision> = LabProvisionQuery<TProvisionable, TProvision>,
 > extends RelatedModelService<TProvision, TQueryProvision> {
     abstract readonly provisionableQueryParam: string;
-    abstract override createToJsonObject(request: LabProvisionCreateRequest<TProvisionable, TInstallation, TProvision>): JsonObject;
+    abstract override createToJsonObject(request: LabProvisionCreateRequest<TProvisionable, TProvision>): JsonObject;
 
-    override create(request: LabProvisionCreateRequest<TProvisionable, TInstallation, TProvision>): Observable<TProvision> {
+    override create(request: LabProvisionCreateRequest<TProvisionable, TProvision>): Observable<TProvision> {
         return super.create(request);
     }
 
-    override updateToJsonObject(model: TProvision, request: LabProvisionUpdateRequest<TProvisionable, TInstallation, TProvision>): JsonObject {
+    override updateToJsonObject(model: TProvision, request: LabProvisionUpdateRequest<TProvisionable, TProvision>): JsonObject {
         switch (request.type) {
             case 'approve':
                 return this.approvalRequestToJsonObject(request as LabProvisionApprovalRequest<TProvisionable, TInstallation, TProvision>);
