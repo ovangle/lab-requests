@@ -2,7 +2,9 @@ import {
   Model,
   ModelParams,
   ModelQuery,
+  modelId,
   modelParamsFromJsonObject,
+  setModelQueryParams,
 } from 'src/app/common/model/model';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import {
@@ -33,12 +35,12 @@ export interface ResearchPlanAttachment extends ModelParams {
 
 export function researchPlanAttachmentFromJsonObject(json: JsonObject) {
   const baseParams = modelParamsFromJsonObject(json);
-  if (typeof json[ 'path' ] !== 'string') {
+  if (typeof json['path'] !== 'string') {
     throw new Error("ResearchPlanAttachment: 'path' must be a string");
   }
   return {
     ...baseParams,
-    path: json[ 'path' ],
+    path: json['path'],
   };
 }
 
@@ -62,64 +64,64 @@ export interface ResearchPlanParams extends ResourceConsumerParams, ModelParams 
 export function researchPlanFromJsonObject(json: JsonObject): ResearchPlan {
   const containerParams = resourceContainerParamsFromJson(json);
 
-  if (!isDiscipline(json[ 'discipline' ])) {
+  if (!isDiscipline(json['discipline'])) {
     throw new Error("Expected a discipline 'discipline'");
   }
 
-  if (typeof json[ 'title' ] !== 'string') {
+  if (typeof json['title'] !== 'string') {
     throw new Error("ResearchPlanParams: 'title' must be a string");
   }
-  if (typeof json[ 'description' ] !== 'string') {
+  if (typeof json['description'] !== 'string') {
     throw new Error("ResearchPlanParams: 'description' must be a string");
   }
-  if (!isJsonObject(json[ 'funding' ])) {
+  if (!isJsonObject(json['funding'])) {
     throw new Error("ResearchPlanParams: 'funding' must be a json object");
   }
-  const funding = researchFundingFromJsonObject(json[ 'funding' ]);
+  const funding = researchFundingFromJsonObject(json['funding']);
 
-  if (!isJsonObject(json[ 'researcher' ])) {
+  if (!isJsonObject(json['researcher'])) {
     throw new Error("ResearchPlanParams: 'researcher' must be a json object");
   }
-  const researcher = userFromJsonObject(json[ 'researcher' ]);
+  const researcher = userFromJsonObject(json['researcher']);
 
-  if (!isJsonObject(json[ 'coordinator' ])) {
+  if (!isJsonObject(json['coordinator'])) {
     throw new Error("ResearchPlanParams: 'coordinator' must be a json object");
   }
-  const coordinator = userFromJsonObject(json[ 'coordinator' ]);
+  const coordinator = userFromJsonObject(json['coordinator']);
 
   let lab: Lab | string;
-  if (isJsonObject(json[ 'lab' ])) {
-    lab = labFromJsonObject(json[ 'lab' ]);
-  } else if (typeof json[ 'lab' ] === 'string') {
-    lab = json[ 'lab' ]
+  if (isJsonObject(json['lab'])) {
+    lab = labFromJsonObject(json['lab']);
+  } else if (typeof json['lab'] === 'string') {
+    lab = json['lab']
   } else {
     throw new Error("Expected a json object or string 'lab'");
   }
 
-  if (!Array.isArray(json[ 'tasks' ]) || !json[ 'tasks' ].every(isJsonObject)) {
+  if (!Array.isArray(json['tasks']) || !json['tasks'].every(isJsonObject)) {
     throw new Error(
       "ResearchPlanParams: 'tasks' must be an array of json objects",
     );
   }
-  const tasks = json[ 'tasks' ].map((o) => researchPlanTaskFromJson(o));
+  const tasks = json['tasks'].map((o) => researchPlanTaskFromJson(o));
 
   if (
-    !Array.isArray(json[ 'attachments' ]) ||
-    !json[ 'attachments' ].every(isJsonObject)
+    !Array.isArray(json['attachments']) ||
+    !json['attachments'].every(isJsonObject)
   ) {
     throw new Error(
       "ResearchPlanParams: 'attachments' must be an array of json objects",
     );
   }
-  const attachments = json[ 'attachments' ].map((o) =>
+  const attachments = json['attachments'].map((o) =>
     researchPlanAttachmentFromJsonObject(o),
   );
 
   return new ResearchPlan({
     ...containerParams,
-    title: json[ 'title' ],
-    discipline: json[ 'discipline' ],
-    description: json[ 'description' ],
+    title: json['title'],
+    discipline: json['discipline'],
+    description: json['description'],
     funding,
     researcher,
     coordinator,
@@ -176,19 +178,12 @@ export interface UpdateResearchPlan extends LabResourceConsumerPatch {
 }
 
 function updateResearchPlanToJsonObject(plan: ResearchPlan, patch: Partial<UpdateResearchPlan>) {
-  let funding: ResearchFunding | null
-  if (patch.funding instanceof ResearchFunding || patch.funding === null) {
-    funding = patch.funding;
-  } else {
-    funding = plan.funding;
-  }
-
   const resourceConsumerAttrs = resourceConsumerPatchToJsonObject(plan, patch)
 
   return {
     title: typeof patch.title === 'string' ? patch.title : plan.title,
     description: typeof patch.description === 'string' ? patch.description : plan.description,
-    funding: funding?.id,
+    funding: modelId(patch.funding || null),
     tasks: Array.isArray(patch.tasks) ? patch.tasks.map(t => researchPlanTaskSliceToJson(t)) : [],
     ...resourceConsumerAttrs
   };
@@ -197,25 +192,40 @@ function updateResearchPlanToJsonObject(plan: ResearchPlan, patch: Partial<Updat
 export interface ResearchPlanQuery extends ModelQuery<ResearchPlan> {
 }
 
-function researchPlanQueryToHttpParams(query: Partial<ResearchPlanQuery>): HttpParams {
-  return new HttpParams();
+function setResearchPlanQueryParams(params: HttpParams, query: Partial<ResearchPlanQuery>): HttpParams {
+  params = setModelQueryParams(params, query);
+  return params;
 }
 
 
 @Injectable({ providedIn: 'root' })
-export class ResearchPlanService extends RestfulService<ResearchPlan, ResearchPlanQuery, CreateResearchPlan> {
+export class ResearchPlanService extends RestfulService<ResearchPlan, ResearchPlanQuery> {
   override readonly modelFromJsonObject = researchPlanFromJsonObject;
-  override readonly modelQueryToHttpParams = researchPlanQueryToHttpParams;
-  override readonly createToJsonObject = createResearchPlanToJsonObject;
-  override readonly updateToJsonObject = updateResearchPlanToJsonObject;
+  override readonly setModelQueryParams = setResearchPlanQueryParams;
   override path = '/research/plans';
+
+  create(request: CreateResearchPlan) {
+    return this._doCreate(
+      createResearchPlanToJsonObject,
+      request
+    );
+  }
+
+  update(plan: ResearchPlan, request: Partial<UpdateResearchPlan>) {
+    return this._doUpdate(
+      /* FIXME: updateResearchPlanToJsonObject should not require the plan */
+      (_, request) => updateResearchPlanToJsonObject(plan, request),
+      plan, request
+    )
+  }
 
   _alterTasks(task: ResearchPlanTask, slices: ResearchPlanTaskSlice[]) {
     return this.fetch(task.planId).pipe(
       switchMap(plan => this.update(plan, {
         title: plan.title,
         description: plan.description,
-        tasks: slices
+        tasks: slices,
+        funding: plan.funding,
       }))
     );
   }
@@ -228,7 +238,7 @@ export class ResearchPlanService extends RestfulService<ResearchPlan, ResearchPl
         request
       ]
     };
-    return this._alterTasks(task, [ slice ]);
+    return this._alterTasks(task, [slice]);
   }
 
   removeTask(task: ResearchPlanTask) {
@@ -237,7 +247,7 @@ export class ResearchPlanService extends RestfulService<ResearchPlan, ResearchPl
       endIndex: task.index + 1,
       items: []
     };
-    return this._alterTasks(task, [ slice ]);
+    return this._alterTasks(task, [slice]);
   }
 
   _resourceIndexUrl$(plan: ResearchPlan, resourceType: string) {

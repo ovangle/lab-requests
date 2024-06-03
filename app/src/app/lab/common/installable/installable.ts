@@ -6,6 +6,6 @@ import { Injectable, inject } from "@angular/core";
 import { ModelService, RestfulService } from "src/app/common/model/model-service";
 
 
-export interface Installable<TInstallation extends LabInstallation<any>> extends ModelParams {
+export interface Installable<TInstallation extends LabInstallation<any, any>> extends Model {
     getCurrentInstallation(lab: Lab | string, service: LabInstallationService<any, TInstallation>): Promise<TInstallation | null>;
 }

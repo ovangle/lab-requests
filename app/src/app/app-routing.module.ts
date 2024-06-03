@@ -11,7 +11,7 @@ import { OauthFeatureModule } from './oauth/_features/oauth.feature-module';
 const routes: Routes = [
   {
     path: '',
-    canActivate: [ requiresAuthorizationGuard ],
+    canActivate: [requiresAuthorizationGuard],
     children: [
       {
         path: 'lab',
@@ -21,33 +21,40 @@ const routes: Routes = [
           ),
       },
       {
-        path: 'equipment',
-        loadChildren: () =>
-          import('./equipment/_features/equipment.routes').then(
-            (module) => module.EQUIPMENT_ROUTES
-          )
-      },
-      {
         path: 'lab-forms',
         outlet: 'form',
-        loadChildren: () =>
-          import('./lab/_features/lab.routes').then(
-            module => module.LAB_FORM_ROUTES
-          )
+        loadChildren: async () => {
+          const module = await import('./lab/_features/lab.routes');
+          return module.LAB_FORM_ROUTES
+        }
+      },
+      {
+        path: 'equipment',
+        loadChildren: async () => {
+          const module = await import('./equipment/_features/equipment.routes');
+          return module.EQUIPMENT_ROUTES;
+        }
+      },
+      {
+        path: 'software',
+        loadChildren: async () => {
+          const module = await import('./software/_feature/software.routes')
+          return module.SOFTWARE_ROUTES
+        }
       },
       {
         path: 'research/plans',
-        loadChildren: () =>
-          import('./research/_features/research-plan.routes').then(
-            module => module.RESEARCH_PLAN_ROUTES
-          )
+        loadChildren: async () => {
+          const module = await import('./research/_features/research-plan.routes');
+          return module.RESEARCH_PLAN_ROUTES
+        }
       },
       {
         path: 'user',
-        loadChildren: () =>
-          import('./user/_features/user/user-routes').then(
-            (module) => module.USER_ROUTES,
-          ),
+        loadChildren: async () => {
+          const module = await import('./user/_features/user/user-routes');
+          return module.USER_ROUTES;
+        }
       },
     ],
   },
@@ -57,26 +64,28 @@ const routes: Routes = [
   },
   {
     path: 'create-user',
-    loadComponent: () => import('./user/_features/temporary-user/temporary-user-redirect.page')
-      .then(module => module.TemporaryUserRedirectPage)
+    loadComponent: async () => {
+      const module = await import('./user/_features/temporary-user/temporary-user-redirect.page');
+      return module.TemporaryUserRedirectPage;
+    }
   },
   {
     path: 'public',
     component: PublicPageComponent,
-    canActivate: [ publicPageGuard ],
+    canActivate: [publicPageGuard],
   },
   {
     path: 'uni/campuses',
-    loadChildren: () =>
-      import('./uni/campus/_features/campus.feature-module').then(
-        (module) => module.CampusFeature,
-      ),
+    loadChildren: async () => {
+      const module = await import('./uni/campus/_features/campus.feature-module');
+      return module.CampusFeature;
+    }
   },
 ];
 
 
 @NgModule({
-  imports: [ RouterModule.forRoot(routes, { enableTracing: false }) ],
-  exports: [ RouterModule ],
+  imports: [RouterModule.forRoot(routes, { enableTracing: false })],
+  exports: [RouterModule],
 })
 export class AppRoutingModule { }

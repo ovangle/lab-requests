@@ -14,7 +14,7 @@ import {
 import {
   EquipmentLease,
   EquipmentLeasePatch,
-  equipmentLeaseFromJson,
+  equipmentLeaseFromJsonObject,
   equipmentLeasePatchToJsonObject,
 } from '../lab-resource/types/equipment-lease/equipment-lease';
 import {
@@ -49,25 +49,25 @@ export interface ResourceConsumerParams extends ModelParams {
 export function resourceContainerParamsFromJson(json: JsonObject): ResourceConsumerParams {
   const baseParams = modelParamsFromJsonObject(json);
 
-  if (!isJsonObject(json[ 'equipmentLeases' ])) {
+  if (!isJsonObject(json['equipmentLeases'])) {
     throw new Error('Expected a page of equipments leases');
   }
-  const equipmentLeases = modelIndexPageFromJsonObject(equipmentLeaseFromJson, json[ 'equipmentLeases' ]);
+  const equipmentLeases = modelIndexPageFromJsonObject(equipmentLeaseFromJsonObject, json['equipmentLeases']);
 
-  if (!isJsonObject(json[ 'softwareLeases' ])) {
+  if (!isJsonObject(json['softwareLeases'])) {
     throw new Error("Expected a page of json objects 'softwareLeases'")
   }
-  const softwareLeases = modelIndexPageFromJsonObject(softwareLeaseFromJsonObject, json[ 'softwareLeases' ]);
+  const softwareLeases = modelIndexPageFromJsonObject(softwareLeaseFromJsonObject, json['softwareLeases']);
 
-  if (!isJsonObject(json[ 'inputMaterials' ])) {
+  if (!isJsonObject(json['inputMaterials'])) {
     throw new Error("Expected a page of json objects 'softwareLeases'")
   }
-  const inputMaterials = modelIndexPageFromJsonObject(inputMaterialFromJson, json[ 'inputMaterials' ]);
+  const inputMaterials = modelIndexPageFromJsonObject(inputMaterialFromJson, json['inputMaterials']);
 
-  if (!isJsonObject(json[ 'outputMaterials' ])) {
+  if (!isJsonObject(json['outputMaterials'])) {
     throw new Error("Expected a page of json objects 'softwareLeases'")
   }
-  const outputMaterials = modelIndexPageFromJsonObject(outputMaterialFromJson, json[ 'outputMaterials' ]);
+  const outputMaterials = modelIndexPageFromJsonObject(outputMaterialFromJson, json['outputMaterials']);
 
   return {
     ...baseParams,
@@ -125,7 +125,7 @@ export abstract class LabResourceConsumer extends Model implements ResourceConsu
     return this.funding;
   }
 
-  _getCurrentResourcePage<T extends Resource>(type: ResourceType & T[ 'type' ]): ModelIndexPage<T> {
+  _getCurrentResourcePage<T extends Resource>(type: ResourceType & T['type']): ModelIndexPage<T> {
     switch (type) {
       case 'equipment_lease':
         return this.equipmentLeases as any as ModelIndexPage<T>;
@@ -140,14 +140,14 @@ export abstract class LabResourceConsumer extends Model implements ResourceConsu
     }
   }
 
-  getContainer<T extends Resource>(type: T[ 'type' ] & ResourceType): LabResourceContainer<T> {
+  getContainer<T extends Resource>(type: T['type'] & ResourceType): LabResourceContainer<T> {
     let resources = this._getCurrentResourcePage(type);
 
     return {
       ...resources,
       type,
       getResourceAt: function (index: number) {
-        return this.items[ index ];
+        return this.items[index];
       }
     }
 
@@ -165,22 +165,22 @@ export function resourceConsumerPatchToJsonObject(consumer: LabResourceConsumer,
   const json: JsonObject = {};
   if (patch.equipmentLeases) {
     const container = consumer.getContainer('equipment_lease');
-    json[ 'equipmentLeases' ] = patch.equipmentLeases
+    json['equipmentLeases'] = patch.equipmentLeases
       .map(lease => resourceContainerPatchToJson(container, lease));
   }
   if (Array.isArray(patch.softwareLeases)) {
     const container = consumer.getContainer('software_lease');
-    json[ 'softwareLeases' ] = patch.softwareLeases
+    json['softwareLeases'] = patch.softwareLeases
       .map(lease => resourceContainerPatchToJson(container, lease));
   }
   if (Array.isArray(patch.inputMaterials)) {
     const container = consumer.getContainer('input_material');
-    json[ 'softwareLeases' ] = patch.inputMaterials
+    json['softwareLeases'] = patch.inputMaterials
       .map(lease => resourceContainerPatchToJson(container, lease));
   }
   if (Array.isArray(patch.outputMaterials)) {
     const container = consumer.getContainer('output_material');
-    json[ 'softwareLeases' ] = patch.outputMaterials
+    json['softwareLeases'] = patch.outputMaterials
       .map(lease => resourceContainerPatchToJson(container, lease));
   }
 
@@ -255,12 +255,12 @@ export class LabResourceConsumerContext<TConsumer extends LabResourceConsumer> i
 
 
 export interface LabResourceContainer<T extends Resource> extends ModelIndexPage<T> {
-  type: T[ 'type' ];
+  type: T['type'];
   getResourceAt(index: number): T;
 }
 
 export interface LabResourceContainerSlice<T extends Resource, TPatch extends ResourcePatch> {
-  readonly type: T[ 'type' ];
+  readonly type: T['type'];
   start: number;
   end?: number;
   items: TPatch[];
@@ -303,9 +303,9 @@ export function resourceContainerPatchToJson<T extends Resource, TPatch extends 
 export class LabResourceContainerContext<T extends Resource, TPatch extends ResourcePatch> {
   readonly consumerContext = inject(LabResourceConsumerContext);
 
-  readonly resourceTypeSubject = new BehaviorSubject<ResourceType & T[ 'type' ] | null>(null);
-  readonly resourceType$: Observable<ResourceType & T[ 'type' ]> = this.resourceTypeSubject.pipe(
-    filter((t): t is ResourceType & T[ 'type' ] => t != null)
+  readonly resourceTypeSubject = new BehaviorSubject<ResourceType & T['type'] | null>(null);
+  readonly resourceType$: Observable<ResourceType & T['type']> = this.resourceTypeSubject.pipe(
+    filter((t): t is ResourceType & T['type'] => t != null)
   );
 
   constructor() {
@@ -319,7 +319,7 @@ export class LabResourceContainerContext<T extends Resource, TPatch extends Reso
     this.consumerContext.committed$,
     this.resourceTypeSubject
   ]).pipe(
-    switchMap(([ consumer, containerType ]) => {
+    switchMap(([consumer, containerType]) => {
       return containerType != null ? of(consumer.getContainer<T>(containerType)) : NEVER
     })
   )
@@ -339,7 +339,7 @@ export class LabResourceContainerContext<T extends Resource, TPatch extends Reso
   async _updateContainer(slices: LabResourceContainerSlice<T, TPatch>[]): Promise<LabResourceContainer<T>> {
     const type = await firstValueFrom(this.resourceType$);
     const patch = {
-      [ LabResourceConsumer.consumerAttr(type) ]: slices
+      [LabResourceConsumer.consumerAttr(type)]: slices
     };
     const consumer = await firstValueFrom(this.consumerContext.applyResourceConsumerPatch(patch));
     return consumer.getContainer(type);
@@ -352,7 +352,7 @@ export class LabResourceContainerContext<T extends Resource, TPatch extends Reso
       {
         type,
         start: container.totalItemCount,
-        items: [ params ]
+        items: [params]
       }
     ])
   }
@@ -364,7 +364,7 @@ export class LabResourceContainerContext<T extends Resource, TPatch extends Reso
         type,
         start: index,
         end: index,
-        items: [ params ]
+        items: [params]
       }
     ]);
 
@@ -376,7 +376,7 @@ export class LabResourceContainerContext<T extends Resource, TPatch extends Reso
         type,
         start: index,
         end: index + 1,
-        items: [ params ]
+        items: [params]
       }
     ])
   }
@@ -395,7 +395,7 @@ export function resourceTypeFromActivatedRoute(): Observable<ResourceType> {
 
   return activatedRoute.data.pipe(
     map((data) => {
-      const resourceType = data[ 'resourceType' ];
+      const resourceType = data['resourceType'];
       if (!isResourceType(resourceType)) {
         throw new Error('No resource type in route data');
       }

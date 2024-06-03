@@ -46,12 +46,12 @@ function inputMaterialForm(inputMaterial: InputMaterial | null): InputMaterialFo
   return new FormGroup({
     name: new FormControl<string>('', {
       nonNullable: true,
-      validators: [ Validators.required ],
+      validators: [Validators.required],
     }),
     description: new FormControl<string>('', { nonNullable: true }),
     baseUnit: new FormControl<string>('', {
       nonNullable: true,
-      validators: [ Validators.required ],
+      validators: [Validators.required],
     }),
     numUnitsRequired: new FormControl<number>(0, { nonNullable: true }),
     perUnitCostEstimate: new FormControl<number>(0, { nonNullable: true }),
@@ -104,10 +104,8 @@ export type InputMaterialFormErrors = ValidationErrors & {
       </common-measurement-unit-input>
 
       @if (funding) {
-        <research-funding-cost-estimate-form
-          [funding]="funding"
-          [unitOfMeasurement]="baseUnit"
-        />
+        <research-funding-cost-estimate-form 
+          [funding]="funding" />
       }
 
       <lab-resource-storage-form
@@ -144,7 +142,7 @@ export class InputMaterialFormComponent extends ResourceFormComponent<InputMater
   override createForm(committed: InputMaterial | null): InputMaterialForm {
     return inputMaterialForm(committed);
   }
-  override patchFromFormValue(form: InputMaterialForm[ 'value' ]): Promise<InputMaterialPatch> {
+  override patchFromFormValue(form: InputMaterialForm['value']): Promise<InputMaterialPatch> {
     throw new Error('Not implemented');
   }
 
@@ -162,9 +160,9 @@ export class InputMaterialFormComponent extends ResourceFormComponent<InputMater
     return this.form!.value?.baseUnit || '';
   }
 
-  get nameErrors(): InputMaterialFormErrors[ 'name' ] | null {
+  get nameErrors(): InputMaterialFormErrors['name'] | null {
     const control = this.form!.controls.name;
-    return control.errors as InputMaterialFormErrors[ 'name' ] | null;
+    return control.errors as InputMaterialFormErrors['name'] | null;
   }
 
   readonly _durationSubject = new BehaviorSubject<{

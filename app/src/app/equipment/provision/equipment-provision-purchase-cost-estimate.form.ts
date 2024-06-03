@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, inject } from "@angular/core";
+import { Component, EventEmitter, Input, Output, inject, input } from "@angular/core";
 import { ResearchFundingCostEstimateFormComponent } from "src/app/research/funding/cost-estimate/cost-estimate-form.component";
 import { EquipmentProvision } from "./equipment-provision";
 import { BehaviorSubject, filter, of, shareReplay, startWith, switchMap, tap } from "rxjs";
@@ -7,6 +7,7 @@ import { ResearchFundingSelectComponent } from "src/app/research/funding/researc
 import { CommonModule } from "@angular/common";
 import { FormControl, ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
+import { toObservable } from "@angular/core/rxjs-interop";
 
 
 @Component({
@@ -29,32 +30,21 @@ import { MatFormFieldModule } from "@angular/material/form-field";
         <research-funding-cost-estimate-form
             name="equipment purchase"
             [funding]="funding" 
-            [quantityRequired]="provision.quantityRequired || 0" 
-            unitOfMeasurement="item" />
+            [quantityRequired]="provision().quantityRequired" 
+        />
     }
     `
 })
 export class EquipmentProvisionPurchaseCostEstimateForm {
     readonly _researchFundingService = inject(ResearchFundingService);
     readonly researchFundingControl = new FormControl<ResearchFunding | null>(null);
-    readonly provisionSubject = new BehaviorSubject<EquipmentProvision | null>(null);
 
-    @Input({ required: true })
-    get provision() {
-        return this.provisionSubject.value!;
-    }
-    set provision(provision: EquipmentProvision) {
-        this.provisionSubject.next(provision);
-    }
+    provision = input.required<EquipmentProvision>();
 
     @Output()
     save = new EventEmitter<EquipmentProvision>();
 
-    readonly provision$ = this.provisionSubject.pipe(
-        filter((p): p is EquipmentProvision => p != null)
-    )
-
-    readonly funding$ = this.provision$.pipe(
+    readonly funding$ = toObservable(this.provision).pipe(
         switchMap(provision => provision.resolveFunding(this._researchFundingService)),
         tap(funding => {
             this.researchFundingControl.setValue(funding);
@@ -63,10 +53,5 @@ export class EquipmentProvisionPurchaseCostEstimateForm {
             startWith(funding)
         )),
         shareReplay(1)
-    )
-
-    ngOnDestroy() {
-        this.provisionSubject.complete();
-    }
-
+    );
 }

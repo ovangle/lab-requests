@@ -33,6 +33,7 @@ import { EquipmentFormComponent, EquipmentFormGroup, EquipmentNameUniqueValidato
 import { EquipmentProvisionCreateFormComponent, EquipmentProvisionCreateFormGroup, equipmentProvisionCreateFormGroup, equipmentProvisionCreateRequestFromForm } from 'src/app/equipment/provision/equipment-create-provision-form.component';
 import { CreateEquipmentProvisionFormComponent } from 'src/app/equipment/provision/create-equipment-provision.form';
 import { MatIconModule } from '@angular/material/icon';
+import { modelId } from 'src/app/common/model/model';
 
 export type EquipmentLeaseForm = FormGroup<{
   equipment: FormControl<Equipment | NotFoundValue | null>;
@@ -69,6 +70,7 @@ export type EquipmentLeaseForm = FormGroup<{
     ResourceFormTitleComponent,
   ],
   template: `
+  <!--
   @if (form && funding) {
     @if (resourceIndex$ | async; as resourceIndex) {
       <lab-resource-form-title 
@@ -107,8 +109,9 @@ export type EquipmentLeaseForm = FormGroup<{
       }
 
       @if (selectedEquipment$ | async; as equipment) {
+        @if (selectedEquipmentInstallation$ | async; as equipmentInstallation) {
         <div class="install-info">
-          <equipment-installation-info [equipment]="equipment" [lab]="lab!"/>
+          <equipment-installation-info [installation]="equipmentInstallation">
 
           @if (hasAdditionalProvision$ | async) {
             <button mat-button
@@ -124,6 +127,7 @@ export type EquipmentLeaseForm = FormGroup<{
             
           }
         </div>
+        }
       }
 
       @if (effectiveEquipment$ | async; as equipment) {
@@ -163,6 +167,7 @@ export type EquipmentLeaseForm = FormGroup<{
       }
     </form>
   }
+-->
   `,
   providers: [
     EquipmentContext,
@@ -226,7 +231,7 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
     return new FormGroup({
       equipment: new FormControl<Equipment | NotFoundValue | null>(
         lease?.equipment || null,
-        { validators: [ Validators.required ] },
+        { validators: [Validators.required] },
       ),
       newEquipments: new FormArray<EquipmentFormGroup>([]),
       equipmentProvisions: new FormArray<any>([]),
@@ -270,10 +275,10 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
     if (!this.form) {
       return null;
     }
-    return this.form.controls[ 'equipment' ].errors;
+    return this.form.controls['equipment'].errors;
   }
 
-  async patchFromFormValue(value: EquipmentLeaseForm[ 'value' ]): Promise<EquipmentLeasePatch> {
+  async patchFromFormValue(value: EquipmentLeaseForm['value']): Promise<EquipmentLeasePatch> {
     let equipment: Equipment | EquipmentCreateRequest;
     if (value.equipment instanceof Equipment) {
       equipment = value.equipment;
@@ -281,7 +286,7 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
       if (this.newEquipments.controls.length === 0) {
         throw new Error('No new equipment submform')
       }
-      const newEquipmentSubform = this.newEquipments.controls[ 0 ];
+      const newEquipmentSubform = this.newEquipments.controls[0];
       equipment = equipmentCreateRequestFromForm(newEquipmentSubform);
     } else {
       throw new Error('Expected an equipment or NotFoundValue in form value');
@@ -289,7 +294,7 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
 
     let equipmentProvision: CreateEquipmentProvisionRequest | null = null;
     if (this.equipmentProvisions.length > 0) {
-      const equipmentProvisionControl = this.equipmentProvisions.controls[ 0 ];
+      const equipmentProvisionControl = this.equipmentProvisions.controls[0];
       equipmentProvision = equipmentProvisionCreateRequestFromForm(
         equipment,
         this.lab!,
@@ -337,7 +342,7 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
     map(f => f.controls.newEquipments),
     switchMap((control) => {
       return control.valueChanges.pipe(
-        map(_ => control.length >= 1 ? control.controls[ 0 ] : null),
+        map(_ => control.length >= 1 ? control.controls[0] : null),
         filter((f): f is EquipmentFormGroup => f != null && f.valid),
         distinctUntilChanged(),
       )
@@ -351,7 +356,7 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
     this.selectedEquipment$,
     this.createEquipmentRequest$.pipe(startWith(null))
   ]).pipe(
-    map(([ selected, createRequest ]) => {
+    map(([selected, createRequest]) => {
       console.log('selected', selected, 'createRequest', createRequest);
       return selected || createRequest || null;
     })
@@ -362,7 +367,7 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
     filter((p): p is EquipmentProvision => p != null),
   )
   readonly createdProvisionEquipment$ = this.createdProvision$.pipe(
-    switchMap(provision => this._equipments.fetch(provision.equipmentId))
+    switchMap(provision => this._equipments.fetch(modelId(provision.target)))
   );
 
   readonly selectedEquipmentTrainingDescriptions$: Observable<string[] | null> = this.equipmentControl$.pipe(
@@ -396,7 +401,7 @@ export class EquipmentLeaseFormComponent extends ResourceFormComponent<Equipment
       formGroup = equipmentFormGroup(this._equipmentNameUniqueValidator);
       newEquipments.push(formGroup);
     } else {
-      formGroup = newEquipments.controls[ 0 ];
+      formGroup = newEquipments.controls[0];
     }
     formGroup.patchValue({ name: notFoundValue.searchInput });
     this.addAdditionalProvision();

@@ -9,7 +9,7 @@ import {
 } from 'src/app/equipment/equipment';
 import { EquipmentProvision } from 'src/app/equipment/provision/equipment-provision';
 import { EquipmentInfoComponent } from 'src/app/equipment/equipment-info.component';
-import { LabEquipmentProvisionInfoComponent } from 'src/app/lab/lab-equipment/equipment-provision-card.component';
+import { LabEquipmentProvisionInfoComponent } from 'src/app/lab/lab-equipment/equipment-provision-info.component';
 
 @Component({
   selector: 'lab-equipment-lease-detail',
@@ -22,7 +22,7 @@ import { LabEquipmentProvisionInfoComponent } from 'src/app/lab/lab-equipment/eq
   ],
   template: `
     @if (equipment | async; as equipment) {
-      <lab-equipment-info [equipment]="equipment" />
+      <equipment-info [equipment]="equipment" />
     } @else if (equipmentProvision) {
       <lab-equipment-provision-info [provision]="equipmentProvision" />
     }

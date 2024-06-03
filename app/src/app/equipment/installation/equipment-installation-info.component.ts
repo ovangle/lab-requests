@@ -1,31 +1,48 @@
-import { Component, Input } from "@angular/core";
-import { Equipment } from "../equipment";
+import { Component, Input, inject, input } from "@angular/core";
+import { Equipment, EquipmentService } from "../equipment";
 import { Lab } from "src/app/lab/lab";
 import { EquipmentInstallation } from "./equipment-installation";
+import { LabInstallationInfoComponent } from "src/app/lab/common/installable/lab-installation-info.component";
+import { EquipmentInfoComponent } from "../equipment-info.component";
+import { AsyncPipe } from "@angular/common";
+import { toObservable } from "@angular/core/rxjs-interop";
+import { switchMap } from "rxjs";
+
+export type EquipmentInstallationInfoDisplay
+  = 'list-item'
 
 
 @Component({
   selector: 'equipment-installation-info',
   standalone: true,
+  imports: [
+    AsyncPipe,
+    LabInstallationInfoComponent,
+    EquipmentInfoComponent
+  ],
   template: `
-  <p>{{installation?.numInstalled || 0}} existing installs</p>
-  @if (pendingInstallation) {
-    <p>{{pendingInstallation.numInstalled || 0}} after provision</p>
-  }
+  <lab-installation-info 
+     [installation]="installation()" 
+     [display]="display()">
+    <div #installableTitle>
+      @if (equipment$ | async; as equipment) {
+        <equipment-info [equipment]="equipment" display="name-only" />
+      }
+    </div>
+
+    <div #installationDetails>
+      Num installed: {{installation().numInstalled}}
+    </div>
+
+  </lab-installation-info>
   `
 })
 export class EquipmentInstallationInfoComponent {
-  @Input({ required: true })
-  equipment: Equipment | undefined;
+  installation = input.required<EquipmentInstallation>();
+  display = input<EquipmentInstallationInfoDisplay>('list-item')
 
-  @Input({ required: true })
-  lab: Lab | undefined;
-
-  get installation(): EquipmentInstallation | null {
-    return this.equipment!.currentLabInstallation(this.lab!);
-  }
-
-  get pendingInstallation(): EquipmentInstallation | null {
-    return this.equipment!.pendingLabInstallation(this.lab!);
-  }
+  protected readonly _equipmentService = inject(EquipmentService);
+  equipment$ = toObservable(this.installation).pipe(
+    switchMap(install => install.resolveEquipment(this._equipmentService))
+  );
 }

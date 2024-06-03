@@ -1,168 +1,110 @@
 import { validate as validateIsUUID } from 'uuid';
 
-import { ModelParams, Model, modelParamsFromJsonObject, ModelQuery } from "src/app/common/model/model";
+import { ModelParams, Model, modelParamsFromJsonObject, ModelQuery, modelId, ModelRef, isModelRef } from "src/app/common/model/model";
 import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
 import { Lab, LabService, labFromJsonObject } from '../../lab/lab';
 import { NEVER, Observable, firstValueFrom, map, of, race, switchMap, timer } from 'rxjs';
 import { Injectable, Type, inject } from '@angular/core';
 import { EquipmentContext } from '../equipment-context';
-import { Equipment, EquipmentService, equipmentFromJsonObject } from '../equipment';
+import { Equipment, EquipmentCreateRequest, EquipmentService, equipmentCreateRequestToJsonObject, equipmentFromJsonObject } from '../equipment';
 import { HttpParams } from '@angular/common/http';
 import { RelatedModelService } from 'src/app/common/model/context';
-import { ProvisionStatus, isProvisionStatus } from 'src/app/lab/common/provisionable/provision-status';
+import { LabInstallation, LabInstallationParams, LabInstallationQuery, labInstallationParamsFromJsonObject, setLabInstallationQueryParams } from 'src/app/lab/common/installable/installation';
+import { EquipmentProvision, equipmentProvisionFromJsonObject } from '../provision/equipment-provision';
+import { ProvisionableCreateRequest } from 'src/app/lab/common/provisionable/provisionable';
 
-export interface EquipmentInstallationParams extends ModelParams {
-    equipmentName: string;
-    equipment: Equipment | string;
-    lab: Lab | string;
+export interface EquipmentInstallationParams extends LabInstallationParams<Equipment, EquipmentProvision> {
     numInstalled: number;
-    provisionStatus: ProvisionStatus;
 }
 
-export class EquipmentInstallation extends Model implements EquipmentInstallationParams {
-    equipmentName: string;
-    equipment: Equipment | string;
-    get equipmentId(): string {
-        return (this.equipment instanceof Equipment) ? this.equipment.id : this.equipment;
-    }
-
-    lab: Lab | string;
-    get labId() { return (this.lab instanceof Lab) ? this.lab.id : this.lab; }
+export class EquipmentInstallation
+    extends LabInstallation<Equipment, EquipmentProvision>
+    implements EquipmentInstallationParams {
 
     numInstalled: number;
-    provisionStatus: ProvisionStatus;
+
+    get equipment() { return this.installable; }
 
     constructor(params: EquipmentInstallationParams) {
         super(params);
-        this.equipmentName = params.equipmentName;
-        this.equipment = params.equipment;
         this.lab = params.lab;
         this.numInstalled = params.numInstalled;
-        this.provisionStatus = params.provisionStatus;
     }
 
-    async resolveEquipment(equipments: EquipmentService): Promise<Equipment> {
-        if (typeof this.equipment === 'string') {
-            this.equipment = await firstValueFrom(equipments.fetch(this.equipmentId));
-        }
-        return this.equipment as Equipment;
+    resolveEquipment(using: EquipmentService) {
+        return this.resolveInstallable(using);
     }
-
-    async resolveLab(labs: LabService): Promise<Lab> {
-        if (typeof this.lab === 'string') {
-            this.lab = await firstValueFrom(labs.fetch(this.lab));
-        }
-        return this.lab as Lab;
-    }
-
-    get isRequested() {
-        return [ 'requested', 'approved', 'purchased', 'installed' ].includes(this.provisionStatus);
-    }
-
-    get isPendingApproval() {
-        return [ 'requested' ].includes(this.provisionStatus);
-    }
-
-    get isApproved() {
-        return [ 'installed', 'purchased', 'approved' ].includes(this.provisionStatus);
-    }
-
-    get isPendingPurchase() {
-        return [ 'requested', 'approved' ].includes(this.provisionStatus);
-    }
-
-    get isPurchased() {
-        return [ 'installed', 'purchased' ].includes(this.provisionStatus);
-    }
-
-    get isPendingInstallation() {
-        return [ 'requested', 'improved', 'purchase' ].includes(this.provisionStatus);
-    }
-
-    get isInstalled() {
-        return [ 'installed' ].includes(this.provisionStatus);
-    }
-
 }
 
+export function equipmentInstallationFromJsonObject(json: JsonObject): EquipmentInstallation {
+    const baseParams = labInstallationParamsFromJsonObject(
+        equipmentFromJsonObject,
+        equipmentProvisionFromJsonObject,
+        'equipment',
+        json
+    );
 
-export function equipmentInstallationFromJsonObject(obj: JsonObject): EquipmentInstallation {
-    const baseParams = modelParamsFromJsonObject(obj);
-
-    let equipment: Equipment | string;
-
-    if (isJsonObject(obj[ 'equipment' ])) {
-        equipment = equipmentFromJsonObject(obj[ 'equipment' ]);
-    } else if (typeof obj[ 'equipment' ] === 'string') {
-        equipment = obj[ 'equipment' ];
-    } else {
-        throw new Error("Expected a json object or string 'equipment'");
-    }
-
-    if (typeof obj[ 'equipmentName' ] !== 'string') {
-        throw new Error("Expected a string 'equipmentName'");
-    }
-
-    let lab: Lab | string;
-    if (typeof obj[ 'lab' ] === 'string' && validateIsUUID(obj[ 'lab' ])) {
-        lab = obj[ 'lab' ];
-    } else if (isJsonObject(obj[ 'lab' ])) {
-        lab = labFromJsonObject(obj[ 'lab' ]);
-    } else {
-        throw new Error("Expected a string or json object 'lab'")
-    }
-    if (typeof obj[ 'numInstalled' ] !== 'number') {
-        throw new Error('Expected a number numInstalled');
-    }
-    if (!isProvisionStatus(obj[ 'provisionStatus' ])) {
-        throw new Error("Expected a provision status 'provisionStatus");
+    if (typeof json['numInstalled'] !== 'number') {
+        throw new Error(`Expected a number 'numInstalled'`);
     }
 
     return new EquipmentInstallation({
         ...baseParams,
-        equipment,
-        equipmentName: obj[ 'equipmentName' ],
-        lab,
-        numInstalled: obj[ 'numInstalled' ],
-        provisionStatus: obj[ 'provisionStatus' ]
+        numInstalled: json['numInstalled']
     });
 }
 
-export interface EquipmentInstallationQuery extends ModelQuery<EquipmentInstallation> {
-    equipment?: Equipment | string;
-    lab?: Lab | string;
+export interface EquipmentInstallationQuery extends LabInstallationQuery<Equipment, EquipmentInstallation> {
+    equipment?: ModelRef<Equipment>;
 }
 
-function equipmentInstallationQueryToHttpParams(query: EquipmentInstallationQuery) {
-    let params = new HttpParams();
-    const equipmentId = typeof query.equipment === 'string' ? query.equipment : query.equipment?.id;
-    if (equipmentId) {
-        params = params.set('equipment', equipmentId);
+function setEquipmentInstallationQueryParams(params: HttpParams, query: EquipmentInstallationQuery) {
+    params = setLabInstallationQueryParams(params, query, 'equipment');
+    if (query.equipment) {
+        params = params.set('equipment', modelId(query.equipment));
     }
-    const labId = typeof query.lab === 'string' ? query.lab : query.lab?.id;
-    if (labId) {
-        params = params.set('lab', labId);
-    }
-
     return params;
 }
+
+export interface EquipmentInstallationCreateRequest extends ProvisionableCreateRequest<EquipmentInstallation> {
+    equipment: ModelRef<Equipment> | EquipmentCreateRequest;
+}
+
+export function equipmentInstallationCreateRequestToJsonObject(
+    request: EquipmentInstallationCreateRequest
+): JsonObject {
+    let equipment: JsonObject | string;
+    if (isModelRef(request.equipment)) {
+        equipment = modelId(request.equipment);
+    } else {
+        equipment = equipmentCreateRequestToJsonObject(request.equipment);
+    }
+
+    return {
+        lab: modelId(request.lab),
+        equipment
+    };
+
+}
+
 
 @Injectable()
 export class EquipmentInstallationService extends RelatedModelService<Equipment, EquipmentInstallation, EquipmentInstallationQuery> {
     override readonly context = inject(EquipmentContext);
     override readonly modelFromJsonObject = equipmentInstallationFromJsonObject;
-    override readonly modelQueryToHttpParams = equipmentInstallationQueryToHttpParams;
+    override readonly setModelQueryParams = setEquipmentInstallationQueryParams;
+
     override readonly path = 'installations';
     readonly equipment$ = this.context.committed$;
 
     fetchForLabEquipment(lab: Lab | string, equipment: Equipment | string): Observable<EquipmentInstallation | null> {
-        const labId = typeof lab === 'string' ? lab : lab.id;
-        const equipmentId = typeof equipment === 'string' ? equipment : equipment.id;
+        const labId = modelId(lab);
+        const equipmentId = modelId(equipment);
 
         const fromCache = timer(0).pipe(
             switchMap(() => {
                 for (const install of this._cache.values()) {
-                    if (install.labId === labId && install.equipmentId === equipmentId) {
+                    if (modelId(install.lab) === labId && modelId(install.equipment) === equipmentId) {
                         return of(install);
                     }
                 }
@@ -170,7 +112,7 @@ export class EquipmentInstallationService extends RelatedModelService<Equipment,
             })
         )
 
-        const fromServer = this.queryOne({ lab: labId, equipment: equipmentId });
+        const fromServer = this.queryOne({ lab, equipment });
         return race(fromCache, fromServer);
     }
 }

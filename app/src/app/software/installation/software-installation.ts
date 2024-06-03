@@ -1,26 +1,27 @@
-import { Model, ModelCreateRequest, ModelParams, ModelQuery, ModelUpdateRequest, modelParamsFromJsonObject } from "src/app/common/model/model";
+import { Model, ModelCreateRequest, ModelParams, ModelQuery, ModelRef, ModelUpdateRequest, modelId, modelParamsFromJsonObject } from "src/app/common/model/model";
 import { Software, SoftwareService, softwareFromJsonObject } from "../software";
 import { firstValueFrom } from "rxjs";
 import { JsonObject } from "src/app/utils/is-json-object";
 import { HttpParams } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
-import { LabInstallation, LabInstallationParams, LabInstallationService, labInstallationParamsFromJsonObject } from "src/app/lab/common/installable/installation";
-import { Provisionable } from "src/app/lab/common/provisionable/provisionable";
-import { SoftwareProvision } from "../provision/software-provision";
+import { LabInstallation, LabInstallationParams, LabInstallationQuery, LabInstallationService, labInstallationParamsFromJsonObject, setLabInstallationQueryParams } from "src/app/lab/common/installable/installation";
+import { Provisionable, ProvisionableCreateRequest } from "src/app/lab/common/provisionable/provisionable";
+import { SoftwareProvision, SoftwareProvisionInstallRequest, softwareProvisionFromJsonObject } from "../provision/software-provision";
+import { SoftwareContext } from "../software-context";
+import { Lab } from "src/app/lab/lab";
 
 
-export interface SoftwareInstallationParams extends LabInstallationParams<Software> {
+export interface SoftwareInstallationParams extends LabInstallationParams<Software, SoftwareProvision> {
     software: Software | string;
-
     version: string;
 
-    currentProvisions: SoftwareProvision[];
+    currentProvisions: readonly SoftwareProvision[];
 }
 
-export class SoftwareInstallation extends LabInstallation<Software> implements SoftwareInstallationParams, Provisionable<SoftwareProvision> {
+export class SoftwareInstallation extends LabInstallation<Software, SoftwareProvision> implements SoftwareInstallationParams {
     software: Software | string;
     version: string;
-    override readonly currentProvisions: readonly SoftwareProvision[];
+    override currentProvisions: readonly SoftwareProvision[];
 
     constructor(params: SoftwareInstallationParams) {
         super(params);
@@ -38,19 +39,19 @@ export class SoftwareInstallation extends LabInstallation<Software> implements S
     }
 }
 
-
 export function softwareInstallationFromJsonObject(json: JsonObject): SoftwareInstallation {
     const baseParams = labInstallationParamsFromJsonObject(
         softwareFromJsonObject,
+        softwareProvisionFromJsonObject,
         'software',
         json
     );
 
     const software: Software | string = baseParams.installable;
-
     if (typeof json['version'] !== 'string') {
         throw new Error("Expected a string 'version'")
     }
+
 
     return new SoftwareInstallation({
         ...baseParams,
@@ -59,22 +60,36 @@ export function softwareInstallationFromJsonObject(json: JsonObject): SoftwareIn
     });
 }
 
-export interface SoftwareInstallationQuery extends ModelQuery<SoftwareInstallation> { }
-function softwareInstallationQueryToHttpParams() {
-    const params = new HttpParams();
+export interface SoftwareInstallationQuery extends LabInstallationQuery<Software, SoftwareInstallation> {
+    software?: ModelRef<Software>;
+}
+function setSoftwareInstallationQueryParams(params: HttpParams, query: Partial<SoftwareInstallationQuery>) {
+    params = setLabInstallationQueryParams(params, query, 'software');
+
+    if (query.software) {
+        params = params.set('software', modelId(query.software));
+    }
+
     return params;
 }
 
-@Injectable()
-export class SoftwareInstallationService extends LabInstallationService<Software, SoftwareInstallation> {
+
+export interface SoftwareInstallationCreateRequest extends ProvisionableCreateRequest<SoftwareInstallation> {
+    software: ModelRef<Software>;
+}
+
+export function softwareInstallationCreateRequestToJsonObject(request: SoftwareInstallationCreateRequest) {
+    return {
+        lab: modelId(request.lab),
+        software: modelId(request.software)
+    };
+}
+
+@Injectable({ providedIn: 'root' })
+export class SoftwareInstallationService extends LabInstallationService<Software, SoftwareInstallation, SoftwareInstallationQuery> {
     override readonly path = '/installations';
     override readonly modelFromJsonObject = softwareInstallationFromJsonObject;
-    override readonly modelQueryToHttpParams = softwareInstallationQueryToHttpParams;
+    override readonly setModelQueryParams = setSoftwareInstallationQueryParams;
 
-    override createToJsonObject?(request: ModelCreateRequest<SoftwareInstallation>): JsonObject {
-        throw new Error("Method not implemented.");
-    }
-    override updateToJsonObject?(model: SoftwareInstallation, request: Partial<ModelUpdateRequest<SoftwareInstallation>>): JsonObject {
-        throw new Error("Method not implemented.");
-    }
+    override readonly context = inject(SoftwareContext);
 }

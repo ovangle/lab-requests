@@ -4,7 +4,7 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR } from "@angular/forms";
 import { Observable, startWith, switchMap, of, shareReplay, filter, withLatestFrom, map, BehaviorSubject, connectable, Connectable, firstValueFrom, first, skipWhile } from "rxjs";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
-import { Model } from "../model";
+import { Model, ModelQuery } from "../model";
 
 export class NotFoundValue {
     constructor(readonly searchInput: string) {
@@ -29,12 +29,12 @@ export function provideModelSearchValueAccessor<T extends ModelSearchComponent<a
         provide: NG_VALUE_ACCESSOR,
         multi: true,
         useFactory: (component: T) => component.searchControl,
-        deps: [ componentType ]
+        deps: [componentType]
     };
 
 }
 
-export class ModelSearchControl<T extends Model> implements ControlValueAccessor {
+export class ModelSearchControl<T extends Model, TQuery extends ModelQuery<T> = ModelQuery<T>> implements ControlValueAccessor {
     readonly __NOT_FOUND__ = __NOT_FOUND__;
 
     readonly _destroyRef = inject(DestroyRef);
@@ -62,7 +62,7 @@ export class ModelSearchControl<T extends Model> implements ControlValueAccessor
             } else if (is_NOT_FOUND(search)) {
                 return of([]);
             } else {
-                return of([ search ]);
+                return of([search]);
             }
         }),
         shareReplay(1)
@@ -72,12 +72,16 @@ export class ModelSearchControl<T extends Model> implements ControlValueAccessor
         filter((value): value is string => typeof value === 'string'),
     );
 
+    query$: Observable<Partial<TQuery>> = this._searchInput$.pipe(
+        map(search => ({ search }))
+    );
+
     value$: Observable<T | NotFoundValue> = this.searchControl.valueChanges.pipe(
         filter(value => {
             return typeof value !== 'string' || is_NOT_FOUND(value)
         }),
         withLatestFrom(this._searchInput$),
-        map(([ value, searchInput ]) => {
+        map(([value, searchInput]) => {
             console.log('value', value, 'searchInput', searchInput)
             return is_NOT_FOUND(value) ? new NotFoundValue(searchInput) : value as T
         }),

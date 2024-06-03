@@ -1,4 +1,4 @@
-import { Component, Input, inject } from '@angular/core';
+import { Component, Input, inject, input } from '@angular/core';
 import {
   RESOURCE_DISPOSAL_TYPES,
   ResourceDisposal,
@@ -17,7 +17,6 @@ import { SelectOtherDescriptionComponent } from 'src/app/utils/forms/select-othe
 import { ResearchFundingCostEstimateFormComponent } from 'src/app/research/funding/cost-estimate/cost-estimate-form.component';
 import { ResearchFunding } from 'src/app/research/funding/research-funding';
 import { CostEstimate } from 'src/app/research/funding/cost-estimate/cost-estimate';
-import { P } from '@angular/cdk/keycodes';
 import { UnitOfMeasurement } from 'src/app/common/measurement/measurement';
 
 export type ResourceDisposalForm = FormGroup<{
@@ -105,13 +104,11 @@ export function patchResourceDisposalFormValue(
       >
       </lab-req-select-other-description>
 
-      @if (funding) {
+      @if (funding()) {
         <research-funding-cost-estimate-form
-          [funding]="funding"
-          unitOfMeasurement="kg"
-          (costEstimateChange)="onCostEstimateChange($event)"
-        >
-        </research-funding-cost-estimate-form>
+          [funding]="funding()"
+          [quantityRequired]="[numUnitsRequired(), unitOfMeasurement()]"
+        />
       }
     </div>
   `,
@@ -126,14 +123,9 @@ export function patchResourceDisposalFormValue(
 export class ResourceDisposalFormComponent {
   readonly disposalTypes = RESOURCE_DISPOSAL_TYPES;
 
-  @Input()
-  funding: ResearchFunding | null = null;
-
-  @Input()
-  unitOfMeasurement: UnitOfMeasurement | undefined;
-
-  @Input()
-  numUnitsRequired: number = 1;
+  funding = input.required<ResearchFunding>();
+  numUnitsRequired = input<number>(1);
+  unitOfMeasurement = input<UnitOfMeasurement>('item');
 
   _controlContainer = inject(ControlContainer);
 

@@ -65,10 +65,8 @@ export class SoftwareLeaseService extends ResourceService<SoftwareLease, Softwar
   override patchToJsonObject(current: SoftwareLease | null, patch: SoftwareLeasePatch): JsonObject {
     return softwareLeasePatchToJsonObject(current, patch)
   }
-  override modelFromJsonObject(json: JsonObject): SoftwareLease {
-    return softwareLeaseFromJsonObject(json);
-  }
-  override modelQueryToHttpParams(lookup: ModelQuery<SoftwareLease>): HttpParams {
+  override readonly modelFromJsonObject = softwareLeaseFromJsonObject;
+  override setModelQueryParams(params: HttpParams, query: Partial<ModelQuery<SoftwareLease>>): HttpParams {
     throw new Error('Method not implemented.');
   }
 

@@ -15,6 +15,8 @@ import {
   ModelQuery,
   ModelCreateRequest,
   ModelUpdateRequest,
+  ModelRef,
+  modelId,
 } from './model';
 import urlJoin from 'url-join';
 import { Observable, Subject, map, of, tap, timer } from 'rxjs';
@@ -55,7 +57,7 @@ export abstract class ModelService<T extends Model, TQuery extends ModelQuery<T>
   }
 
   abstract modelFromJsonObject(json: JsonObject): T;
-  abstract modelQueryToHttpParams(lookup: Partial<TQuery>): HttpParams;
+  abstract setModelQueryParams(params: HttpParams, lookup: Partial<TQuery>): HttpParams;
   abstract modelUrl(model: T): Observable<string>;
 
   modelIndexPageFromJsonObject(json: JsonObject): ModelIndexPage<T> {
@@ -91,7 +93,7 @@ export abstract class ModelService<T extends Model, TQuery extends ModelQuery<T>
         if (items.length > 1) {
           throw new Error('Server returned multiple results');
         }
-        return items[ 0 ] || null;
+        return items[0] || null;
       }),
     );
   }
@@ -99,7 +101,7 @@ export abstract class ModelService<T extends Model, TQuery extends ModelQuery<T>
   protected abstract _doQueryPage(params: HttpParams): Observable<JsonObject>;
 
   queryPage(lookup: Partial<TQuery>, pageNum = 1): Observable<ModelIndexPage<T>> {
-    let params = this.modelQueryToHttpParams(lookup);
+    let params = this.setModelQueryParams(new HttpParams(), lookup);
     params = params.set('page', pageNum);
 
     return this._doQueryPage(params).pipe(
@@ -120,14 +122,9 @@ export abstract class ModelService<T extends Model, TQuery extends ModelQuery<T>
 @Injectable()
 export abstract class RestfulService<
   T extends Model,
-  TQuery extends ModelQuery<T> = ModelQuery<T>,
-  TCreate extends ModelCreateRequest<T> = ModelCreateRequest<T>,
-  TUpdate extends ModelUpdateRequest<T> = ModelUpdateRequest<T>
+  TQuery extends ModelQuery<T> = ModelQuery<T>
 > extends ModelService<T, TQuery> {
   abstract readonly path: string;
-
-  abstract createToJsonObject?(request: TCreate): JsonObject;
-  abstract updateToJsonObject?(model: T, request: Partial<TUpdate>): JsonObject;
 
   get indexUrl(): string {
     return urlJoin(this._apiBaseUrl, this.path) + '/';
@@ -162,7 +159,7 @@ export abstract class RestfulService<
 
   protected override _doFetch(
     id: string,
-    options?: { params: { [ k: string ]: any } | HttpParams },
+    options?: { params: { [k: string]: any } | HttpParams },
   ): Observable<JsonObject> {
     return this._httpClient.get<JsonObject>(this.resourceUrl(id), {
       params: options?.params,
@@ -170,17 +167,17 @@ export abstract class RestfulService<
   }
 
   protected override _doQueryPage(
-    params: HttpParams | { [ k: string ]: string | number | string[] },
+    params: HttpParams | { [k: string]: string | number | string[] },
   ): Observable<JsonObject> {
     return this._httpClient
       .get<JsonObject>(this.indexUrl, { params: params })
   }
 
-  create(request: TCreate): Observable<T> {
-    if (this.createToJsonObject === undefined) {
-      throw new Error("service defines no createRequestToJsonObject method")
-    }
-    const body = this.createToJsonObject(request);
+  protected _doCreate<TCreate extends ModelCreateRequest<T>>(
+    requestToJsonObject: (request: TCreate) => JsonObject,
+    request: TCreate
+  ): Observable<T> {
+    const body = requestToJsonObject(request);
 
     return this._httpClient
       .post<JsonObject>(this.indexUrl, body).pipe(
@@ -189,12 +186,13 @@ export abstract class RestfulService<
       );
   }
 
-  update(model: T, request: Partial<TUpdate>) {
-    if (this.updateToJsonObject === undefined) {
-      throw new Error('service defines no updateRequestToJsonObject method');
-    }
-    const body = this.updateToJsonObject(model, request);
-    return this._httpClient.put<JsonObject>(this.resourceUrl(model.id), body).pipe(
+  _doUpdate<TUpdate extends ModelUpdateRequest<T>>(
+    updateRequestToJsonObject: (model: ModelRef<T>, update: TUpdate) => JsonObject,
+    model: ModelRef<T>,
+    request: TUpdate
+  ) {
+    const body = updateRequestToJsonObject(model, request);
+    return this._httpClient.put<JsonObject>(this.resourceUrl(modelId(model)), body).pipe(
       map(response => this.modelFromJsonObject(response)),
       this._cacheOne
     );

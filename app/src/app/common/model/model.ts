@@ -4,6 +4,7 @@ import { validate as validateIsUUID } from 'uuid';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { ModelService } from './model-service';
 import { Connectable, Observable, ReplaySubject, connectable, firstValueFrom, of, switchMap } from 'rxjs';
+import { HttpParams } from '@angular/common/http';
 
 export abstract class Model {
   readonly id: string;
@@ -29,19 +30,19 @@ export interface ModelParams {
 }
 
 export function modelParamsFromJsonObject(json: JsonObject): ModelParams {
-  const id = json[ 'id' ];
+  const id = json['id'];
   if (typeof id !== 'string') {
     throw new Error("Expected a string 'id'");
   }
-  if (typeof json[ 'createdAt' ] !== 'string') {
+  if (typeof json['createdAt'] !== 'string') {
     throw new Error("Expected string 'createdAt'");
   }
-  const createdAt = parseISO(json[ 'createdAt' ]);
+  const createdAt = parseISO(json['createdAt']);
 
-  if (typeof json[ 'updatedAt' ] !== 'string') {
+  if (typeof json['updatedAt'] !== 'string') {
     throw new Error("Expected string 'createdAt'");
   }
-  const updatedAt = parseISO(json[ 'updatedAt' ]);
+  const updatedAt = parseISO(json['updatedAt']);
 
   return { id, createdAt, updatedAt };
 }
@@ -59,36 +60,52 @@ export function modelIndexPageFromJsonObject<T extends Model>(
   modelFromJsonObject: (obj: JsonObject) => T,
   json: JsonObject,
 ): ModelIndexPage<T> {
-  if (typeof json[ 'totalItemCount' ] !== 'number') {
+  if (typeof json['totalItemCount'] !== 'number') {
     throw new Error("ModelIndexPage: 'totalItemCount' must be a number");
   }
-  if (typeof json[ 'totalPageCount' ] !== 'number') {
+  if (typeof json['totalPageCount'] !== 'number') {
     throw new Error("ModelIndexPage: 'totalPageCount' must be a number");
   }
-  if (typeof json[ 'pageIndex' ] !== 'number') {
+  if (typeof json['pageIndex'] !== 'number') {
     throw new Error("ModelIndexPage: 'pageIndex' must be a number");
   }
-  if (typeof json[ 'pageSize' ] !== 'number') {
+  if (typeof json['pageSize'] !== 'number') {
     throw new Error("ModelIndexPage: 'pageSize' must be a number");
   }
-  if (!Array.isArray(json[ 'items' ]) || !json[ 'items' ].every(isJsonObject)) {
+  if (!Array.isArray(json['items']) || !json['items'].every(isJsonObject)) {
     throw new Error("ModelIndexPage: 'items' must be an array of json objects");
   }
 
-  const items = Array.from(json[ 'items' ]).map((itemJson) =>
+  const items = Array.from(json['items']).map((itemJson) =>
     modelFromJsonObject(itemJson),
   );
 
   return {
     items,
-    totalItemCount: json[ 'totalItemCount' ],
-    totalPageCount: json[ 'totalPageCount' ],
-    pageIndex: json[ 'pageIndex' ],
-    pageSize: json[ 'pageSize' ],
+    totalItemCount: json['totalItemCount'],
+    totalPageCount: json['totalPageCount'],
+    pageIndex: json['pageIndex'],
+    pageSize: json['pageSize'],
   };
 }
 
-export interface ModelQuery<T extends Model> { }
+export interface ModelQuery<T extends Model> {
+  /**
+   * Represents a full-text search of the model and it's attributes.
+   * More useful for some models than others.
+   * This is implemented by the api server in a model dependent way, check
+   * the models documentation to see which attributes are available in the
+   * search
+   */
+  search?: string;
+}
+
+export function setModelQueryParams(params: HttpParams, query: Partial<ModelQuery<any>>) {
+  if (query.search) {
+    params = params.set('search', query.search);
+  }
+  return params;
+}
 
 export function injectQueryPage<T extends Model>(
   serviceType: Type<ModelService<T>>,
@@ -116,6 +133,18 @@ export type ModelOf<T> = T extends ModelRef<infer U> ?
   (U extends T ? U : never)
   : never;
 
+export function isModelRef(obj: unknown): obj is ModelRef<any> {
+  return (typeof obj === 'string' && validateIsUUID(obj)) || obj instanceof Model;
+}
+
+export function isEqualModelRefs<T extends Model>(a: ModelRef<T> | null, b: ModelRef<T> | null): boolean {
+  if (a == null || b == null) {
+    return a == null && b == null;
+  }
+  return modelId(a) == modelId(b);
+}
+
+
 export function modelId(ref: ModelRef<any>): string;
 export function modelId(ref: ModelRef<any> | null): string | null;
 
@@ -133,13 +162,13 @@ export function resolveRef<T extends Model>(ref: ModelRef<T> | null, service: Mo
 export async function resolveModelRef<
   TModel extends Model,
   K extends keyof TModel,
-  TRelated extends ModelOf<TModel[ K ]>
+  TRelated extends ModelOf<TModel[K]>
 >(
   on: TModel,
   attr: K,
   usingModelService: ModelService<TRelated, any>
 ): Promise<TRelated> {
-  const value = on[ attr ];
+  const value = on[attr];
   if (typeof value === 'string') {
     if (!on._resolvedRefs.has(value)) {
       const resolvedValue = await firstValueFrom(usingModelService.fetch(value));
@@ -156,7 +185,7 @@ export function modelRefJsonDecoder<T extends Model>(key: string, modelFromJsonO
 
 export function modelRefJsonDecoder<T extends Model>(key: string, modelFromJsonObject: (json: JsonObject) => T, nullable?: boolean): (json: JsonObject) => ModelRef<T> | null {
   return (json: JsonObject) => {
-    const value = json[ key ];
+    const value = json[key];
     if (nullable && value == null) {
       return null;
     } else if (typeof value === 'string' && validateIsUUID(value)) {

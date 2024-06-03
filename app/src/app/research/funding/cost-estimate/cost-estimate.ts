@@ -2,27 +2,44 @@ import { formatCurrency } from '@angular/common';
 import {
   UnitOfMeasurement,
   formatUnitOfMeasurement,
+  isUnitOfMeasurement,
 } from 'src/app/common/measurement/measurement';
-import { ResearchFunding } from '../research-funding';
+import { ResearchFunding, researchFundingFromJsonObject } from '../research-funding';
+import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
+import { ModelRef, isModelRef, modelId, modelRefJsonDecoder } from 'src/app/common/model/model';
+import { firstValueFrom } from 'rxjs';
+import { ModelService } from 'src/app/common/model/model-service';
 
 export interface CostEstimate {
-  funding: ResearchFunding;
-  isUniversitySupplied: boolean;
+  funding: ModelRef<ResearchFunding>;
+
   perUnitCost: number;
   unit: UnitOfMeasurement;
-  quantityRequired: number;
+  numRequired: number;
+
+  refUrl?: string;
 }
 
-export function costEstimateTotal(estimate: CostEstimate): number {
-  return estimate.quantityRequired * estimate.perUnitCost;
+export function costEstimateTotal(estimate: CostEstimate): [number, UnitOfMeasurement] {
+  return [
+    estimate.numRequired * estimate.perUnitCost,
+    estimate.unit
+  ];
+}
+
+export async function costEstimateFunding(estimate: CostEstimate, service: ModelService<ResearchFunding>) {
+  if (typeof estimate.funding === 'string') {
+    estimate.funding = await firstValueFrom(service.fetch(estimate.funding))
+  }
+  return estimate.funding;
 }
 
 export function isCostEstimate(obj: unknown): obj is CostEstimate {
   return (
     typeof obj === 'object' &&
     obj != null &&
-    typeof (obj as any).isUniversitySupplied === 'boolean' &&
-    typeof (obj as any).estimatedCost === 'number'
+    isModelRef((obj as any).funding) &&
+    isUnitOfMeasurement((obj as any).unit)
   );
 }
 
@@ -46,7 +63,7 @@ export function formatCostEstimate(
   locale: string,
 ): string {
   const totalCost = formatCurrency(
-    costEstimateTotal(costEstimate),
+    costEstimateTotal(costEstimate)[0],
     locale,
     '$',
   );
@@ -56,11 +73,48 @@ export function formatCostEstimate(
   const perUnitCost = formatCurrency(costEstimate.perUnitCost, locale, '$');
   const unitOfMeasurement = formatUnitOfMeasurement(
     costEstimate.unit,
-    costEstimate.quantityRequired,
+    costEstimate.numRequired,
     locale,
   );
   if (format === 'full') {
-    return `${totalCost} (${costEstimate.quantityRequired} @ ${perUnitCost} per ${unitOfMeasurement})`;
+    return `${totalCost} (${costEstimate.numRequired} @ ${perUnitCost} per ${unitOfMeasurement})`;
   }
   throw new Error('Invalid format ${format}');
+}
+
+export function costEstimateToJsonObject(estimate: CostEstimate): JsonObject {
+  return {
+    funding: modelId(estimate)
+  };
+}
+
+
+export function costEstimateFromJsonObject(json: JsonObject): CostEstimate;
+export function costEstimateFromJsonObject(json: JsonObject | null): CostEstimate | null;
+
+export function costEstimateFromJsonObject(json: JsonObject | null): CostEstimate | null {
+  if (json == null) {
+    return null;
+  }
+
+  const funding = modelRefJsonDecoder(
+    'funding',
+    researchFundingFromJsonObject,
+  )(json);
+  if (typeof json['perUnitCost'] !== 'number') {
+    throw new Error("Expected a number 'per unit' cost");
+  }
+  if (!isUnitOfMeasurement(json['unit'])) {
+    throw new Error("Expected a unit of measurment 'unit'");
+  }
+  if (typeof json['numRequired'] !== 'number') {
+    throw new Error("Expected a number 'numRequired'")
+  }
+
+  return {
+    funding,
+    perUnitCost: json['perUnitCost'],
+    unit: json['unit'],
+    numRequired: json['numRequired']
+  };
 }

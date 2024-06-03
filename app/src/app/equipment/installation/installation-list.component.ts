@@ -1,7 +1,7 @@
 import { P, Q } from "@angular/cdk/keycodes";
 import { CommonModule } from "@angular/common";
 import { HttpParams } from "@angular/common/http";
-import { Component, Inject, Input, inject } from "@angular/core";
+import { Component, Inject, Input, inject, input } from "@angular/core";
 import { FormControl, ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatListModule } from "@angular/material/list";
@@ -11,7 +11,7 @@ import { ModelSearchInputComponent } from "src/app/common/model/search/search-in
 import { Equipment } from "../equipment";
 import { EquipmentContext } from "../equipment-context";
 import { EquipmentInstallation, EquipmentInstallationService } from "./equipment-installation";
-import { Lab, LabService } from "src/app/lab/lab";
+import { Lab, LabQuery, LabService } from "src/app/lab/lab";
 import { LabSearchComponent } from "src/app/lab/lab-search.component";
 import { MatIconModule } from "@angular/material/icon";
 import { RouterModule } from "@angular/router";
@@ -19,6 +19,9 @@ import { MatCardModule } from "@angular/material/card";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 import { MatButtonModule } from "@angular/material/button";
 import { EquipmentProvision } from "../provision/equipment-provision";
+import { EquipmentInstallationInfoComponent } from "./equipment-installation-info.component";
+import { toObservable } from "@angular/core/rxjs-interop";
+import { modelId } from "src/app/common/model/model";
 
 
 @Component({
@@ -35,9 +38,18 @@ import { EquipmentProvision } from "../provision/equipment-provision";
         MatIconModule,
         MatListModule,
 
-        ModelSearchInputComponent
+        ModelSearchInputComponent,
+
+        EquipmentInstallationInfoComponent
     ],
     template: `
+    <lab-installation-list
+        [installable]="equipment"
+        [labQuery]="labQuery()">
+        <ng-template #itemTemplate>
+        </ng-template>
+    </lab-installation-list>
+
     <mat-card>
         <mat-card-header>
             <mat-card-title>
@@ -147,11 +159,7 @@ import { EquipmentProvision } from "../provision/equipment-provision";
     `
 })
 export class EquipmentInstallationListComponent {
-    _equipmentContext = inject(EquipmentContext);
-    _equipments = inject(EquipmentInstallationService);
-    _labService = inject(LabService);
-
-    readonly equipment$ = this._equipmentContext.committed$;
+    equipment = input.required<Equipment>();
 
     _hideFilters = true;
 
@@ -159,10 +167,12 @@ export class EquipmentInstallationListComponent {
         this._hideFilters = !this._hideFilters;
     }
 
+    _labService = inject(LabService);
     readonly labSearch = new ModelSearchControl<Lab>(
         (search) => this._labService.query({ search }),
         lab => lab.name
     );
+    readonly labQuery$ = this.labSearch.query$;
 
     readonly filterLab$ = this.labSearch.value$.pipe(
         map(value => value instanceof Lab ? value : null),
@@ -172,12 +182,12 @@ export class EquipmentInstallationListComponent {
     );
 
     readonly equipmentInstalls$: Observable<EquipmentInstallation[]> = combineLatest([
-        this.equipment$,
+        toObservable(this.equipment),
         this.filterLab$
     ]).pipe(
-        map(([ equipment, lab ]) => {
+        map(([equipment, lab]) => {
             return equipment.installations.filter(
-                installation => lab == null ? true : installation.labId == lab.id
+                installation => isEqualModelRefs(lab, installation.lab)
             );
         }),
         shareReplay(1)
@@ -218,4 +228,8 @@ export class EquipmentInstallationListComponent {
         return { $implicit: lab, numInstalled, numPending };
     }
     */
+}
+
+function isEqualModelRefs(lab: Lab | null, lab1: string | Lab): unknown {
+    throw new Error("Function not implemented.");
 }

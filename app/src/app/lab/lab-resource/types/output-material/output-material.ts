@@ -68,34 +68,34 @@ export class OutputMaterial extends Resource {
 export function outputMaterialFromJson(json: JsonObject): OutputMaterial {
   const resourceParams = resourceParamsFromJsonObject(json);
 
-  if (typeof json[ 'name' ] !== 'string') {
+  if (typeof json['name'] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
-  if (typeof json[ 'baseUnit' ] !== 'string') {
+  if (typeof json['baseUnit'] !== 'string') {
     throw new Error("Expected a string 'baseUnit'");
   }
-  if (typeof json[ 'numUnitsProduced' ] !== 'number') {
+  if (typeof json['numUnitsProduced'] !== 'number') {
     throw new Error("Expected a number 'numUnitsProduced'");
   }
 
-  if (!isJsonObject(json[ 'storage' ])) {
+  if (!isJsonObject(json['storage'])) {
     throw new Error("Expected a json object 'storage'");
   }
-  const storage = resourceStorageFromJson(json[ 'storage' ]);
-  if (!isJsonObject(json[ 'disposal' ])) {
+  const storage = resourceStorageFromJson(json['storage']);
+  if (!isJsonObject(json['disposal'])) {
     throw new Error("Expected a json object 'disposal'");
   }
-  const disposal = resourceDisposalFromJson(json[ 'disposal' ]);
-  if (!Array.isArray(json[ 'hazardClasses' ]) || !json[ 'hazardClasses' ].every(o => typeof o === 'string')) {
+  const disposal = resourceDisposalFromJson(json['disposal']);
+  if (!Array.isArray(json['hazardClasses']) || !json['hazardClasses'].every(o => typeof o === 'string')) {
     throw new Error("Expected an array of strings 'hazardClasses'");
   }
-  const hazardClasses = hazardClassesFromJson(json[ 'hazardClasses' ]);
+  const hazardClasses = hazardClassesFromJson(json['hazardClasses']);
 
   return new OutputMaterial({
     ...resourceParams,
-    name: json[ 'name' ],
-    baseUnit: json[ 'baseUnit' ],
-    numUnitsProduced: json[ 'numUnitsProduced' ],
+    name: json['name'],
+    baseUnit: json['baseUnit'],
+    numUnitsProduced: json['numUnitsProduced'],
     storage,
     disposal,
     hazardClasses,
@@ -126,10 +126,8 @@ export class OutputMaterialService extends ResourceService<OutputMaterial, Outpu
   override patchToJsonObject(current: OutputMaterial | null, patch: OutputMaterialPatch): JsonObject {
     return outputMaterialPatchToJsonObject(current, patch);
   }
-  override modelFromJsonObject(json: JsonObject): OutputMaterial {
-    return outputMaterialFromJson(json);
-  }
-  override modelQueryToHttpParams(lookup: ModelQuery<OutputMaterial>): HttpParams {
+  override readonly modelFromJsonObject = outputMaterialFromJson;
+  override setModelQueryParams(params: HttpParams, query: Partial<ModelQuery<OutputMaterial>>): HttpParams {
     throw new Error('Method not implemented.');
   }
 

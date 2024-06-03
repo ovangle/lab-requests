@@ -58,39 +58,39 @@ export class InputMaterial extends Resource {
 export function inputMaterialFromJson(json: JsonObject): InputMaterial {
   const resourceParams = resourceParamsFromJsonObject(json);
 
-  if (typeof json[ 'name' ] !== 'string') {
+  if (typeof json['name'] !== 'string') {
     throw new Error("Expected a string 'name'")
   }
-  if (typeof json[ 'description' ] !== 'string') {
+  if (typeof json['description'] !== 'string') {
     throw new Error("Expected a string 'description'");
   }
-  if (typeof json[ 'baseUnit' ] !== 'string') {
+  if (typeof json['baseUnit'] !== 'string') {
     throw new Error("Expected a string 'baseUnit'");
   }
-  if (typeof json[ 'numUnitsRequired' ] !== 'number') {
+  if (typeof json['numUnitsRequired'] !== 'number') {
     throw new Error("Expected a number 'numUnitsRequired");
   }
-  if (typeof json[ 'perUnitCostEstimate' ] !== 'number') {
+  if (typeof json['perUnitCostEstimate'] !== 'number') {
     throw new Error("Expected a json object or null 'perUnitCostEstimate'");
   }
 
-  if (!isJsonObject(json[ 'storage' ])) {
+  if (!isJsonObject(json['storage'])) {
     throw new Error("Expected a json object 'storage'");
   }
-  const storage = resourceStorageFromJson(json[ 'storage' ]);
+  const storage = resourceStorageFromJson(json['storage']);
 
-  if (!Array.isArray(json[ 'hazardClasses' ]) || !json[ 'hazardClasses' ].every(o => typeof o === 'string')) {
+  if (!Array.isArray(json['hazardClasses']) || !json['hazardClasses'].every(o => typeof o === 'string')) {
     throw new Error("Expected an array of strings 'hazardClasses'");
   }
-  const hazardClasses = hazardClassesFromJson(json[ 'hazardClasses' ]);
+  const hazardClasses = hazardClassesFromJson(json['hazardClasses']);
 
   return new InputMaterial({
     ...resourceParams,
-    name: json[ 'name' ],
-    description: json[ 'description' ],
-    baseUnit: json[ 'baseUnit' ],
-    numUnitsRequired: json[ 'numUnitsRequired' ],
-    perUnitCostEstimate: json[ 'perUnitCostEstimate' ],
+    name: json['name'],
+    description: json['description'],
+    baseUnit: json['baseUnit'],
+    numUnitsRequired: json['numUnitsRequired'],
+    perUnitCostEstimate: json['perUnitCostEstimate'],
     storage,
     hazardClasses,
   });
@@ -119,10 +119,8 @@ export class InputMaterialService extends ResourceService<InputMaterial, InputMa
   override patchToJsonObject(current: InputMaterial | null, params: InputMaterialPatch): JsonObject {
     return inputMaterialPatchToJsonObject(current, params);
   }
-  override modelFromJsonObject(json: JsonObject): InputMaterial {
-    return inputMaterialFromJson(json);
-  }
-  override modelQueryToHttpParams(lookup: ModelQuery<InputMaterial>): HttpParams {
+  override readonly modelFromJsonObject = inputMaterialFromJson;
+  override setModelQueryParams(params: HttpParams, query: Partial<ModelQuery<InputMaterial>>): HttpParams {
     throw new Error('Method not implemented.');
   }
 

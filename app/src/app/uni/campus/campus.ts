@@ -5,6 +5,7 @@ import {
   ModelIndexPage,
   modelParamsFromJsonObject,
   ModelQuery,
+  setModelQueryParams,
 } from 'src/app/common/model/model';
 import { RestfulService } from 'src/app/common/model/model-service';
 import { HttpParams } from '@angular/common/http';
@@ -28,18 +29,18 @@ export function campusFromJsonObject(json: JsonObject): Campus {
   if (typeof json !== 'object' || json == null) {
     throw new Error('Expected a campus');
   }
-  const obj: { [ k: string ]: unknown } = json as any;
+  const obj: { [k: string]: unknown } = json as any;
 
   const baseParams = modelParamsFromJsonObject(obj);
 
-  if (!isCampusCode(obj[ 'code' ])) {
+  if (!isCampusCode(obj['code'])) {
     throw new Error('Expected a campus code');
   }
 
   return new Campus({
     ...baseParams,
-    code: obj[ 'code' ],
-    name: obj[ 'name' ] as string,
+    code: obj['code'],
+    name: obj['name'] as string,
   });
 }
 
@@ -107,13 +108,14 @@ function campusCodeFromCampusLookup(lookup: CampusLookup | string) {
 
 export interface CampusQuery extends ModelQuery<Campus> {
   code?: string;
-  search?: string;
 }
 
-export function campusQueryToHttpParams(
+export function setCampusQueryParams(
+  params: HttpParams,
   query: Partial<CampusQuery>,
 ): HttpParams {
-  let params = new HttpParams()
+  params = setModelQueryParams(params, query);
+
   if (query.code) {
     params = params.set('code_eq', query.code);
   }
@@ -126,9 +128,7 @@ export function campusQueryToHttpParams(
 @Injectable({ providedIn: 'root' })
 export class CampusService extends RestfulService<Campus, CampusQuery> {
   override readonly modelFromJsonObject = campusFromJsonObject;
-  override readonly modelQueryToHttpParams = campusQueryToHttpParams;
-  override readonly createToJsonObject = undefined;
-  override readonly updateToJsonObject = undefined;
+  override readonly setModelQueryParams = setCampusQueryParams;
   override path = '/uni/campuses';
 
   lookup(lookup: string | CampusLookup, { useCache } = { useCache: true }): Observable<Campus | null> {

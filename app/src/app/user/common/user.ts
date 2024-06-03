@@ -18,6 +18,7 @@ import {
   ModelQuery,
   modelIndexPageFromJsonObject,
   modelParamsFromJsonObject,
+  setModelQueryParams,
 } from '../../common/model/model';
 import { RestfulService } from '../../common/model/model-service';
 import { Actor } from '../actor';
@@ -73,26 +74,26 @@ export class User extends Model implements UserParams {
   }
 
   get primaryDiscipline(): Discipline | null {
-    return this.disciplines[ 0 ] || null;
+    return this.disciplines[0] || null;
 
   }
 }
 
 function userParamsFromJsonObject(json: JsonObject): UserParams {
   const baseParams = modelParamsFromJsonObject(json);
-  if (typeof json[ 'email' ] !== 'string') {
+  if (typeof json['email'] !== 'string') {
     throw new Error("Expected a string 'email'");
   }
 
-  if (typeof json[ 'name' ] !== 'string') {
+  if (typeof json['name'] !== 'string') {
     throw new Error("Expected a string 'name'");
   }
 
   let baseCampus: Campus | string;
-  if (typeof json[ 'baseCampus' ] === 'string') {
-    baseCampus = json[ 'baseCampus' ];
-  } else if (isJsonObject(json[ 'baseCampus' ])) {
-    baseCampus = campusFromJsonObject(json[ 'baseCampus' ]);
+  if (typeof json['baseCampus'] === 'string') {
+    baseCampus = json['baseCampus'];
+  } else if (isJsonObject(json['baseCampus'])) {
+    baseCampus = campusFromJsonObject(json['baseCampus']);
   } else {
     throw new Error("Expected a json object 'baseCampus'");
   }
@@ -102,19 +103,19 @@ function userParamsFromJsonObject(json: JsonObject): UserParams {
   // }
 
   let roles: ReadonlySet<Role> = new Set();
-  if (Array.isArray(json[ 'roles' ])) {
-    roles = new Set(json[ 'roles' ].map(roleFromJson));
+  if (Array.isArray(json['roles'])) {
+    roles = new Set(json['roles'].map(roleFromJson));
   }
 
-  if (!Array.isArray(json[ 'disciplines' ]) || !json[ 'disciplines' ].every(isDiscipline)) {
+  if (!Array.isArray(json['disciplines']) || !json['disciplines'].every(isDiscipline)) {
     throw new Error("Expected an array of Disciplines 'disciplines'")
   }
-  const disciplines = json[ 'disciplines' ];
+  const disciplines = json['disciplines'];
 
   return {
     ...baseParams,
-    name: json[ 'name' ],
-    email: json[ 'email' ],
+    name: json['name'],
+    email: json['email'],
     baseCampus,
 
     roles,
@@ -150,8 +151,8 @@ export interface UserQuery extends ModelQuery<User> {
   email?: string;
 }
 
-export function userQueryToHttpParams(query: UserQuery): HttpParams {
-  let params = new HttpParams();
+export function setUserQueryParams(params: HttpParams, query: Partial<UserQuery>): HttpParams {
+  params = setModelQueryParams(params, query);
   if (query.includeRoles) {
     params = params.set('include_roles', query.includeRoles.join(','));
   }
@@ -183,15 +184,15 @@ export class CurrentUser extends User implements CurrentUserParams {
 function currentUserFromJsonObject(json: JsonObject): CurrentUser {
   const userParams = userParamsFromJsonObject(json);
 
-  if (!isJsonObject(json[ 'labs' ])) {
+  if (!isJsonObject(json['labs'])) {
     throw new Error("Expected a json object 'labs'")
   }
-  const labs = modelIndexPageFromJsonObject(labFromJsonObject, json[ 'labs' ]);
+  const labs = modelIndexPageFromJsonObject(labFromJsonObject, json['labs']);
 
-  if (!isJsonObject(json[ 'plans' ])) {
+  if (!isJsonObject(json['plans'])) {
     throw new Error("Expected a json object 'plans'");
   }
-  const plans = modelIndexPageFromJsonObject(researchPlanFromJsonObject, json[ 'plans' ]);
+  const plans = modelIndexPageFromJsonObject(researchPlanFromJsonObject, json['plans']);
 
   return new CurrentUser({
     ...userParams,
@@ -226,25 +227,25 @@ export class TemporaryAccessUser extends User implements TemporaryAccessUserPara
 function temporaryAccessUserFromJsonObject(json: JsonObject) {
   const userParams = userParamsFromJsonObject(json);
 
-  if (typeof json[ 'tokenExpiresAt' ] !== 'string') {
+  if (typeof json['tokenExpiresAt'] !== 'string') {
     throw new Error("Expected a string 'tokenExpiresAt'")
   }
-  if (typeof json[ 'tokenExpired' ] !== 'boolean') {
+  if (typeof json['tokenExpired'] !== 'boolean') {
     throw new Error("Expected a boolean 'tokenExpired'")
   }
-  if (typeof json[ 'tokenConsumedAt' ] !== 'string' && json[ 'tokenConsumedAt' ] !== null) {
+  if (typeof json['tokenConsumedAt'] !== 'string' && json['tokenConsumedAt'] !== null) {
     throw new Error("Expected a string or null 'tokenConsumedAt'");
   }
-  if (typeof json[ 'tokenConsumed' ] !== 'boolean') {
+  if (typeof json['tokenConsumed'] !== 'boolean') {
     throw new Error("Expected a boolean 'tokenConsumed'");
   }
 
   return new TemporaryAccessUser({
     ...userParams,
-    tokenExpiresAt: parseISO(json[ 'tokenExpiresAt' ]),
-    tokenIsExpired: json[ 'tokenExpired' ],
-    tokenConsumedAt: json[ 'tokenConsumedAt' ] ? parseISO(json[ 'tokenConsumedAt' ]) : null,
-    tokenIsConsumed: json[ 'tokenConsumed' ]
+    tokenExpiresAt: parseISO(json['tokenExpiresAt']),
+    tokenIsExpired: json['tokenExpired'],
+    tokenConsumedAt: json['tokenConsumedAt'] ? parseISO(json['tokenConsumedAt']) : null,
+    tokenIsConsumed: json['tokenConsumed']
   });
 }
 
@@ -275,19 +276,19 @@ export interface CreateTemporaryUserResult {
 }
 
 function createTemporaryUserResultFromJsonObject(json: JsonObject): CreateTemporaryUserResult {
-  if (typeof json[ 'token' ] !== 'string') {
+  if (typeof json['token'] !== 'string') {
     throw new Error("Expected a string 'token'");
   }
-  if (typeof json[ 'tokenExpiresAt' ] !== 'string') {
+  if (typeof json['tokenExpiresAt'] !== 'string') {
     throw new Error("Expected a string 'tokenExpiresAt'")
   }
-  if (!isJsonObject(json[ 'user' ])) {
+  if (!isJsonObject(json['user'])) {
     throw new Error("Expected a json object 'user'");
   }
   return {
-    token: json[ 'token' ],
-    tokenExpiresAt: parseISO(json[ 'tokenExpiresAt' ]),
-    user: userFromJsonObject(json[ 'user' ])
+    token: json['token'],
+    tokenExpiresAt: parseISO(json['tokenExpiresAt']),
+    user: userFromJsonObject(json['user'])
   };
 }
 
@@ -302,9 +303,7 @@ export class UserService extends RestfulService<User, UserQuery> {
   override readonly path: string = '/users';
 
   override readonly modelFromJsonObject = userFromJsonObject;
-  override readonly modelQueryToHttpParams = userQueryToHttpParams;
-  override createToJsonObject = undefined;
-  override updateToJsonObject = undefined;
+  override readonly setModelQueryParams = setUserQueryParams;
 
   me(): Observable<CurrentUser> {
     return this._httpClient

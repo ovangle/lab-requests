@@ -1,5 +1,5 @@
 import { Injectable, Type, inject } from "@angular/core";
-import { Model, ModelIndexPage, ModelParams, ModelQuery, modelParamsFromJsonObject } from "src/app/common/model/model";
+import { Model, ModelIndexPage, ModelParams, ModelQuery, modelParamsFromJsonObject, setModelQueryParams } from "src/app/common/model/model";
 import { ModelService, RestfulService } from "src/app/common/model/model-service";
 import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
 import { ResearchPlan } from "../research-plan";
@@ -68,51 +68,51 @@ export class ResearchPlanTask extends Model implements ResearchPlanTaskParams {
 export function researchPlanTaskFromJson(json: JsonObject): ResearchPlanTask {
   const baseParams = modelParamsFromJsonObject(json);
 
-  if (typeof json[ 'planId' ] !== 'string') {
+  if (typeof json['planId'] !== 'string') {
     throw new Error("Expected a string 'planId'");
   }
 
-  if (typeof json[ 'index' ] !== 'number') {
+  if (typeof json['index'] !== 'number') {
     throw new Error("ResearchPlanTask: 'index' must be an number");
   }
 
-  if (typeof json[ 'description' ] !== 'string') {
+  if (typeof json['description'] !== 'string') {
     throw new Error("ResearchPlanTask: Expected a string 'description'");
   }
 
-  if (typeof json[ 'startDate' ] !== 'string' && json[ 'startDate' ] !== null) {
+  if (typeof json['startDate'] !== 'string' && json['startDate'] !== null) {
     throw new Error("ResearchPlanTask: 'startDate' must be a string or null");
   }
-  const startDate = json[ 'startDate' ] ? parseISO(json[ 'startDate' ]) : null;
-  if (typeof json[ 'endDate' ] !== 'string' && json[ 'endDate' ] !== null) {
+  const startDate = json['startDate'] ? parseISO(json['startDate']) : null;
+  if (typeof json['endDate'] !== 'string' && json['endDate'] !== null) {
     throw new Error("ResearchPlanTask: 'endDate' must be a string or null");
   }
-  const endDate = json[ 'endDate' ] ? parseISO(json[ 'endDate' ]) : null;
+  const endDate = json['endDate'] ? parseISO(json['endDate']) : null;
 
   let lab: Lab | string;
-  if (isJsonObject(json[ 'labId' ])) {
-    lab = labFromJsonObject(json[ 'labId' ]);
-  } else if (typeof json[ 'labId' ] === 'string') {
-    lab = json[ 'labId' ]
+  if (isJsonObject(json['labId'])) {
+    lab = labFromJsonObject(json['labId']);
+  } else if (typeof json['labId'] === 'string') {
+    lab = json['labId']
   } else {
     throw new Error("Expected a json object or string 'labId'");
   }
   let supervisor: User | string;
-  if (isJsonObject(json[ 'supervisorId' ])) {
-    supervisor = userFromJsonObject(json[ 'supervisorId' ]);
-  } else if (typeof json[ 'supervisorId' ] === 'string') {
-    supervisor = json[ 'supervisorId' ]
+  if (isJsonObject(json['supervisorId'])) {
+    supervisor = userFromJsonObject(json['supervisorId']);
+  } else if (typeof json['supervisorId'] === 'string') {
+    supervisor = json['supervisorId']
   } else {
     throw new Error("Expected a json object or string 'supervisorId'");
   }
 
   return new ResearchPlanTask({
     ...baseParams,
-    planId: json[ 'planId' ],
-    description: json[ 'description' ],
+    planId: json['planId'],
+    description: json['description'],
     startDate,
     endDate,
-    index: json[ 'index' ],
+    index: json['index'],
     lab,
     supervisor
   });
@@ -122,8 +122,9 @@ export interface ResearchPlanTaskQuery extends ModelQuery<ResearchPlanTask> {
 
 }
 
-function researchPlanTaskQueryToHttpParams(query: ResearchPlanTaskQuery): HttpParams {
-  return new HttpParams();
+function setResearchPlanTaskQueryParams(params: HttpParams, query: Partial<ResearchPlanTaskQuery>): HttpParams {
+  params = setModelQueryParams(params, query);
+  return params;
 }
 
 export interface CreateResearchPlanTask {
@@ -165,7 +166,7 @@ export function researchPlanTaskSliceToJson(slice: ResearchPlanTaskSlice): JsonO
 export class ResearchPlanTaskService extends RelatedModelService<ResearchPlan, ResearchPlanTask, ResearchPlanTaskQuery> {
   override readonly context = inject(ResearchPlanContext);
   override readonly modelFromJsonObject = researchPlanTaskFromJson;
-  override readonly modelQueryToHttpParams = researchPlanTaskQueryToHttpParams;
+  override readonly setModelQueryParams = setResearchPlanTaskQueryParams;
   override readonly path = 'tasks';
 
 }

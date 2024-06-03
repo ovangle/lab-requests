@@ -1,6 +1,6 @@
-import { Component, DestroyRef, Input, Output, inject } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, Input, Output, computed, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormControl, FormGroup, ReactiveFormsModule, ValidationErrors } from '@angular/forms';
+import { ControlContainer, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { CurrencyInputComponent } from 'src/app/common/currency/currency-input.component';
 import { MeasurementUnitPipe } from 'src/app/common/measurement/common-measurement-unit.pipe';
@@ -10,6 +10,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { CostEstimate } from './cost-estimate';
 import {
   Observable,
+  combineLatest,
   defer,
   filter,
   map,
@@ -20,6 +21,41 @@ import { UnitOfMeasurement } from 'src/app/common/measurement/measurement';
 import { MatInputModule } from '@angular/material/input';
 import { CostEstimatePipe } from './cost-estimate.pipe';
 import { ResearchFundingSelectComponent } from '../research-funding-select.component';
+import { modelId } from 'src/app/common/model/model';
+import { toObservable } from '@angular/core/rxjs-interop';
+
+export type CostEstimateFormGroup = FormGroup<{
+  funding: FormControl<ResearchFunding | null>;
+  perUnitCost: FormControl<number>
+}>;
+
+export function costEstimateFormGroup(
+  defaultFunding: ResearchFunding | null | undefined
+): CostEstimateFormGroup {
+  return new FormGroup({
+    funding: new FormControl<ResearchFunding | null>(defaultFunding || null),
+    perUnitCost: new FormControl(0, { nonNullable: true })
+  });
+}
+
+export function costEstimateFromFormValue(
+  value: CostEstimateFormGroup['value'],
+  context: {
+    quantityRequired: [number, UnitOfMeasurement]
+  }
+): CostEstimate {
+  const [numRequired, unit] = context.quantityRequired;
+  return {
+    funding: value.funding!,
+    perUnitCost: value.perUnitCost!,
+    numRequired,
+    unit
+  };
+}
+
+export function isCostEstimateFormGroup(obj: unknown): obj is CostEstimateFormGroup {
+  return obj instanceof FormGroup;
+}
 
 @Component({
   selector: 'research-funding-cost-estimate-form',
@@ -42,161 +78,93 @@ import { ResearchFundingSelectComponent } from '../research-funding-select.compo
     <form [formGroup]="_form">
       <h4><ng-content select=".title"></ng-content></h4>
 
-      @if (!_funding) {
-        <research-funding-select formControlName="funding" />
+      <research-funding-select formControlName="funding" />
+
+      @if (!isProjectFundingSelected) {
+        <div class="warning-text">
+          This cost will not be included in the current plan
+          funding.
+        </div>
       }
 
-      @if (funding) {
-        <mat-checkbox formControlName="isUniversitySupplied">
-          Include {{ name }} in {{ funding!.name | lowercase }} budget
-        </mat-checkbox>
-      }
+      <common-currency-input formControlName="perUnitCost">
+        <mat-label>Cost</mat-label>
 
-      @if (includeInProjectFunding) {
-        @if (!isFixedPerUnitCost) {
-          <common-currency-input formControlName="perUnitCost">
-            <mat-label>Cost</mat-label>
+        <span matTextSuffix>
+          per 
+          <span [innerHTML]="unitOfMeasurement() | commonMeasurementUnit"></span>
+        </span>
 
-            @if (unitOfMeasurement) {
-              <span matTextSuffix>
-                per
-                <span
-                  [innerHTML]="unitOfMeasurement | commonMeasurementUnit"
-                ></span>
-              </span>
-            }
-
-            @if (perUnitCostErrors) {
-              <mat-error>{{perUnitCostErrors | json}}</mat-error>
-            }
-
-          </common-currency-input>
+        @if (perUnitCostErrors) {
+          <mat-error>{{perUnitCostErrors | json}}</mat-error>
         }
+      </common-currency-input>
 
-        @if (!isFixedQuantityRequired) {
-          <mat-form-field>
-            <mat-label>Quantity required</mat-label>
-            <input matInput type="number" formControlName="quantityRequired" />
-
-            @if (unitOfMeasurement) {
-              <span matTextSuffix>
-                <span
-                  [innerHTML]="unitOfMeasurement | commonMeasurementUnit"
-                ></span>
-              </span>
-            }
-          </mat-form-field>
-        }
-
+      <div>
         <div class="total-amount">Total</div>
-          <div>
-            <span [innerHTML]="value | uniCostEstimate: 'full'"></span>
-          </div>
-      } @else {
-        <p>Will be supplied by researcher</p>
-      }
-    </form>
+        <div>
+          <span [innerHTML]="(value || null) | uniCostEstimate: 'full'"></span>
+        </div>
+      </div>
+   </form>
   `,
 })
 export class ResearchFundingCostEstimateFormComponent {
-  readonly _form = new FormGroup({
-    funding: new FormControl<ResearchFunding | null>(null),
-    isUniversitySupplied: new FormControl(true, { nonNullable: true }),
-    unit: new FormControl<UnitOfMeasurement>('item', { nonNullable: true }),
-    perUnitCost: new FormControl(0, { nonNullable: true }),
-    quantityRequired: new FormControl<number>(1, { nonNullable: true }),
+  _controlContainer = inject(ControlContainer, { optional: true });
+
+  get _form(): CostEstimateFormGroup {
+    if (isCostEstimateFormGroup(this._controlContainer?.control)) {
+      return this._controlContainer?.control;
+    }
+    throw new Error('cost-estimate form cannot be standalone')
+  }
+
+  funding = input<ResearchFunding>();
+  quantityRequired = input<[number, string]>([1, 'item']);
+
+  numRequired = computed(() => this.quantityRequired()[0]);
+  unitOfMeasurement = computed(() => this.quantityRequired()[1]);
+
+  totalCost$ = combineLatest([
+    toObservable(this.quantityRequired),
+    this._form.valueChanges.pipe(
+      filter(() => this._form.valid),
+      map(value => value.perUnitCost!),
+      startWith(0)
+    )
+  ]).pipe(
+    map(([[numRequired, unitOfMeasurement], perUnitCost]) => {
+      return [numRequired * perUnitCost, unitOfMeasurement] as [number, string];
+    })
+  )
+  totalCost = computed(() => {
+    const [numRequired, unitOfMeasurement] = this.quantityRequired();
+    const perUnitCost = this._form.value.perUnitCost!;
+    return [perUnitCost * numRequired, unitOfMeasurement]
   });
 
-  get value(): CostEstimate {
-    return this._form.value as CostEstimate;
+  save = new EventEmitter<CostEstimate>();
+
+  get value(): CostEstimate | undefined {
+    if (!this._form.valid) {
+      return undefined;
+    }
+
+    return costEstimateFromFormValue(
+      this._form.value,
+      { quantityRequired: this.quantityRequired() }
+    );
   }
 
-  @Input()
-  name: string | undefined;
-
-  @Input()
-  get funding(): ResearchFunding | null {
-    return this._form.value.funding || null;
+  get isProjectFundingSelected() {
+    const selectedFunding = this._form.value.funding;
+    return modelId(selectedFunding) === modelId(this.funding());
   }
-  set funding(funding: ResearchFunding | null) {
-    this._funding = funding;
-    this._form.patchValue({ funding });
-  }
-  _funding: ResearchFunding | null = null;
-
-  @Input()
-  get quantityRequired(): number {
-    return this._form!.value.quantityRequired!;
-  }
-  set quantityRequired(quantityRequired: NumberInput) {
-    this._isFixedQuantityRequired = true;
-    quantityRequired = coerceNumberProperty(quantityRequired);
-    this._form!.patchValue({ quantityRequired });
-  }
-  _isFixedQuantityRequired = false;
-  get isFixedQuantityRequired() {
-    return this._isFixedQuantityRequired;
-  }
-
-  @Input()
-  get perUnitCost(): number {
-    return this._form!.value.perUnitCost!;
-  }
-  set perUnitCost(perUnitCost: NumberInput) {
-    this._isFixedPerUnitCost = true;
-    perUnitCost = coerceNumberProperty(perUnitCost);
-    this._form!.patchValue({ perUnitCost });
-  }
-
-  _isFixedPerUnitCost = false;
-  get isFixedPerUnitCost() {
-    return this._isFixedPerUnitCost;
-  }
-
-  @Output()
-  readonly costEstimateChange: Observable<CostEstimate> = this._form.valueChanges.pipe(
-    filter(() => this._form.valid),
-    map((value) => ({
-      ...value,
-      unit: this.unitOfMeasurement
-    } as CostEstimate)),
-    shareReplay(1)
-  );
 
   get perUnitCostErrors(): ValidationErrors | null {
     if (!this._form!.valid) {
       debugger;
     }
     return this._form!.controls.perUnitCost.errors;
-  }
-
-  @Input({ required: true })
-  get unitOfMeasurement(): UnitOfMeasurement {
-    return this._form.value.unit!;
-  }
-  set unitOfMeasurement(unit: UnitOfMeasurement) {
-    this._form.patchValue({ unit });
-  }
-
-  get isSuppliedByUni() {
-    return this._form!.controls.isUniversitySupplied.value;
-  }
-
-  get includeInProjectFunding(): boolean {
-    return !!this._form!.value.isUniversitySupplied;
-  }
-
-  _totalCost: CostEstimate | undefined;
-  get totalCost(): CostEstimate {
-    return this._totalCost!;
-  }
-
-  ngOnInit() {
-    if (this.isFixedPerUnitCost) {
-      this._form!.controls[ 'perUnitCost' ].disable();
-    }
-    if (this.isFixedQuantityRequired) {
-      this._form!.controls[ 'quantityRequired' ].disable();
-    }
   }
 }

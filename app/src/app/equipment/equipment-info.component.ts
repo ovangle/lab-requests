@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
@@ -9,8 +9,12 @@ import { EquipmentTrainingAcknowlegementComponent } from './training/training-ac
 import { EquipmentTrainingDescriptionsInfoComponent } from './training/training-descriptions-info.component';
 import { Equipment } from './equipment';
 
+export type EquipmentInfoDisplay
+  = 'list-item'
+  | 'name-only';
+
 @Component({
-  selector: 'lab-equipment-info',
+  selector: 'equipment-info',
   standalone: true,
   imports: [
     CommonModule,
@@ -23,14 +27,15 @@ import { Equipment } from './equipment';
   ],
   template: `
     <h1>
-      {{ equipment!.name }}
-      <equipment-tag-chips [equipment]="equipment!">
+      {{ equipment().name }}
+      <equipment-tag-chips [equipment]="equipment()">
       </equipment-tag-chips>
     </h1>
   `,
   styles: [``],
 })
 export class EquipmentInfoComponent {
-  @Input() equipment: Equipment | undefined = undefined;
+  equipment = input.required<Equipment>();
+  display = input<EquipmentInfoDisplay>('list-item');
 
 }

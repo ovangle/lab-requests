@@ -15,14 +15,20 @@ const _STATIC_NODES: SidenavMenuNode[] = [
     type: 'link',
     title: 'Home',
     icon: 'home',
-    routerLink: [ '/user', 'home' ],
+    routerLink: ['/user', 'home'],
   },
   {
     type: 'link',
     title: 'Equipment',
     icon: 'build_circle',
-    routerLink: [ '/equipment' ]
+    routerLink: ['/equipment']
   },
+  {
+    type: 'link',
+    title: 'Software',
+    icon: 'build_circle',
+    routerLink: ['/software']
+  }
 ]
 
 @Injectable({ providedIn: 'root' })
@@ -67,14 +73,14 @@ export class SidenavMenuRoot {
           type: 'link',
           icon: 'add',
           title: 'New research plan',
-          routerLink: [ 'research', 'create' ]
+          routerLink: ['research', 'create']
         }
       ]
     }))
   );
 
-  readonly nodes$ = combineLatest([ this.labsGroup$, this.plansGroup$ ]).pipe(
-    map(([ labsGroup, plansGroup ]) => [
+  readonly nodes$ = combineLatest([this.labsGroup$, this.plansGroup$]).pipe(
+    map(([labsGroup, plansGroup]) => [
       ..._STATIC_NODES,
       labsGroup,
       plansGroup
@@ -86,13 +92,13 @@ export class SidenavMenuRoot {
     return {
       type: 'group',
       title: `${lab.campus.name} - ${formatDiscipline(lab.discipline)}`,
-      routerLink: [ `/lab/${lab.id}` ],
+      routerLink: [`/lab/${lab.id}`],
       children: [
         {
           type: 'link',
           title: 'Equipment',
           icon: 'build_circle',
-          routerLink: [ `/lab/${lab.id}/equipment` ],
+          routerLink: [`/lab/${lab.id}/equipment`],
         },
         /* {
           type: 'work',
@@ -109,7 +115,7 @@ export class SidenavMenuRoot {
     return {
       type: 'link',
       icon: '',
-      routerLink: [ `/research/plans/${plan.id}` ],
+      routerLink: [`/research/plans/${plan.id}`],
       title: `${plan.title}`
     }
   }

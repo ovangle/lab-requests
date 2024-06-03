@@ -39,7 +39,7 @@ export function createEquipmentProvisionForm(
     }),
     funding: new FormControl<ResearchFunding | null>(null, {
       validators: (c) => {
-        const isFundingRequired = [ 'requested', 'installed' ].includes(c.parent?.value.status!);
+        const isFundingRequired = ['requested', 'installed'].includes(c.parent?.value.status!);
         if (isFundingRequired) {
           return Validators.required(c)
         }
@@ -50,7 +50,7 @@ export function createEquipmentProvisionForm(
     cost: new FormControl<number | null>(null),
     quantityRequired: new FormControl<number>(1, {
       nonNullable: true,
-      validators: [ Validators.required, Validators.min(1) ]
+      validators: [Validators.required, Validators.min(1)]
     })
   });
 }
@@ -99,22 +99,20 @@ export function createEquipmentProvisionForm(
             There can be at most one active provision per lab
             so must update the current provision somehow.
           -->
-          <equipment-provision-info [equipmentProvision]="activeProvision" />
-        } @else if (currentLabInstallation$ | async) {
+          <equipment-provision-info [provision]="activeProvision" />
+        } @else {
+          @if (currentLabInstallation$ | async; as installation) {
           <!-- 
             there is an existing installation, so can add additional
             items, but they must go through provisioning
           -->
-          <equipment-installation-info [equipment]="$any(equipment)" 
+          <equipment-installation-info [installation]="installation"  
                                        [lab]="provisionLab" />
-
           
-        } @else {
           <!--
             It is possible we are just belatedly adding a piece of equipment
             which already exists in the lab, so provision process might be
             skipped entirely
-          -->
 
           <p>The equipment: </p>
           <mat-radio-group formControlName="status">
@@ -127,6 +125,7 @@ export function createEquipmentProvisionForm(
               but has not been added previously.
             </mat-radio-button>
           </mat-radio-group>
+          -->
         }
 
         <mat-form-field>
@@ -145,10 +144,9 @@ export function createEquipmentProvisionForm(
 
             @if (funding) {
               <research-funding-cost-estimate-form 
-                [quantityRequired]="form.value.quantityRequired" 
-                [funding]="funding" 
-                unitOfMeasurement="item" 
-                (costEstimateChange)="_onCostEstimateChange($event)" />
+                [funding]="funding"
+                [quantityRequired]="[form.value.quantityRequired!, 'item']" 
+              />
             }
           }
           @case ('installed') {
@@ -236,7 +234,7 @@ export class CreateEquipmentProvisionFormComponent {
     this.equipment$,
     this.provisionLab$
   ]).pipe(
-    map(([ equipment, lab ]) => {
+    map(([equipment, lab]) => {
       if (equipment instanceof Equipment && lab instanceof Lab) {
         return equipment.activeProvision(lab)
       }
@@ -248,7 +246,7 @@ export class CreateEquipmentProvisionFormComponent {
     this.equipment$,
     this.provisionLab$,
   ]).pipe(
-    map(([ equipment, lab ]) => {
+    map(([equipment, lab]) => {
       if (equipment instanceof Equipment) {
         return equipment.currentLabInstallation(lab);
       }
@@ -300,7 +298,7 @@ export class CreateEquipmentProvisionFormComponent {
 
   _onCostEstimateChange(estimate: CostEstimate) {
     this.form.patchValue({
-      quantityRequired: estimate.quantityRequired,
+      quantityRequired: estimate.numRequired,
       cost: estimate.perUnitCost
     })
   }

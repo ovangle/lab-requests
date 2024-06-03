@@ -47,7 +47,7 @@ export function resourceStorageForm(): ResourceStorageForm {
     }),
     description: new FormControl<string>('', {
       nonNullable: true,
-      validators: [ Validators.required ],
+      validators: [Validators.required],
     }),
     hasCostEstimates: new FormControl(false, { nonNullable: true }),
     estimatedCost: new FormControl<number>(0, { nonNullable: true }),
@@ -55,7 +55,7 @@ export function resourceStorageForm(): ResourceStorageForm {
 }
 
 export function resourceStorageFromFormValue(
-  value: ResourceStorageForm[ 'value' ],
+  value: ResourceStorageForm['value'],
 ): ResourceStorage {
   const description =
     value.type === 'other' ? value.description : value.type!;
@@ -125,11 +125,7 @@ export function patchResourceStorageFormValue(
       @if (funding) {
         <research-funding-cost-estimate-form
           [funding]="funding"
-          name="storage costs"
-          [perUnitCost]="perWeekStorageCost"
-          [quantityRequired]="numWeeksInProject"
-          unitOfMeasurement="weeks"
-          (costEstimateChange)="_onCostEstimateChange($event)"
+          [quantityRequired]="[numWeeksInProject, 'week']"
         />
      }
     </ng-container>
@@ -166,8 +162,8 @@ export class ResourceStorageFormComponent {
   storageEndDate: Date | null = null;
 
   ngOnChanges(changes: SimpleChanges) {
-    const storageStartDate = changes[ 'storageStartDate' ];
-    const storageEndDate = changes[ 'storageEndDate' ];
+    const storageStartDate = changes['storageStartDate'];
+    const storageEndDate = changes['storageEndDate'];
     if (storageStartDate || storageEndDate) {
       const hasCostEstimates =
         storageStartDate.currentValue && storageEndDate.currentValue;

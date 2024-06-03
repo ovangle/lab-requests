@@ -1,20 +1,17 @@
 import { CommonModule } from "@angular/common"
-import { Component, Input, assertInInjectionContext } from "@angular/core"
-import { Form, FormArray, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from "@angular/forms"
-import { ResearchPlan } from "../research-plan"
+import { Component, Input } from "@angular/core"
+import { FormArray, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from "@angular/forms"
+
+import { BooleanInput, NumberInput, coerceBooleanProperty, coerceNumberProperty } from "@angular/cdk/coercion";
 import { MatInputModule } from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { ResearchPlanTaskParams, CreateResearchPlanTask, ResearchPlanTaskSlice } from "./research-plan-task";
 import { Lab } from "src/app/lab/lab";
 import { User } from "src/app/user/common/user";
 import { MatDatepickerModule } from "@angular/material/datepicker";
-import { BooleanInput, NumberInput, coerceBooleanProperty, coerceNumberProperty } from "@angular/cdk/coercion";
 import { UserSearchComponent } from "src/app/user/common/user-search.component";
 import { LabSearchComponent } from "src/app/lab/lab-search.component";
 import { ResizeTextareaOnInputDirective } from "src/app/common/forms/resize-textarea-on-input.directive";
-import { Discipline } from "src/app/uni/discipline/discipline";
-import { Campus } from "src/app/uni/campus/campus";
-import { format } from "date-fns";
 
 
 export type ResearchPlanTaskForm = FormGroup<{
@@ -29,7 +26,7 @@ export function researchPlanTaskForm(task?: ResearchPlanTaskParams): ResearchPla
   return new FormGroup({
     description: new FormControl(
       task?.description || '',
-      { nonNullable: true, validators: [ Validators.required ] }
+      { nonNullable: true, validators: [Validators.required] }
     ),
     startDate: new FormControl<Date | null>(task?.startDate || null),
     endDate: new FormControl<Date | null>(task?.endDate || null),
@@ -63,7 +60,7 @@ export function researchPlanTaskSlicesFromFormArray(arr: FormArray<ResearchPlanT
     if (!control.touched) {
       return [];
     }
-    return [ { startIndex: index, endIndex: index + 1, items: [ createResearchPlanTaskFromForm(control) ] } ];
+    return [{ startIndex: index, endIndex: index + 1, items: [createResearchPlanTaskFromForm(control)] }];
   })
 
   const mergedSlices = [];
@@ -77,7 +74,7 @@ export function researchPlanTaskSlicesFromFormArray(arr: FormArray<ResearchPlanT
       currentSlice = {
         startIndex: currentSlice.startIndex,
         endIndex: slice.endIndex,
-        items: [ ...currentSlice.items, ...slice.items ]
+        items: [...currentSlice.items, ...slice.items]
       }
     } else {
       mergedSlices.push(currentSlice);
@@ -238,7 +235,7 @@ export class ResearchPlanTaskFormComponent {
   }
 
   get technicianRoles() {
-    const roles = new Set([ 'lab-tech' ]);
+    const roles = new Set(['lab-tech']);
     const lab = this.form?.value.lab;
 
     if (lab) {
