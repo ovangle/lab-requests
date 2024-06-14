@@ -16,6 +16,8 @@ import {
 } from './oauth-provider';
 import { OauthFlowStateStore } from './flow/flow-state-store.service';
 import { injectRedirectToPublic, injectRedirectToUserHomePage } from './utils';
+import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
+import { InvalidCredentials } from './loigin-error';
 
 @Injectable({ providedIn: 'root' })
 export class LoginContext {
@@ -100,7 +102,7 @@ export class LoginContext {
     }
   }
 
-  readonly _flows: { [K in OauthGrantType]: OauthFlowFactory<K> } = {
+  readonly _flows: { [ K in OauthGrantType ]: OauthFlowFactory<K> } = {
     password: inject(ResourceOwnerPasswordCredentialsFlowFactory),
     authorization_code: inject(AuthorizationCodeFlowFactory),
     refresh_token: inject(RefreshTokenFlowFactory),
@@ -113,7 +115,7 @@ export class LoginContext {
   getFlow<GrantType extends OauthGrantType>(
     grantType: GrantType,
   ): AbstractOauthFlow<GrantType> {
-    return this._flows[grantType].get(this.currentProviderParams);
+    return this._flows[ grantType ].get(this.currentProviderParams);
   }
 
   async beginFlow<GrantType extends OauthGrantType>(

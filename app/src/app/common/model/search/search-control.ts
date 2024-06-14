@@ -29,7 +29,7 @@ export function provideModelSearchValueAccessor<T extends ModelSearchComponent<a
         provide: NG_VALUE_ACCESSOR,
         multi: true,
         useFactory: (component: T) => component.searchControl,
-        deps: [componentType]
+        deps: [ componentType ]
     };
 
 }
@@ -62,7 +62,7 @@ export class ModelSearchControl<T extends Model, TQuery extends ModelQuery<T> = 
             } else if (is_NOT_FOUND(search)) {
                 return of([]);
             } else {
-                return of([search]);
+                return of([ search ]);
             }
         }),
         shareReplay(1)
@@ -71,9 +71,15 @@ export class ModelSearchControl<T extends Model, TQuery extends ModelQuery<T> = 
     _searchInput$: Observable<string> = this.searchControl.valueChanges.pipe(
         filter((value): value is string => typeof value === 'string'),
     );
+    get searchInput() {
+        return this.searchControl.value!;
+    }
+    setSearchInput(searchInput: string) {
+        this.searchControl.setValue(searchInput);
+    }
 
     query$: Observable<Partial<TQuery>> = this._searchInput$.pipe(
-        map(search => ({ search }))
+        map(search => ({ search } as Partial<TQuery>))
     );
 
     value$: Observable<T | NotFoundValue> = this.searchControl.valueChanges.pipe(
@@ -81,7 +87,7 @@ export class ModelSearchControl<T extends Model, TQuery extends ModelQuery<T> = 
             return typeof value !== 'string' || is_NOT_FOUND(value)
         }),
         withLatestFrom(this._searchInput$),
-        map(([value, searchInput]) => {
+        map(([ value, searchInput ]) => {
             console.log('value', value, 'searchInput', searchInput)
             return is_NOT_FOUND(value) ? new NotFoundValue(searchInput) : value as T
         }),

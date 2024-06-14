@@ -7,7 +7,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import {
   Equipment,
   EquipmentService,
-  equipmentQueryToHttpParams,
 } from './equipment';
 import { Lab } from '../lab/lab';
 import { ModelSearchAutocompleteComponent } from 'src/app/common/model/search/search-autocomplete.component';

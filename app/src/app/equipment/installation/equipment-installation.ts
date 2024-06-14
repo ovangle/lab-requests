@@ -44,13 +44,13 @@ export function equipmentInstallationFromJsonObject(json: JsonObject): Equipment
         json
     );
 
-    if (typeof json['numInstalled'] !== 'number') {
+    if (typeof json[ 'numInstalled' ] !== 'number') {
         throw new Error(`Expected a number 'numInstalled'`);
     }
 
     return new EquipmentInstallation({
         ...baseParams,
-        numInstalled: json['numInstalled']
+        numInstalled: json[ 'numInstalled' ]
     });
 }
 
@@ -58,7 +58,7 @@ export interface EquipmentInstallationQuery extends LabInstallationQuery<Equipme
     equipment?: ModelRef<Equipment>;
 }
 
-function setEquipmentInstallationQueryParams(params: HttpParams, query: EquipmentInstallationQuery) {
+export function setEquipmentInstallationQueryParams(params: HttpParams, query: EquipmentInstallationQuery) {
     params = setLabInstallationQueryParams(params, query, 'equipment');
     if (query.equipment) {
         params = params.set('equipment', modelId(query.equipment));

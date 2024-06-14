@@ -29,13 +29,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { EquipmentTagInputComponent } from './tag/equipment-tag-input.component';
 import { EquipmentTrainingDescriptionsInputComponent } from './training/training-descriptions-input.component';
-import { Equipment, EquipmentUpdateRequest, EquipmentService, equipmentQueryToHttpParams, EquipmentCreateRequest } from './equipment';
+import { Equipment, EquipmentUpdateRequest, EquipmentService, EquipmentCreateRequest } from './equipment';
 import { ResizeTextareaOnInputDirective } from 'src/app/common/forms/resize-textarea-on-input.directive';
-import { EquipmentContext } from 'src/app/equipment/equipment-context';
-import { HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subscription, debounceTime, distinctUntilChanged, firstValueFrom, map, of, shareReplay, switchMap } from 'rxjs';
 import { EquipmentSearchComponent } from './equipment-search.component';
-import { NotFoundValue } from '../common/model/search/search-control';
 import { RouterModule } from '@angular/router';
 
 export interface EquipmentFormControls {

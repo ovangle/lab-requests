@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { Component, Input, TemplateRef, inject } from "@angular/core";
+import { Component, Input, TemplateRef, effect, inject, input, model } from "@angular/core";
 import { NG_VALUE_ACCESSOR, ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { Observable } from "rxjs";
@@ -9,8 +9,10 @@ import { Campus } from "../uni/campus/campus";
 import { HttpParams } from "@angular/common/http";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 import { ModelSearchInputComponent } from "../common/model/search/search-input-field.component";
-import { ModelSearchComponent, ModelSearchControl, provideModelSearchValueAccessor } from "../common/model/search/search-control";
+import { ModelSearchComponent, ModelSearchControl, NotFoundValue, provideModelSearchValueAccessor } from "../common/model/search/search-control";
 import { ModelSearchAutocompleteComponent } from "../common/model/search/search-autocomplete.component";
+import { ModelRef } from "../common/model/model";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 @Component({
     selector: 'lab-search',
@@ -30,7 +32,7 @@ import { ModelSearchAutocompleteComponent } from "../common/model/search/search-
             <ng-content select="mat-label"></ng-content>
         </mat-label>
 
-        <common-model-search-autocomplete [notFoundTemplate]="notFoundTemplate" />
+        <common-model-search-autocomplete [notFoundTemplate]="notFoundTemplate()" />
 
         <mat-error>
             <ng-content select="mat-error" />
@@ -49,36 +51,35 @@ export class LabSearchComponent implements ModelSearchComponent<Lab> {
         (lab) => this._displayLab(lab)
     );
 
-    @Input()
-    campus: Campus | undefined;
+    value = model<Lab | NotFoundValue | undefined>();
 
-    @Input()
-    discipline: Discipline | undefined;
-
-    @Input()
-    notFoundTemplate: TemplateRef<unknown> | undefined;
-
-    @Input()
-    get allowNotFound(): boolean {
-        return this._allowNotFound;
-    }
-    set allowNotFound(value: BooleanInput) {
-        this._allowNotFound = coerceBooleanProperty(value);
-    }
-    _allowNotFound = false;
-
-    getModelOptions(searchValue: string): Observable<Lab[]> {
-        let params = new HttpParams({
-            fromObject: { search: searchValue || '' }
+    constructor() {
+        this.searchControl.value$.pipe(
+            takeUntilDestroyed()
+        ).subscribe(value => this.value.set(value));
+        effect(() => {
+            const lab = this.value();
+            if (lab instanceof NotFoundValue && lab.searchInput !== this.searchControl.searchInput) {
+                this.searchControl.setSearchInput(lab.searchInput);
+            }
+            if (lab instanceof Lab) {
+                this.searchControl.writeValue(lab);
+            }
         });
-        if (this.campus) {
-            params = params.set('campus', this.campus.id);
-        }
-        if (this.discipline) {
-            params = params.set('discipline', this.discipline);
-        }
+    }
 
-        return this.labs.query(params);
+    campus = input<ModelRef<Campus> | ModelRef<Campus>[]>();
+    discipline = input<Discipline | Discipline[]>([]);
+
+    notFoundTemplate = input<TemplateRef<unknown>>();
+    allowNotFound = input(false, { transform: coerceBooleanProperty });
+
+    getModelOptions(search: string): Observable<Lab[]> {
+        return this.labs.query({
+            campus: this.campus(),
+            discipline: this.discipline(),
+            search
+        });
     }
 
     _displayLab(lab: Lab) {

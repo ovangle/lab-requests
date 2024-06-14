@@ -1,5 +1,5 @@
 import { Component, inject, input } from "@angular/core";
-import { AbstractLabProvisionCreateFormComponent, LabProvisionCreateFormGroup, labProvisionCreateFormGroup, labProvisionCreateRequestFromFormValue } from "src/app/lab/common/provisionable/abstract-lab-provision-create-form.component";
+import { AbstractLabProvisionCreateFormComponent, LabProvisionCreateFormGroup, isLabProvisionCreateFormGroup, labProvisionCreateFormGroup, labProvisionCreateRequestFromFormValue } from "src/app/lab/common/provisionable/abstract-lab-provision-create-form.component";
 import { Software } from "../software";
 import { ControlContainer, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { SoftwareInstallation } from "../installation/software-installation";
@@ -13,10 +13,15 @@ import { toSignal } from "@angular/core/rxjs-interop";
 import { MatInput } from "@angular/material/input";
 import { CommonModule } from "@angular/common";
 import { ModelRef } from "src/app/common/model/model";
+import { ResearchFunding } from "src/app/research/funding/research-funding";
 
 export type UpgradeSoftwareVersionFormGroup = LabProvisionCreateFormGroup<{
     minVersion: FormControl<string>;
 }>;
+
+function isUpgradeSoftwareVersionFormGroup(obj: unknown): obj is UpgradeSoftwareVersionFormGroup {
+    return isLabProvisionCreateFormGroup([ 'minVersion' ], obj);
+}
 
 export function upgradeSoftwareVersionFormGroup(): UpgradeSoftwareVersionFormGroup {
     return labProvisionCreateFormGroup({
@@ -29,7 +34,7 @@ export function upgradeSoftwareVersionFormGroup(): UpgradeSoftwareVersionFormGro
 
 export function upgradeSoftwareVersionRequestFromFormValue(
     target: ModelRef<SoftwareInstallation>,
-    value: UpgradeSoftwareVersionFormGroup['value'],
+    value: UpgradeSoftwareVersionFormGroup[ 'value' ],
 ): UpgradeSoftwareVersionRequest {
     const labRequest = labProvisionCreateRequestFromFormValue(
         'upgrade_software',
@@ -72,47 +77,21 @@ export function upgradeSoftwareVersionRequestFromFormValue(
     </form>
     `
 })
-export class SoftwareUpgradeProvisionCreateFormComponent extends AbstractLabProvisionCreateFormComponent<SoftwareInstallation, SoftwareProvision, UpgradeSoftwareVersionFormGroup> {
+export class SoftwareUpgradeProvisionCreateFormComponent
+    extends AbstractLabProvisionCreateFormComponent<SoftwareProvision, UpgradeSoftwareVersionFormGroup, UpgradeSoftwareVersionRequest> {
+
 
     readonly _softwareProvisionService = inject(SoftwareProvisionService);
-    readonly _controlContainer = inject(ControlContainer, { optional: true });
 
-    currentInstallation = input.required<SoftwareInstallation>();
-
-    _isStandaloneForm = false;
-    get isStandaloneForm() { return this._isStandaloneForm; }
-
-    _form: UpgradeSoftwareVersionFormGroup | undefined;
-    override get form(): UpgradeSoftwareVersionFormGroup {
-        if (this._controlContainer?.control instanceof FormGroup) {
-            return this._controlContainer?.control;
-        }
-        if (this._form === undefined) {
-            this._form = upgradeSoftwareVersionFormGroup();
-            this._isStandaloneForm = true;
-        }
-        return this._form;
-    }
-
-    override createFromForm(form: UpgradeSoftwareVersionFormGroup): Observable<SoftwareProvision> {
-        if (!form.valid) {
-            throw new Error('Invalid form has no value');
-        }
-
-        const request = upgradeSoftwareVersionRequestFromFormValue(
-            this.currentInstallation(),
-            form.value,
-        );
-
-        return this._softwareProvisionService.upgradeVersion(request);
-    }
+    protected override __isFormGroupInstance = isUpgradeSoftwareVersionFormGroup;
+    protected override __createStandaloneForm = upgradeSoftwareVersionFormGroup;
+    protected override readonly __createRequestFromFormValue = upgradeSoftwareVersionRequestFromFormValue
 
     ngOnInit() {
         this.form.patchValue({
             numRequired: 1,
             unit: 'install',
             hasCostEstimates: false
-        });
+        }, { emitEvent: false });
     }
-
 }

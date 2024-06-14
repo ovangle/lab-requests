@@ -7,7 +7,7 @@ from db import get_db
 from db.models.uni import Campus
 from api.base.schemas import ModelIndexPage
 
-from .schemas import (
+from ..schemas.uni.schemas import (
     CampusIndexPage,
     CampusView,
     CampusIndex,

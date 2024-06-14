@@ -1,11 +1,6 @@
 __all__ = (
     "Lab",
     "LabDoesNotExist",
-    "LabEquipment",
-    "LabEquipmentDoesNotExist",
-    "LabEquipmentInstallation",
-    "LabEquipmentProvision",
-    "LabEquipmentProvisioningError",
     "LabResource",
     "LabResourceDoesNotExist",
     "LabSoftware",
@@ -18,16 +13,12 @@ __all__ = (
     "LabResource",
     "LabResourceDoesNotExist",
     "LabResourceContainer",
+    "ProvisionStatus",
 )
 
 from .lab import Lab, LabDoesNotExist
-from .lab_equipment import (
-    LabEquipment,
-    LabEquipmentDoesNotExist,
-    LabEquipmentInstallation,
-    LabEquipmentProvision,
-    LabEquipmentProvisioningError,
-)
+
+from .provisionable import ProvisionStatus
 
 from .lab_software import (
     LabSoftware,

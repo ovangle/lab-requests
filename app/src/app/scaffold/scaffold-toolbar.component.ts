@@ -35,7 +35,7 @@ import { ScaffoldStateService } from './scaffold-state.service';
       <div class="spacer"></div>
 
       <user-menu
-        [userFeatureLink]="['/users']"
+        [userFeatureLink]="['/user']"
         [isLoggedIn]="_oauthContext.isLoggedIn"
         [loginDisabled]="scaffoldState.isLoginButtonDisabled$ | async"
         userFullName="Current user"

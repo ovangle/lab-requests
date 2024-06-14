@@ -8,6 +8,8 @@ import { DeclareEquipmentRequest, EquipmentProvision } from "./equipment-provisi
 import { Observable, of } from "rxjs";
 import { MatButton, MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
+import { QauntityInputComponent } from "src/app/common/measurement/common-quantity-input.component";
+import { MatFormFieldModule } from "@angular/material/form-field";
 
 export type DeclareEquipmentFormGroup = LabProvisionCreateFormGroup<{
     numInstalled: FormControl<number>;
@@ -24,15 +26,14 @@ export function declareEquipmentFormGroup(): DeclareEquipmentFormGroup {
         },
         {
             defaultFunding: null,
-            defaultNumRequired: 1,
-            defaultUnitOfMeasurement: 'item'
+            defaultQuantityRequired: [ 1, 'item' ]
         }
     );
 }
 
 export function declareEquipmentRequestFromFormGroupValue(
     target: ModelRef<EquipmentInstallation> | EquipmentInstallationCreateRequest,
-    value: DeclareEquipmentFormGroup['value'],
+    value: DeclareEquipmentFormGroup[ 'value' ],
 ): DeclareEquipmentRequest {
     return {
         ...labProvisionCreateRequestFromFormValue(
@@ -50,15 +51,30 @@ export function declareEquipmentRequestFromFormGroupValue(
     standalone: true,
     imports: [
         MatButton,
+        MatFormFieldModule,
         MatIcon,
-        ReactiveFormsModule
+        ReactiveFormsModule,
+
+        QauntityInputComponent
     ],
     template: `
     <form [formGroup]="form" (ngSubmit)="onFormSubmit()"> 
+        <common-quantity-input
+            formControlName="quantityRequired"
+            unit="item"
+            required>
+            <div #controlLabel>Number installed</div>
 
+            @if (quantityRequiredErrors && quantityRequiredErrors['required']) {
+                <mat-error>A value is required</mat-error>
+            }
+        </common-quantity-input>
 
+        <mat-form-field>
+            <mat-label>Reason</mat-label> 
 
-
+            <input matInput formControlName="note" />
+        </mat-form-field>
 
         @if (isStandaloneForm) {
             <div class="form-controls">

@@ -3,13 +3,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from sqlalchemy import select
-from api.lab.lab_equipment.queries import query_equipments
+from api.equipment.queries import query_equipments
 
 from db import LocalSession, get_db
 from db.models.lab import LabEquipment
 from db.models.lab.lab_equipment import LabEquipmentProvision
 
-from .schemas import (
+from ...equipment.schemas import (
     CreateEquipmentProvisionRequest,
     LabEquipmentCreateRequest,
     LabEquipmentIndex,
@@ -35,17 +35,14 @@ lab_equipment_tags = APIRouter(
 #         query_equipment_tags(name_istartswith=name_startswith),
 #     )
 
-all_equipments = APIRouter(prefix="/equipment")
-
 
 # EQuipments that are specific to a given lab
 lab_equipments = APIRouter(prefix="/equipment", tags=["lab-equipments"])
 
 
-@all_equipments.get("/")
 @lab_equipments.get("/")
 async def index_equipments(
-    lab_id: UUID | None = None,
+    lab_id: UUID,
     name_startswith: Optional[str] = None,
     name: Optional[str] = None,
     has_tags: set[str] | str | None = None,
@@ -61,15 +58,6 @@ async def index_equipments(
         )
     )
     return await equipment_index.load_page(db, page)
-
-
-@lab_equipments.post("/")
-async def create_equipment(
-    create_req: LabEquipmentCreateRequest, db: LocalSession = Depends(get_db)
-) -> LabEquipmentView:
-    model = await create_req.do_create(db)
-    await db.commit()
-    return await LabEquipmentView.from_model(model)
 
 
 @lab_equipments.get("/{equipment_id}")
@@ -98,5 +86,5 @@ async def create_equipment_provision(
     equipment_id: UUID, request: CreateEquipmentProvisionRequest, db=Depends(get_db)
 ) -> LabEquipmentProvisionView:
     equipment = await LabEquipment.get_for_id(db, equipment_id)
-    provision = await request.do_create(db, equipment)
+    provision = await request.do_create(db, equipment=equipment)
     return await LabEquipmentProvisionView.from_model(provision, equipment=equipment)

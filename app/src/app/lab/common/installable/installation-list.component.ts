@@ -33,7 +33,7 @@ import { LabInstallationIndex } from "./lab-installation-index";
     }
     `,
 })
-export class LabInstallationList<
+export class LabInstallationListComponent<
     TInstallable extends Installable<any>,
     TInstallation extends LabInstallation<any, any>
 > {

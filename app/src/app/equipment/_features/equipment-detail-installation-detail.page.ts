@@ -5,9 +5,10 @@ import { EquipmentDetailSubpage, EquipmentDetailStateService } from "./equipment
 import { ActivatedRoute } from "@angular/router";
 import { Observable, combineLatest, map, shareReplay, switchMap, withLatestFrom } from "rxjs";
 import { LabService } from "src/app/lab/lab";
-import { EquipmentProvision } from "../provision/equipment-provision";
-import { EquipmentProvisionCardComponent } from "../provision/equipment-provision-card.component";
+import { EquipmentProvision, EquipmentProvisionService } from "../provision/equipment-provision";
 import { ProvisionStatusPipe } from "src/app/lab/common/provisionable/provision-status.pipe";
+import { EquipmentProvisionInfoComponent } from "../provision/equipment-provision-info.component";
+import { isEqualModelRefs } from "src/app/common/model/model";
 
 
 @Component({
@@ -16,7 +17,7 @@ import { ProvisionStatusPipe } from "src/app/lab/common/provisionable/provision-
         CommonModule,
         ProvisionStatusPipe,
 
-        EquipmentProvisionCardComponent
+        EquipmentProvisionInfoComponent
     ],
     template: `
     @if (installation$ | async; as installation) {
@@ -26,8 +27,10 @@ import { ProvisionStatusPipe } from "src/app/lab/common/provisionable/provision-
             }
         </h2>
 
-        @if (activeProvision$ | async; as activeProvision) {
-            <equipment-provision-card [provision]="activeProvision" /> 
+        @if (activeProvision$ | async; as activeProvisions) {
+            @for (provision of activeProvisions; track provision.id) {
+                <equipment-provision-info [provision]="provision" /> 
+            }
         }
     }
     `
@@ -47,7 +50,7 @@ export class EquipmentDetailInstallationDetailPage implements EquipmentDetailSub
         map(params => params.get('installation_id')),
         withLatestFrom(this.equipment$),
         map(([ installationId, equipment ]) => {
-            const install = equipment.installations.find(install => install.id === installationId)
+            const install = equipment.currentInstallations.find(install => isEqualModelRefs(install, installationId));
             if (!install) {
                 throw new Error(`No install found in equipment '${equipment.id}' installations with id \'${installationId}'`)
             }
@@ -61,7 +64,13 @@ export class EquipmentDetailInstallationDetailPage implements EquipmentDetailSub
         shareReplay(1)
     );
 
-    readonly activeProvision$: Observable<EquipmentProvision | null> = combineLatest([ this.equipment$, this.lab$ ]).pipe(
-        map(([ equipment, lab ]) => equipment.activeProvision(lab) || null)
+    _equipmentProvisionService = inject(EquipmentProvisionService);
+    readonly activeProvisionPage$ = combineLatest([ this.equipment$, this.lab$ ]).pipe(
+        switchMap(([ equipment, lab ]) => equipment.getActiveProvisions(lab, this._equipmentProvisionService) || null),
+        shareReplay(1)
+    );
+
+    readonly activeProvision$ = this.activeProvisionPage$.pipe(
+        map(page => page.items)
     );
 }

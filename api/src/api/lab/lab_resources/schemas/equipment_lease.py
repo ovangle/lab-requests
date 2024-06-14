@@ -14,11 +14,8 @@ from db.models.lab.lab_resource_container import LabResourceContainer
 from db.models.lab.resources import EquipmentLease
 from db.models.lab.resources.equipment_lease import EquipmentLeaseAttrs
 
-from ...lab_equipment.schemas import (
-    LabEquipmentInstallationView,
-    LabEquipmentProvisionRequest,
-    LabEquipmentView,
-    LabEquipmentProvisionView,
+from api.equipment.schemas import (
+    EquipmentProvisionRequest,
 )
 from ._common import LabResourcePatch, LabResourceView, LabResourceIndex
 

@@ -4,11 +4,12 @@ import { Injectable } from "@angular/core";
 import { HttpParams } from "@angular/common/http";
 import { Observable, firstValueFrom } from "rxjs";
 import { ModelService, RestfulService as RelatedModelService } from "src/app/common/model/model-service";
-import { Model, ModelCreateRequest, ModelParams, ModelQuery, ModelRef, ModelUpdateRequest, isModelRef, modelId, modelParamsFromJsonObject, modelRefJsonDecoder, resolveRef, setModelQueryParams } from "src/app/common/model/model";
+import { Model, ModelCreateRequest, ModelParams, ModelQuery, ModelRef, ModelUpdateRequest, isModelRef, modelId, modelParamsFromJsonObject, modelRefJsonDecoder, resolveModelRef, resolveRef, setModelQueryParams } from "src/app/common/model/model";
 import { Provisionable, ProvisionableCreateRequest } from "./provisionable";
 import { Lab, labFromJsonObject } from "../../lab";
 import { CostEstimate, costEstimateFromJsonObject, costEstimateToJsonObject } from "src/app/research/funding/cost-estimate/cost-estimate";
 import { UnitOfMeasurement, isUnitOfMeasurement } from "src/app/common/measurement/measurement";
+import { ResearchFunding, ResearchFundingService, researchFundingFromJsonObject } from "src/app/research/funding/research-funding";
 
 export interface LabProvisionParams<
     TProvisionable extends Provisionable<any>
@@ -20,6 +21,8 @@ export interface LabProvisionParams<
 
     unit: UnitOfMeasurement;
     numRequired: number;
+
+    funding: ModelRef<ResearchFunding> | null;
 
     estimatedCost: CostEstimate | null;
     purchaseCost: CostEstimate | null;
@@ -41,36 +44,36 @@ export function labProvisionParamsFromJsonObject<
 ): LabProvisionParams<TProvisionable> & { readonly type: TType; } {
     const baseParams = modelParamsFromJsonObject(json);
 
-    if (!isProvisionStatus(json['status'])) {
+    if (!isProvisionStatus(json[ 'status' ])) {
         throw new Error("Expected a provision status 'status'");
     }
 
-    if (typeof json['type'] !== 'string') {
+    if (typeof json[ 'type' ] !== 'string') {
         throw new Error("Expected a string 'type'");
     }
 
     let target: TProvisionable | string;
-    if (typeof json['target'] === 'string') {
-        target = json['target'];
-    } else if (isJsonObject(json['target'])) {
-        target = targetFromJsonObject(json['target']);
+    if (typeof json[ 'target' ] === 'string') {
+        target = json[ 'target' ];
+    } else if (isJsonObject(json[ 'target' ])) {
+        target = targetFromJsonObject(json[ 'target' ]);
     } else {
         throw new Error("Expected a string or json object (or null)")
     }
 
     let estimatedCost: CostEstimate | null;
-    if (isJsonObject(json['estimatedCost'])) {
-        estimatedCost = costEstimateFromJsonObject(json['estimatedCost']);
-    } else if (json['estimatedCost'] == null) {
+    if (isJsonObject(json[ 'estimatedCost' ])) {
+        estimatedCost = costEstimateFromJsonObject(json[ 'estimatedCost' ]);
+    } else if (json[ 'estimatedCost' ] == null) {
         estimatedCost = null;
     } else {
         throw new Error("Expected a json object or null, 'estimatedCost'");
     }
 
     let purchaseCost: CostEstimate | null;
-    if (isJsonObject(json['actualCost'])) {
-        purchaseCost = costEstimateFromJsonObject(json['actualCost']);
-    } else if (json['actualCost'] == null) {
+    if (isJsonObject(json[ 'actualCost' ])) {
+        purchaseCost = costEstimateFromJsonObject(json[ 'actualCost' ]);
+    } else if (json[ 'actualCost' ] == null) {
         purchaseCost = null;
     } else {
         throw new Error("Expected a json object or null, 'actualCost'");
@@ -81,22 +84,30 @@ export function labProvisionParamsFromJsonObject<
         labFromJsonObject
     )(json);
 
-    if (!isUnitOfMeasurement(json['unit'])) {
+    let funding = modelRefJsonDecoder(
+        'funding',
+        researchFundingFromJsonObject,
+        { nullable: true }
+    )(json);
+
+    if (!isUnitOfMeasurement(json[ 'unit' ])) {
         throw new Error("Expected a unit of measurement, 'unit'");
     }
-    if (typeof json['numRequired'] !== 'number') {
+    if (typeof json[ 'numRequired' ] !== 'number') {
         throw new Error("Expected a number 'numRequired'");
     }
     return {
         ...baseParams,
-        type: typeFromString(json['type']),
-        status: json['status'],
+        type: typeFromString(json[ 'type' ]),
+        status: json[ 'status' ],
         lab,
         target,
+
+        funding,
         estimatedCost,
         purchaseCost,
-        unit: json['unit'],
-        numRequired: json['numRequired'],
+        unit: json[ 'unit' ],
+        numRequired: json[ 'numRequired' ],
         requestedStatusMetadata: provisionStatusMetadataFromJsonObject('requested', json)!,
         approvalStatusMetadata: provisionStatusMetadataFromJsonObject('approved', json),
         purchaseStatusMetadata: provisionStatusMetadataFromJsonObject('purchased', json),
@@ -116,14 +127,20 @@ export abstract class LabProvision<
     unit: UnitOfMeasurement;
     numRequired: number;
 
-    get quantityRequired(): [number, UnitOfMeasurement] {
-        return [this.numRequired, this.unit];
+    get quantityRequired(): [ number, UnitOfMeasurement ] {
+        return [ this.numRequired, this.unit ];
     }
+
+    funding: ModelRef<ResearchFunding> | null;
 
     estimatedCost: CostEstimate | null;
     purchaseCost: CostEstimate | null;
 
     requestedStatusMetadata: ProvisionStatusMetadata<'requested'>;
+
+    get reason(): string {
+        return this.requestedStatusMetadata.note!;
+    }
 
     approvalStatusMetadata?: ProvisionStatusMetadata<'approved'>;
     get isApproved() { return this.approvalStatusMetadata !== undefined; }
@@ -143,6 +160,8 @@ export abstract class LabProvision<
         this.status = params.status;
         this.target = params.target;
         this.lab = params.lab;
+
+        this.funding = params.funding;
         this.estimatedCost = params.estimatedCost;
         this.purchaseCost = params.purchaseCost;
 
@@ -205,7 +224,7 @@ export abstract class LabProvision<
     }
 
 
-    get currentStatusMetadata(): ProvisionStatusMetadata<(typeof this)['status']> {
+    get currentStatusMetadata(): ProvisionStatusMetadata<(typeof this)[ 'status' ]> {
         return this.provisionStatusMetadata(this.status)!;
     }
 
@@ -222,16 +241,32 @@ export abstract class LabProvision<
         }
         return this.lab;
     }
+
+    async resolveFunding(using: ResearchFundingService) {
+        return await resolveModelRef(this, 'funding', using as any);
+    }
 }
 
 export interface LabProvisionQuery<
     TProvisionable extends Provisionable<any>,
-    TProvision extends LabProvision<TProvisionable>
+    TProvision extends LabProvision<TProvisionable>,
+    TProvisionableQuery extends ModelQuery<TProvisionable> = ModelQuery<TProvisionable>
 > extends ModelQuery<TProvision> {
-
+    target?: ModelRef<TProvisionable> | Partial<TProvisionableQuery>;
 }
-export function setLabProvisionQueryParams(params: HttpParams, query: Partial<LabProvisionQuery<any, any>>): HttpParams {
+export function setLabProvisionQueryParams<TProvisionableQuery extends ModelQuery<any> = ModelQuery<any>>(
+    params: HttpParams,
+    query: Partial<LabProvisionQuery<any, any, TProvisionableQuery>>,
+    setTargetQueryParams: (params: HttpParams, targetQuery: Partial<TProvisionableQuery>) => HttpParams
+): HttpParams {
     params = setModelQueryParams(params, query);
+
+    if (isModelRef(query.target)) {
+        params = params.set('target', modelId(query.target));
+    } else if (query.target) {
+        setTargetQueryParams(params, query.target)
+    }
+
     return params;
 }
 
@@ -246,12 +281,14 @@ export interface LabProvisionCreateRequest<
     readonly numRequired: number;
 
     readonly estimatedCost: CostEstimate | null;
+
+    readonly note: string;
 }
 
 type CreateTarget<
     TProvisionable extends Provisionable<any>,
     TCreate extends LabProvisionCreateRequest<TProvisionable, any>
-> = Exclude<TCreate['target'], ModelRef<TProvisionable>>;
+> = Exclude<TCreate[ 'target' ], ModelRef<TProvisionable>>;
 
 export function labProvisionCreateRequestToJsonObject<
     TProvisionable extends Provisionable<any>,
@@ -272,7 +309,8 @@ export function labProvisionCreateRequestToJsonObject<
         target,
         unit: request.unit,
         numRequired: request.numRequired,
-        estimatedCost: request.estimatedCost ? costEstimateToJsonObject(request.estimatedCost) : null
+        estimatedCost: request.estimatedCost ? costEstimateToJsonObject(request.estimatedCost) : null,
+        note: request.note
     };
 }
 

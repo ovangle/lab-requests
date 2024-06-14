@@ -1,10 +1,9 @@
 import { Directive, EventEmitter, InputSignal, Output, Signal, inject, input } from "@angular/core";
-import { AbstractControl, ControlContainer, FormControl, FormGroup } from "@angular/forms";
+import { AbstractControl, ControlContainer, FormControl, FormGroup, ValidationErrors, ValidatorFn } from "@angular/forms";
 import { Lab } from "../../lab";
 import { inputMaterialFromJson } from "../../lab-resource/types/input-material/input-material";
 import { Provisionable, ProvisionableCreateRequest } from "./provisionable";
 import { LabProvision, LabProvisionCreateRequest, LabProvisionService } from "./provision";
-import { LabSoftwareRequestFormComponent } from "../../lab-software/software-request-form.component";
 import { Observable, firstValueFrom } from "rxjs";
 import { CostEstimateFormGroup, costEstimateFormGroup, costEstimateFromFormValue } from "src/app/research/funding/cost-estimate/cost-estimate-form.component";
 import { ResearchFunding } from "src/app/research/funding/research-funding";
@@ -15,61 +14,75 @@ import { format } from "date-fns";
 import { A11yModule } from "@angular/cdk/a11y";
 
 export interface LabProvisionCreateFormControls {
-    numRequired: FormControl<number>;
-    unit: FormControl<UnitOfMeasurement>;
+    quantityRequired: FormControl<[ number, UnitOfMeasurement ]>;
 
     hasCostEstimates: FormControl<boolean>;
     estimatedCost?: CostEstimateFormGroup;
+
+    note: FormControl<string>;
 }
 
 export function labProvisionCreateFormGroup<
-    TControl extends { [K in keyof TControl]: AbstractControl<any> }
+    TControl extends { [ K in keyof TControl ]: AbstractControl<any> }
 >(
     controls: TControl,
     options?: {
         defaultFunding?: ResearchFunding | null;
-        defaultNumRequired: number;
-        defaultUnitOfMeasurement: UnitOfMeasurement;
+        defaultQuantityRequired: [ number, UnitOfMeasurement ];
+        quantityRequiredValidators?: ValidatorFn[]
     }
 ): FormGroup<TControl & LabProvisionCreateFormControls> {
     return new FormGroup({
         ...controls,
-        numRequired: new FormControl<number>(
-            options?.defaultNumRequired || 1,
-            { nonNullable: true }
-        ),
-        unit: new FormControl<UnitOfMeasurement>(
-            options?.defaultUnitOfMeasurement || 'item',
-            { nonNullable: true }
+        quantityRequired: new FormControl<[ number, UnitOfMeasurement ]>(
+            options?.defaultQuantityRequired || [ 1, 'item' ],
+            {
+                nonNullable: true,
+                validators: options?.quantityRequiredValidators
+            }
         ),
         hasCostEstimates: new FormControl<boolean>(false, { nonNullable: true }),
         estimatedCost: costEstimateFormGroup(options?.defaultFunding),
+
+        note: new FormControl<string>('', { nonNullable: true })
     } as TControl & LabProvisionCreateFormControls);
 }
 
 
 export type LabProvisionCreateFormGroup<
-    TControl extends { [K in keyof TControl]: AbstractControl<any> }
+    TControl extends { [ K in keyof TControl ]: AbstractControl<any> }
 > = FormGroup<TControl & LabProvisionCreateFormControls>;
+
+export function isLabProvisionCreateFormGroup<TControl extends { [ K in keyof TControl ]: AbstractControl<any> }>(
+    controlKeys: ReadonlyArray<keyof TControl>,
+    obj: unknown,
+): obj is LabProvisionCreateFormGroup<TControl> {
+    if (!(obj instanceof FormGroup)) {
+        return false;
+    }
+    const keys = Object.keys(obj.controls);
+    const hasBaseKeys = [ 'numRequired', 'unit', 'hasCostEstimates' ].every(k => keys.includes(k));
+
+    return hasBaseKeys && controlKeys.every(k => keys.includes(k.toString()));
+}
 
 export function labProvisionCreateRequestFromFormValue<
     TProvisionable extends Provisionable<TProvision>,
     TProvision extends LabProvision<TProvisionable>,
-    TControl extends { [K in keyof TControl]: AbstractControl<any> },
-    TType extends TProvision['type'],
+    TControl extends { [ K in keyof TControl ]: AbstractControl<any> },
+    TType extends TProvision[ 'type' ],
     TTarget extends ModelRef<TProvisionable> | ProvisionableCreateRequest<TProvisionable>
 >(
     type: TType,
     target: TTarget,
-    value: LabProvisionCreateFormGroup<TControl>['value'],
+    value: LabProvisionCreateFormGroup<TControl>[ 'value' ],
 ): LabProvisionCreateRequest<TProvisionable, TProvision> & { readonly type: TType, readonly target: TTarget } {
-    let numRequired = value.numRequired!;
-    let unit = value.unit!;
+    const quantityRequired = value.quantityRequired!;
 
     let estimatedCost: CostEstimate | null;
     if (value.hasCostEstimates) {
         estimatedCost = costEstimateFromFormValue(value.estimatedCost!, {
-            quantityRequired: [numRequired, unit]
+            quantityRequired
         });
     } else {
         estimatedCost = null;
@@ -78,9 +91,10 @@ export function labProvisionCreateRequestFromFormValue<
     return {
         type,
         target,
-        unit,
-        numRequired,
+        numRequired: quantityRequired[ 0 ],
+        unit: quantityRequired[ 1 ],
         estimatedCost,
+        note: value.note
     };
 }
 
@@ -92,7 +106,7 @@ export abstract class AbstractLabProvisionCreateFormComponent<
 > {
     readonly _labProvisionService = inject(LabProvisionService<any, TProvision>);
 
-    target = input.required<TRequest['target']>();
+    target = input.required<TRequest[ 'target' ]>();
 
     @Output()
     readonly save = new EventEmitter<TProvision>();
@@ -101,8 +115,8 @@ export abstract class AbstractLabProvisionCreateFormComponent<
     protected abstract __createStandaloneForm(): TForm;
 
     protected abstract __createRequestFromFormValue(
-        target: TRequest['target'],
-        form: TForm['value']
+        target: TRequest[ 'target' ],
+        form: TForm[ 'value' ]
     ): TRequest;
 
     _controlContainer = inject(ControlContainer, { optional: true });
@@ -122,6 +136,10 @@ export abstract class AbstractLabProvisionCreateFormComponent<
         return this._standaloneForm;
     }
 
+    get quantityRequiredErrors(): ValidationErrors | null {
+        return this.form.controls[ 'quantityRequired' ].errors;
+    }
+
     async onFormSubmit() {
         if (!this.isStandaloneForm) {
             throw new Error(`Cannot submit a standalone form`);
@@ -129,7 +147,7 @@ export abstract class AbstractLabProvisionCreateFormComponent<
         if (!this.form.valid) {
             throw new Error(`Cannot submit an invalid form`);
         }
-        const request = this.__createRequestFromFormValue(this.form.value);
+        const request = this.__createRequestFromFormValue(this.target(), this.form.value);
         const provision = await firstValueFrom(
             this._labProvisionService.create(request)
         );

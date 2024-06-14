@@ -2,7 +2,7 @@ import { CommonModule } from "@angular/common";
 import { Component, inject } from "@angular/core";
 import { RouterModule } from "@angular/router";
 import { EquipmentContext } from "../equipment-context";
-import { EquipmentInstallationListComponent } from "../installation/installation-list.component";
+import { EquipmentInstallationListComponent } from "../installation/equipment-installation-list.component";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { EquipmentTrainingDescriptionsInfoComponent } from "../training/training-descriptions-info.component";
@@ -57,7 +57,7 @@ import { EquipmentDetailStateService, EquipmentDetailSubpage, setDetailPageSubro
             [trainingDescriptions]="equipment.trainingDescriptions"
         />
 
-        <equipment-installation-list>
+        <equipment-installation-list [equipment]="equipment">
             <div class="list-title">Installations</div>
         </equipment-installation-list>
       }

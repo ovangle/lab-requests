@@ -9,8 +9,10 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
     async_sessionmaker,
     AsyncSession,
+    AsyncConnection,
     async_object_session,
 )
+from sqlalchemy.dialects import postgresql
 
 
 from .settings import DbSettings
@@ -62,12 +64,23 @@ def _get_alembic_config():
     return Config(dir / "alembic.ini")
 
 
+async def create_type(connection: AsyncConnection, enum_type: postgresql.ENUM):
+    enum_type.create(connection)
+
+
+async def create_db_types(db_binding):
+    from db.models.lab.lab_equipment import PROVISION_STATUS_TYPE
+
+    await db_binding.run_sync(PROVISION_STATUS_TYPE.create)
+
+
 async def init_db():
     from .models.base import Base
 
     alembic_cfg = _get_alembic_config()
 
     async with engine.begin() as db:
+        await create_db_types(db)
         await db.run_sync(Base.metadata.create_all)
         command.stamp(alembic_cfg, "head")
 

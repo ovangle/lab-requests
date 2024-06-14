@@ -1,28 +1,15 @@
 from __future__ import annotations
 import asyncio
-from typing import TYPE_CHECKING
 from uuid import UUID
 
-from pydantic import BaseModel
-from sqlalchemy import not_, select
-
-
-from db import LocalSession, local_object_session
-from db.models.lab.lab_equipment import LabEquipmentInstallation, LabEquipmentProvision
-from db.models.user import User
+from db import LocalSession
 from db.models.uni import Discipline
 from db.models.lab import Lab
 
-from ..base.schemas import ModelLookup, ModelIndexPage, ModelView, ModelIndex
+from api.base.schemas import ModelLookup, ModelIndexPage, ModelView, ModelIndex
 
 from ..user.schemas.user import UserView
 from ..uni.schemas import CampusView
-
-if TYPE_CHECKING:
-    from .lab_equipment.schemas import (
-        LabEquipmentInstallationView,
-        LabEquipmentProvisionView,
-    )
 
 
 class LabView(ModelView[Lab]):

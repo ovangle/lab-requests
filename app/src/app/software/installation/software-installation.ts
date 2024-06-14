@@ -28,7 +28,7 @@ export class SoftwareInstallation extends LabInstallation<Software, SoftwareProv
 
         this.software = params.software;
         this.version = params.version;
-        this.currentProvisions = [...params.currentProvisions];
+        this.currentProvisions = [ ...params.currentProvisions ];
     }
 
     async resolveSoftware(service: SoftwareService) {
@@ -48,7 +48,7 @@ export function softwareInstallationFromJsonObject(json: JsonObject): SoftwareIn
     );
 
     const software: Software | string = baseParams.installable;
-    if (typeof json['version'] !== 'string') {
+    if (typeof json[ 'version' ] !== 'string') {
         throw new Error("Expected a string 'version'")
     }
 
@@ -56,14 +56,14 @@ export function softwareInstallationFromJsonObject(json: JsonObject): SoftwareIn
     return new SoftwareInstallation({
         ...baseParams,
         software,
-        version: json['version']
+        version: json[ 'version' ]
     });
 }
 
 export interface SoftwareInstallationQuery extends LabInstallationQuery<Software, SoftwareInstallation> {
     software?: ModelRef<Software>;
 }
-function setSoftwareInstallationQueryParams(params: HttpParams, query: Partial<SoftwareInstallationQuery>) {
+export function setSoftwareInstallationQueryParams(params: HttpParams, query: Partial<SoftwareInstallationQuery>) {
     params = setLabInstallationQueryParams(params, query, 'software');
 
     if (query.software) {

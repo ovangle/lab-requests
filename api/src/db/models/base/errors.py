@@ -10,9 +10,16 @@ class ModelException(Exception):
 
 
 class DoesNotExist(ModelException):
-    def __init__(self, msg: str | None = None, *, for_id: UUID | None = None):
+    def __init__(
+        self,
+        model: type[Base] | str,
+        msg: str | None = None,
+        *,
+        for_id: UUID | None = None,
+    ):
+        self.model = model.__name__ if isinstance(model, type) else model
         if for_id:
-            msg = f"No instance with id '{for_id}'"
+            msg = f"No instance of {self.model} with id '{for_id}'"
 
         super().__init__(msg)
 

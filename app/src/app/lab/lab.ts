@@ -6,6 +6,7 @@ import {
   ModelIndexPage,
   ModelParams,
   ModelQuery,
+  ModelRef,
   modelId,
   modelIndexPageFromJsonObject,
   modelParamsFromJsonObject,
@@ -50,38 +51,53 @@ export function labFromJsonObject(json: JsonObject): Lab {
   }
   const base = modelParamsFromJsonObject(json);
 
-  if (typeof json['id'] !== 'string') {
+  if (typeof json[ 'id' ] !== 'string') {
     throw new Error("Expected a string 'id'");
   }
-  if (!isDiscipline(json['discipline'])) {
+  if (!isDiscipline(json[ 'discipline' ])) {
     throw new Error("Expected a Discipline 'discipline'");
   }
 
-  if (!isJsonObject(json['campus'])) {
+  if (!isJsonObject(json[ 'campus' ])) {
     throw new Error("Expected a json object 'campus'");
   }
-  const campus = campusFromJsonObject(json['campus']);
+  const campus = campusFromJsonObject(json[ 'campus' ]);
 
-  if (!Array.isArray(json['supervisors']) || !json['supervisors'].every(isJsonObject)) {
+  if (!Array.isArray(json[ 'supervisors' ]) || !json[ 'supervisors' ].every(isJsonObject)) {
     throw new Error("Expected an array of json objects 'supervisors'");
   }
-  const supervisors = json['supervisors'].map(userFromJsonObject);
+  const supervisors = json[ 'supervisors' ].map(userFromJsonObject);
 
   return new Lab({
     ...base,
-    id: json['id'],
-    discipline: json['discipline'],
+    id: json[ 'id' ],
+    discipline: json[ 'discipline' ],
     campus,
     supervisors,
   });
 }
 
 export interface LabQuery extends ModelQuery<Lab> {
-
+  campus?: ModelRef<Campus> | ModelRef<Campus>[];
+  discipline?: Discipline | Discipline[];
 }
 
-function setLabQueryParams(params: HttpParams, query: LabQuery) {
+function setLabQueryParams(params: HttpParams, query: Partial<LabQuery>) {
   params = setModelQueryParams(params, query);
+
+  if (Array.isArray(query.campus)) {
+    const modelIds = query.campus.map(c => modelId(c));
+    params = params.set('campus', modelIds.join(','));
+  } else if (query.campus) {
+    params = params.set('campus', modelId(query.campus));
+  }
+
+  if (Array.isArray(query.discipline)) {
+    params = params.set('discipline', query.discipline.join(','))
+  } else if (query.discipline) {
+    params = params.set('discipline', query.discipline);
+  }
+
   return params;
 }
 
@@ -108,32 +124,30 @@ export class LabProfile extends Lab implements LabProfileParams {
 
   getInstall(equipment: Equipment): EquipmentInstallation | null {
     return this.equipmentInstalls
-      .find(install => modelId(install.equipment) == equipment.id || null;
+      .find(install => modelId(install.equipment) == equipment.id) || null;
   }
 
   getProvision(equipment: Equipment): EquipmentProvision | null {
     return this.equipmentProvisions
       .find(provision => modelId(provision.target) == equipment.id) || null;
   }
-
-
 }
 
 export function labProfileFromJsonObject(object: JsonObject) {
   const labParams = labFromJsonObject(object);
-  if (!isJsonObject(object['equipmentInstalls'])) {
+  if (!isJsonObject(object[ 'equipmentInstalls' ])) {
     throw new Error("Expected a json object 'equipmentInstalls'");
   }
   const equipmentInstallPage = modelIndexPageFromJsonObject(
     equipmentInstallationFromJsonObject,
-    object['equipmentInstalls'],
+    object[ 'equipmentInstalls' ],
   );
-  if (!isJsonObject(object['equipmentProvisions'])) {
+  if (!isJsonObject(object[ 'equipmentProvisions' ])) {
     throw new Error("Expected a json object 'equipmentProvisions'");
   }
   const equipmentProvisionPage = modelIndexPageFromJsonObject(
     equipmentProvisionFromJsonObject,
-    object['equipmentProvisions'],
+    object[ 'equipmentProvisions' ],
   );
 
   return new LabProfile({
@@ -145,7 +159,7 @@ export function labProfileFromJsonObject(object: JsonObject) {
 
 
 @Injectable({ providedIn: 'root' })
-export class LabService extends RestfulService<Lab> {
+export class LabService extends RestfulService<Lab, LabQuery> {
   override path: string = '/labs';
   override readonly modelFromJsonObject = labFromJsonObject;
   override readonly setModelQueryParams = setLabQueryParams;

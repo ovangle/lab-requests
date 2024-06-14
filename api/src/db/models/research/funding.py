@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 from uuid import UUID
-from sqlalchemy import select
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import ForeignKey, select, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from sqlalchemy.dialects import postgresql
 
-from db import LocalSession
+from db import LocalSession, local_object_session
 
 from ..base import Base
 from ..base.errors import DoesNotExist
@@ -16,7 +19,7 @@ class ResearchFundingDoesNotExist(DoesNotExist):
             msg = f"No research funding with name {for_name}"
             return super().__init__(msg)
         if for_id:
-            return super().__init__(for_id=for_id)
+            return super().__init__("ResearchFunding", for_id=for_id)
         raise ValueError("Either for_id or for_name must be provided")
 
 
@@ -44,3 +47,53 @@ class ResearchFunding(Base):
         if not instance:
             raise ResearchFundingDoesNotExist(for_name=name)
         return instance
+
+
+class ResearchBudgetItem(Base):
+    __tablename__ = "research_budget_item"
+
+    id: Mapped[uuid_pk]
+    budget_id: Mapped[UUID] = mapped_column(ForeignKey("research_budget.id"))
+    budget: Mapped[ResearchBudget] = relationship(back_populates="items")
+
+    index: Mapped[int] = mapped_column(postgresql.INTEGER, default=0, index=True)
+
+    estimated_cost: Mapped[float] = mapped_column(postgresql.FLOAT)
+    actual_cost: Mapped[float] = mapped_column(postgresql.FLOAT, default=0.0)
+
+
+class ResearchBudget(Base):
+    __tablename__ = "research_budget"
+
+    id: Mapped[uuid_pk]
+
+    funding_id: Mapped[UUID] = mapped_column(ForeignKey("research_budget.id"))
+    funding: Mapped[ResearchFunding] = relationship()
+
+    items: Mapped[list[ResearchBudgetItem]] = relationship(
+        back_populates="budget",
+        order_by=ResearchBudgetItem.index,
+        cascade="all, delete-orphan",
+    )
+
+    async def item_count(self, *, using: LocalSession | None = None):
+        using = using or local_object_session(self)
+        return await using.scalar(
+            select(func.count(ResearchBudgetItem.id))
+            .select_from(ResearchBudget, ResearchBudgetItem)
+            .where(ResearchBudget.id == self.id)
+        )
+
+    async def append(
+        self, estimated_cost: float = 0.0, *, using: LocalSession | None = None
+    ) -> ResearchBudgetItem:
+        using = using or local_object_session(self)
+
+        item = ResearchBudgetItem(
+            budget_id=self.id,
+            index=await self.item_count(using=using),
+            estimated_cost=estimated_cost,
+        )
+        using.add(item)
+        await using.commit()
+        return item

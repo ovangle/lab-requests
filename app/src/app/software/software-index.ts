@@ -9,7 +9,7 @@ import { ModelService } from "../common/model/model-service";
 export class SoftwareIndex extends ModelIndex<Software, SoftwareQuery> {
     override readonly service = inject(SoftwareService);
     override _queryFromRouteParams(paramMap: ParamMap): Partial<SoftwareQuery> {
-        throw new Error("Method not implemented.");
+        return {};
     }
 
 }

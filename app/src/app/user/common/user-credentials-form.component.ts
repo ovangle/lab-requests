@@ -1,5 +1,6 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, JsonPipe } from '@angular/common';
 import {
+  ChangeDetectionStrategy,
   Component,
   EventEmitter,
   Input,
@@ -9,9 +10,11 @@ import {
   ɵisPromise,
 } from '@angular/core';
 import {
+  AbstractControl,
   FormControl,
   FormGroup,
   ReactiveFormsModule,
+  ValidationErrors,
   Validators,
 } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -24,7 +27,7 @@ export interface LoginSuccess {
 }
 
 export interface LoginError {
-  invalidCredentials: string | null;
+  invalidCredentials: boolean;
 }
 
 type LoginResult = LoginSuccess | LoginError;
@@ -37,39 +40,38 @@ function isLoginError(obj: unknown): obj is LoginError {
   return (
     typeof obj === 'object' &&
     obj != null &&
-    (typeof (obj as any)[ 'invalidCredentials' ] === 'string' ||
-      (obj as any)[ 'invalidCredentials' ] === null)
+    (typeof (obj as any)[ 'invalidCredentials' ] === 'boolean')
   );
 }
 
 export class LoginRequest {
-  readonly email: string;
-  readonly password: string;
-  readonly _result: Promise<LoginSuccess>;
+  setResultSuccess = (success: LoginSuccess) => { };
+  setResultError = (error: LoginError) => { };
 
-  result(): Promise<LoginSuccess> {
-    return this._result;
+  readonly result = new Promise<LoginSuccess>((resolve, reject) => {
+    this.setResultSuccess = resolve;
+    this.setResultError = reject;
+  });
+
+  constructor(
+    readonly email: string,
+    readonly password: string) {
   }
+}
 
-  setResultSuccess: (result: LoginSuccess) => void = () => { };
-  setResultError: (result: LoginError) => void = () => { };
-
-  constructor(email: string, password: string) {
-    this.email = email;
-    this.password = password;
-
-    this._result = new Promise((resolve, reject) => {
-      this.setResultSuccess = (value: LoginSuccess) => resolve(value);
-      this.setResultError = (value: LoginError) => reject(value);
-    });
+const CQU_EMAIL_PATTERN = /.*@(cqumail.com|cqu.edu.au)$/
+function cquEmailValidator(control: AbstractControl<string>) {
+  if (!CQU_EMAIL_PATTERN.test(control.value)) {
+    return { 'cquEmail': true };
   }
+  return null;
 }
 
 @Component({
   selector: 'user-credentials-form',
   standalone: true,
   imports: [
-    CommonModule,
+    JsonPipe,
     ReactiveFormsModule,
 
     MatButtonModule,
@@ -82,8 +84,11 @@ export class LoginRequest {
         <mat-label>Email</mat-label>
         <input matInput type="email" formControlName="email" />
 
-        @if (emailErrors?.required) {
+        @if (emailErrors && emailErrors['required']) {
           <mat-error>A value is required</mat-error>
+        }
+        @if (emailErrors && (emailErrors['email'] || emailErrors['cquEmail'])) {
+          <mat-error>Not a valid cqu email address.</mat-error>
         }
       </mat-form-field>
 
@@ -91,7 +96,7 @@ export class LoginRequest {
         <mat-label>Password</mat-label>
         <input matInput type="password" formControlName="password" />
 
-        @if (passwordErrors?.required) {
+        @if (passwordErrors && passwordErrors['required']) {
           <mat-error>A value is required</mat-error>
         }
       </mat-form-field>
@@ -105,6 +110,7 @@ export class LoginRequest {
       <div id="submission-errors">Invalid credentials</div>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UserCredentialsFormComponent {
   _loginErrors: LoginError | null = null;
@@ -115,7 +121,10 @@ export class UserCredentialsFormComponent {
   readonly form = new FormGroup({
     email: new FormControl<string>('', {
       nonNullable: true,
-      validators: Validators.required,
+      validators: [
+        Validators.required,
+        cquEmailValidator
+      ]
     }),
     password: new FormControl<string>('', {
       nonNullable: true,
@@ -123,20 +132,12 @@ export class UserCredentialsFormComponent {
     }),
   });
 
-  get emailErrors(): { required: string | null } | null {
-    return this.form.errors
-      ? (this.form.controls[ 'email' ].errors as {
-        required: string | null;
-      } | null)
-      : null;
+  get emailErrors(): ValidationErrors | null {
+    return this.form.controls.email.errors;
   }
 
-  get passwordErrors(): { required: string | null } | null {
-    return this.form.errors
-      ? (this.form.controls[ 'password' ].errors as {
-        required: string | null;
-      } | null)
-      : null;
+  get passwordErrors(): ValidationErrors | null {
+    return this.form.controls.password.errors;
   }
 
   async _onSubmit(event: SubmitEvent) {
@@ -150,7 +151,7 @@ export class UserCredentialsFormComponent {
     );
     this.loginRequest.emit(request);
     try {
-      const result = await request._result;
+      const result = await request.result;
       this._loginErrors = null;
       return result;
     } catch (err) {

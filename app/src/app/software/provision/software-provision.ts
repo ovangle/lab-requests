@@ -1,6 +1,6 @@
 import { LabProvision, LabProvisionApprovalRequest, LabProvisionCancellationRequest, LabProvisionCreateRequest, LabProvisionInstallRequest, LabProvisionParams, LabProvisionPurchaseRequest, LabProvisionQuery, LabProvisionService, labProvisionApprovalRequestToJsonObject, labProvisionCreateRequestToJsonObject, labProvisionInstallRequestToJsonObject, labProvisionParamsFromJsonObject, setLabProvisionQueryParams } from "src/app/lab/common/provisionable/provision";
 import { Software, SoftwareCreateRequest, SoftwareService, softwareFromJsonObject } from "../software";
-import { SoftwareInstallation, SoftwareInstallationCreateRequest, softwareInstallationCreateRequestToJsonObject, softwareInstallationFromJsonObject } from "../installation/software-installation";
+import { SoftwareInstallation, SoftwareInstallationCreateRequest, SoftwareInstallationQuery, setSoftwareInstallationQueryParams, softwareInstallationCreateRequestToJsonObject, softwareInstallationFromJsonObject } from "../installation/software-installation";
 import { JsonObject } from "src/app/utils/is-json-object";
 import { HttpParams } from "@angular/common/http";
 import { Injectable } from "@angular/core";
@@ -8,6 +8,7 @@ import { ModelCreateRequest, ModelRef, modelId, modelRefJsonDecoder } from "src/
 import { Observable, firstValueFrom } from "rxjs";
 import { Lab } from "src/app/lab/lab";
 import { CostEstimate, costEstimateToJsonObject } from "src/app/research/funding/cost-estimate/cost-estimate";
+import { User } from "src/app/user/common/user";
 
 export type SoftwareProvisionType
     = 'new_software'
@@ -52,7 +53,7 @@ export class SoftwareProvision extends LabProvision<SoftwareInstallation> {
 export function softwareProvisionFromJsonObject(json: JsonObject): SoftwareProvision {
     const baseParams = labProvisionParamsFromJsonObject(
         (type: string) => {
-            if (!['new_software', 'upgrade_software'].includes(type)) {
+            if (![ 'new_software', 'upgrade_software' ].includes(type)) {
                 throw new Error(`Expected a software provision type`);
             }
             return type as SoftwareProvisionType;
@@ -66,31 +67,38 @@ export function softwareProvisionFromJsonObject(json: JsonObject): SoftwareProvi
         softwareFromJsonObject,
     )(json);
 
-    if (typeof json['minVersion'] !== 'string') {
+    if (typeof json[ 'minVersion' ] !== 'string') {
         throw new Error('Expected a string `minVersion`');
     }
 
-    if (typeof json['requiresLicense'] !== 'boolean') {
+    if (typeof json[ 'requiresLicense' ] !== 'boolean') {
         throw new Error("Expected a boolean 'requiresLicense'");
     }
-    if (typeof json['isPaidSoftware'] !== 'boolean') {
+    if (typeof json[ 'isPaidSoftware' ] !== 'boolean') {
         throw new Error("Expected a boolean 'isPaidSoftware'");
     }
 
     return new SoftwareProvision({
         ...baseParams,
         software,
-        minVersion: json['minVersion'],
-        requiresLicense: json['requiresLicense'],
-        isPaidSoftware: json['isPaidSoftware']
+        minVersion: json[ 'minVersion' ],
+        requiresLicense: json[ 'requiresLicense' ],
+        isPaidSoftware: json[ 'isPaidSoftware' ]
     });
 }
 
-export interface SoftwareProvisionQuery extends LabProvisionQuery<SoftwareInstallation, SoftwareProvision> {
+export interface SoftwareProvisionQuery extends LabProvisionQuery<SoftwareInstallation, SoftwareProvision, SoftwareInstallationQuery> {
+    software?: ModelRef<Software>;
+    pendingActionBy?: ModelRef<User>;
 }
 
 function setSoftwareProvisionQueryParams(params: HttpParams, query: Partial<SoftwareProvisionQuery>) {
-    params = setLabProvisionQueryParams(params, query);
+    params = setLabProvisionQueryParams(params, query, setSoftwareInstallationQueryParams);
+
+    if (query.software) {
+        params = params.set('software', modelId(query.software));
+    }
+
     return params;
 }
 
@@ -151,7 +159,7 @@ function softwareProvisionInstallRequestToJsonObject(request: SoftwareProvisionI
 }
 
 @Injectable()
-export class SoftwareProvisionService extends LabProvisionService<SoftwareInstallation, SoftwareProvision> {
+export class SoftwareProvisionService extends LabProvisionService<SoftwareInstallation, SoftwareProvision, SoftwareProvisionQuery> {
 
     override readonly path = '/provisions';
     override readonly provisionableQueryParam: string = 'software';

@@ -4,7 +4,7 @@ import { Equipment, EquipmentCreateRequest, equipmentCreateRequestToJsonObject, 
 import { ResearchFunding, ResearchFundingService, researchFundingFromJsonObject } from "src/app/research/funding/research-funding";
 import { Lab, LabService, labFromJsonObject } from "../../lab/lab";
 import { Observable, first, firstValueFrom, map, switchMap } from "rxjs";
-import { EquipmentInstallation, EquipmentInstallationCreateRequest, EquipmentInstallationService, equipmentInstallationCreateRequestToJsonObject, equipmentInstallationFromJsonObject } from "../installation/equipment-installation";
+import { EquipmentInstallation, EquipmentInstallationCreateRequest, EquipmentInstallationQuery, EquipmentInstallationService, equipmentInstallationCreateRequestToJsonObject, equipmentInstallationFromJsonObject, setEquipmentInstallationQueryParams } from "../installation/equipment-installation";
 import { HttpParams } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { EquipmentContext } from "../equipment-context";
@@ -40,7 +40,7 @@ export class EquipmentProvision extends LabProvision<EquipmentInstallation> impl
     }
 
     get isActive() {
-        return !['installed', 'cancelled'].includes(this.status);
+        return ![ 'installed', 'cancelled' ].includes(this.status);
     }
 
     resolveEquipmentInstallation(using: EquipmentInstallationService) {
@@ -56,7 +56,7 @@ export class EquipmentProvision extends LabProvision<EquipmentInstallation> impl
 export function equipmentProvisionFromJsonObject(json: JsonObject): EquipmentProvision {
     const baseParams = labProvisionParamsFromJsonObject(
         (value: string) => {
-            if (!['new_software'].includes(value)) {
+            if (![ 'new_software' ].includes(value)) {
                 throw new Error('Expected an equipment provision type')
             }
             return value as EquipmentProvisionType;
@@ -73,10 +73,10 @@ export function equipmentProvisionFromJsonObject(json: JsonObject): EquipmentPro
     });
 }
 
-export interface EquipmentProvisionQuery extends LabProvisionQuery<EquipmentInstallation, EquipmentProvision> {
+export interface EquipmentProvisionQuery extends LabProvisionQuery<EquipmentInstallation, EquipmentProvision, EquipmentInstallationQuery> {
 }
 function setEquipmentProvisionQueryParams(params: HttpParams, query: EquipmentProvisionQuery) {
-    params = setLabProvisionQueryParams(params, query);
+    params = setLabProvisionQueryParams(params, query, setEquipmentInstallationQueryParams);
     return params;
 }
 
@@ -111,6 +111,18 @@ export interface DeclareEquipmentRequest extends _EquipmentProvisionCreateReques
     readonly target: ModelRef<EquipmentInstallation> | EquipmentInstallationCreateRequest;
     numInstalled: number;
 }
+
+export function declareEquipmentRequestToJsonObject(request: DeclareEquipmentRequest): JsonObject {
+    return {
+        ...labProvisionCreateRequestToJsonObject(
+            equipmentInstallationCreateRequestToJsonObject,
+            request
+        )
+    };
+}
+export type EquipmentProvisionCreateRequest
+    = NewEquipmentRequest
+    | DeclareEquipmentRequest;
 
 export interface EquipmentProvisionApprovalRequest extends LabProvisionApprovalRequest<EquipmentInstallation, EquipmentProvision> {
 }

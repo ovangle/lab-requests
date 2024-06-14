@@ -21,7 +21,6 @@ export const SOFTWARE_ROUTES: Routes = [
         providers: [
             provideSoftwareDetailContext()
         ],
-        redirectTo: './installations',
         children: [
             {
                 path: '',

@@ -73,9 +73,7 @@ export class AuthLoginPage implements OnInit {
       });
     } catch (err) {
       if (err instanceof InvalidCredentials) {
-        return loginRequest.setResultError({
-          invalidCredentials: err.errorDescription,
-        });
+        return loginRequest.setResultError({ invalidCredentials: true });
       }
       throw err;
     }
