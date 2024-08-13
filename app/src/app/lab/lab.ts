@@ -20,6 +20,7 @@ import { EquipmentInstallation, equipmentInstallationFromJsonObject } from '../e
 import { EquipmentProvision, equipmentProvisionFromJsonObject } from '../equipment/provision/equipment-provision';
 import { Equipment } from '../equipment/equipment';
 import { HttpParams } from '@angular/common/http';
+import { StorageType, isStorageType } from './storage/lab-storage-type';
 
 export interface LabParams extends ModelParams {
   readonly id: string;
@@ -27,6 +28,9 @@ export interface LabParams extends ModelParams {
   readonly campus: Campus;
 
   readonly supervisors: readonly User[];
+
+  // The storage types available in the lab.
+  readonly storageTypes: readonly StorageType[];
 }
 
 export class Lab extends Model implements LabParams {
@@ -34,11 +38,13 @@ export class Lab extends Model implements LabParams {
   readonly campus: Campus;
 
   readonly supervisors: readonly User[];
+  readonly storageTypes: readonly StorageType[];
   constructor(params: LabParams) {
     super(params);
     this.discipline = params.discipline;
     this.campus = params.campus;
     this.supervisors = params.supervisors;
+    this.storageTypes = [...params.storageTypes];
   }
 
   get name(): string {
@@ -51,29 +57,35 @@ export function labFromJsonObject(json: JsonObject): Lab {
   }
   const base = modelParamsFromJsonObject(json);
 
-  if (typeof json[ 'id' ] !== 'string') {
+  if (typeof json['id'] !== 'string') {
     throw new Error("Expected a string 'id'");
   }
-  if (!isDiscipline(json[ 'discipline' ])) {
+  if (!isDiscipline(json['discipline'])) {
     throw new Error("Expected a Discipline 'discipline'");
   }
 
-  if (!isJsonObject(json[ 'campus' ])) {
+  if (!isJsonObject(json['campus'])) {
     throw new Error("Expected a json object 'campus'");
   }
-  const campus = campusFromJsonObject(json[ 'campus' ]);
+  const campus = campusFromJsonObject(json['campus']);
 
-  if (!Array.isArray(json[ 'supervisors' ]) || !json[ 'supervisors' ].every(isJsonObject)) {
+  if (!Array.isArray(json['supervisors']) || !json['supervisors'].every(isJsonObject)) {
     throw new Error("Expected an array of json objects 'supervisors'");
   }
-  const supervisors = json[ 'supervisors' ].map(userFromJsonObject);
+  const supervisors = json['supervisors'].map(userFromJsonObject);
+
+  if (!Array.isArray(json['storageTypes']) || !json['storageTypes'].every(s => isStorageType(s))) {
+    throw new Error("Expected an array of storage types 'storageTypes'");
+  }
+  const storageTypes = json['storageTypes'];
 
   return new Lab({
     ...base,
-    id: json[ 'id' ],
-    discipline: json[ 'discipline' ],
+    id: json['id'],
+    discipline: json['discipline'],
     campus,
     supervisors,
+    storageTypes
   });
 }
 
@@ -135,19 +147,19 @@ export class LabProfile extends Lab implements LabProfileParams {
 
 export function labProfileFromJsonObject(object: JsonObject) {
   const labParams = labFromJsonObject(object);
-  if (!isJsonObject(object[ 'equipmentInstalls' ])) {
+  if (!isJsonObject(object['equipmentInstalls'])) {
     throw new Error("Expected a json object 'equipmentInstalls'");
   }
   const equipmentInstallPage = modelIndexPageFromJsonObject(
     equipmentInstallationFromJsonObject,
-    object[ 'equipmentInstalls' ],
+    object['equipmentInstalls'],
   );
-  if (!isJsonObject(object[ 'equipmentProvisions' ])) {
+  if (!isJsonObject(object['equipmentProvisions'])) {
     throw new Error("Expected a json object 'equipmentProvisions'");
   }
   const equipmentProvisionPage = modelIndexPageFromJsonObject(
     equipmentProvisionFromJsonObject,
-    object[ 'equipmentProvisions' ],
+    object['equipmentProvisions'],
   );
 
   return new LabProfile({

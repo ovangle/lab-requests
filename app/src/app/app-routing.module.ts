@@ -81,6 +81,21 @@ const routes: Routes = [
       return module.CampusFeature;
     }
   },
+  {
+    path: 'components',
+    children: [
+      {
+        path: 'lab-storage-type-select',
+        loadComponent: async () => {
+          const module = await import('./lab/storage/lab-storage-type-select.example');
+          return module.LabStorageLikeSelectExample;
+        }
+      }
+
+    ]
+
+  }
+
 ];
 
 

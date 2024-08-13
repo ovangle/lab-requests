@@ -1,32 +1,26 @@
-import { CommonModule, CurrencyPipe, formatCurrency } from '@angular/common';
-import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { CommonModule, CurrencyPipe, DOCUMENT, formatCurrency } from '@angular/common';
+import { Component, ElementRef, EventEmitter, Input, Output, Signal, inject, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
-  ControlValueAccessor,
   FormControl,
-  NG_VALUE_ACCESSOR,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
+import { MatInput, MatInputModule } from '@angular/material/input';
 import {
-  BehaviorSubject,
   NEVER,
   Observable,
   combineLatest,
   defer,
+  distinctUntilChanged,
   filter,
   map,
   of,
   shareReplay,
-  skip,
-  skipUntil,
   switchMap,
-  tap,
-  withLatestFrom,
 } from 'rxjs';
-import { disabledStateToggler } from 'src/app/utils/forms/disable-state-toggler';
+import { AbstractFormFieldInput, formFieldInputProviders } from '../forms/abstract-form-field-input.component';
 
 @Component({
   selector: 'common-currency-input',
@@ -39,104 +33,94 @@ import { disabledStateToggler } from 'src/app/utils/forms/disable-state-toggler'
     MatInputModule,
   ],
   template: `
-    <mat-form-field>
-      <mat-label><ng-content select="mat-label"></ng-content></mat-label>
-
-      <span matTextPrefix>$</span>
-
-      <input
-        matInput
-        type="text"
-        [formControl]="_control"
-        (focus)="_onInputFocus($event)"
-        (blur)="_onInputBlur($event)"
-      />
-
-      <div matTextSuffix>
-        <ng-content select=".input-text-suffix"></ng-content>
-      </div>
-
-      @if (_control.errors && _control.errors['pattern']) {
-        <mat-error>Not a valid amount</mat-error>
-      }
-
-      <mat-error>
-        <ng-content select="mat-error"></ng-content>
-      </mat-error>
-    </mat-form-field>
+  <span>$</span>
+  <input #valueInput matInput type="text" 
+        [formControl]="_control" 
+        (focus)="onFocus($event)" 
+        (blur)="onBlur($event)" />
   `,
   providers: [
-    {
-      provide: NG_VALUE_ACCESSOR,
-      multi: true,
-      useExisting: CurrencyInputComponent,
-    },
+    ...formFieldInputProviders('currency-input', CurrencyInputComponent)
   ],
 })
-export class CurrencyInputComponent implements ControlValueAccessor {
-  _control = new FormControl<string>('0.00', {
+export class CurrencyInputComponent extends AbstractFormFieldInput<number> {
+  readonly _document = inject(DOCUMENT);
+  readonly input: Signal<ElementRef> = viewChild.required('valueInput');
+
+  readonly _control = new FormControl<string>('0.00', {
     nonNullable: true,
     validators: [
       Validators.pattern(/^([0-9]+)(,[0-9]{3})*(.[0-9]{0,2})?$/)
     ]
   });
 
-  readonly _focusSubject = new BehaviorSubject<boolean>(false);
+  override readonly statusChanges = this._control.statusChanges;
+  get errorState() {
+    return !this._control.valid;
+  }
 
-  readonly value$: Observable<number> = this._control.valueChanges.pipe(
+  protected _coerceValue(value: unknown): number {
+    if (typeof value === 'number') {
+      return value;
+    } else if (typeof value === 'string') {
+      const value_ = (value || '').replaceAll(',', '');
+      const n = Number.parseFloat(value_);
+
+      if (Number.isNaN(n)) {
+        throw new Error(`${n} is not a valid value for ${this.controlType} input`);
+      }
+      return n;
+    } else {
+      throw new Error('Expected a number or string');
+    }
+  }
+  override writeValue(value: any): void {
+    if (value === null) {
+      this._control.reset();
+    } else if (typeof value === 'number') {
+      const strValue = formatCurrency(value, 'en', '');
+      this._control.setValue(formatCurrency(value, 'en', ''));
+    } else {
+      throw new Error('Invalid value for currency control. Expected a number');
+    }
+  }
+
+  readonly _controlValue$ = this._control.valueChanges.pipe(
     takeUntilDestroyed(),
-    map((value) => Number.parseFloat((value || '').replaceAll(',', ''))),
-    filter((v) => !Number.isNaN(v)),
-    shareReplay(1),
+    distinctUntilChanged(),
+    map(v => (v || '').replaceAll(',', '')),
+    map(v => Number.parseFloat(v)),
+    filter(v => Number.isNaN(v)),
+    shareReplay(1)
   );
 
-  readonly formattedValue$: Observable<string> = defer(() => {
-    return combineLatest([ this.value$, this._focusSubject ]).pipe(
-      switchMap(([ value, isFocused ]) => (isFocused ? NEVER : of(value))),
-      map((value) => formatCurrency(value, 'en', '')),
+  override _getValueChangesFromView(): Observable<number | null> {
+    return this._controlValue$;
+  }
+
+  readonly _formattedControlValue$: Observable<string> = defer(() => {
+    return combineLatest([
+      this._controlValue$,
+      this.focused$
+    ]).pipe(
+      switchMap(([value, isFocused]) => (isFocused ? NEVER : of(value))),
+      map((value) => formatCurrency(value, 'en', ''))
     );
   });
 
   constructor() {
-    this.value$
-      .pipe(takeUntilDestroyed())
-      .subscribe((value) => this._onChange(value));
-
-    this.formattedValue$.subscribe((value) => {
+    super();
+    this._formattedControlValue$.subscribe((value) => {
       this._control.setValue(value, {
         emitEvent: false,
       })
-      if (!this._control.valid) {
-        debugger;
-      }
     });
   }
 
-  ngOnDestroy() {
-    this._focusSubject.complete();
+  override select() {
+    const inputElement: HTMLInputElement = this.input().nativeElement;
+    if (this._document.activeElement !== inputElement) {
+      inputElement.select();
+    }
   }
-
-  _onInputFocus(event: Event) {
-    (event.target as HTMLInputElement).select();
-    this._focusSubject.next(true);
-  }
-
-  _onInputBlur(event: Event) {
-    this._focusSubject.next(false);
-    this._onTouched();
-  }
-
-  writeValue(obj: any): void {
-    this._control.setValue(obj);
-  }
-
-  _onChange = (value: any) => { };
-  registerOnChange(fn: any): void {
-    this._onChange = fn;
-  }
-  _onTouched = () => { };
-  registerOnTouched(fn: any): void {
-    this._onTouched = fn;
-  }
-  readonly setDisabledState = disabledStateToggler(this._control);
 }
