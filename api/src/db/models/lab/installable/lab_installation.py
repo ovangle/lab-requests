@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import abstractmethod
 from typing import Any, Awaitable, ClassVar, Generic, TypeVar
 from uuid import UUID
@@ -5,9 +7,11 @@ from uuid import UUID
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, validates, mapped_column, relationship
 
+from db.models.fields import uuid_pk
 from db.models.base import Base
 from db.models.lab.lab import Lab
 from db.models.lab.provisionable.provisionable import Provisionable
+from db.models.lab.allocatable import Allocatable
 
 from .installation_type import is_installation_type
 from .installable import Installable
@@ -16,7 +20,7 @@ from .installable import Installable
 TInstallable = TypeVar("TInstallable", bound=Installable)
 
 
-class LabInstallation(Provisionable, Base, Generic[TInstallable]):
+class LabInstallation(Allocatable, Base, Generic[TInstallable]):
     __tablename__ = "lab_installation"
     __installation_type__: ClassVar[str]
 
@@ -28,7 +32,8 @@ class LabInstallation(Provisionable, Base, Generic[TInstallable]):
 
         return super().__init_subclass__(**kw)
 
-    type: Mapped[str]
+    id: Mapped[uuid_pk] = mapped_column()
+    type: Mapped[str] = mapped_column()
     lab_id: Mapped[UUID] = mapped_column(ForeignKey("lab.id"))
     lab: Mapped[Lab] = relationship()
 

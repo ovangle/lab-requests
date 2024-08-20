@@ -1,17 +1,17 @@
 __all__ = (
-    "ResearchFundingView",
+    "ResearchFundingDetail",
     "ResearchFundingIndex",
     "ResearchFundingIndexPage",
     "ResearchFundingLookup",
     "ResearchFundingCreateRequest",
     "ResearchFundingUpdateRequest",
-    "ResearchPlanView",
+    "ResearchPlanDetail",
     "ResearchPlanIndex",
     "ResearchPlanIndexPage",
 )
 
 from .funding import (
-    ResearchFundingView,
+    ResearchFundingDetail,
     ResearchFundingIndex,
     ResearchFundingIndexPage,
     ResearchFundingLookup,
@@ -20,9 +20,8 @@ from .funding import (
 )
 
 from .plan import (
-    ResearchPlanView,
+    ResearchPlanDetail,
     ResearchPlanIndex,
     ResearchPlanIndexPage,
-    ResearchPlanTaskView,
-    ResearchPlanTaskIndex,
+    ResearchPlanTaskDetail,
 )

@@ -1,61 +1,47 @@
 from uuid import UUID
 
-from db import LocalSession
-from db.models.equipment import Equipment, EquipmentInstallation
-from db.models.lab import Lab
+from api.schemas.base import ModelDetail
+from db.models.equipment import (
+    EquipmentInstallation,
+    query_equipment_installations,
+)
 from ..base import (
     ModelIndex,
-    ModelView,
-    ModelCreateRequest,
+    ModelIndexPage,
 )
-from .equipment import EquipmentView, EquipmentCreateRequest
+from ..lab.lab_installation import LabInstallationDetail
 
 
-class EquipmentInstallationView(ModelView[EquipmentInstallation]):
+class EquipmentInstallationDetail(LabInstallationDetail[EquipmentInstallation]):
     equipment: UUID
     equipment_name: str
-    lab: UUID
+
+    equipment_model_name: str
     num_installed: int
 
     @classmethod
     async def from_model(
         cls,
         model: EquipmentInstallation,
-        *,
-        equipment: Equipment | None = None,
     ):
-        if equipment is not None:
-            equipment_ = equipment
-        else:
-            equipment_ = await model.awaitable_attrs.equipment
+        equipment_ = await model.awaitable_attrs.equipment
 
-        return cls(
-            id=model.id,
-            equipment=equipment_.id,
+        return await cls._from_lab_installation(
+            model,
             equipment_name=equipment_.name,
-            lab=model.lab_id,
+            equipment_model_name=model.model_name,
             num_installed=model.num_installed,
-            created_at=model.created_at,
-            updated_at=model.updated_at,
         )
 
 
-class EquipmentInstallationIndex(ModelIndex[EquipmentInstallationView]):
-    __item_view__ = EquipmentInstallationView
+class EquipmentInstallationIndex(ModelIndex[EquipmentInstallation]):
+    async def item_from_model(
+        self, model: EquipmentInstallation
+    ) -> ModelDetail[EquipmentInstallation]:
+        return await EquipmentInstallationDetail.from_model(model)
+
+    def get_selection(self):
+        return query_equipment_installations()
 
 
-# FIXME: mypy does not support PEP 695
-type EquipmentInstallationPage = ModelIndexPage[EquipmentInstallationView]  # type: ignore
-
-
-class EquipmentInstallRequest(ModelCreateRequest[Equipment]):
-    """
-    Represents a request to install an equipment into a specific
-    lab.
-    """
-
-    equipment: Equipment | UUID | EquipmentCreateRequest
-    lab: Lab | UUID
-
-    async def do_create(self, db: LocalSession, **kwargs):
-        raise NotImplementedError
+EquipmentInstallationIndexPage = ModelIndexPage[EquipmentInstallation]

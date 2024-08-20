@@ -20,7 +20,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { CampusSearchComponent } from 'src/app/uni/campus/campus-search.component';
-import { DisciplineSelectComponent } from 'src/app/uni/discipline/discipline-select.component';
+import { UniDisciplineSelect } from 'src/app/uni/discipline/discipline-select.component';
 import { UserSearchComponent } from 'src/app/user/common/user-search.component';
 
 import { Lab, LabService } from 'src/app/lab/lab';
@@ -56,19 +56,19 @@ export function researchPlanForm(plan: ResearchPlan | null = null) {
   return new FormGroup({
     title: new FormControl<string>(plan?.title || '', {
       nonNullable: true,
-      validators: [ Validators.required ],
+      validators: [Validators.required],
     }),
     description: new FormControl<string>(plan?.description || '', {
       nonNullable: true,
     }),
     researcher: new FormControl<User | null>(plan?.researcher || null, {
-      validators: [ Validators.required ],
+      validators: [Validators.required],
     }),
     coordinator: new FormControl<User | null>(plan?.coordinator || null, {
-      validators: [ Validators.required ]
+      validators: [Validators.required]
     }),
     funding: new FormControl<ResearchFunding | null>(plan?.funding || null, {
-      validators: [ Validators.required ],
+      validators: [Validators.required],
     }),
     tasks
   });
@@ -135,7 +135,7 @@ function updateResearchPlanFromForm(form: ResearchPlanForm): UpdateResearchPlan 
     MatCheckboxModule,
     MatDatepickerModule,
 
-    DisciplineSelectComponent,
+    UniDisciplineSelect,
     ResearchFundingSelectComponent,
     CampusSearchComponent,
     UserSearchComponent,
@@ -298,7 +298,7 @@ export class ResearchPlanFormComponent {
   set currentUser(user: User) {
     this._currentUser = user;
     window.setTimeout(() =>
-      this.form.patchValue({ [ this.currentUserPlanRole ]: this._currentUser })
+      this.form.patchValue({ [this.currentUserPlanRole]: this._currentUser })
     );
   }
 
@@ -323,19 +323,19 @@ export class ResearchPlanFormComponent {
   readonly form: ResearchPlanForm = new FormGroup({
     title: new FormControl<string>('', {
       nonNullable: true,
-      validators: [ Validators.required ],
+      validators: [Validators.required],
     }),
     description: new FormControl<string>('', {
       nonNullable: true,
     }),
     researcher: new FormControl<User | null>(null, {
-      validators: [ Validators.required ],
+      validators: [Validators.required],
     }),
     coordinator: new FormControl<User | null>(null, {
-      validators: [ Validators.required ]
+      validators: [Validators.required]
     }),
     funding: new FormControl<ResearchFunding | null>(null, {
-      validators: [ Validators.required ],
+      validators: [Validators.required],
     }),
     tasks: new FormArray<ResearchPlanTaskForm>([
       // At least one task is always necessary
@@ -380,7 +380,7 @@ export class ResearchPlanFormComponent {
           discipline: researcherDiscipline,
           campus: researcherCampus
         }).pipe(
-          map(labs => labs[ 0 ] || null)
+          map(labs => labs[0] || null)
         )
       }
       return of(null);

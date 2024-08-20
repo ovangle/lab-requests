@@ -3,24 +3,25 @@ from uuid import UUID, uuid4
 from db import LocalSession
 
 from db.models.research import ResearchFunding
+from db.models.research.funding import query_research_fundings
 
 from ..base import (
     ModelCreateRequest,
     ModelUpdateRequest,
-    ModelView,
+    ModelDetail,
     ModelLookup,
     ModelIndexPage,
     ModelIndex,
 )
 
 
-class ResearchFundingView(ModelView[ResearchFunding]):
+class ResearchFundingDetail(ModelDetail[ResearchFunding]):
     id: UUID
     name: str
     description: str
 
     @classmethod
-    async def from_model(cls, model: ResearchFunding, **kwargs):
+    async def from_model(cls, model: ResearchFunding):
         return cls(
             id=model.id,
             name=model.name,
@@ -42,12 +43,19 @@ class ResearchFundingLookup(ModelLookup[ResearchFunding]):
         raise ValueError("Either id or name must be provided")
 
 
-class ResearchFundingIndex(ModelIndex[ResearchFundingView]):
-    __item_view__ = ResearchFundingView
+class ResearchFundingIndex(ModelIndex[ResearchFunding]):
+    name_eq: str | None
+    text: str
+
+    async def item_from_model(self, model: ResearchFunding):
+        return await ResearchFundingDetail.from_model(model)
+
+    def get_selection(self):
+        return query_research_fundings(name_eq=self.name_eq, text=self.text)
 
 
 # TODO: PEP 695
-ResearchFundingIndexPage = ModelIndexPage[ResearchFundingView]
+ResearchFundingIndexPage = ModelIndexPage[ResearchFunding]
 
 
 class ResearchFundingUpdateRequest(ModelUpdateRequest[ResearchFunding]):

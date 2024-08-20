@@ -69,13 +69,22 @@ async def create_type(connection: AsyncConnection, enum_type: postgresql.ENUM):
 
 
 async def create_db_types(db_binding):
-    from db.models.lab.lab_equipment import PROVISION_STATUS_TYPE
+    from db.models.lab.allocatable import ALLOCATION_STATUS_ENUM
+    from db.models.lab.provisionable import PROVISION_STATUS_ENUM
 
-    await db_binding.run_sync(PROVISION_STATUS_TYPE.create)
+    await db_binding.run_sync(ALLOCATION_STATUS_ENUM.create)
+    await db_binding.run_sync(PROVISION_STATUS_ENUM.create)
 
 
 async def init_db():
-    from .models.base import Base
+    from db.models.base import Base
+    import db.models.equipment
+    import db.models.lab
+    import db.models.material
+    import db.models.research
+    import db.models.software
+    import db.models.uni
+    import db.models.user
 
     alembic_cfg = _get_alembic_config()
 

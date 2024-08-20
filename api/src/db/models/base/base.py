@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from abc import abstractclassmethod, abstractmethod
+from abc import abstractmethod
 from asyncio import Future
 from datetime import datetime
 import functools
@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.asyncio import AsyncAttrs
 
 from db.func import utcnow
-from db import LocalSession, get_db
+from db import LocalSession, local_object_session, get_db
 
 from .errors import DoesNotExist
 
@@ -28,7 +28,7 @@ class Base(AsyncAttrs, DeclarativeBase):
     id: Mapped[UUID]
 
     created_at: Mapped[datetime] = mapped_column(
-        postgresql.TIMESTAMP(timezone=True), server_default=utcnow()
+        postgresql.TIMESTAMP(timezone=True), server_default=utcnow(), index=True
     )
     updated_at: Mapped[datetime] = mapped_column(
         postgresql.TIMESTAMP(timezone=True), server_default=utcnow(), onupdate=utcnow()
@@ -40,6 +40,12 @@ class Base(AsyncAttrs, DeclarativeBase):
         if o is None:
             raise DoesNotExist(cls, for_id=id)
         return o
+
+    async def save(self):
+        async with local_object_session(self) as db:
+            db.add(self)
+            await db.commit()
+        return self
 
 
 def model_id(ref: Base | UUID) -> UUID:

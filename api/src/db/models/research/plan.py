@@ -19,6 +19,8 @@ from sqlalchemy import (
     Table,
     UniqueConstraint,
     Update,
+    all_,
+    and_,
     insert,
     delete,
     func,
@@ -30,44 +32,77 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy_file import FileField, File
 from db import LocalSession, local_object_session
 
-from db.models.base.fields import uuid_pk
-from db.models.lab.lab_resource import LabResource, LabResourceType
-from db.models.lab.lab_resource_container import LabResourceConsumer
+from db.models.equipment.equipment_lease import EquipmentLease
+from db.models.fields import uuid_pk
 from db.models.uni.discipline import uni_discipline
 
 from ..base import Base, DoesNotExist
-from ..lab import LabResourceContainer
 from .funding import ResearchFunding
 
 if TYPE_CHECKING:
     from db.models.user import User
-    from db.models.lab import Lab, LabResource
+    from db.models.lab import Lab
+    from db.models.lab.provisionable import LabProvision
+    from db.models.software.software_lease import SoftwareLease
+    from db.models.material import OutputMaterial, OutputMaterial
 
 
 class ResearchPlanDoesNotExist(DoesNotExist):
-    pass
+    def __init__(self, *, for_id: UUID | None = None):
+        msg = None
+        super().__init__("ResearchPlan", msg, for_id=for_id)
 
 
 class ResearchPlanTaskDoesNotExist(DoesNotExist):
     def __init__(
         self, for_id: UUID | None = None, for_plan_index: tuple[UUID, int] | None = None
     ):
-        if for_id:
-            super().__init__(for_id=for_id)
         if for_plan_index:
             plan, index = for_plan_index
             msg = f"No task for plan {plan} at {index}"
-            super().__init__(msg)
-        raise ValueError("Either for_id or for_plan_index must be provided")
+        return super().__init__("ResearchPlan", msg, for_id=for_id)
 
 
-research_plan_resources = Table(
-    "research_plan_resources",
+research_plan_setup_provisions = Table(
+    "research_plan_setup_provisions",
     Base.metadata,
     Column("plan_id", ForeignKey("research_plan.id"), primary_key=True),
-    Column("resource_id", ForeignKey("lab_resource.id"), primary_key=True),
-    Column("resource_type", postgresql.VARCHAR(16)),
-    Column("resource_index", postgresql.INTEGER),
+    Column("provision_id", ForeignKey("lab_resource_provision.id"), primary_key=True),
+)
+
+research_plan_teardown_provisions = Table(
+    "research_plan_teardown_provisions",
+    Base.metadata,
+    Column("plan_id", ForeignKey("research_plan.id"), primary_key=True),
+    Column("provision_id", ForeignKey("lab_resource_provision.id"), primary_key=True),
+)
+
+research_plan_equipment_leases = Table(
+    "research_plan_equipment_leases",
+    Base.metadata,
+    Column("plan_id", ForeignKey("research_plan.id"), primary_key=True),
+    Column("equipment_lease_id", ForeignKey("equipment_lease.id"), primary_key=True),
+)
+
+research_plan_software_leases = Table(
+    "research_plan_software_leases",
+    Base.metadata,
+    Column("plan_id", ForeignKey("research_plan.id"), primary_key=True),
+    Column("software_lease_id", ForeignKey("software_lease.id"), primary_key=True),
+)
+
+research_plan_input_materials = Table(
+    "research_plan_input_materials",
+    Base.metadata,
+    Column("plan_id", ForeignKey("research_plan.id"), primary_key=True),
+    Column("input_material_id", ForeignKey("input_material.id"), primary_key=True),
+)
+
+research_plan_output_materials = Table(
+    "research_plan_output_materials",
+    Base.metadata,
+    Column("plan_id", ForeignKey("research_plan.id"), primary_key=True),
+    Column("input_material_id", ForeignKey("output_material.id"), primary_key=True),
 )
 
 
@@ -75,7 +110,7 @@ class ResearchPlanTask(Base):
     __tablename__ = "research_plan_task"
     __table_args__ = (UniqueConstraint("plan_id", "index"),)
 
-    id: Mapped[uuid_pk]
+    id: Mapped[uuid_pk] = mapped_column()
 
     plan_id: Mapped[UUID] = mapped_column(ForeignKey("research_plan.id"))
     plan: Mapped[ResearchPlan] = relationship(back_populates="tasks")
@@ -98,6 +133,13 @@ class ResearchPlanTask(Base):
         ForeignKey("user.id"), nullable=True, default=None
     )
     supervisor: Mapped[User] = relationship()
+
+    setup_provisions: Mapped[list[LabProvision]] = relationship(
+        secondary=research_plan_setup_provisions,
+    )
+    teardown_provisions: Mapped[list[LabProvision]] = relationship(
+        secondary=research_plan_teardown_provisions
+    )
 
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID):
@@ -156,7 +198,7 @@ class ResearchPlanTaskAttrs(TypedDict):
 class ResearchPlanAttachment(Base):
     __tablename__ = "research_plan_attachment"
 
-    id: Mapped[uuid_pk]
+    id: Mapped[uuid_pk] = mapped_column()
 
     plan_id: Mapped[UUID] = mapped_column(ForeignKey("research_plan.id"))
     plan: Mapped[ResearchPlan] = relationship(back_populates="attachments")
@@ -166,14 +208,13 @@ class ResearchPlanAttachment(Base):
     )
 
 
-class ResearchPlan(LabResourceConsumer, Base):
+class ResearchPlan(Base):
     __tablename__ = "research_plan"
 
-    id: Mapped[uuid_pk]
+    id: Mapped[uuid_pk] = mapped_column()
     container_id: Mapped[UUID] = mapped_column(
         ForeignKey("lab_resource_container.id", name="research_plan_container_fk")
     )
-    container: Mapped[LabResourceContainer] = relationship()
 
     discipline: Mapped[uni_discipline]
     title: Mapped[str] = mapped_column(postgresql.VARCHAR(256))
@@ -199,8 +240,20 @@ class ResearchPlan(LabResourceConsumer, Base):
         back_populates="plan", order_by=ResearchPlanTask.index
     )
 
-    resources: Mapped[list[LabResource]] = relationship(
-        secondary=research_plan_resources
+    equipment_leases: Mapped[list[EquipmentLease]] = relationship(
+        secondary=research_plan_equipment_leases
+    )
+
+    software_leases: Mapped[list[SoftwareLease]] = relationship(
+        secondary=research_plan_software_leases
+    )
+
+    input_materials: Mapped[list[OutputMaterial]] = relationship(
+        secondary=research_plan_input_materials
+    )
+
+    output_materials: Mapped[list[OutputMaterial]] = relationship(
+        secondary=research_plan_output_materials
     )
 
     attachments: Mapped[list[ResearchPlanAttachment]] = relationship(
@@ -213,25 +266,6 @@ class ResearchPlan(LabResourceConsumer, Base):
         if plan is None:
             raise ResearchPlanDoesNotExist(for_id=id)
         return plan
-
-    def select_resources(
-        self, resource_type: LabResourceType
-    ) -> Select[tuple[LabResource]]:
-        return select(type(self).resources).where(LabResource.type == resource_type)  # type: ignore
-
-    def create_resource(
-        self, resource_type: LabResourceType, at_index: int, **attrs: dict[str, Any]
-    ) -> Insert:
-        return insert(resource_type.py_type).values(
-            type=resource_type, index=at_index, **attrs
-        )
-
-    def update_resource(self, resource: LabResource, **attrs: dict[str, Any]) -> Update:
-        return (
-            update(resource.type.py_type)
-            .where(LabResource.type == resource.type, LabResource.id == resource.id)
-            .values(**attrs)
-        )
 
     def __init__(
         self,
@@ -331,3 +365,17 @@ class ResearchPlan(LabResourceConsumer, Base):
             )
 
         await session.commit()
+
+
+def query_research_plans(
+    researcher: UUID | None = None,
+    coordinator: UUID | None = None,
+):
+    queries = []
+    if researcher:
+        queries.append(ResearchPlan.researcher_id == researcher)
+
+    if coordinator:
+        queries.append(ResearchPlan.coordinator_id == coordinator)
+
+    return select(ResearchPlan).where(*queries)

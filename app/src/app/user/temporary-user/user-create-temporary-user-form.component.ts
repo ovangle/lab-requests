@@ -9,7 +9,7 @@ import { CreateTemporaryUserRequest } from "../common/user";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 import { filter } from "rxjs";
 import { CampusSearchComponent } from "src/app/uni/campus/campus-search.component";
-import { DisciplineSelectComponent } from "src/app/uni/discipline/discipline-select.component";
+import { UniDisciplineSelect } from "src/app/uni/discipline/discipline-select.component";
 import { MatButtonModule } from "@angular/material/button";
 
 function cquEmailValidator(control: AbstractControl<string>) {
@@ -51,7 +51,7 @@ function createTemporaryUserRequestFromForm(form: CreateTemporaryUserForm): Crea
         MatInputModule,
 
         CampusSearchComponent,
-        DisciplineSelectComponent
+        UniDisciplineSelect
     ],
     template: `
     <form [formGroup]="form" (ngSubmit)="_onFormSubmit($event)">
@@ -116,7 +116,7 @@ export class CreateTemporaryUserFormComponent {
     save = new EventEmitter<CreateTemporaryUserRequest>();
 
     readonly form: CreateTemporaryUserForm = new FormGroup({
-        name: new FormControl('', { nonNullable: true, validators: [ Validators.required ] }),
+        name: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
         email: new FormControl('', {
             nonNullable: true,
             validators: [
@@ -126,10 +126,10 @@ export class CreateTemporaryUserFormComponent {
             ]
         }),
         campus: new FormControl<CampusLookup | string | null>(null, {
-            validators: [ Validators.required ]
+            validators: [Validators.required]
         }),
         discipline: new FormControl<Discipline | null>(null, {
-            validators: [ Validators.required ]
+            validators: [Validators.required]
         })
     })
 

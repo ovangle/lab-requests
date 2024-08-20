@@ -1,129 +1,123 @@
 from http import HTTPStatus
-from typing import cast
+from typing import Coroutine, Generic, TypeVar, cast
 from uuid import UUID
 
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException
 
 from api.schemas.equipment.equipment import EquipmentCreateRequest
+from api.schemas.lab.lab_installation import LabInstallationProvisionDetail
 from db import LocalSession
-from db.models.lab import Lab, ProvisionStatus
+from db.models.equipment.equipment_provision import (
+    DeclareEquipmentProvision,
+    NewEquipmentProvision,
+    UpgradeEquipmentProvision,
+)
+from db.models.lab import Lab
+from db.models.lab.provisionable import ProvisionStatus
 from db.models.research import ResearchFunding
-from db.models.equipment import Equipment, EquipmentInstallation, EquipmentProvision
+from db.models.equipment import (
+    Equipment,
+    EquipmentInstallation,
+    EquipmentInstallationProvision,
+)
+from db.models.user import User
 
-from ..base import ModelView, ModelIndex, ModelCreateRequest, ModelUpdateRequest
-from .equipment_installation import EquipmentInstallationView
+from ..base import (
+    ModelDetail,
+    ModelIndex,
+    ModelCreateRequest,
+    ModelIndexPage,
+    ModelRequest,
+    ModelUpdateRequest,
+)
+from ..lab.lab_provision import (
+    LabProvisionCreateRequest,
+    LabProvisionDetail,
+    LabProvisionRejection,
+)
+from .equipment_installation import EquipmentInstallationDetail
 
 
-class EquipmentProvisionView(ModelView[EquipmentProvision]):
-    lab: UUID | None
-    equipment: UUID
-    installation: EquipmentInstallationView | None
+class EquipmentProvisionDetail(
+    LabInstallationProvisionDetail[EquipmentInstallationProvision]
+):
+    equipment_id: UUID
+    installation_id: UUID
 
-    status: ProvisionStatus
-    reason: str
-    quantity_required: int
-
-    funding: UUID | None
-    estimated_cost: float | None
+    quantity_required: float
 
     @classmethod
     async def from_model(
         cls,
-        model: EquipmentProvision,
-        *,
-        installation: EquipmentInstallation | None = None,
-        equipment: Equipment | None = None,
+        model: EquipmentInstallationProvision,
     ):
-        if not installation and model.installation_id:
-            installation = await model.awaitable_attrs.installation
-
-        if installation:
-            installation_view = await EquipmentInstallationView.from_model(
-                installation, equipment=equipment
-            )
-        else:
-            installation_view = None
-
-        return cls(
-            id=model.id,
-            status=model.status,
-            reason=model.reason,
-            equipment=model.equipment_id,
-            lab=model.lab_id,
-            installation=installation_view,
-            funding=model.funding_id,
-            estimated_cost=model.estimated_cost,
+        return await cls._from_lab_installation_provision(
+            model,
+            equipment_id=model.equipment_id,
+            installation_id=model.installation_id,
             quantity_required=model.quantity_required,
-            created_at=model.created_at,
-            updated_at=model.updated_at,
         )
 
 
-class EquipmentProvisionIndex(ModelIndex[EquipmentProvisionView]):
-    __item_view__ = EquipmentProvisionView
+class EquipmentProvisionIndex(ModelIndex[EquipmentInstallationProvision]):
+    async def item_from_model(
+        self, model: EquipmentInstallationProvision
+    ) -> ModelDetail[EquipmentInstallationProvision]:
+        return await EquipmentProvisionDetail.from_model(model)
 
 
-# TODO: mypy does not support PEP 695
-type EquipmentProvisionPage = ModelIndexPage[EquipmentProvisionView]  # type: ignore
+EquipmentProvisionPage = ModelIndexPage[EquipmentInstallationProvision]
 
 
-class EquipmentProvisionRequest(ModelCreateRequest[Equipment]):
-    status: ProvisionStatus
-
+class EquipmentProvisionCreateRequest(
+    LabProvisionCreateRequest[EquipmentInstallationProvision]
+):
+    installation: UUID
     quantity_required: int
-
-    reason: str
-
-    lab: Lab | UUID
-
-    funding: ResearchFunding | UUID | None
-    estimated_cost: float | None
-
     purchase_url: str
 
-    async def get_lab(self, db: LocalSession) -> Lab | None:
-        if isinstance(self.lab, UUID):
-            self.lab = await Lab.get_for_id(db, self.lab)
-        return cast(Lab | None, self.lab)
+    async def get_installation(self, db: LocalSession):
+        return await EquipmentInstallation.get_by_id(db, self.installation)
 
-    async def get_funding(self, db: LocalSession) -> ResearchFunding | None:
-        if isinstance(self.funding, UUID):
-            self.funding = await ResearchFunding.get_for_id(db, self.funding)
-        return cast(ResearchFunding | None, self.funding)
-
-    async def do_create(
-        self, db: LocalSession, *, equipment: Equipment | None = None, **kwargs
-    ):
-        assert not kwargs
-        if equipment is None:
-            raise ValueError("Equipment must be supplied from context")
-        lab = (await self.get_lab(db)) if self.lab else None
-
-        if self.status == ProvisionStatus.REQUESTED:
-            return await create_new_provision(
-                db,
-                equipment,
-                quantity_required=self.quantity_required,
-                lab=(await self.get_lab(db)) if self.lab else None,
-                funding=(await self.get_funding(db)) if self.funding else None,
-                estimated_cost=self.estimated_cost,
-                reason=self.reason,
-                purchase_url=self.purchase_url,
-            )
-        elif self.status == ProvisionStatus.COMPLETED:
-            if lab is None:
-                raise HTTPException(
-                    HTTPStatus.BAD_REQUEST,
-                    detail="lab must be provided if importing a known install",
+    async def do_create_lab_provision(
+        self,
+        db: LocalSession,
+        type: str,
+        *,
+        lab: Lab,
+        funding: ResearchFunding | None,
+        current_user: User,
+        note: str,
+    ) -> EquipmentInstallationProvision:
+        installation = await self.get_installation(db)
+        match self.type:
+            case "new_equipment":
+                return NewEquipmentProvision(
+                    installation,
+                    note=self.note,
+                    requested_by=current_user,
                 )
+            case "upgrade_equipment":
+                return UpgradeEquipmentProvision(
+                    installation, note=self.note, requested_by=current_user
+                )
+            case "declare_equipment":
+                return DeclareEquipmentProvision(
+                    installation, note=self.note, requested_by=current_user
+                )
+            case _:
+                raise TypeError("Unknown equipment provision type")
 
-            return await create_known_install(
-                db, equipment, lab, num_installed=self.quantity_required
-            )
-        else:
-            raise HTTPException(
-                HTTPStatus.BAD_REQUEST, detail="status must be installed or requested"
-            )
+
+class EquipmentProvisionRequest:
+    async def resolve_model(self, db: LocalSession, id: UUID):
+        return await EquipmentInstallationProvision.get_by_id(db, id)
+
+
+class EquipmentProvisionRejection(
+    LabProvisionRejection[EquipmentInstallationProvision], EquipmentProvisionRequest
+):
+    pass
 
 
 class LabEquipmentProvisionRequest(ModelCreateRequest[Equipment]):
@@ -175,8 +169,9 @@ class LabEquipmentProvisionRequest(ModelCreateRequest[Equipment]):
         assert not kwargs
         equipment = await self.get_or_create_equipment(db)
         installation = await self.maybe_create_installation(db)
-        provision = EquipmentProvision(
-            equipment_or_install=installation if installation else equipment,
+        assert installation is not None
+        provision = EquipmentInstallationProvision(
+            installation,
             estimated_cost=self.estimated_cost,
             quantity_required=self.quantity_required,
             purchase_url=self.purchase_url,

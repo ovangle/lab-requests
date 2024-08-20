@@ -8,7 +8,7 @@ from uuid import UUID
 
 from passlib.hash import pbkdf2_sha256
 
-from sqlalchemy import ForeignKey, TypeDecorator, func, select
+from sqlalchemy import ForeignKey, Select, TypeDecorator, func, or_, select
 from sqlalchemy.ext.declarative import AbstractConcreteBase
 from sqlalchemy.orm import Mapped, mapped_column, relationship, declared_attr
 from sqlalchemy.dialects import postgresql
@@ -16,7 +16,7 @@ from sqlalchemy.dialects import postgresql
 from db import LocalSession, local_object_session
 
 from .base import Base, DoesNotExist
-from .base.fields import uuid_pk
+from .fields import uuid_pk
 
 from ..models.uni import Campus, Discipline
 
@@ -31,15 +31,11 @@ class UserDoesNotExist(DoesNotExist):
     ):
         from .user import User
 
-        if for_id:
-            return super().__init__(for_id=for_id)
         if for_email:
             msg = f"User with email {for_email} does not exist"
-            return super().__init__(msg)
         if for_temporary_token:
             msg = f"User does not exist with temporary user token {for_temporary_token}"
-            return super().__init__(msg)
-        raise NotImplementedError
+        return super().__init__("User", msg, for_id=for_id)
 
 
 class UserDomain(Enum):
@@ -55,7 +51,7 @@ user_domain = Annotated[
 class User(Base):
     __tablename__ = "user"
 
-    id: Mapped[uuid_pk]
+    id: Mapped[uuid_pk] = mapped_column()
     domain: Mapped[user_domain]
 
     email: Mapped[str] = mapped_column(postgresql.VARCHAR(256), unique=True, index=True)
@@ -138,6 +134,27 @@ class User(Base):
                 TemporaryAccessToken.token == token,
             )
         )
+
+
+def query_users(
+    search: str | None = None,
+    include_roles: set[str] | None = None,
+    discipline: Discipline | None = None,
+) -> Select[tuple[User]]:
+    clauses: list = [User.disabled.is_(False)]
+
+    if search:
+        clauses.append(
+            or_(User.name.ilike(f"%{search}%"), User.email.ilike(f"%{search}%"))
+        )
+
+    if include_roles:
+        clauses.append(User.roles.overlap(list(include_roles)))
+
+    if discipline:
+        clauses.append(User.disciplines.contains([discipline]))
+
+    return select(User).where(*clauses)
 
 
 class UserCredentials(AbstractConcreteBase, Base):
@@ -227,7 +244,7 @@ class TemporaryAccessToken(Base):
 
     __tablename__ = "user_temporary_access_token"
 
-    id: Mapped[uuid_pk]
+    id: Mapped[uuid_pk] = mapped_column()
     user_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
     user: Mapped[User] = relationship(User, back_populates="temporary_access_tokens")
     token: Mapped[str] = mapped_column(

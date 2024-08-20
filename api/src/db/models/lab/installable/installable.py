@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Awaitable
 from uuid import UUID
@@ -5,7 +7,6 @@ from uuid import UUID
 from sqlalchemy.orm import Mapped, validates
 
 from db.models.base import Base
-from db.models.base.fields import uuid_pk
 
 if TYPE_CHECKING:
     from .lab_installation import LabInstallation
@@ -15,7 +16,6 @@ if TYPE_CHECKING:
 class Installable(Base):
     __abstract__ = True
 
-    id: Mapped[uuid_pk]
     installation_type: Mapped[str]
 
     @abstractmethod

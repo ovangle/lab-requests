@@ -2,16 +2,14 @@ __all__ = (
     "ProvisionStatus",
     "Provisionable",
     "LabProvision",
-    "PROVISION_STATUS_TYPE",
-    "provision_status",
-    "ProvisionStatusMetadata",
+    "PROVISION_STATUS_ENUM",
+    "ProvisionTransition",
 )
 
 from .provision_status import (
     ProvisionStatus,
-    PROVISION_STATUS_TYPE,
-    provision_status,
-    ProvisionStatusMetadata,
+    PROVISION_STATUS_ENUM,
+    ProvisionTransition,
 )
 
 from .provisionable import Provisionable

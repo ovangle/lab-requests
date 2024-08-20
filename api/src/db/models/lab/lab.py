@@ -3,18 +3,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Table, Column, UniqueConstraint, select
+from sqlalchemy import ForeignKey, Select, Table, Column, UniqueConstraint, or_, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects import postgresql
 
 from db import LocalSession
 
-from ..base.fields import uuid_pk
-from ..base import Base, DoesNotExist
-from ..uni import Campus, Discipline
+from db.models.fields import uuid_pk
+from db.models.base import Base, DoesNotExist
 
-if TYPE_CHECKING:
-    from db.models.user import User
+from db.models.uni import Campus, Discipline, query_campuses
+from db.models.user import User
 
 
 lab_supervisor = Table(
@@ -37,13 +36,13 @@ class LabDoesNotExist(DoesNotExist):
             campus_id, discipline = for_campus_discipline
             msg = f"No lab with campus '{campus_id}' and discipline {discipline}"
 
-        super().__init__(msg, for_id=for_id)
+        super().__init__("Lab", msg, for_id=for_id)
 
 
 class Lab(Base):
     __tablename__ = "lab"
     __table_args__ = (UniqueConstraint("campus_id", "discipline"),)
-    id: Mapped[uuid_pk]
+    id: Mapped[uuid_pk] = mapped_column()
 
     campus_id: Mapped[UUID] = mapped_column(ForeignKey("uni_campus.id"))
     campus: Mapped[Campus] = relationship()
@@ -71,3 +70,33 @@ class Lab(Base):
         if not lab:
             raise LabDoesNotExist(for_campus_discipline=(campus_id, discipline))
         return lab
+
+
+def query_labs(
+    campus: Campus | None = None,
+    discipline: Discipline | None = None,
+    search: str | None = None,
+    id_in: list[UUID] | None = None,
+) -> Select[tuple[Lab]]:
+    clauses: list = []
+
+    if campus:
+        clauses.append(Lab.campus_id == campus.id)
+
+    if discipline:
+        clauses.append(Lab.discipline == discipline)
+
+    if search:
+        search_components = search.split(" ")
+
+        clauses.append(
+            or_(
+                Lab.campus.in_(query_campuses(search=search)),
+                *(Lab.discipline.ilike(s) for s in search_components),
+            )
+        )
+
+    if id_in:
+        clauses.append(Lab.id.in_(id_in))
+
+    return select(Lab).where(*clauses)

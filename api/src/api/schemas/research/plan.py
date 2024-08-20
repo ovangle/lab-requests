@@ -6,12 +6,13 @@ from typing import TYPE_CHECKING, Any, Coroutine, Optional
 from uuid import UUID, uuid4
 
 from pydantic import Field
+from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import LocalSession, local_object_session
 from db.models.base.errors import DoesNotExist
 from db.models.lab.lab import Lab
-from db.models.research.plan import ResearchPlanAttachment
+from db.models.research.plan import ResearchPlanAttachment, query_research_plans
 from db.models.uni import Discipline
 from db.models.user import User
 from db.models.research import (
@@ -23,29 +24,25 @@ from db.models.research import (
 
 from ..base import (
     ModelIndexPage,
-    ModelView,
+    ModelDetail,
     ModelCreateRequest,
     ModelUpdateRequest,
     ModelLookup,
     ModelIndex,
 )
-from ..user.user import UserLookup, UserView, lookup_user
+from ..user.user import UserLookup, UserDetail, lookup_user
 from ..lab.lab import LabLookup
-from ...lab.lab_resource_consumer import (
-    UpdateLabResourceConsumer,
-    LabResourceConsumerView,
-)
 
 from .funding import (
     ResearchFundingCreateRequest,
     ResearchFundingLookup,
-    ResearchFundingView,
+    ResearchFundingDetail,
     lookup_or_create_research_funding,
     lookup_research_funding,
 )
 
 
-class ResearchPlanTaskView(ModelView[ResearchPlanTask]):
+class ResearchPlanTaskDetail(ModelDetail[ResearchPlanTask]):
     plan_id: UUID
     id: UUID
     index: int
@@ -59,7 +56,7 @@ class ResearchPlanTaskView(ModelView[ResearchPlanTask]):
     supervisor_id: UUID | None
 
     @classmethod
-    async def from_model(cls, model: ResearchPlanTask, **kwargs):
+    async def from_base(cls, model: ResearchPlanTask, **kwargs):
         return cls(
             plan_id=model.plan_id,
             id=model.id,
@@ -72,14 +69,6 @@ class ResearchPlanTaskView(ModelView[ResearchPlanTask]):
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
-
-
-class ResearchPlanTaskIndex(ModelIndex[ResearchPlanTaskView]):
-    __item_view__ = ResearchPlanTaskView
-
-
-# TODO: PEP 695
-ResearchPlanTaskIndexPage = ModelIndexPage[ResearchPlanTaskView]
 
 
 class ResearchPlanTaskCreateRequest(ModelCreateRequest[ResearchPlanTask]):
@@ -104,7 +93,7 @@ class ResearchPlanTaskCreateRequest(ModelCreateRequest[ResearchPlanTask]):
         default_supervisor: User | None = None,
         **kwargs,
     ):
-        from ...lab.schemas import lookup_lab
+        from ..lab.lab import lookup_lab
 
         if plan is None:
             raise ValueError("Plan must be provided")
@@ -131,7 +120,7 @@ class ResearchPlanTaskCreateRequest(ModelCreateRequest[ResearchPlanTask]):
         default_lab: Lab | None = None,
         default_supervisor: User | None = None,
     ) -> ResearchPlanTaskAttrs:
-        from ...lab.schemas import lookup_lab
+        from ..lab.lab import lookup_lab
 
         assert default_lab is not None
         if self.lab == (default_lab and default_lab.id):
@@ -154,12 +143,12 @@ class ResearchPlanTaskCreateRequest(ModelCreateRequest[ResearchPlanTask]):
         }
 
 
-class ResearchPlanAttachmentView(ModelView[ResearchPlanAttachment]):
+class ResearchPlanAttachmentView(ModelDetail[ResearchPlanAttachment]):
     id: UUID
     path: str
 
     @classmethod
-    async def from_model(cls, model: ResearchPlanAttachment):
+    async def from_base(cls, model: ResearchPlanAttachment):
         return cls(
             id=model.id,
             path=str(model.file),
@@ -168,44 +157,44 @@ class ResearchPlanAttachmentView(ModelView[ResearchPlanAttachment]):
         )
 
 
-class ResearchPlanView(LabResourceConsumerView[ResearchPlan]):
-    id: UUID
+class ResearchPlanDetail(ModelDetail[ResearchPlan]):
     title: str = Field(max_length=256)
     description: str
     discipline: Discipline
 
-    funding: ResearchFundingView
+    funding: ResearchFundingDetail
 
-    researcher: UserView
-    coordinator: UserView
+    researcher: UserDetail
+    coordinator: UserDetail
     lab: UUID
 
-    tasks: list[ResearchPlanTaskView]
+    tasks: list[ResearchPlanTaskDetail]
     attachments: list[ResearchPlanAttachmentView]
 
     @classmethod
-    async def from_model(cls, model: ResearchPlan, **kwargs) -> ResearchPlanView:
+    async def from_model(cls, model: ResearchPlan, **kwargs) -> ResearchPlanDetail:
         assert not kwargs
 
-        funding = await ResearchFundingView.from_model(
+        funding = await ResearchFundingDetail.from_model(
             await model.awaitable_attrs.funding
         )
-        researcher = await UserView.from_model(await model.awaitable_attrs.researcher)
-        coordinator = await UserView.from_model(await model.awaitable_attrs.coordinator)
+        researcher = await UserDetail.from_model(await model.awaitable_attrs.researcher)
+        coordinator = await UserDetail.from_model(
+            await model.awaitable_attrs.coordinator
+        )
 
         task_models = await model.awaitable_attrs.tasks
         tasks = await asyncio.gather(
-            *[ResearchPlanTaskView.from_model(t) for t in task_models]
+            *[ResearchPlanTaskDetail.from_base(t) for t in task_models]
         )
 
         attachment_models = await model.awaitable_attrs.attachments
         attachments = await asyncio.gather(
-            *[ResearchPlanAttachmentView.from_model(a) for a in attachment_models]
+            *[ResearchPlanAttachmentView.from_base(a) for a in attachment_models]
         )
 
-        return await super().from_model(
+        return await super()._from_base(
             model,
-            id=model.id,
             title=model.title,
             description=model.description,
             discipline=model.discipline,
@@ -215,8 +204,6 @@ class ResearchPlanView(LabResourceConsumerView[ResearchPlan]):
             lab=model.lab_id,
             tasks=tasks,
             attachments=attachments,
-            created_at=model.created_at,
-            updated_at=model.updated_at,
         )
 
 
@@ -235,12 +222,22 @@ async def lookup_research_plan(db: LocalSession, lookup: ResearchPlanLookup | UU
     return await lookup.get(db)
 
 
-class ResearchPlanIndex(ModelIndex[ResearchPlanView]):
-    __item_view__ = ResearchPlanView
+class ResearchPlanIndex(ModelIndex[ResearchPlan]):
+
+    researcher: UUID | None = None
+    coordinator: UUID | None = None
+
+    async def item_from_model(self, model: ResearchPlan):
+        return await ResearchPlanDetail.from_model(model)
+
+    def get_selection(self) -> Select[tuple[ResearchPlan]]:
+        return query_research_plans(
+            researcher=self.researcher, coordinator=self.coordinator
+        )
 
 
 # TODO: PEP 695
-ResearchPlanIndexPage = ModelIndexPage[ResearchPlanView]
+ResearchPlanIndexPage = ModelIndexPage[ResearchPlan]
 
 
 class ResearchPlanCreateRequest(ModelCreateRequest[ResearchPlan]):
@@ -335,13 +332,12 @@ class ResearchPlanTaskSlice(ModelUpdateRequest[ResearchPlan]):
         return model
 
 
-class ResearchPlanUpdateRequest(UpdateLabResourceConsumer[ResearchPlan]):
+class ResearchPlanUpdateRequest(ModelUpdateRequest[ResearchPlan]):
     title: str
     description: str
     tasks: list[ResearchPlanTaskSlice]
 
     async def do_update(self, model: ResearchPlan, **kwargs) -> ResearchPlan:
-        await super().do_update(model, **kwargs)
         db = local_object_session(model)
 
         if model.title != self.title:

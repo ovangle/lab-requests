@@ -1,5 +1,5 @@
 import { CommonModule, formatNumber } from '@angular/common';
-import { Component, DestroyRef, Input, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, Input, ViewEncapsulation, inject } from '@angular/core';
 import {
   ControlContainer,
   ControlValueAccessor,
@@ -9,82 +9,35 @@ import {
   ReactiveFormsModule,
 } from '@angular/forms';
 import { MatSelectModule } from '@angular/material/select';
-import { DISCLIPLINES, Discipline } from './discipline';
+import { DISCLIPLINES, Discipline, disciplineFromJson, formatDiscipline } from './discipline';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { disabledStateToggler } from 'src/app/utils/forms/disable-state-toggler';
 import { DisciplinePipe } from './discipline.pipe';
+import { modelEnumMetaProviders, ModelEnumSelect } from 'src/app/common/model/forms/abstract-enum-select.component';
+import { AbstractFormFieldInput, formFieldInputProviders } from 'src/app/common/forms/abstract-form-field-input.component';
 
 @Component({
-  selector: 'uni-discipline-select',
+  selector: 'uni-discipline-select-field',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
-    MatFormFieldModule,
-    MatSelectModule,
-
-    DisciplinePipe,
+    ModelEnumSelect,
   ],
-  template: `
-    <mat-form-field>
-      <mat-label>
-        <ng-content select="mat-label"></ng-content>
-      </mat-label>
-      <mat-select [formControl]="_control" (closed)="_onTouched()">
-        @for (discipline of disciplines; track discipline) {
-          <mat-option [value]="discipline">
-            {{ discipline | uniDiscipline }}
-          </mat-option>
-        }
-      </mat-select>
-
-      <mat-error>
-        <ng-content select="mat-error"></ng-content>
-      </mat-error>
-    </mat-form-field>
-  `,
-  providers: [
-    {
-      provide: NG_VALUE_ACCESSOR,
-      multi: true,
-      useExisting: DisciplineSelectComponent,
-    },
-  ],
-  styles: [
-    `
-      mat-form-field {
-        width: 100%;
-      }
-    `,
-  ],
-})
-export class DisciplineSelectComponent implements ControlValueAccessor {
-  readonly disciplines = DISCLIPLINES;
-  readonly _destroyRef = inject(DestroyRef);
-
-  readonly _control = new FormControl<Discipline | null>(null);
-
-  ngOnInit() {
-    const onChangeSubscription = this._control.valueChanges.subscribe((value) => {
-      this._onChange(value);
-    });
-    this._destroyRef.onDestroy(() => {
-      onChangeSubscription.unsubscribe();
+  viewProviders: [
+    ...modelEnumMetaProviders<Discipline>({
+      name: 'uni-discipline',
+      values: DISCLIPLINES,
+      formatValue: formatDiscipline,
     })
-  }
-
-  writeValue(value: any) {
-    this._control.setValue(value);
-  }
-  _onChange = (value: Discipline | null) => { };
-  registerOnChange(fn: any): void {
-    this._onChange = fn;
-  }
-  _onTouched = () => { };
-  registerOnTouched(fn: any) {
-    this._onTouched = fn;
-  }
-
-  readonly setDisabledState = disabledStateToggler(this._control);
+  ],
+  template: `<common-model-enum-select [formControl]="formControl" />`,
+  providers: [
+    ...formFieldInputProviders('uni-discipline-select', UniDisciplineSelect)
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None
+})
+export class UniDisciplineSelect extends AbstractFormFieldInput<UniDisciplineSelect> {
+  readonly _destroyRef = inject(DestroyRef);
 }

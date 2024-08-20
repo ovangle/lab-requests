@@ -1,14 +1,16 @@
 from abc import abstractmethod
 import asyncio
 from datetime import datetime
-from typing import ClassVar, Generic, Self, TypeVar, cast
+from typing import Any, ClassVar, Generic, Self, TypeVar, TypedDict, cast
+import typing
 from uuid import UUID
+from fastapi import Depends
 from humps import camelize
-from pydantic import BaseModel as _BaseModel, ConfigDict
+from pydantic import BaseModel as _BaseModel, ConfigDict, Field
 from sqlalchemy import ScalarResult, Select, func
 
-from db import LocalSession
-from db.models import Base
+from db import LocalSession, get_db
+from db.models.base import Base
 
 from api.settings import api_settings
 
@@ -26,85 +28,103 @@ class BaseModel(_BaseModel):
 TModel = TypeVar("TModel", bound=Base)
 
 
-class ModelView(BaseModel, Generic[TModel]):
+class ModelDetail(BaseModel, Generic[TModel]):
     id: UUID
     created_at: datetime
     updated_at: datetime
 
     @classmethod
+    async def _from_base(cls, model: Base, **kwargs) -> Self:
+        return cls(
+            id=model.id,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
+            **kwargs,
+        )
+
+    @classmethod
     @abstractmethod
-    async def from_model(cls: type[Self], model: TModel) -> Self:
-        ...
+    async def from_model(cls, model: TModel) -> Self: ...
 
 
 class ModelLookup(BaseModel, Generic[TModel]):
     @abstractmethod
-    async def get(self, db: LocalSession) -> TModel:
-        ...
+    async def get(self, db: LocalSession) -> TModel: ...
 
 
-class ModelCreateRequest(BaseModel, Generic[TModel]):
+class ModelRequest(BaseModel, Generic[TModel]):
+    @abstractmethod
+    async def handle_request(self, *, db: LocalSession, **kwargs): ...
+
+
+class ModelRequestContextError(Exception):
+    def __init__(self, key: str):
+        super().__init__(f"request context error: no value for {key}")
+
+
+class ModelCreateRequest(ModelRequest[TModel], Generic[TModel]):
     @abstractmethod
     async def do_create(self, db: LocalSession, **kwargs) -> TModel:
-        ...
+        raise NotImplementedError
+
+    async def handle_request(self, db: LocalSession, **kwargs):
+        return await self.do_create(db, **kwargs)
 
 
-class ModelUpdateRequest(BaseModel, Generic[TModel]):
+class ModelUpdateRequest(ModelRequest[TModel], Generic[TModel]):
     @abstractmethod
-    async def do_update(self, model: TModel, **kwargs) -> TModel:
-        ...
+    async def resolve_model(self, db: LocalSession, id: UUID, **kwargs) -> TModel: ...
+
+    @abstractmethod
+    async def do_update(self, model: TModel, **kwargs: Any) -> TModel: ...
+
+    async def handle_request(self, db: LocalSession, **kwargs):
+        model = await self.resolve_model(db, **kwargs)
+        return await self.do_update(model, **kwargs)
 
 
-TModelView = TypeVar("TModelView", bound=ModelView)
+TDetail = TypeVar("TDetail", bound=ModelDetail)
 
 
-class ModelIndexPage(BaseModel, Generic[TModelView]):
-    items: list[TModelView]
+class ModelIndexPage(BaseModel, Generic[TModel]):
+    items: list[ModelDetail[TModel]]
     total_item_count: int
     total_page_count: int
     page_index: int
     page_size: int
 
 
-class ModelIndex(Generic[TModelView]):
-    __abstract__: ClassVar[bool]
-    __item_view__: ClassVar[type[ModelView]]
+class ModelIndex(BaseModel, Generic[TModel]):
+    # the python class of the model type
+    @abstractmethod
+    async def item_from_model(self, model: TModel) -> ModelDetail[TModel]:
+        raise NotImplementedError
 
-    item_view: type[TModelView]
-
-    def __init_subclass__(cls) -> None:
-        # We don't want subclasses inheriting __abstract__
-        is_abstract = cls.__dict__.get("__abstract__", False)
-
-        if not is_abstract and not issubclass(cls.__item_view__, ModelView):
-            raise ValueError("Class must declare an item_view type")
-
-        return super().__init_subclass__()
-
-    def __init__(
-        self,
-        selection: Select[tuple[TModel]],
-        *,
-        page_size: int | None = None,
-    ):
-        self.item_view = cast(type[TModelView], type(self).__item_view__)
-        self.selection = selection
-        self.page_size = page_size or api_settings.api_page_size_default
+    page_size: int = Field(default_factory=lambda: api_settings.api_page_size_default)
+    page_index: int = 0
 
     async def _gather_items(
         self, selected_items: ScalarResult[TModel]
-    ) -> list[TModelView]:
-        item_responses = [self.item_view.from_model(item) for item in selected_items]
+    ) -> list[ModelDetail[TModel]]:
+        item_responses = [self.item_from_model(item) for item in selected_items]
         return await asyncio.gather(*item_responses)
 
-    async def load_page(
-        self, db: LocalSession, page_index: int
-    ) -> ModelIndexPage[TModelView]:
-        if page_index <= 0:
+    @abstractmethod
+    def get_selection(self) -> Select[tuple[TModel]]:
+        """
+        Gets a selection of the models included in the index.
+        """
+        ...
+
+    async def load_page(self, db: LocalSession) -> ModelIndexPage[TModel]:
+        if self.page_index <= 0:
             raise IndexError("Pages are 1-indexed")
+
+        selection = self.get_selection()
+
         total_item_count = (
             await db.scalar(
-                self.selection.order_by(None).with_only_columns(
+                selection.order_by(None).with_only_columns(
                     func.count(), maintain_column_froms=True
                 ),
             )
@@ -112,14 +132,14 @@ class ModelIndex(Generic[TModelView]):
         )
         total_page_count = total_item_count // self.page_size
 
-        selection = self.selection.offset((page_index - 1) * self.page_size).limit(
+        selection = selection.offset((self.page_index - 1) * self.page_size).limit(
             self.page_size
         )
         items = await self._gather_items(await db.scalars(selection))
-        return ModelIndexPage[TModelView](
+        return ModelIndexPage[TModel](
             items=items,
             total_item_count=total_item_count,
             total_page_count=total_page_count,
-            page_index=page_index,
+            page_index=self.page_index,
             page_size=self.page_size,
         )

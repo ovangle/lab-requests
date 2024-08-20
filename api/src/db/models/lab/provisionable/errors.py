@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Literal
 from uuid import UUID
 from db.models.base import ModelException

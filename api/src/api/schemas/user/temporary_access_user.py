@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from uuid import UUID, uuid4
 
@@ -11,10 +11,10 @@ from db.models.user import TemporaryAccessToken, User, UserDoesNotExist, UserDom
 
 from ..base import ModelCreateRequest, ModelUpdateRequest, BaseModel
 from ..uni.campus import CampusLookup, lookup_campus
-from .user import UserView
+from .user import UserDetail
 
 
-class TemporaryUserView(UserView):
+class TemporaryUserDetail(UserDetail):
     """
     Represents a view of a user with additional information about the latest temporary
     access token which exists for the user.
@@ -27,7 +27,7 @@ class TemporaryUserView(UserView):
     token_consumed: bool
 
     @classmethod
-    async def from_model(cls, model: User, **kwargs):
+    async def _from_user(cls, model: User, **kwargs):
         token = kwargs.pop("token")
         if token is None:
             raise ValueError("Expected a keyword argument 'token'")
@@ -37,12 +37,13 @@ class TemporaryUserView(UserView):
                 HTTPStatus.CONFLICT, detail="User has no temporary access tokens"
             )
 
-        return await super().from_model(
+        return await super()._from_user(
             model,
             token_expires_at=latest_access_token.expires_at,
             token_expired=latest_access_token.is_expired,
             token_consumed_at=latest_access_token.consumed_at,
             token_consumed=latest_access_token.is_consumed,
+            **kwargs
         )
 
 
@@ -52,7 +53,7 @@ class CreateTemporaryUserRequest(ModelCreateRequest[User]):
     base_campus: CampusLookup | UUID
     discipline: Discipline
 
-    async def do_create(self, db: LocalSession):
+    async def do_create(self, db: LocalSession, **kwargs):
         base_campus = await lookup_campus(db, self.base_campus)
 
         try:
@@ -71,7 +72,7 @@ class CreateTemporaryUserRequest(ModelCreateRequest[User]):
             )
             db.add(user)
 
-        expires_at = datetime.utcnow() + timedelta(
+        expires_at = datetime.now(tz=timezone.utc) + timedelta(
             minutes=api_settings.user_temporary_access_token_expire_minutes
         )
 
@@ -84,7 +85,7 @@ class CreateTemporaryUserRequest(ModelCreateRequest[User]):
 class CreateTemporaryUserResponse(BaseModel):
     token: str
     token_expires_at: datetime
-    user: UserView
+    user: UserDetail
 
     @classmethod
     async def from_model(cls, user: User):
@@ -94,7 +95,7 @@ class CreateTemporaryUserResponse(BaseModel):
         return cls(
             token=token.token,
             token_expires_at=token.expires_at,
-            user=await UserView.from_model(user),
+            user=await UserDetail.from_model(user),
         )
 
 
@@ -103,6 +104,6 @@ class FinalizeTemporaryUserRequest(ModelUpdateRequest[User]):
     token: str
     password: str
 
-    async def do_update(self, model: User) -> User:
+    async def do_update(self, model: User, **kwargs) -> User:
         # This is handled in view.
         raise NotImplemented

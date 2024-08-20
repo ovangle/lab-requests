@@ -36,8 +36,7 @@ import { AbstractFormFieldInput, formFieldInputProviders } from '../forms/abstra
   <span>$</span>
   <input #valueInput matInput type="text" 
         [formControl]="_control" 
-        (focus)="onFocus($event)" 
-        (blur)="onBlur($event)" />
+        (focus)="touch()" />
   `,
   providers: [
     ...formFieldInputProviders('currency-input', CurrencyInputComponent)
@@ -53,11 +52,6 @@ export class CurrencyInputComponent extends AbstractFormFieldInput<number> {
       Validators.pattern(/^([0-9]+)(,[0-9]{3})*(.[0-9]{0,2})?$/)
     ]
   });
-
-  override readonly statusChanges = this._control.statusChanges;
-  get errorState() {
-    return !this._control.valid;
-  }
 
   protected _coerceValue(value: unknown): number {
     if (typeof value === 'number') {
@@ -85,7 +79,7 @@ export class CurrencyInputComponent extends AbstractFormFieldInput<number> {
     }
   }
 
-  readonly _controlValue$ = this._control.valueChanges.pipe(
+  readonly _controlValue$ = this.valueChanges.pipe(
     takeUntilDestroyed(),
     distinctUntilChanged(),
     map(v => (v || '').replaceAll(',', '')),
@@ -94,9 +88,9 @@ export class CurrencyInputComponent extends AbstractFormFieldInput<number> {
     shareReplay(1)
   );
 
-  override _getValueChangesFromView(): Observable<number | null> {
-    return this._controlValue$;
-  }
+  readonly focused$ = this.state$.pipe(
+    map(state => state.focused), distinctUntilChanged()
+  );
 
   readonly _formattedControlValue$: Observable<string> = defer(() => {
     return combineLatest([
@@ -115,12 +109,5 @@ export class CurrencyInputComponent extends AbstractFormFieldInput<number> {
         emitEvent: false,
       })
     });
-  }
-
-  override select() {
-    const inputElement: HTMLInputElement = this.input().nativeElement;
-    if (this._document.activeElement !== inputElement) {
-      inputElement.select();
-    }
   }
 }

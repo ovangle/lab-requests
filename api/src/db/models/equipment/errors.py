@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -11,7 +13,7 @@ if TYPE_CHECKING:
 
 class EquipmentDoesNotExist(DoesNotExist):
     def __init__(self, *, for_id: UUID | None):
-        super().__init__(for_id=for_id)
+        super().__init__("Equipment", for_id=for_id)
 
 
 class EquipmentInstallationDoesNotExist(LabInstallationDoesNotExist):

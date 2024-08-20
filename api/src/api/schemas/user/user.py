@@ -2,7 +2,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime
 from http import HTTPStatus
-from typing import Self, Set
+from typing import Any, Self, Set
 
 from typing_extensions import override
 from uuid import UUID
@@ -14,13 +14,13 @@ from sqlalchemy import func, select
 
 from db import LocalSession, local_object_session
 from db.models.uni.discipline import Discipline
-from db.models.user import TemporaryAccessToken, User, UserDomain
+from db.models.user import TemporaryAccessToken, User, UserDomain, query_users
 
 
 from ..base import (
     ModelCreateRequest,
     ModelLookup,
-    ModelView,
+    ModelDetail,
     ModelUpdateRequest,
     ModelIndex,
     ModelIndexPage,
@@ -28,7 +28,7 @@ from ..base import (
 from ..uni.campus import CampusLookup
 
 
-class UserView(ModelView[User]):
+class UserDetail(ModelDetail[User]):
     id: UUID
     domain: UserDomain
     email: str
@@ -40,9 +40,9 @@ class UserView(ModelView[User]):
     roles: set[str]
 
     @classmethod
-    async def from_model(cls, model: User, **kwargs) -> Self:
-        return cls(
-            id=model.id,
+    async def _from_user(cls, model: User, **kwargs: Any):
+        return await cls._from_base(
+            model,
             domain=model.domain,
             email=model.email,
             name=model.name,
@@ -50,10 +50,12 @@ class UserView(ModelView[User]):
             disciplines=set(model.disciplines),
             disabled=model.disabled,
             roles=set(model.roles),
-            created_at=model.created_at,
-            updated_at=model.updated_at,
             **kwargs,
         )
+
+    @classmethod
+    async def from_model(cls, model: User):
+        return await cls._from_user(model)
 
 
 class UserLookup(ModelLookup[User]):
@@ -81,12 +83,29 @@ async def lookup_user(db: LocalSession, ref: UserRef):
     return await ref.get(db)
 
 
-class UserIndex(ModelIndex[UserView]):
-    __item_view__ = UserView
+class UserIndex(ModelIndex[User]):
+    __item_detail_type__ = UserDetail
+
+    search: str | None = None
+    include_roles: str | None = None
+
+    discipline: Discipline | None = None
+
+    def get_selection(self):
+        if self.include_roles:
+            include_role_set = set(self.include_roles.split(","))
+        else:
+            include_role_set = None
+
+        return query_users(
+            search=self.search,
+            include_roles=include_role_set,
+            discipline=self.discipline,
+        )
 
 
 # TODO: PEP 695
-UserIndexPage = ModelIndexPage[UserView]
+UserIndexPage = ModelIndexPage[User]
 
 
 class AlterPasswordRequest(ModelUpdateRequest[User]):

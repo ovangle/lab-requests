@@ -1,13 +1,24 @@
+__all__ = (
+    "EquipmentDetail",
+    "EquipmentIndex",
+    "EquipmentIndexPage",
+    "EquipmentCreateRequest",
+    "EquipmentUpdateRequest",
+    "EquipmentInstallationDetail",
+    "EquipmentInstallationIndex",
+    "EquipmentInstallationIndexPage",
+)
+
 from .equipment import (
-    EquipmentView,
+    EquipmentDetail,
     EquipmentIndex,
     EquipmentIndexPage,
     EquipmentCreateRequest,
     EquipmentUpdateRequest,
 )
 from .equipment_installation import (
-    EquipmentInstallationView,
+    EquipmentInstallationDetail,
     EquipmentInstallationIndex,
-    EquipmentInstallRequest,
+    EquipmentInstallationIndexPage,
 )
-from .equipment_provision import EquipmentProvisionView
+from .equipment_provision import EquipmentProvisionDetail

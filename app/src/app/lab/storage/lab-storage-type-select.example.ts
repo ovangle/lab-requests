@@ -2,7 +2,7 @@ import { Component } from "@angular/core";
 import { FormControl, FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { StorageType } from "./lab-storage-type";
-import { StorageTypeSelectComponent } from './lab-storage-type-select.component'
+import { StorageTypeSelect } from './lab-storage-type-select.component'
 
 
 @Component({
@@ -11,7 +11,7 @@ import { StorageTypeSelectComponent } from './lab-storage-type-select.component'
         ReactiveFormsModule,
         MatFormFieldModule,
 
-        StorageTypeSelectComponent
+        StorageTypeSelect
     ],
     template: `
     <form [formGroup]="form" (submit)="onSubmit()">

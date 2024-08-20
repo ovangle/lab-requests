@@ -4,9 +4,10 @@ from uuid import UUID
 
 from db import LocalSession
 from db.models.uni import Campus
+from db.models.uni.campus import query_campuses
 
 from ..base import (
-    ModelView,
+    ModelDetail,
     ModelLookup,
     ModelCreateRequest,
     ModelIndex,
@@ -15,7 +16,7 @@ from ..base import (
 )
 
 
-class CampusView(ModelView[Campus]):
+class CampusDetail(ModelDetail[Campus]):
     id: UUID
     code: str
     name: str
@@ -50,11 +51,18 @@ async def lookup_campus(db: LocalSession, ref: CampusLookup | UUID):
     return await ref.get(db)
 
 
-class CampusIndex(ModelIndex[CampusView]):
-    __item_view__ = CampusView
+class CampusIndex(ModelIndex[Campus]):
+    code_eq: str | None = None
+    search: str | None = None
+
+    async def item_from_model(self, model: Campus):
+        return CampusDetail.from_model(model)
+
+    def get_selection(self):
+        return query_campuses(code_eq=self.code_eq, search=self.search)
 
 
-CampusIndexPage = ModelIndexPage[CampusView]
+CampusIndexPage = ModelIndexPage[Campus]
 
 
 class CampusUpdateRequest(ModelUpdateRequest[Campus]):

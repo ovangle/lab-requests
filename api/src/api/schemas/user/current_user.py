@@ -1,4 +1,5 @@
 from __future__ import annotations
+import asyncio
 
 from sqlalchemy import select
 
@@ -7,31 +8,37 @@ from db.models.user import User
 from db.models.lab import Lab
 from db.models.research import ResearchPlan
 
-from .user import UserView
-from ...lab.schemas import LabIndex, LabIndexPage
-from ...research.schemas import ResearchPlanIndex, ResearchPlanIndexPage
+from .user import UserDetail
+
+from ..lab.lab import LabDetail
+from ..research.plan import ResearchPlanDetail
 
 
-class CurrentUserView(UserView):
+class CurrentUserDetail(UserDetail):
     """
     Includes extra attributes relevant only to the current user
     """
 
-    labs: LabIndexPage
-    plans: ResearchPlanIndexPage
+    labs: list[LabDetail]
+    plans: list[ResearchPlanDetail]
 
     @classmethod
-    async def from_model(
-        cls: type[CurrentUserView], model: User, **kwargs
-    ) -> CurrentUserView:
+    async def from_model(cls, model: User) -> CurrentUserDetail:
         db = local_object_session(model)
 
-        lab_pages = LabIndex(select(Lab).where(Lab.supervisors.contains(model)))
-        labs = await lab_pages.load_page(db, 1)
+        supervised_labs = await db.scalars(
+            select(Lab).where(Lab.supervisors.contains(model))
+        )
 
-        plan_pages = ResearchPlanIndex(
+        labs = await asyncio.gather(
+            *(LabDetail.from_model(lab) for lab in supervised_labs)
+        )
+
+        coordinated_plans = await db.scalars(
             select(ResearchPlan).where(ResearchPlan.coordinator == model)
         )
-        plans = await plan_pages.load_page(db, 1)
+        plans = await asyncio.gather(
+            *(ResearchPlanDetail.from_model(plan) for plan in coordinated_plans)
+        )
 
-        return await super().from_model(model, labs=labs, plans=plans)
+        return await super()._from_user(model, labs=labs, plans=plans)

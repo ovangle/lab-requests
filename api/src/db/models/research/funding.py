@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from uuid import UUID
-from sqlalchemy import ForeignKey, select, func
+from sqlalchemy import ForeignKey, Select, or_, select, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from sqlalchemy.dialects import postgresql
@@ -10,7 +10,7 @@ from db import LocalSession, local_object_session
 
 from ..base import Base
 from ..base.errors import DoesNotExist
-from ..base.fields import uuid_pk
+from ..fields import uuid_pk
 
 
 class ResearchFundingDoesNotExist(DoesNotExist):
@@ -26,7 +26,7 @@ class ResearchFundingDoesNotExist(DoesNotExist):
 class ResearchFunding(Base):
     __tablename__ = "research_funding"
 
-    id: Mapped[uuid_pk]
+    id: Mapped[uuid_pk] = mapped_column()
 
     name: Mapped[str] = mapped_column(postgresql.VARCHAR(32), unique=True)
     description: Mapped[str] = mapped_column(postgresql.TEXT, server_default="")
@@ -49,10 +49,28 @@ class ResearchFunding(Base):
         return instance
 
 
+def query_research_fundings(
+    name_eq: str | None = None, text: str | None = None
+) -> Select[tuple[ResearchFunding]]:
+    clauses: list = []
+    if name_eq is not None:
+        clauses.append(ResearchFunding.name.ilike(f"%{name_eq}%"))
+
+    if text is not None:
+        clauses.append(
+            or_(
+                ResearchFunding.name.ilike(f"%{text}%"),
+                ResearchFunding.description.ilike(f"%{text}%"),
+            )
+        )
+
+    return select(ResearchFunding).where(*clauses)
+
+
 class ResearchBudgetItem(Base):
     __tablename__ = "research_budget_item"
 
-    id: Mapped[uuid_pk]
+    id: Mapped[uuid_pk] = mapped_column()
     budget_id: Mapped[UUID] = mapped_column(ForeignKey("research_budget.id"))
     budget: Mapped[ResearchBudget] = relationship(back_populates="items")
 
@@ -65,7 +83,7 @@ class ResearchBudgetItem(Base):
 class ResearchBudget(Base):
     __tablename__ = "research_budget"
 
-    id: Mapped[uuid_pk]
+    id: Mapped[uuid_pk] = mapped_column()
 
     funding_id: Mapped[UUID] = mapped_column(ForeignKey("research_budget.id"))
     funding: Mapped[ResearchFunding] = relationship()
