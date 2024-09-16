@@ -2,7 +2,7 @@ import { Injectable, inject } from "@angular/core";
 import { SidenavMenuGroup, SidenavMenuLink, SidenavMenuNode } from "./model";
 import { BehaviorSubject, Observable, Subscription, combineLatest, connectable, defer, filter, map, shareReplay } from "rxjs";
 import { UserContext } from "src/app/user/user-context";
-import { CurrentUser } from "src/app/user/common/user";
+import { CurrentUser } from "src/app/user/user";
 import { formatDiscipline } from "src/app/uni/discipline/discipline";
 import { Lab } from "src/app/lab/lab";
 import { ScaffoldStateService } from "../scaffold-state.service";
@@ -53,7 +53,7 @@ export class SidenavMenuRoot {
 
   readonly labsGroup$: Observable<SidenavMenuGroup> = this._currentUser.pipe(
     map(user => {
-      return user.labs.items.map(item => this.createLabGroup(item))
+      return user.supervisedLabs.items.map(item => this.createLabGroup(item))
     }),
     map(links => ({
       type: 'group',

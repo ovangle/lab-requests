@@ -12,39 +12,26 @@ export abstract class Model {
   readonly createdAt: Date;
   readonly updatedAt: Date;
 
-  readonly _resolvedRefs: Map<string, Model>;
+  constructor(json: JsonObject) {
+    if (typeof json['id'] !== 'string') {
+      throw new Error("Expected a string 'id'");
+    }
+    this.id = json['id']
 
-  constructor(params: ModelParams) {
-    this.id = params.id;
-    this.createdAt = params.createdAt;
-    this.updatedAt = params.updatedAt;
+    if (typeof json['createdAt'] !== 'string') {
+      throw new Error("Expected string 'createdAt'");
+    }
+    this.createdAt = parseISO(json['createdAt']);
 
-    this._resolvedRefs = new Map();
+    if (typeof json['updatedAt'] !== 'string') {
+      throw new Error("Expected string 'createdAt'");
+    }
+    this.updatedAt = parseISO(json['updatedAt']);
   }
 }
 
-export interface ModelParams {
-  readonly id: string;
-  readonly createdAt: Date;
-  readonly updatedAt: Date;
-}
-
-export function modelParamsFromJsonObject(json: JsonObject): ModelParams {
-  const id = json[ 'id' ];
-  if (typeof id !== 'string') {
-    throw new Error("Expected a string 'id'");
-  }
-  if (typeof json[ 'createdAt' ] !== 'string') {
-    throw new Error("Expected string 'createdAt'");
-  }
-  const createdAt = parseISO(json[ 'createdAt' ]);
-
-  if (typeof json[ 'updatedAt' ] !== 'string') {
-    throw new Error("Expected string 'createdAt'");
-  }
-  const updatedAt = parseISO(json[ 'updatedAt' ]);
-
-  return { id, createdAt, updatedAt };
+export type ModelFactory<T extends Model> = {
+  new(json: JsonObject): T;
 }
 
 export interface ModelIndexPage<T extends Model> {
@@ -57,39 +44,77 @@ export interface ModelIndexPage<T extends Model> {
 }
 
 export function modelIndexPageFromJsonObject<T extends Model>(
-  modelFromJsonObject: (obj: JsonObject) => T,
-  json: JsonObject,
+  propKey: string,
+  modelFactory: ModelFactory<T>,
+  json: JsonObject
+): ModelIndexPage<T>;
+export function modelIndexPageFromJsonObject<T extends Model>(
+  modelFactory: ModelFactory<T>,
+  json: JsonObject
+): ModelIndexPage<T>;
+
+export function modelIndexPageFromJsonObject<T extends Model>(
+  propKeyOrFactory: ModelFactory<T> | string,
+  modelFactoryOrJson: ModelFactory<T> | JsonObject,
+  maybeJson?: JsonObject,
 ): ModelIndexPage<T> {
-  if (typeof json[ 'totalItemCount' ] !== 'number') {
+  let modelFactory: ModelFactory<T>;
+  let json: JsonObject;
+
+  if (typeof propKeyOrFactory === 'string') {
+    const propKey = propKeyOrFactory;
+    if (maybeJson === undefined) {
+      throw new Error('Json argument must be provided');
+    }
+    const v = maybeJson[propKey]
+    if (!isJsonObject(v)) {
+      throw new Error(`Expected an object '${propKey}'`)
+    }
+    modelFactory = modelFactoryOrJson as ModelFactory<T>;
+    json = v;
+  } else {
+    if (maybeJson !== undefined) {
+      throw new Error('Must use two argument form');
+    }
+    modelFactory = propKeyOrFactory;
+    json = modelFactoryOrJson as JsonObject;
+
+  }
+
+  if (typeof json['totalItemCount'] !== 'number') {
     throw new Error("ModelIndexPage: 'totalItemCount' must be a number");
   }
-  if (typeof json[ 'totalPageCount' ] !== 'number') {
+  if (typeof json['totalPageCount'] !== 'number') {
     throw new Error("ModelIndexPage: 'totalPageCount' must be a number");
   }
-  if (typeof json[ 'pageIndex' ] !== 'number') {
+  if (typeof json['pageIndex'] !== 'number') {
     throw new Error("ModelIndexPage: 'pageIndex' must be a number");
   }
-  if (typeof json[ 'pageSize' ] !== 'number') {
+  if (typeof json['pageSize'] !== 'number') {
     throw new Error("ModelIndexPage: 'pageSize' must be a number");
   }
-  if (!Array.isArray(json[ 'items' ]) || !json[ 'items' ].every(isJsonObject)) {
+  if (!Array.isArray(json['items']) || !json['items'].every(isJsonObject)) {
     throw new Error("ModelIndexPage: 'items' must be an array of json objects");
   }
 
-  const items = Array.from(json[ 'items' ]).map((itemJson) =>
-    modelFromJsonObject(itemJson),
+  const items = Array.from(json['items']).map((itemJson) =>
+    new modelFactory(itemJson),
   );
 
   return {
     items,
-    totalItemCount: json[ 'totalItemCount' ],
-    totalPageCount: json[ 'totalPageCount' ],
-    pageIndex: json[ 'pageIndex' ],
-    pageSize: json[ 'pageSize' ],
+    totalItemCount: json['totalItemCount'],
+    totalPageCount: json['totalPageCount'],
+    pageIndex: json['pageIndex'],
+    pageSize: json['pageSize'],
   };
 }
 
 export interface ModelQuery<T extends Model> {
+  /**
+   * Query for multiple ids from the same model.
+   */
+  id_in?: readonly string[];
   /**
    * Represents a full-text search of the model and it's attributes.
    * More useful for some models than others.
@@ -101,6 +126,10 @@ export interface ModelQuery<T extends Model> {
 }
 
 export function setModelQueryParams(params: HttpParams, query: Partial<ModelQuery<any>>) {
+  if (query.id_in) {
+    params = params.set('id_in', query.id_in.join(','));
+  }
+
   if (query.search) {
     params = params.set('search', query.search);
   }
@@ -152,52 +181,21 @@ export function modelId(ref: ModelRef<any> | null): string | null {
   return typeof ref === 'string' ? ref : ref.id;
 }
 
-export function resolveRef<T extends Model>(ref: ModelRef<T>, service: ModelService<T>): Observable<T>;
-export function resolveRef<T extends Model>(ref: ModelRef<T> | null, service: ModelService<T>): Observable<T | null>;
+export function resolveRef<T extends Model>(ref: ModelRef<T>, service: ModelService<T>): Promise<T>;
+export function resolveRef<T extends Model>(ref: ModelRef<T> | null, service: ModelService<T>): Promise<T | null>;
 
-export function resolveRef<T extends Model>(ref: ModelRef<T> | null, service: ModelService<T>): Observable<T | null> {
-  return typeof ref === 'string' ? service.fetch(ref) : of(ref);
+export function resolveRef<T extends Model>(ref: ModelRef<T> | null, service: ModelService<T>): Promise<T | null> {
+  return firstValueFrom(typeof ref === 'string' ? service.fetch(ref) : of(ref));
 }
 
-export async function resolveModelRef<
-  TModel extends Model,
-  K extends keyof TModel,
-  TRelated extends ModelOf<TModel[ K ]>
->(
-  on: TModel,
-  attr: K,
-  usingModelService: ModelService<TRelated, any>
-): Promise<TRelated> {
-  const value = on[ attr ];
-  if (typeof value === 'string') {
-    if (!on._resolvedRefs.has(value)) {
-      const resolvedValue = await firstValueFrom(usingModelService.fetch(value));
-      on._resolvedRefs.set(value, resolvedValue);
-    }
-    return on._resolvedRefs.get(value)! as TRelated;
+export function modelRefFromJson<T extends Model>(propKey: string, modelFromJsonObject: ModelFactory<T>, json: JsonObject): ModelRef<T> {
+  const v = json[propKey];
+
+  if (typeof v === 'string' && validateIsUUID(v)) {
+    return v;
+  } else if (isJsonObject(v)) {
+    return new modelFromJsonObject(json);
   } else {
-    return value as TRelated;
-  }
-}
-
-export function modelRefJsonDecoder<T extends Model>(key: string, modelFromJsonObject: (json: JsonObject) => T): (json: JsonObject) => ModelRef<T>;
-export function modelRefJsonDecoder<T extends Model>(key: string, modelFromJsonObject: (json: JsonObject) => T, options: { nullable: true }): (json: JsonObject) => ModelRef<T> | null;
-
-export function modelRefJsonDecoder<T extends Model>(key: string, modelFromJsonObject: (json: JsonObject) => T, options?: { nullable: boolean; }): (json: JsonObject) => ModelRef<T> | null {
-  return (json: JsonObject) => {
-    const value = json[ key ];
-    if (options?.nullable && value == null) {
-      return null;
-    } else if (typeof value === 'string' && validateIsUUID(value)) {
-      return value;
-    } else if (isJsonObject(value)) {
-      return modelFromJsonObject(value);
-    } else {
-      if (options?.nullable) {
-        throw new Error(`Expected a UUID, json object or null '${key}'.`);
-      } else {
-        throw new Error(`Expected a UUID or json object '${key}'.`);
-      }
-    }
+    throw new Error(`Expected a UUID or json object '${propKey}'.`);
   }
 }

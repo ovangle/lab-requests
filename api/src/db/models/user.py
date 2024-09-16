@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 import random
 from typing import TYPE_CHECKING, Annotated, ClassVar
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from passlib.hash import pbkdf2_sha256
 
@@ -14,11 +14,15 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship, declared_attr
 from sqlalchemy.dialects import postgresql
 
 from db import LocalSession, local_object_session
+from db.models.base.base import model_id
 
 from .base import Base, DoesNotExist
 from .fields import uuid_pk
 
 from ..models.uni import Campus, Discipline
+
+if TYPE_CHECKING:
+    from db.models.lab import Lab
 
 
 class UserDoesNotExist(DoesNotExist):
@@ -137,24 +141,40 @@ class User(Base):
 
 
 def query_users(
+    id_in: list[UUID] | None = None,
     search: str | None = None,
     include_roles: set[str] | None = None,
     discipline: Discipline | None = None,
+    supervises_lab: Lab | UUID | None = None,
 ) -> Select[tuple[User]]:
-    clauses: list = [User.disabled.is_(False)]
+    where_clauses: list = [User.disabled.is_(False)]
+
+    if id_in:
+        where_clauses.append(
+            User.id.in_(id_in)
+        )
 
     if search:
-        clauses.append(
+        where_clauses.append(
             or_(User.name.ilike(f"%{search}%"), User.email.ilike(f"%{search}%"))
         )
 
     if include_roles:
-        clauses.append(User.roles.overlap(list(include_roles)))
+        where_clauses.append(User.roles.overlap(list(include_roles)))
 
     if discipline:
-        clauses.append(User.disciplines.contains([discipline]))
+        where_clauses.append(User.disciplines.contains([discipline]))
 
-    return select(User).where(*clauses)
+    if supervises_lab:
+        from db.models.lab.lab import lab_supervisor
+
+        supervisor_ids = select(lab_supervisor.c.user_id) \
+            .where(lab_supervisor.c.lab_id == model_id(supervises_lab))
+        where_clauses.append(
+            User.id.in_(supervisor_ids.scalar_subquery())
+        )
+
+    return select(User).where(*where_clauses)
 
 
 class UserCredentials(AbstractConcreteBase, Base):
@@ -180,7 +200,8 @@ class UserCredentials(AbstractConcreteBase, Base):
 
         return super().__init_subclass__()
 
-    user_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"), primary_key=True)
+    id: Mapped[uuid_pk] = mapped_column()
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
 
     @declared_attr
     def user(cls) -> Mapped[User]:
@@ -196,6 +217,10 @@ class UserCredentials(AbstractConcreteBase, Base):
 
         return credentials
 
+    def __init__(self, **kw):
+        self.id = uuid4()
+        super().__init__(**kw)
+
 
 class NativeUserCredentials(UserCredentials):
     __tablename__ = "native_user_credentials"
@@ -203,7 +228,8 @@ class NativeUserCredentials(UserCredentials):
         "polymorphic_identity": UserDomain.NATIVE.value,
         "concrete": True,
     }
-    user_id = mapped_column(ForeignKey("user.id"), primary_key=True)
+
+    user_id = mapped_column(ForeignKey("user.id"))
     password_hash: Mapped[str] = mapped_column(postgresql.VARCHAR(256))
 
     def __init__(self, *, user: User, password: str):
@@ -225,7 +251,7 @@ class ExternalUserCredentials(UserCredentials):
         "concrete": True,
     }
 
-    user_id = mapped_column(ForeignKey("user.id"), primary_key=True)
+    user_id = mapped_column(ForeignKey("user.id"))
     provider: Mapped[str] = mapped_column(postgresql.VARCHAR(64))
 
 

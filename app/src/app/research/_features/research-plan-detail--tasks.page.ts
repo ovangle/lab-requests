@@ -17,7 +17,7 @@ import { ResearchPlanTaskCardComponent } from "../plan/task/research-plan-task-c
     ],
     template: `
     @if (plan$ | async; as plan) {
-        @for (task of plan.tasks; track task.index) {
+        @for (task of plan.tasks.items; track task.index) {
             <research-plan-task-card [task]="task" />
         }
     }

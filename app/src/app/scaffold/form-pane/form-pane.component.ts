@@ -2,7 +2,7 @@ import { Component, DestroyRef, EventEmitter, HostBinding, Output, inject } from
 import { ScaffoldFormPaneControl, ScaffoldFormPane } from "./form-pane-control";
 import { BehaviorSubject } from "rxjs";
 import { CommonModule } from "@angular/common";
-import { UrlSegment } from "@angular/router";
+import { RouterModule, UrlSegment } from "@angular/router";
 
 export class ScaffoldFormPaneActivation {
   constructor(
@@ -17,11 +17,15 @@ export class ScaffoldFormPaneDeactivation {
 @Component({
   selector: 'scaffold-form-pane',
   standalone: true,
-  imports: [ CommonModule ],
+  imports: [
+    CommonModule,
+    RouterModule
+  ],
   template: `
   <div class="container" [class.visible]="isOpen">
     <div class="sticky-top" >
       <ng-content></ng-content>
+      <!-- <router-outlet></router-outlet> -->
     </div>
   </div>
   `,

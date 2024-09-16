@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { UserContext } from '../../user-context';
 import { filter, map, shareReplay } from 'rxjs';
-import { CurrentUser, User } from '../../common/user';
+import { CurrentUser, User } from '../../user';
 import { CommonModule } from '@angular/common';
 import { LabListComponent } from 'src/app/lab/lab-list.component';
 import { ResearchPlanListComponent } from 'src/app/research/plan/research-plan-list.component';
@@ -50,6 +50,6 @@ export class UserHomePage {
     shareReplay(1),
   );
 
-  readonly labs$ = this.currentUser$.pipe(map((user) => user.labs.items));
+  readonly labs$ = this.currentUser$.pipe(map((user) => user.supervisedLabs.items));
   readonly plans$ = this.currentUser$.pipe(map((user) => user.plans.items));
 }

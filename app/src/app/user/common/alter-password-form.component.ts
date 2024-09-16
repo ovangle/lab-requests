@@ -20,7 +20,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
-import { AlterPassword, AlterPasswordError, User, UserService } from './user';
+import { AlterPassword, AlterPasswordError, User, UserService } from '../user';
 import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
 
 type AlterPasswordForm = FormGroup<{
@@ -62,12 +62,12 @@ function alterPasswordForm(hasCurrentPassword: boolean, resultErrors: Observable
   return new FormGroup({
     currentValue: new FormControl<string>('', {
       nonNullable: true,
-      validators: hasCurrentPassword ? [ Validators.required ] : [],
-      asyncValidators: hasCurrentPassword ? [ createCurrentPasswordValidator(resultErrors) ] : [],
+      validators: hasCurrentPassword ? [Validators.required] : [],
+      asyncValidators: hasCurrentPassword ? [createCurrentPasswordValidator(resultErrors)] : [],
     }),
     newValue: new FormControl<string>('', {
       nonNullable: true,
-      validators: [ Validators.required ],
+      validators: [Validators.required],
     }),
     newValueAgain: new FormControl<string>('', {
       nonNullable: true,
@@ -219,8 +219,8 @@ export class AlterPasswordFormComponent {
     const control = this.form!.controls.currentValue;
     return (
       control.errors && {
-        required: control.errors[ 'required' ],
-        incorrectForCurrentUser: control.errors[ 'incorrectForCurrentUser' ],
+        required: control.errors['required'],
+        incorrectForCurrentUser: control.errors['incorrectForCurrentUser'],
       }
     );
   }
@@ -231,7 +231,7 @@ export class AlterPasswordFormComponent {
     const control = this.form!.controls.newValue;
     return (
       control.errors && {
-        required: control.errors[ 'required' ],
+        required: control.errors['required'],
       }
     );
   }
@@ -243,8 +243,8 @@ export class AlterPasswordFormComponent {
     const control = this.form!.controls.newValueAgain;
     return (
       control.errors && {
-        required: control.errors[ 'required' ],
-        sameNewValue: control.errors[ 'sameNewValue' ],
+        required: control.errors['required'],
+        sameNewValue: control.errors['sameNewValue'],
       }
     );
   }

@@ -1,27 +1,32 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from enum import Enum
 import functools
-from typing import TYPE_CHECKING, TypedDict, override
+from typing import TYPE_CHECKING, ClassVar, TypedDict, cast, override
 from uuid import UUID, uuid4
 
-from sqlalchemy import Column, ForeignKey, ScalarResult, Table, select
+from sqlalchemy import Column, ForeignKey, ScalarResult, Select, Table, UniqueConstraint, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship, declared_attr
-from sqlalchemy.dialects import postgresql as psql
+from sqlalchemy.dialects import postgresql
 
-from db import local_object_session
-from db.models.base import Base, model_id
-from db.models.base.errors import ModelException
+from db import LocalSession, local_object_session
+from db.models.base import Base, model_id, DoesNotExist
 from db.models.fields import uuid_pk
 
 from db.models.lab.allocatable import Allocatable
+from db.models.lab.disposable.lab_disposal import LabDisposal
+from db.models.lab.lab import Lab
 from db.models.lab.storable import LabStorageContainer
+from db.models.research.funding.purchase import ResearchPurchase
+from db.models.research.funding.research_budget import ResearchBudget
 from db.models.user import User
 
 from .material import Material
 
 if TYPE_CHECKING:
-    from .material_allocations import OutputMaterial, InputMaterial
+    from .material_allocation import MaterialConsumption, MaterialProduction
+
 
 material_inventory_lab_storage_items = Table(
     "material_inventory_lab_storage_items",
@@ -67,77 +72,77 @@ class MaterialInventory(Allocatable, Base):
     """
 
     __tablename__ = "material_inventory"
+    __table_args__ = (
+        UniqueConstraint("lab_id", "material_id", name="lab_material_uniq"),
+    )
 
     id: Mapped[uuid_pk] = mapped_column()
 
+    lab_id: Mapped[UUID] = mapped_column(ForeignKey("lab.id"))
+    lab: Mapped[Lab] = relationship()
+
     material_id: Mapped[UUID] = mapped_column(ForeignKey("material.id"))
-    material: Mapped[Material] = relationship()
+    material: Mapped[Material] = relationship(back_populates="inventories")
 
-    procurements: Mapped[list[MaterialProcurement]] = relationship()
+    imports: Mapped[list[MaterialInventoryImport]] = relationship(back_populates="inventory")
 
-    async def procurements_since_last_measured(
-        self,
-    ) -> ScalarResult[MaterialProcurement]:
+    async def imports_since_last_measured(self, of_type: MaterialInventoryImportType | None = None) -> ScalarResult[MaterialInventoryImport]:
         db = local_object_session(self)
+
+        where_type_clauses = [
+            MaterialInventoryImport.type == of_type
+        ] if of_type else []
+
+
         return await db.scalars(
-            select(MaterialProcurement).where(
-                MaterialProcurement.inventory_id == self.id,
-                MaterialProcurement.created_at >= self.last_measured_at,
+            select(MaterialInventoryImport).where(
+                MaterialInventoryImport.inventory_id == self.id,
+                MaterialInventoryImport.created_at >= self.last_measured_at,
+                *where_type_clauses
             )
         )
 
-    disposals: Mapped[list[MaterialDisposal]] = relationship()
-
-    async def disposals_since_last_measured(self) -> ScalarResult[MaterialDisposal]:
-        db = local_object_session(self)
-        return await db.scalars(
-            select(MaterialDisposal).where(
-                MaterialDisposal.inventory_id == self.id,
-                MaterialDisposal.created_at >= self.last_measured_at,
-            )
-        )
-
-    productions: Mapped[list[MaterialProduction]] = relationship()
+    async def procurements_since_last_measured(self) -> ScalarResult[MaterialInventoryProcurement]:
+        return await self.imports_since_last_measured(MaterialInventoryImportType.PROCUREMENT)
 
     async def productions_since_last_measured(self) -> ScalarResult[MaterialProduction]:
-        db = local_object_session(self)
-        return await db.scalars(
-            select(MaterialProduction).where(
-                MaterialProduction.inventory_id == self.id,
-                MaterialProduction.created_at >= self.last_measured_at,
-            )
-        )
+        return await self.imports_since_last_measured(MaterialInventoryImportType.PRODUCTION)
 
-    consumptions: Mapped[list[MaterialProduction]] = relationship()
+    exports: Mapped[list[MaterialInventoryExport]] = relationship(back_populates="inventory")
 
-    async def consumptions_since_last_measured(
+    async def exports_since_last_measured(
         self,
-    ) -> ScalarResult[MaterialConsumption]:
+        of_type: MaterialInventoryExportType | None = None
+    ) -> ScalarResult[MaterialInventoryExport]:
         db = local_object_session(self)
+
+        where_type_clauses = [
+            MaterialInventoryExport.type == of_type
+        ] if of_type else []
         return await db.scalars(
-            select(MaterialConsumption).where(
-                MaterialConsumption.inventory_id == self.id,
-                MaterialConsumption.created_at >= self.last_measured_at,
+            select(MaterialInventoryExport).where(
+                MaterialInventoryExport.inventory_id == self.id,
+                MaterialInventoryExport.created_at >= self.last_measured_at,
+                *where_type_clauses
             )
         )
 
-    last_measured_quantity: Mapped[float] = mapped_column(psql.FLOAT, default=0.0)
-    last_measured_at: Mapped[datetime] = mapped_column(psql.TIMESTAMP)
+    async def dispositions_since_last_measured(self) -> ScalarResult[MaterialInventoryDisposition]:
+        return await self.exports_since_last_measured(MaterialInventoryExportType.DISPOSITION)
+
+    async def consumtpions_since_last_measured(self) -> ScalarResult[MaterialInventoryDisposition]:
+        return await self.exports_since_last_measured(MaterialInventoryExportType.DISPOSITION)
+    last_measured_quantity: Mapped[float] = mapped_column(postgresql.FLOAT, default=0.0)
+    last_measured_at: Mapped[datetime] = mapped_column(postgresql.TIMESTAMP)
     last_measured_by_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
-    last_measured_note: Mapped[str] = mapped_column(psql.TEXT)
+    last_measured_note: Mapped[str] = mapped_column(postgresql.TEXT)
 
     async def estimated_quantity(self) -> float:
         quantity = self.last_measured_quantity
-        for production in await self.productions_since_last_measured():
-            quantity += production.quantity
-
-        for consumption in await self.consumptions_since_last_measured():
-            quantity -= consumption.quantity
-
-        for procurement in await self.procurements_since_last_measured():
-            quantity += procurement.quantity
-        for disposal in await self.disposals_since_last_measured():
-            quantity -= disposal.quantity
+        for import_ in await self.imports_since_last_measured():
+            quantity += import_.quantity
+        for export_ in await self.exports_since_last_measured():
+            quantity -= export_.quantity
         return quantity
 
     # An inventory can occupy an ordered list of storage containers
@@ -147,7 +152,7 @@ class MaterialInventory(Allocatable, Base):
     )
 
     previous_measurement_jsons: Mapped[list[dict]] = mapped_column(
-        psql.ARRAY(psql.JSONB), server_default="{}"
+        postgresql.ARRAY(postgresql.JSONB), server_default="{}"
     )
 
     @functools.cached_property
@@ -165,6 +170,19 @@ class MaterialInventory(Allocatable, Base):
             by_id=self.last_measured_by_id,
             note=self.last_measured_note,
         )
+
+    @classmethod
+    async def get_for_lab_material(cls, db: LocalSession, lab: Lab | UUID, material: Material | UUID) -> MaterialInventory:
+        r = await db.scalar(
+            select(MaterialInventory).where(
+                MaterialInventory.lab_id == model_id(lab),
+                MaterialInventory.material_id == model_id(material)
+            )
+        )
+
+        if r is None:
+            raise DoesNotExist('MaterialInventory', f'no inventory exists for {model_id(material)} in {model_id(lab)}')
+        return r
 
     def _set_last_measurement(
         self,
@@ -203,296 +221,172 @@ class MaterialInventory(Allocatable, Base):
         await self.save()
         return self.last_measurement
 
+
+    async def record_procurement(self, purchase: ResearchPurchase, quantity: float) -> MaterialInventoryProcurement:
+        db = local_object_session(self)
+        procurement = MaterialInventoryProcurement(self, purchase, quantity=quantity)
+        db.add(procurement)
+        await db.commit()
+        return procurement
+
+    async def record_disposition(self, quantity: float) -> MaterialInventoryDisposition:
+        db = local_object_session(self)
+
+        material: Material = await self.awaitable_attrs.material
+        lab: Lab = await self.awaitable_attrs.lab
+
+        lab_disposal = cast(LabDisposal, None)
+
+        disposition = MaterialInventoryDisposition(self, lab_disposal, quantity=quantity)
+        db.add(disposition)
+        await db.commit()
+        return disposition
+
     @override
     async def save(self):
         del self.previous_inventory_measurements
         return await super().save()
 
-    async def add_consumption(
-        self,
-        amount: float,
-        by: User,
-        note: str,
-        input_material: InputMaterial | None = None,
-    ):
-        """
-        Adds a consumption of the item in the inventory
-        """
 
-        if input_material and input_material.from_inventory_id != self.id:
-            raise ModelException("Input material from different inventory")
-        consumption = MaterialConsumption(
-            self,
-            amount,
-            by,
-            note=note,
-            input_material=input_material,
-        )
-        async with local_object_session(self) as db:
-            db.add(consumption)
-            await db.commit()
-        return consumption
+def query_material_inventories(
+    lab: Lab | UUID | None = None
+) -> Select[tuple[MaterialInventory]]:
+    where_clauses: list = []
 
-    async def add_procurement(
-        self,
-        amount: float,
-        by: User,
-        note: str,
-        input_material: InputMaterial | None = None,
-    ):
-        if input_material and input_material.from_inventory_id != self.id:
-            raise ModelException("Cannot connect output to different inventory")
+    if lab:
+        where_clauses.append(MaterialInventory.lab_id == model_id(lab))
 
-        procurement = MaterialProcurement(
-            self,
-            amount,
-            by,
-            note=note,
-            input_material=input_material,
-        )
+    return select(MaterialInventory).where(*where_clauses)
 
-        async with local_object_session(self) as db:
-            db.add(procurement)
-            await db.commit()
-        return procurement
+class MaterialInventoryImportType(Enum):
+    PROCUREMENT = "procurement"
+    PRODUCTION = "production"
 
-    async def add_production(
-        self,
-        amount: float,
-        by: User,
-        *,
-        note: str,
-        output_material: OutputMaterial | None,
-    ):
-        if output_material and output_material.to_inventory_id != self.id:
-            raise ModelException("OutputMaterial from different inventory")
+MATERIAL_INVENTORY_IMPORT_TYPE_ENUM = postgresql.ENUM(MaterialInventoryImportType, name='material_inventory_import_type', create_type=False)
 
-        production = MaterialProduction(
-            self,
-            amount,
-            by,
-            note=note,
-            output_material=output_material,
-        )
+class MaterialInventoryImport(Base):
+    """
+    A quantity of items imported into the inventory
+    """
 
-        async with local_object_session(self) as db:
-            db.add(production)
-            await db.commit()
-        return production
+    __tablename__ = 'material_inventory_import'
+    __import_type__: ClassVar[MaterialInventoryImportType]
 
-    async def add_disposal(
-        self,
-        amount: float,
-        by: User,
-        *,
-        note: str,
-        output_material: OutputMaterial | None = None,
-        input_material: InputMaterial | None = None,
-    ):
-        disposal = MaterialDisposal(
-            self,
-            amount,
-            by,
-            note=note,
-            input_material=input_material,
-            output_material=output_material,
-        )
-        async with local_object_session(self) as db:
-            db.add(disposal)
-            await db.commit()
-        return disposal
+    def __init_subclass__(cls, **kw):
+        import_type = getattr(cls, '__import_type__', None)
+        if not isinstance(import_type, MaterialInventoryImportType):
+            raise TypeError("InventoryImport sublcass has no __import_type__")
 
+        cls.__mapper_args__ = {
+            "polymorphic_on": "type",
+            "polymorphic_identity": import_type.value
+        }
 
-class _InventoryModifier(Base):
-    __abstract__ = True
+        super().__init_subclass__(**kw)
 
-    material_id: Mapped[UUID] = mapped_column(ForeignKey("material.id"))
-
-    @declared_attr
-    def material(cls):
-        return relationship(Material)
+    id: Mapped[uuid_pk] = mapped_column()
+    type: Mapped[MaterialInventoryImportType] = mapped_column(MATERIAL_INVENTORY_IMPORT_TYPE_ENUM)
 
     inventory_id: Mapped[UUID] = mapped_column(ForeignKey("material_inventory.id"))
+    inventory: Mapped[MaterialInventory] = relationship()
 
-    @declared_attr
-    def inventory(cls):
-        return relationship(MaterialInventory)
+    quantity: Mapped[float] = mapped_column(postgresql.FLOAT, default=0.0)
 
-    input_material_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("input_material.id"),
-        nullable=True,
-        default=None,
-    )
-    output_material_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("output_material.id"),
-        nullable=True,
-        default=None,
-    )
+    recorded_by_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
+    recorded_by: Mapped[User] = relationship()
 
-    quantity: Mapped[float] = mapped_column(psql.FLOAT)
-
-    by_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
-
-    @declared_attr
-    def by(cls) -> Mapped[User]:
-        return relationship(User)
-
-    note: Mapped[str] = mapped_column(psql.TEXT)
-
-    def __init__(
-        self,
-        material_inventory: MaterialInventory,
-        quantity: float,
-        by: User,
-        *,
-        note: str,
-        input_material: InputMaterial | None = None,
-        output_material: OutputMaterial | None = None,
-        **kwargs,
-    ):
-        self.material_id = material_inventory.material_id
-        self.inventory_id = material_inventory.id
+    def __init__(self, inventory: MaterialInventory | UUID, quantity: float, recorded_by: User | UUID, **kw):
+        self.type = type(self).__import_type__
+        self.inventory_id = model_id(inventory)
         self.quantity = quantity
-
-        if input_material:
-            if input_material.from_inventory_id != self.inventory_id:
-                raise ModelException("InputMaterial targets unexpected inventory")
-            self.input_material_id = input_material.id if input_material else None
-        if output_material:
-            if output_material.to_inventory_id != self.inventory_id:
-                raise ModelException("OutputMaterial targets unexpected inventory")
-            self.output_material_id = output_material.id if output_material else None
-
-        self.by_id = by.id
-        self.note = note
-
-        super().__init__(**kwargs)
+        self.recorded_by_id = model_id(recorded_by)
+        super().__init__(**kw)
 
 
-class _InventoryImport(_InventoryModifier, Base):
-    __abstract__ = True
+class MaterialInventoryProcurement(MaterialInventoryImport):
+    __tablename__ = "material_inventory_procurement"
+    __import_type__ = MaterialInventoryImportType.PROCUREMENT
 
-    def __init__(
-        self,
-        to_inventory: MaterialInventory,
-        quantity: float,
-        by: User,
-        *,
-        note: str,
-        input_material: InputMaterial | None = None,
-        output_material: OutputMaterial | None = None,
-        **kwargs,
-    ):
+    id: Mapped[UUID] = mapped_column(ForeignKey("material_inventory_import.id"), primary_key=True)
+
+    purchase_id: Mapped[UUID] = mapped_column(ForeignKey("research_purchase.id"))
+    purchase: Mapped[ResearchPurchase] = relationship()
+
+    def __init__(self, inventory: MaterialInventory | UUID, purchase: ResearchPurchase, quantity: float, **kw):
+        self.puchase_id = model_id(purchase)
         super().__init__(
-            to_inventory,
-            quantity,
-            by,
-            note=note,
-            input_material=input_material,
-            output_material=output_material,
-            **kwargs,
+            inventory,
+            recorded_by=purchase.paid_by_id,
+            quantity=quantity,
+            **kw
         )
 
 
-class _InventoryExport(_InventoryModifier):
-    __abstract__ = True
-
-    def __init__(
-        self,
-        from_inventory: MaterialInventory,
-        quantity: float,
-        by: User,
-        note: str,
-        input_material: InputMaterial | None = None,
-        output_material: OutputMaterial | None = None,
-    ):
-        super().__init__(
-            from_inventory,
-            quantity,
-            by,
-            note=note,
-            input_material=input_material,
-            output_material=output_material,
-        )
+class MaterialInventoryExportType(Enum):
+    CONSUMPTION = "consumption"
+    DISPOSITION = "disposition"
 
 
-class MaterialConsumption(_InventoryExport):
-    __tablename__ = "material_consumption"
+MATERIAL_INVENTORY_EXPORT_TYPE_ENUM = postgresql.ENUM(MaterialInventoryExportType, name="material_inventory_export_type", create_type=False)
+
+
+class MaterialInventoryExport(Base):
+    """
+    A quantity of items exported from an inventory
+    """
+
+    __tablename__ = 'material_inventory_export'
+    __export_type__: ClassVar[MaterialInventoryExportType]
+
+    __mapper_args__ = {
+        "polymorphic_on": "type"
+    }
+
+    def __init_subclass__(cls, **kwargs):
+        export_type = getattr(cls, '__export_type__', None)
+        if not isinstance(export_type, MaterialInventoryExportType):
+            raise TypeError("InventoryExport subclass must declare an export type")
+
+        cls.__mapper_args__ = {
+            "polymorphic_on": "type",
+            "polymorphic_identity": export_type.value
+        }
+        super().__init_subclass__(**kwargs)
 
     id: Mapped[uuid_pk] = mapped_column()
+    type: Mapped[MaterialInventoryExportType] = mapped_column(MATERIAL_INVENTORY_EXPORT_TYPE_ENUM)
 
-    def __init__(
-        self,
-        from_inventory: MaterialInventory,
-        quantity: float,
-        by: User,
-        *,
-        note: str,
-        input_material: InputMaterial | None = None,
-    ):
-        super().__init__(
-            from_inventory, quantity, by, note=note, input_material=input_material
-        )
+    inventory_id: Mapped[UUID] = mapped_column(ForeignKey("material_inventory.id"))
+    inventory: Mapped[MaterialInventory] = relationship()
 
+    quantity: Mapped[float] = mapped_column(postgresql.FLOAT, default=0.0)
 
-class MaterialProduction(_InventoryImport):
-    __tablename__ = "material_production"
+    recorded_by_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
+    recorded_by: Mapped[User] = relationship()
 
-    id: Mapped[uuid_pk] = mapped_column()
+    def __init__(self, inventory: MaterialInventory | UUID, recorded_by: User | UUID, quantity: float, **kw):
+        self.id = uuid4()
+        self.type = type(self).__export_type__
+        self.inventory_id = model_id(inventory)
+        self.quantity = quantity
+        self.recorded_by_id = model_id(recorded_by)
 
-    def __init__(
-        self,
-        from_inventory: MaterialInventory,
-        quantity: float,
-        by: User,
-        *,
-        note: str,
-        output_material: OutputMaterial | None = None,
-    ):
-        super().__init__(
-            from_inventory, quantity, by, note=note, output_material=output_material
-        )
+        super().__init__(**kw)
 
 
-class MaterialProcurement(_InventoryImport):
-    __tablename__ = "material_procurement"
+class MaterialInventoryDisposition(MaterialInventoryExport):
+    """
+    Represents a move of a quantity out of an inventory and into a lab disposal.
+    """
 
-    id: Mapped[uuid_pk] = mapped_column()
+    __tablename__ = "material_inventory_disposition"
+    __export_type__ = MaterialInventoryExportType.DISPOSITION
 
-    def __init__(
-        self,
-        to_inventory: MaterialInventory,
-        quantity: float,
-        by: User,
-        *,
-        note: str,
-        input_material: InputMaterial | None = None,
-    ):
-        super().__init__(
-            to_inventory, quantity, by, note=note, input_material=input_material
-        )
+    id: Mapped[UUID] = mapped_column(ForeignKey("material_inventory_export.id"), primary_key=True)
 
+    disposal_id: Mapped[UUID] = mapped_column(ForeignKey("lab_disposal.id"))
+    disposal: Mapped[LabDisposal] = relationship()
 
-class MaterialDisposal(_InventoryExport):
-    __tablename__ = "material_disposal"
-
-    id: Mapped[uuid_pk] = mapped_column()
-
-    def __init__(
-        self,
-        to_inventory: MaterialInventory,
-        quantity: float,
-        by: User,
-        *,
-        note: str,
-        input_material: InputMaterial | None = None,
-        output_material: OutputMaterial | None = None,
-    ):
-        super().__init__(
-            to_inventory,
-            quantity,
-            by,
-            note=note,
-            input_material=input_material,
-            output_material=output_material,
-        )
+    def __init__(self, inventory: MaterialInventory | UUID, lab_disposal: LabDisposal | UUID, recorded_by: User | UUID, quantity: float):
+        self.disposal_id = model_id(lab_disposal)
+        super().__init__(inventory, quantity=quantity, recorded_by=recorded_by)

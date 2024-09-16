@@ -1,25 +1,26 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+import collections
+import dataclasses
 from datetime import datetime, timezone, tzinfo
-from typing import TYPE_CHECKING, Any, Awaitable, ClassVar, Generic, Self, TypeVar
+from typing import TYPE_CHECKING, Any, Awaitable, ClassVar, Collection, Generic, Iterable, Self, TypeVar
 from uuid import UUID, uuid4
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, insert
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects import postgresql as psql
 
 from db import LocalSession, local_object_session
 from db.models.base import Base, model_id
+from db.models.base.errors import ModelException
 from db.models.fields import uuid_pk
 
 from db.models.user import User
-
-if TYPE_CHECKING:
-    from db.models.research.funding import ResearchFunding
-    from db.models.lab.work.lab_work import LabWork
+from db.models.research.funding import ResearchFunding, ResearchBudget, ResearchPurchase, ResearchPurchaseOrder
 
 from ..lab import Lab
+from ..work import LabWork, LabWorkOrder
 
 from .errors import (
     ProvisionAlreadyFinalised,
@@ -37,17 +38,51 @@ from .provision_status import (
     ProvisionStatus,
 )
 
-TProvisionable = TypeVar("TProvisionable", bound=Provisionable)
+TProvisionable = TypeVar("TProvisionable", bound=Provisionable, covariant=True)
+
+@dataclasses.dataclass()
+class ProvisionType:
+    name: str
+
+    dataclasses.KW_ONLY
+
+    actions: set[str] = dataclasses.field(default_factory=set)
+
+__provision_types__: dict[str, ProvisionType] = {}
+
+class ProvisionTypeError(Exception):
+    def __init__(self, provision_type: str):
+        super().__init__(f'unknown provision type: {provision_type}')
+
+def provision_type(provision_type: str | ProvisionType) -> ProvisionType:
+    if isinstance(provision_type, ProvisionType):
+        return provision_type
+    try:
+        name_or_dict = __provision_types__[provision_type]
+    except KeyError:
+        raise ProvisionTypeError(provision_type)
+    return name_or_dict
+
+class ProvisionActionError(ModelException):
+    def __init__(self, type: str | ProvisionType, action: str):
+        self.type = provision_type(type)
+        self.action = action
+        super().__init__(f'Unrecognised action for provision type {self.type.name} {action}')
 
 
-class LabProvision(Base, Generic[TProvisionable]):
+class LabProvision(
+    ResearchPurchaseOrder,
+    LabWorkOrder,
+    Base,
+    Generic[TProvisionable]
+):
     """
     A lab provision represents a plan to change some part of the
     lab infrastructure.
     """
 
     __tablename__ = "lab_provision"
-    __provision_type__: ClassVar[str]
+    __provision_type__: ClassVar[ProvisionType]
     __auto_approve__: ClassVar[bool] = False
 
     def __init_subclass__(cls, **kw: Any) -> None:
@@ -58,20 +93,26 @@ class LabProvision(Base, Generic[TProvisionable]):
                     "LabProvision subclass must declare a __provision_type__"
                 )
         else:
+            provision_type = getattr(cls, '__provision_type__')
+            if provision_type.name in __provision_types__:
+                raise ModelException("Name must be unique amongst provision types")
+            setattr(cls, '__purchase_order_type__', provision_type.name)
 
             if not hasattr(cls, "__mapper_args__"):
                 setattr(cls, "__mapper_args__", {})
 
             cls.__mapper_args__.update(
-                polymorphic_on="type", polymorphic_identity=cls.__provision_type__
+                polymorphic_on="type", polymorphic_identity=cls.__provision_type__.name
             )
 
         return super().__init_subclass__(**kw)
 
     id: Mapped[uuid_pk] = mapped_column()
 
-    # Represents the named type of the provision.
+    # Polymorphic type of this provision. Different provisionables have different provision types. Maps to a unique python type
     type: Mapped[str] = mapped_column(psql.VARCHAR(64))
+    action: Mapped[str] = mapped_column(psql.VARCHAR(64))
+
     status: Mapped[ProvisionStatus] = mapped_column(PROVISION_STATUS_ENUM)
 
     # The target of the provision. Can be any Provisionable
@@ -80,37 +121,45 @@ class LabProvision(Base, Generic[TProvisionable]):
 
     lab: Mapped[Lab] = relationship()
 
-    # The funding source which will be used to purchase the provision
-    funding_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("research_funding.id"), default=None
-    )
-    funding: Mapped[ResearchFunding] = relationship()
-
     @property
     @abstractmethod
     def target_id(self) -> UUID: ...
-
-    estimated_cost: Mapped[float] = mapped_column(psql.FLOAT, default=0.0)
-    purchase_cost: Mapped[float] = mapped_column(psql.FLOAT, default=0.0)
-
-    created_by_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
-    created_by: Mapped[User] = relationship()
 
     previous_requests: Mapped[list[ProvisionTransition]] = mapped_column(
         PROVISION_STATUS_TRANSITION(ProvisionStatus.REQUESTED, repeatable=True)
     )
 
     requested_at: Mapped[datetime] = mapped_column(psql.TIMESTAMP(timezone=True))
-    requested_by_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    requested_by_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
     requested_note: Mapped[str] = mapped_column(psql.TEXT)
 
-    def __init__(self, *, note: str, requested_by: User, **kwargs):
+    def __init__(
+        self,
+        action: str,
+        *,
+        lab: Lab,
+        budget: ResearchBudget | None = None,
+        note: str,
+        requested_by: User,
+        **kwargs
+    ):
+        from db.models.lab.work import LabWork
+        from db.models.research.funding import ResearchPurchase
+
+        provision_type = type(self).__provision_type__
+        self.type = provision_type.name
+
         self.id = uuid4()
         self.status = ProvisionStatus.REQUESTED
-        self.type = type(self).__provision_type__
+
+        if action not in provision_type.actions:
+            raise ProvisionActionError(provision_type, action)
+        self.action = action
+        self.lab_id = lab.id
+
+        self.budget_id = budget.id if budget else None
 
         self._set_request(requested_by, note=note, initial=True)
-        self._work = LabWork(self, requested_by, f"created by provision {self.id}")
 
         return super().__init__(**kwargs)
 
@@ -120,12 +169,12 @@ class LabProvision(Base, Generic[TProvisionable]):
             status=ProvisionStatus.REQUESTED,
             provision_id=self.id,
             at=self.requested_at,
-            by_id=self.created_by_id,
+            by_id=self.requested_by_id,
             note=self.requested_note,
         )
 
     @property
-    def requests(self):
+    def all_requests(self):
         return [*self.previous_requests, self.request]
 
     def _set_request(self, by: User, *, note: str = "", initial: bool = False):
@@ -136,15 +185,27 @@ class LabProvision(Base, Generic[TProvisionable]):
         self.requested_by_id = by.id
         self.requested_note = note
 
-    rejections: Mapped[list[ProvisionTransition]] = mapped_column(
+    all_rejections: Mapped[list[ProvisionTransition]] = mapped_column(
         PROVISION_STATUS_TRANSITION(ProvisionStatus.REJECTED, repeatable=True)
     )
 
     @property
-    def current_rejection(self) -> ProvisionTransition | None:
+    def rejection(self) -> ProvisionTransition | None:
         if self.is_approved or self.is_denied:
             return None
-        return self.rejections[0] if self.rejections else None
+        return self.all_rejections[0] if self.all_rejections else None
+
+    @property
+    def is_rejected(self):
+        return bool(self.rejection)
+
+    @property
+    def rejected_at(self) -> datetime | None:
+        return self.rejection['at'] if self.rejection else None
+
+    @property
+    def rejected_by_id(self) -> UUID | None:
+        return self.rejection['by_id'] if self.rejection else None
 
     async def reject(self, by: User, note: str) -> Self:
         if self.status != ProvisionStatus.REQUESTED:
@@ -154,7 +215,7 @@ class LabProvision(Base, Generic[TProvisionable]):
                 "can only reject a re-submitted request",
             )
         rejection = self.__mk_status_metadata(ProvisionStatus.REJECTED, by, note=note)
-        self.rejections.insert(0, rejection)
+        self.all_rejections.insert(0, rejection)
 
         return await self.save()
 
@@ -166,6 +227,14 @@ class LabProvision(Base, Generic[TProvisionable]):
     def is_approved(self):
         return bool(self.approval)
 
+    @property
+    def approved_at(self):
+        return self.approval['at'] if self.approval else None
+
+    @property
+    def approved_by_id(self):
+        return self.approval['by_id'] if self.approval else None
+
     async def approve(self, by: User, *, note: str) -> Self:
         if self.status not in {ProvisionStatus.REQUESTED, ProvisionStatus.REJECTED}:
             raise ProvisionStatusError(
@@ -176,6 +245,12 @@ class LabProvision(Base, Generic[TProvisionable]):
         self.approval = self.__mk_status_metadata(
             ProvisionStatus.APPROVED, by, note=note
         )
+
+        purchase = await self.get_or_create_purchase()
+        if purchase:
+            self.purchase = await purchase.mark_as_ready(
+                by, note="provision order approved"
+            )
 
         if self.is_work_ready():
             self.work = await self.work.mark_as_ready(
@@ -191,6 +266,14 @@ class LabProvision(Base, Generic[TProvisionable]):
     @property
     def is_denied(self):
         return bool(self.denial)
+
+    @property
+    def denied_at(self):
+        return self.denial['at'] if self.denial else None
+
+    @property
+    def denied_by_id(self):
+        return self.denial['by_id'] if self.denial else None
 
     async def deny(self, by: User, *, note: str) -> Self:
         if not self.status not in {ProvisionStatus.REQUESTED, ProvisionStatus.REJECTED}:
@@ -209,16 +292,23 @@ class LabProvision(Base, Generic[TProvisionable]):
 
     @property
     def is_purchase_required(self):
-        if self.funding_id is None:
-            return False
-        return self.estimated_cost >= 0
+        return self.purchase_id is not None
 
     async def has_pending_purchase(self):
-        raise NotImplementedError
+        purchase: ResearchPurchase | None = await self.awaitable_attrs.purchase
+        return bool(purchase) and not purchase.is_pending
 
     @property
     def is_purchased(self):
         return self.requisition is not None
+
+    @property
+    def purchased_at(self):
+        return self.requisition['at'] if self.requisition else None
+
+    @property
+    def purchased_by_id(self):
+        return self.requisition['by_id'] if self.requisition else None
 
     async def mark_as_purchased(self, by: User, *, note: str) -> Self:
         if self.status != ProvisionStatus.APPROVED:
@@ -250,6 +340,14 @@ class LabProvision(Base, Generic[TProvisionable]):
     def is_completed(self):
         return self.completion is not None
 
+    @property
+    def completed_at(self):
+        return self.completion['at'] if self.completion else None
+
+    @property
+    def completed_by_id(self):
+        return self.completion['by_id'] if self.completion else None
+
     async def complete(self, by: User, note: str):
         if self.status == ProvisionStatus.APPROVED:
             if await self.has_pending_purchase():
@@ -271,7 +369,29 @@ class LabProvision(Base, Generic[TProvisionable]):
 
     @property
     def is_finalised(self):
-        return self.is_completed or self.is_cancelled
+        return self.is_denied or self.is_completed or self.is_cancelled
+
+    @property
+    def finalised_at(self) -> datetime | None:
+        if self.is_denied:
+            return self.denied_At
+        elif self.is_completed:
+            return self.completed_at
+        elif self.is_cancelled:
+            return self.cancelled_at
+        else:
+            return None
+
+    @property
+    def finalised_by_id(self) -> UUID | None:
+        if self.is_denied:
+            return self.denied_by_id
+        elif self.is_completed:
+            return self.completed_by_id,
+        elif self.is_cancelled:
+            return self.cancelled_by_id
+        else:
+            return None
 
     @property
     def is_pending(self):
@@ -284,6 +404,14 @@ class LabProvision(Base, Generic[TProvisionable]):
     @property
     def is_cancelled(self):
         return bool(self.cancellation)
+
+    @property
+    def cancelled_at(self):
+        return self.cancellation['at'] if self.cancellation else None
+
+    @property
+    def cancelled_by_id(self):
+        return self.cancellation['by_id'] if self.cancellation else None
 
     async def cancel(
         self,

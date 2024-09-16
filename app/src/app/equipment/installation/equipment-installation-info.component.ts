@@ -1,12 +1,12 @@
 import { Component, Input, inject, input } from "@angular/core";
-import { Equipment, EquipmentService } from "../equipment";
-import { Lab } from "src/app/lab/lab";
+import { EquipmentService } from "../equipment";
 import { EquipmentInstallation } from "./equipment-installation";
 import { LabInstallationInfoComponent } from "src/app/lab/common/installable/lab-installation-info.component";
 import { EquipmentInfoComponent } from "../equipment-info.component";
 import { AsyncPipe } from "@angular/common";
 import { toObservable } from "@angular/core/rxjs-interop";
-import { switchMap } from "rxjs";
+import { map, switchMap } from "rxjs";
+import { coerceBooleanProperty } from "@angular/cdk/coercion";
 
 export type EquipmentInstallationInfoDisplay
   = 'list-item'
@@ -21,8 +21,8 @@ export type EquipmentInstallationInfoDisplay
     EquipmentInfoComponent
   ],
   template: `
-  <lab-installation-info 
-     [installation]="installation()" 
+  <lab-installation-info
+     [installation]="installation()"
      [display]="display()">
     <div #installableTitle>
       @if (equipment$ | async; as equipment) {
@@ -38,11 +38,14 @@ export type EquipmentInstallationInfoDisplay
   `
 })
 export class EquipmentInstallationInfoComponent {
+
   installation = input.required<EquipmentInstallation>();
   display = input<EquipmentInstallationInfoDisplay>('list-item')
 
+  hideProvisions = input(false, {transform: coerceBooleanProperty});
+
   protected readonly _equipmentService = inject(EquipmentService);
   equipment$ = toObservable(this.installation).pipe(
-    switchMap(install => install.resolveEquipment(this._equipmentService))
+    switchMap(install => this._equipmentService.fetch(install.equipmentId))
   );
 }

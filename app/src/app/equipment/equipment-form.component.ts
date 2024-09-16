@@ -1,18 +1,24 @@
 import { CommonModule } from '@angular/common';
 import {
+  ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   EventEmitter,
   Injectable,
   Input,
   Output,
   TemplateRef,
   ViewChild,
+  computed,
+  effect,
   inject,
+  input,
 } from '@angular/core';
 import {
   AbstractControl,
   AsyncValidator,
   ControlContainer,
+  FormArray,
   FormBuilder,
   FormControl,
   FormControlStatus,
@@ -28,77 +34,22 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { EquipmentTagInputComponent } from './tag/equipment-tag-input.component';
-import { EquipmentTrainingDescriptionsInputComponent } from './training/training-descriptions-input.component';
-import { Equipment, EquipmentUpdateRequest, EquipmentService, EquipmentCreateRequest } from './equipment';
-import { ResizeTextareaOnInputDirective } from 'src/app/common/forms/resize-textarea-on-input.directive';
-import { BehaviorSubject, Observable, Subscription, debounceTime, distinctUntilChanged, firstValueFrom, map, of, shareReplay, switchMap } from 'rxjs';
+import { EquipmentTrainingDescriptionsFieldHint, EquipmentTrainingDescriptionsInputComponent } from './training/training-descriptions-input.component';
+import { EquipmentService, EquipmentCreateRequest, Equipment } from './equipment';
 import { EquipmentSearchComponent } from './equipment-search.component';
 import { RouterModule } from '@angular/router';
+import { TextFieldModule } from '@angular/cdk/text-field';
+import { Discipline } from '../uni/discipline/discipline';
+import { UniDisciplineSelect } from '../uni/discipline/discipline-select.component';
+import { EquipmentNameUniqueValidator } from './equipment-name-unique-validator';
+import { EquipmentInstallationFormGroup, equipmentInstallationFormGroupFactory } from './installation/equipment-installation-form.component';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { switchMap } from 'rxjs';
+import { EquipmentInstallation } from './installation/equipment-installation';
 
-export interface EquipmentFormControls {
-  name: FormControl<string>;
-  description: FormControl<string>;
-  tags: FormControl<string[]>;
-  trainingDescriptions: FormControl<string[]>;
-};
-
-@Injectable({ providedIn: 'root' })
-export class EquipmentNameUniqueValidator implements AsyncValidator {
-  readonly equipments = inject(EquipmentService);
-  readonly valueSubject = new BehaviorSubject<string>('');
-
-  readonly matches = this.valueSubject.pipe(
-    distinctUntilChanged(),
-    debounceTime(300),
-    switchMap(value => this.equipments.query({ name: value })),
-    shareReplay(1)
-  );
-
-  async validate(control: AbstractControl<any, any>): Promise<ValidationErrors | null> {
-    const value = control.value;
-    if (typeof value === 'string') {
-      this.valueSubject.next(value);
-    }
-    const matches = await firstValueFrom(this.matches);
-    if (matches.length > 0) {
-      return { unique: 'equipment name not unqiue' };
-    }
-    return null;
-  }
-}
-
-export type EquipmentFormGroup = FormGroup<EquipmentFormControls>;
-export function equipmentFormGroup(validateNameUnique: EquipmentNameUniqueValidator): EquipmentFormGroup {
-  return new FormGroup({
-    name: new FormControl<string>('', {
-      nonNullable: true,
-      validators: [ Validators.required ],
-      asyncValidators: [
-        (c) => validateNameUnique.validate(c)
-      ]
-    }),
-    description: new FormControl<string>('', { nonNullable: true }),
-    tags: new FormControl<string[]>([], { nonNullable: true }),
-    trainingDescriptions: new FormControl<string[]>(
-      [],
-      { nonNullable: true }
-    ),
-  });
-}
-
-export function equipmentCreateRequestFromForm(form: EquipmentFormGroup): EquipmentCreateRequest {
-  if (!form.valid) {
-    throw new Error('Invalid form has no value');
-  }
-  return {
-    name: form.value.name!,
-    description: form.value.description,
-    tags: form.value.tags,
-    trainingDescriptions: form.value.trainingDescriptions
-  };
-
-}
-
+/**
+ * Nested form describing basic info about a piece of equipment.
+ */
 @Component({
   selector: 'equipment-form',
   standalone: true,
@@ -107,197 +58,195 @@ export function equipmentCreateRequestFromForm(form: EquipmentFormGroup): Equipm
     RouterModule,
     ReactiveFormsModule,
 
+    TextFieldModule,
+
     MatButtonModule,
     MatCheckboxModule,
     MatIconModule,
     MatFormFieldModule,
     MatInputModule,
 
-    ResizeTextareaOnInputDirective,
+    UniDisciplineSelect,
     EquipmentSearchComponent,
     EquipmentTagInputComponent,
     EquipmentTrainingDescriptionsInputComponent,
+    EquipmentTrainingDescriptionsFieldHint
   ],
   template: `
-    <form [formGroup]="form" (ngSubmit)="_onFormSubmit()">
-      @if (!equipment) {
-        <mat-form-field>
-          <mat-label>Name</mat-label>
-          <input matInput formControlName="name" required>
-      
-          @if (nameErrors && nameErrors['required']) {
-            <mat-error>A value is required</mat-error>
-          }
-          @if (nameErrors && nameErrors['unique']) {
-            <mat-error>
-              Equipment name must be unqiue.
-            </mat-error>
-          }
-        </mat-form-field>
-      }
+    <form [formGroup]="formGroup" (ngSubmit)="_onFormSubmit()">
 
-      @if (!_disableFields.has('description')) {
-        <mat-form-field>
-          <mat-label>Description</mat-label>
-          <textarea matInput formControlName="description" resizeOnInput>
-          </textarea>
-        </mat-form-field>
-      }
+        <div class="equipment-form">
+            <h4>General</h4>
+            <mat-form-field>
+                <mat-label>Name</mat-label>
+                <input matInput formControlName="name" required>
 
-      @if (!_disableFields.has('tags')) {
-        <equipment-tags-input formControlName="tags">
-          <mat-label>Tags</mat-label>
-        </equipment-tags-input>
-      }
+                @if (nameErrors && nameErrors['required']) {
+                    <mat-error>A value is required</mat-error>
+                }
+                @if (nameErrors && nameErrors['unique']) {
+                <mat-error>
+                    Equipment name must be unqiue.
+                </mat-error>
+                }
+            </mat-form-field>
 
-      @if (!_disableFields.has('trainingDescriptions')) {
-        <lab-equipment-training-descriptions-input
-          formControlName="trainingDescriptions"
-        >
-        </lab-equipment-training-descriptions-input>
-      }
+            <mat-form-field>
+                <mat-label>Description</mat-label>
+                <textarea matInput formControlName="description" cdkTextareaAutosize>
+                </textarea>
+            </mat-form-field>
 
-      @if (_isStandaloneForm) {
-        <div class="form-actions">
-          <button
-            mat-raised-button
-            type="submit"
-            color="primary"
-            [disabled]="!form.valid"
-          >
-            <mat-icon>save</mat-icon> save
-          </button>
+            <mat-form-field>
+                <mat-label>Disciplines</mat-label>
+                <uni-discipline-select multiple formControlName="disciplines"/>
+                <mat-hint>
+                <i>Only</i> used in research/teaching in the given discipline.
+                Multiple disciplines can be selected.
+                </mat-hint>
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>Tags</mat-label>
+                <equipment-tags-input formControlName="tags" />
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>Training descriptions</mat-label>
+                <equipment-training-descriptions-input formControlName="trainingDescriptions" />
+                <mat-hint>
+                    <equipment-training-descriptions-hint />
+                </mat-hint>
+            </mat-form-field>
         </div>
-      }
+
+        <div class="installations">
+            <div class="installations-header">
+                <h4>Installations</h4>
+
+                <button mat-icon-button (click)="addInstallationForm()">
+                    <mat-icon>add</mat-icon>
+                </button>
+            </div>
+
+            @let formArray = formGroup.controls.installations;
+
+            @if (formArray.length == 0) {
+                No installations
+            } @else {
+                @for (form of formArray.controls; track form) {
+                    <equipment-installation-form [formGroup]="form" />
+                }
+            }
+        </div>
+        <div class="form-controls">
+            <button mat-raised-button type="submit" [disabled]="!formGroup.valid">
+                <mat-icon>save</mat-icon> SAVE
+            </button>
+            <button mat-button (click)="_onCancelButtonClick()">
+                <mat-icon>cancel</mat-icon> CANCEL
+            </button>
+        </div>
     </form>
   `,
-  styles: [
+  styles:
     `
-      .form-actions button {
-        float: right;
-      }
-    `,
-  ],
-  exportAs: 'form',
+    .form-actions button {
+      float: right;
+    }
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EquipmentFormComponent {
   readonly equipmentService = inject(EquipmentService);
-  readonly _validateNameUnique = inject(EquipmentNameUniqueValidator);
-  readonly _controlContainer = inject(ControlContainer, { optional: true });
 
-  get form(): EquipmentFormGroup {
-    if (this._form === undefined) {
-      if (this._controlContainer) {
-        this._form = this._controlContainer.control as EquipmentFormGroup;
-      } else {
-        this._form = equipmentFormGroup(this._validateNameUnique);
-        this._isStandaloneForm = true;
-      }
-      this._formStatusSubscription = this._form.statusChanges.subscribe(status => {
-        this.formStatus.emit(status)
-      });
-    }
-    return this._form;
-  }
-  _isStandaloneForm: boolean = false;
-  _form: EquipmentFormGroup | undefined;
-  _formStatusSubscription: Subscription | undefined;
+  readonly controlContainer = inject(ControlContainer, { self: true });
+  readonly _equipmentNameUnique = inject(EquipmentNameUniqueValidator);
+  readonly _createEquipmentInstallationFormGroup = equipmentInstallationFormGroupFactory()
+  readonly _fb = inject(FormBuilder);
 
-  @Input()
-  get equipment() {
-    return this._equipment;
-  }
-  set equipment(equipment: Equipment | null) {
-    this._equipment = equipment;
-    if (equipment) {
-      this.form.patchValue({
-        name: equipment.name,
-        description: equipment.description,
-        tags: equipment.tags,
-        trainingDescriptions: []
+  readonly formGroup = this._fb.group({
+    name: this._fb.control('', {
+      validators: [Validators.required],
+      asyncValidators: [(c) => this._equipmentNameUnique.validate(c)]
+    }),
+    description: this._fb.control<string>('', { nonNullable: true }),
+    disciplines: this._fb.control<string[]>([], { nonNullable: true }),
+    tags: this._fb.control<string[]>([], { nonNullable: true }),
+    trainingDescriptions: this._fb.control<string[]>([], { nonNullable: true }),
+    installations: this._fb.array<EquipmentInstallationFormGroup>([])
+
+  });
+
+  readonly equipment = input<Equipment>();
+  readonly isUpdateForm = computed(() => this.equipment() != null);
+
+  @Output()
+  readonly submit = new EventEmitter<EquipmentCreateRequest>();
+  @Output()
+  readonly cancel = new EventEmitter<void>();
+
+  constructor() {
+    const syncFormValue = toObservable(this.equipment).pipe(
+      switchMap(async equipment => {
+        if (equipment) {
+          this.formGroup.setValue({
+            name: equipment.name,
+            description: equipment.description,
+            trainingDescriptions: equipment.trainingDescriptions,
+            disciplines: equipment.disciplines,
+            tags: equipment.tags,
+            installations: []
+          });
+
+          for (const install of equipment.installations.items) {
+            await this.addInstallationForm(install);
+          }
+
+        }
       })
-    } else {
-      this.form.reset();
-    }
-  }
-  _equipment: Equipment | null = null;
+    ).subscribe();
 
-  @Input()
-  get disableFields() {
-    return [ ...this._disableFields ];
-  }
-  set disableFields(value: (keyof EquipmentFormGroup[ 'controls' ])[]) {
-    this._disableFields = new Set(value);
+    inject(DestroyRef).onDestroy(() => {
+      syncFormValue.unsubscribe();
+    })
 
-    if (this._disableFields.has('name')) {
-      throw new Error('Cannot disable name field of equipment form');
-    }
-  }
-
-  _disableFields = new Set<keyof EquipmentFormGroup[ 'controls' ]>();
-
-  /**
-   * Fired when the model is saved. Only active if standalone form.
-   */
-  @Output()
-  save = new EventEmitter<Equipment>();
-
-  @Output()
-  readonly formStatus = new EventEmitter<FormControlStatus>();
-
-
-  get currentPatch(): EquipmentUpdateRequest | null {
-    if (!this.form.valid) {
-      return null;
-    }
-    return {
-      description: this.form.value.description!,
-      tags: this.form.value.tags!,
-      trainingDescriptions: this.form.value.trainingDescriptions!
-    }
   }
 
   get nameErrors(): ValidationErrors | null {
-    return this.form.controls.name.errors;
+    return this.formGroup.controls.name.errors;
   }
 
-  get trainingDescripionsFormArr(): FormControl<string[]> {
-    return this.form.controls.trainingDescriptions;
+  async addInstallationForm(installation?: EquipmentInstallation) {
+    const formArr = this.formGroup.controls.installations;
+    const form = await this._createEquipmentInstallationFormGroup(installation);
+    formArr.push(form);
   }
 
-  ngOnDestroy() {
-    if (this._formStatusSubscription) {
-      this._formStatusSubscription.unsubscribe();
-    }
+  _onAddInstallationButtonClick() {
+    this.addInstallationForm();
   }
 
-  async _doCreateEquipment(): Promise<Equipment> {
-    const request = equipmentCreateRequestFromForm(this.form);
-    return firstValueFrom(this.equipmentService.create(request));
+
+  _onFormSubmit() {
+    const value = this.formGroup.value;
+
+    const request: EquipmentCreateRequest = {
+      name: value!.name!,
+      description: value!.description,
+      trainingDescriptions: value!.trainingDescriptions,
+      installations: value.installations!.map(
+        installation => ({
+          modelName: installation.modelName!,
+          lab: installation.lab!.id,
+          numInstalled: installation.numInstalled!,
+        })
+      )
+    };
+    this.submit.emit(request);
   }
 
-  async _doUpdateEquipment(equipment: Equipment): Promise<Equipment> {
-    const value = this.form.value;
-    const update = this.equipmentService.update(equipment, {
-      description: value.description!,
-      tags: value.tags!,
-      trainingDescriptions: value.trainingDescriptions!
-    });
-    return firstValueFrom(update);
-  }
-
-  async _onFormSubmit() {
-    let equipment: Equipment;
-    if (!this.equipment) {
-      equipment = await this._doCreateEquipment();
-    } else {
-      equipment = await this._doUpdateEquipment(this.equipment);
-    }
-    this.save.emit(equipment);
-  }
-
-  _descriptionTextareaHeightPx = 60;
-  _onDescriptionInput(evt: Event) {
-    this._descriptionTextareaHeightPx = (evt.target as Element).scrollHeight;
+  _onCancelButtonClick() {
+    this.cancel.emit(undefined);
   }
 }

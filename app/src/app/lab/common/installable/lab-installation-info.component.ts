@@ -1,8 +1,7 @@
 import { Component, DestroyRef, Directive, TemplateRef, computed, contentChild, inject, input, signal } from "@angular/core";
-import { LabInstallation } from "./installation";
-import { Installable } from "./installable";
+import { LabInstallation, LabInstallationService } from "./installation";
+import { Installable, LabInstallableService } from "./installable";
 import { LabProvision } from "../provisionable/provision";
-import { LabInfoComponent } from "../../lab-info.component";
 import { LabService } from "../../lab";
 import { toObservable } from "@angular/core/rxjs-interop";
 import { BehaviorSubject, switchMap } from "rxjs";
@@ -10,6 +9,8 @@ import { CommonModule } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatListModule } from "@angular/material/list";
+import { LabInfoComponent } from "../../lab-info.component";
+import { coerceBooleanProperty } from "@angular/cdk/coercion";
 
 export type LabInstallationInfoDisplay = 'list-item';
 
@@ -24,7 +25,7 @@ export type LabInstallationInfoDisplay = 'list-item';
         MatIconModule,
         MatListModule,
 
-        LabInfoComponent,
+        LabInfoComponent
     ],
     template: `
     <div class="title">
@@ -37,26 +38,28 @@ export type LabInstallationInfoDisplay = 'list-item';
     <div class="details">
         <ng-content select="installation-details" />
 
-        <div class="provision-details">
-            @if (currentProvisions().length === 0) {
-                <p>No active provisions</p>
-            } @else {
-                <p>
-                    Has active provisions
-                    <button mat-icon-button (click)="provisionsVisibleToggleClicked()">
-                        <mat-icon></mat-icon>
-                    </button>
-                </p>
+        @if (!hideProvisions()) {
+            <div class="provision-details">
+                @if (activeProvisions().totalItemCount === 0) {
+                    <p>No active provisions</p>
+                } @else {
+                    <p>
+                        Has active provisions
+                        <button mat-icon-button (click)="provisionsVisibleToggleClicked()">
+                            <mat-icon></mat-icon>
+                        </button>
+                    </p>
 
-            }
-        </div>
+                }
+            </div>
+        }
     </div>
 
     <ng-content select="provisionDetail" />
 
     @if (provisionsDetailVisible()) {
         <mat-list>
-        @for (provision of currentProvisions(); track provision.id) {
+        @for (provision of activeProvisions().items; track provision.id) {
             <mat-list-item>
                 <ng-container *ngTemplateOutlet="provisionDetailTemplate(); context: {$implicit: provision}" />
             </mat-list-item>
@@ -67,22 +70,23 @@ export type LabInstallationInfoDisplay = 'list-item';
 })
 export class LabInstallationInfoComponent<
     TInstallable extends Installable<any>,
-    TInstallation extends LabInstallation<TInstallable, any>
+    TInstallation extends LabInstallation<TInstallable, any, any>
 > {
     _labService = inject(LabService);
     _destroy = inject(DestroyRef);
+    _installableService = inject(LabInstallableService<TInstallable>);
 
     installation = input.required<TInstallation>();
-    installable = computed(() => this.installation().installable);
+    hideProvisions = input(false, {transform: coerceBooleanProperty});
 
     display = input<LabInstallationInfoDisplay>('list-item');
 
     provisionDetailTemplate = contentChild.required('provisionDetail', { read: TemplateRef });
     readonly lab$ = toObservable(this.installation).pipe(
-        switchMap(installation => installation.resolveLab(this._labService))
+        switchMap(installation => this._labService.fetch(installation.labId))
     );
 
-    readonly currentProvisions = computed(() => this.installation().currentProvisions);
+    readonly activeProvisions = computed(() => this.installation().activeProvisions);
 
     provisionsDetailVisible = signal<boolean>(false);
 

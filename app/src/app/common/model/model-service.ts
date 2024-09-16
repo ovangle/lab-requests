@@ -3,13 +3,13 @@ import {
   Inject,
   Injectable,
   InjectionToken,
+  Injector,
   Provider,
   Type,
   inject,
 } from '@angular/core';
 import {
   Model,
-  ModelParams,
   ModelIndexPage,
   modelIndexPageFromJsonObject,
   ModelQuery,
@@ -17,6 +17,7 @@ import {
   ModelUpdateRequest,
   ModelRef,
   modelId,
+  ModelFactory,
 } from './model';
 import urlJoin from 'url-join';
 import { Observable, Subject, map, of, tap, timer } from 'rxjs';
@@ -26,14 +27,23 @@ export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL');
 
 @Injectable()
 export abstract class ModelService<T extends Model, TQuery extends ModelQuery<T> = ModelQuery<T>> {
+  // All model services should be available on the root injector.
+  protected readonly _injector = inject(Injector);
+
   protected readonly _httpClient = inject(HttpClient);
   protected readonly _apiBaseUrl = inject(API_BASE_URL);
   protected readonly _cache = new Map<string, T>();
+
+  abstract readonly model: ModelFactory<T>;
 
   protected _cacheOne = tap((model: T) => this.addCache(model));
   protected _cachePage = tap((page: ModelIndexPage<T>) => {
     page.items.forEach(item => this.addCache(item))
   })
+
+  getRelatedService<U extends Model, UService extends ModelService<U> = ModelService<U>>(t: Type<UService>): UService {
+    return this._injector.get(t);
+  }
 
   protected _tryFetchCache(
     id: string,
@@ -56,13 +66,15 @@ export abstract class ModelService<T extends Model, TQuery extends ModelQuery<T>
     );
   }
 
-  abstract modelFromJsonObject(json: JsonObject): T;
+  modelFromJsonObject(json: JsonObject): T {
+    return new this.model(json);
+  }
   abstract setModelQueryParams(params: HttpParams, lookup: Partial<TQuery>): HttpParams;
   abstract modelUrl(model: T): Observable<string>;
 
   modelIndexPageFromJsonObject(json: JsonObject): ModelIndexPage<T> {
     return modelIndexPageFromJsonObject(
-      (o) => this.modelFromJsonObject(o),
+      this.model,
       json,
     );
   }
@@ -77,6 +89,27 @@ export abstract class ModelService<T extends Model, TQuery extends ModelQuery<T>
       map(response => this.modelFromJsonObject(response)),
       this._cacheOne
     );
+  }
+
+  /**
+   * Fetch all the models keyed by the given ids. This should only be used if there is at most
+   * one page of results to fetch.
+   *
+   * @param ids
+   * @param options
+   * @returns
+   */
+  fetchAll(ids: readonly string[], options = { useCache: true }): Observable<readonly T[]> {
+    if (options.useCache) {
+      const cachedResults = ids.map(
+        id => this._cache.get(id)
+      )
+      if (cachedResults.every(item => item !== undefined)) {
+        return of(cachedResults as readonly T[]);
+      }
+    }
+    // If we need to fetch one, it's just as fast to fetch them all.
+    return this.query({ id_in: ids } as Partial<TQuery>);
   }
 
   /**

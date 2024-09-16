@@ -1,163 +1,99 @@
-import { validate as validateIsUUID } from 'uuid';
+import { Injectable } from '@angular/core';
+import { HttpParams } from '@angular/common/http';
+
 import {
   Model,
   ModelUpdateRequest,
   ModelCreateRequest,
   ModelIndexPage,
-  ModelParams,
   modelIndexPageFromJsonObject,
-  modelParamsFromJsonObject,
   ModelRef,
   ModelQuery,
   setModelQueryParams,
-  isEqualModelRefs,
+  modelId,
 } from 'src/app/common/model/model';
-import { Injectable, Provider, Type, inject } from '@angular/core';
 import { RestfulService } from 'src/app/common/model/model-service';
-import { HttpParams } from '@angular/common/http';
-import { ModelContext } from 'src/app/common/model/context';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { Lab } from '../lab/lab';
-import { EquipmentInstallation, equipmentInstallationFromJsonObject } from './installation/equipment-installation';
-import { EquipmentProvision, EquipmentProvisionQuery, NewEquipmentRequest, equipmentProvisionFromJsonObject } from './provision/equipment-provision';
+import { EquipmentInstallation, EquipmentInstallationCreateRequest, EquipmentInstallationService } from './installation/equipment-installation';
 import { Installable } from '../lab/common/installable/installable';
-import { LabInstallationService, LabInstallationQuery } from '../lab/common/installable/installation';
-import { LabProvisionService, LabProvisionQuery, LabProvision } from '../lab/common/provisionable/provision';
 import { firstValueFrom } from 'rxjs';
-import { softwareInstallationFromJsonObject } from '../software/installation/software-installation';
 import { Discipline, isDiscipline } from '../uni/discipline/discipline';
+import { Campus } from '../uni/campus/campus';
 
-export interface EquipmentParams extends ModelParams {
-  name: string;
-  description: string;
-  disciplines: Discipline[];
-  tags: string[];
-  trainingDescriptions: string[];
 
-  currentInstallations: EquipmentInstallation[];
-}
-
-export class Equipment extends Model implements Installable<EquipmentInstallation>, EquipmentParams {
+export class Equipment extends Model implements Installable<EquipmentInstallation> {
   name: string;
   description: string;
 
   /**
    * The discipline types which would typically use this equipment.
+   *
    */
   disciplines: Discipline[];
+
+  get isAnyDiscipline() {
+    return this.disciplines.length === 0;
+  }
+
   tags: string[];
 
   trainingDescriptions: string[];
 
-  currentInstallations: EquipmentInstallation[];
+  installations: ModelIndexPage<EquipmentInstallation>;
 
-  constructor(params: EquipmentParams) {
-    super(params);
-    this.name = params.name!;
-    this.description = params.description!;
-    this.disciplines = params.disciplines;
-    this.tags = Array.from(params.tags!);
-    this.trainingDescriptions = Array.from(params.trainingDescriptions!);
-    this.currentInstallations = Array.from(params.currentInstallations);
-  }
+  constructor(json: JsonObject) {
+    super(json);
 
-  getCurrentInstallation(
-    lab: string | Lab
-  ) {
-    return this.currentInstallations.find((install) => isEqualModelRefs(install.lab, lab))
-  }
+    if (typeof json['name'] !== 'string') {
+      throw new Error("Expected a string 'name'");
+    }
+    this.name = json['name'];
+    if (typeof json['description'] !== 'string') {
+      throw new Error("Expected a string 'description'");
+    }
+    this.description = json['description'];
 
-  getActiveProvisions<TProvision extends EquipmentProvision>(
-    lab: ModelRef<Lab>,
-    service: LabProvisionService<EquipmentInstallation, TProvision, EquipmentProvisionQuery>
-  ): Promise<ModelIndexPage<TProvision>> {
-    return firstValueFrom(service.queryPage({
-      target: { installable: this, lab: lab },
-    }));
+    if (
+      !Array.isArray(json['tags']) ||
+      !json['tags'].every((t) => typeof t === 'string')
+    ) {
+      throw new Error("Expected an array of strings 'tags'");
+    }
+    this.tags = json['tags'];
 
-  }
+    if (
+      !Array.isArray(json['trainingDescriptions']) ||
+      !json['trainingDescriptions'].every((t) => typeof t === 'string')
+    ) {
+      throw new Error("Expected an array of strings 'trainingDescriptions");
+    }
+    this.trainingDescriptions = json['trainingDescriptions'];
 
-  /*
-  labInstallations(lab: Lab | string): EquipmentInstallation[] {
-    const labId = (lab instanceof Lab) ? lab.id : lab;
-    return this.installations.filter(
-      install => install.labId === labId
+    if (
+      !Array.isArray(json['disciplines'])
+      || !json['disciplines'].every(isDiscipline)
+    ) {
+      throw new Error("Expected an array of disciplines 'disciplines'")
+    }
+    this.disciplines = json['disciplines'];
+
+
+    if (!isJsonObject(json['installations'])) {
+      throw new Error("Expected an array of json objects 'installations'")
+    }
+    this.installations = modelIndexPageFromJsonObject(
+      EquipmentInstallation,
+      json['installations']
     );
   }
 
-  currentLabInstallation(lab: Lab | string): EquipmentInstallation | null {
-    return this.labInstallations(lab)
-      .find(install => install.isInstalled) || null;
+  async getInstallation(lab: ModelRef<Lab>, using: EquipmentInstallationService) {
+    return await firstValueFrom(using.fetchForLabEquipment(lab, this));
   }
-
-  pendingLabInstallation(lab: Lab | string): EquipmentInstallation | null {
-    return this.labInstallations(lab)
-      .find(install => install.isPendingInstallation) || null;
-  }
-
-  activeUnallocatedProvisions(): EquipmentProvision[] {
-    return this.activeProvisions.filter(
-      provision => provision.installation == null
-    );
-  }
-
-  activeProvision(lab: Lab): EquipmentProvision | null {
-    return this.activeProvisions.find(
-      provision => provision.installation?.labId === lab.id && provision.isActive
-    ) || null;
-  }
-  */
 }
 
 
-export function equipmentFromJsonObject(json: JsonObject): Equipment {
-  const baseParams = modelParamsFromJsonObject(json);
-
-  if (typeof json[ 'name' ] !== 'string') {
-    throw new Error("Expected a string 'name'");
-  }
-  if (typeof json[ 'description' ] !== 'string') {
-    throw new Error("Expected a string 'description'");
-  }
-  if (
-    !Array.isArray(json[ 'tags' ]) ||
-    !json[ 'tags' ].every((t) => typeof t === 'string')
-  ) {
-    throw new Error("Expected an array of strings 'tags'");
-  }
-  if (
-    !Array.isArray(json[ 'trainingDescriptions' ]) ||
-    !json[ 'trainingDescriptions' ].every((t) => typeof t === 'string')
-  ) {
-    throw new Error("Expected an array of strings 'trainingDescriptions");
-  }
-
-  if (
-    !Array.isArray(json[ 'disciplines' ])
-    || !json[ 'disciplines' ].every(isDiscipline)
-  ) {
-    throw new Error("Expected an array of disciplines 'disciplines'")
-  }
-
-
-  if (!Array.isArray(json[ 'currentInstallations' ]) || !json[ 'currentInstallations' ].every(isJsonObject)) {
-    throw new Error("Expected an array of json objects 'currentInstallations'")
-  }
-  const currentInstallations = json[ 'currentInstallations' ].map(
-    equipmentInstallationFromJsonObject
-  );
-
-
-  return new Equipment({
-    ...baseParams,
-    name: json[ 'name' ],
-    description: json[ 'description' ],
-    tags: json[ 'tags' ],
-    disciplines: json[ 'disciplines' ],
-    trainingDescriptions: json[ 'trainingDescriptions' ],
-    currentInstallations
-  });
-}
 
 
 export interface EquipmentUpdateRequest extends ModelUpdateRequest<Equipment> {
@@ -177,15 +113,15 @@ export interface EquipmentCreateRequest extends ModelCreateRequest<Equipment> {
   description?: string;
   tags?: string[];
   trainingDescriptions?: string[];
+  installations?: EquipmentInstallationCreateRequest[];
 
-  initialProvisions?: NewEquipmentRequest[];
 }
 
 export function isEquipmentCreateRequest(obj: unknown): obj is EquipmentCreateRequest {
   if (!isJsonObject(obj)) {
     return false;
   }
-  return typeof obj[ 'name' ] === 'string';
+  return typeof obj['name'] === 'string';
 }
 
 export function equipmentCreateRequestToJsonObject(request: EquipmentCreateRequest): JsonObject {
@@ -196,32 +132,49 @@ export function equipmentCreateRequestToJsonObject(request: EquipmentCreateReque
 
 
 export interface EquipmentQuery extends ModelQuery<Equipment> {
-  installedInLab?: Lab | null;
   name?: string;
-  searchText?: string;
+  search?: string;
+  installedLab?: ModelRef<Lab>;
+  installedCampus?: ModelRef<Campus>[] | ModelRef<Campus>;
+  discipline?: Discipline[] | Discipline;
 }
 
 export function setEquipmentQueryParams(params: HttpParams, query: Partial<EquipmentQuery>) {
   params = setModelQueryParams(params, query);
 
-  if (query.installedInLab) {
-    params = params.set('installed_in_lab', query.installedInLab.id);
+  if (query.installedLab) {
+    params = params.set('installed_lab', modelId(query.installedLab));
+  }
+
+  if (query.installedCampus) {
+    const v = Array.isArray(query.installedCampus)
+      ? query.installedCampus.map(c => modelId(c)).join(',')
+      : modelId(query.installedCampus);
+    params = params.set('installed_campus', v);
+  }
+
+  if (query.discipline) {
+    const v = Array.isArray(query.discipline)
+      ? query.discipline.join(',')
+      : query.discipline;
+    params = params.set('discipline', v);
   }
 
   if (query.name) {
     params = params.set('name', query.name);
   }
-  if (query.searchText) {
-    params = params.set('search', query.searchText);
+  if (query.search) {
+    params = params.set('search', query.search);
   }
   return params;
 }
 
 @Injectable({ providedIn: 'root' })
 export class EquipmentService extends RestfulService<Equipment, EquipmentQuery> {
-  override path = '/labs/equipment';
-  override readonly modelFromJsonObject = equipmentFromJsonObject;
+  override path = '/equipments/equipment';
+  override readonly model = Equipment;
   override readonly setModelQueryParams = setEquipmentQueryParams;
+
 
   create(request: EquipmentCreateRequest) {
     return this._doCreate(
@@ -238,4 +191,3 @@ export class EquipmentService extends RestfulService<Equipment, EquipmentQuery> 
     );
   }
 }
-

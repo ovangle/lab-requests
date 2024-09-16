@@ -5,10 +5,10 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { CampusLookup } from "src/app/uni/campus/campus";
 import { Discipline } from "src/app/uni/discipline/discipline";
-import { CreateTemporaryUserRequest } from "../common/user";
+import { CreateTemporaryUserRequest } from "../user";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 import { filter } from "rxjs";
-import { CampusSearchComponent } from "src/app/uni/campus/campus-search.component";
+import { UniCampusSelect } from "src/app/uni/campus/campus-select.component";
 import { UniDisciplineSelect } from "src/app/uni/discipline/discipline-select.component";
 import { MatButtonModule } from "@angular/material/button";
 
@@ -50,12 +50,12 @@ function createTemporaryUserRequestFromForm(form: CreateTemporaryUserForm): Crea
         MatFormFieldModule,
         MatInputModule,
 
-        CampusSearchComponent,
+        UniCampusSelect,
         UniDisciplineSelect
     ],
     template: `
     <form [formGroup]="form" (ngSubmit)="_onFormSubmit($event)">
-        <mat-form-field> 
+        <mat-form-field>
             <mat-label>Name</mat-label>
             <input matInput formControlName="name" required/>
 
@@ -77,20 +77,22 @@ function createTemporaryUserRequestFromForm(form: CreateTemporaryUserForm): Crea
             }
         </mat-form-field>
 
-        <uni-campus-search formControlName="campus">
+        <mat-form-field>
             <mat-label>User base campus</mat-label>
-
+            <uni-campus-select formControlName="campus" />
             @if (campusErrors && campusErrors['required']) {
                 <mat-error>A value is required</mat-error>
             }
-        </uni-campus-search>
+        </mat-form-field>
 
-        <uni-discipline-select formControlName="discipline">
+        <mat-form-field>
             <mat-label>User primary discipline</mat-label>
+            <uni-discipline-select formControlName="discipline" />
+
             @if (disciplineErrors && disciplineErrors['required']) {
                 <mat-error>A value is required</mat-error>
             }
-        </uni-discipline-select>
+        </mat-form-field>
 
         <button mat-raised-button type="submit"
                 [disabled]="!form.valid">

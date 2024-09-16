@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Awaitable, Self
+from typing import TYPE_CHECKING, Awaitable, ClassVar, Self
 from uuid import UUID
 from sqlalchemy.orm import Mapped
 
@@ -15,6 +15,11 @@ if TYPE_CHECKING:
 
 class Provisionable(Base):
     __abstract__ = True
+    __provision_type__: ClassVar[str]
+
+    @property
+    def provision_type(self):
+        return type(self).__provision_type__
 
     provisions: Mapped[list[LabProvision]]
 

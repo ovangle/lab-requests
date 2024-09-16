@@ -14,7 +14,7 @@ import {
   ViewRef,
   inject,
 } from '@angular/core';
-import { Model, ModelCreateRequest, ModelIndexPage, ModelParams, ModelQuery } from './model';
+import { Model, ModelQuery } from './model';
 import {
   BehaviorSubject,
   Connectable,

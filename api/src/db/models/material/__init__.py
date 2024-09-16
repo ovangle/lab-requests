@@ -1,17 +1,27 @@
 __all__ = (
     "Material",
+    "query_materials",
     "MaterialInventory",
+    "query_material_inventories",
     "MaterialConsumption",
     "MaterialProduction",
-    "OutputMaterial",
-    "OutputMaterial",
+    "MaterialAllocation",
+    "query_material_allocations",
+    "query_material_consumptions",
+    "query_material_productions"
 )
 
-from .material import Material
+from .material import Material, query_materials
 from .material_inventory import (
     MaterialInventory,
-    MaterialConsumption,
-    MaterialProduction,
+    query_material_inventories
 )
 
-from .material_allocations import OutputMaterial, OutputMaterial
+from .material_allocation import (
+    MaterialAllocation,
+    query_material_allocations,
+    MaterialConsumption,
+    query_material_consumptions,
+    MaterialProduction,
+    query_material_productions
+)

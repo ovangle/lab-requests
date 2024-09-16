@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { UserService } from '../../common/user';
+import { UserService } from '../../user';
 import { AlterPasswordFormComponent, AlterPasswordRequest } from '../../common/alter-password-form.component';
 import { firstValueFrom } from 'rxjs';
 

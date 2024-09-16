@@ -1,5 +1,6 @@
 __all__ = (
     "LabWork",
+    "LabWorkOrder",
     "WorkStatus",
     "WORK_STATUS_ENUM",
     "WorkStatusTransition",
@@ -15,4 +16,4 @@ from .work_status import (
     WorkStatusError,
 )
 
-from .lab_work import LabWork
+from .lab_work import LabWork, LabWorkOrder

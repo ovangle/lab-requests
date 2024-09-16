@@ -10,5 +10,4 @@ from .errors import (
 )
 from .installable import Installable
 
-from .lab_installation import LabInstallation
-from .lab_installation_provision import LabInstallationProvision
+from .lab_installation import LabInstallation, LabInstallationProvision

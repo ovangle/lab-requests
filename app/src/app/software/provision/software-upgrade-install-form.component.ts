@@ -3,7 +3,7 @@ import { AbstractLabProvisionCreateFormComponent, LabProvisionCreateFormGroup, i
 import { Software } from "../software";
 import { ControlContainer, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { SoftwareInstallation } from "../installation/software-installation";
-import { SoftwareProvision, SoftwareProvisionService, UpgradeSoftwareVersionRequest } from "./software-provision";
+import { SoftwareInstallationProvision, SoftwareProvisionService, UpgradeSoftwareVersionRequest } from "./software-provision";
 import { LabProvisionCreateRequest } from "src/app/lab/common/provisionable/provision";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
@@ -73,12 +73,12 @@ export function upgradeSoftwareVersionRequestFromFormValue(
                     <mat-icon>save</mat-icon>SAVE
                 </button>
             </div>
-        } 
+        }
     </form>
     `
 })
 export class SoftwareUpgradeProvisionCreateFormComponent
-    extends AbstractLabProvisionCreateFormComponent<SoftwareProvision, UpgradeSoftwareVersionFormGroup, UpgradeSoftwareVersionRequest> {
+    extends AbstractLabProvisionCreateFormComponent<SoftwareInstallationProvision, UpgradeSoftwareVersionFormGroup, UpgradeSoftwareVersionRequest> {
 
 
     readonly _softwareProvisionService = inject(SoftwareProvisionService);

@@ -29,17 +29,17 @@ import { map } from 'rxjs';
         <mat-sidenav-content>
           <ng-content select=".content" />
         </mat-sidenav-content>
-        
+
       </mat-sidenav-container>
     </div>
     <scaffold-form-pane>
       <ng-content select=".form-pane-content">
       </ng-content>
-    </scaffold-form-pane>
+     </scaffold-form-pane>
     <div class="form-pane-overlay" [class.overlay-open]="isFormPaneOpen$ | async">
     </div>
   `,
-  styleUrls: [ './scaffold-layout.scss' ]
+  styleUrls: ['./scaffold-layout.scss']
 })
 export class ScaffoldLayoutComponent {
   readonly state = inject(ScaffoldStateService);

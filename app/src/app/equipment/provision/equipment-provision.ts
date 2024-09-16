@@ -1,46 +1,35 @@
-import { Model, ModelCreateRequest, ModelParams, ModelQuery, ModelRef, ModelUpdateRequest, modelParamsFromJsonObject, modelRefJsonDecoder, resolveModelRef } from "src/app/common/model/model";
+import { Model, ModelCreateRequest, ModelIndexPage, ModelQuery, ModelRef, ModelUpdateRequest, modelId, modelRefFromJson, resolveRef } from "src/app/common/model/model";
 import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
-import { Equipment, EquipmentCreateRequest, equipmentCreateRequestToJsonObject, equipmentFromJsonObject, EquipmentService, isEquipmentCreateRequest } from "../equipment";
-import { ResearchFunding, ResearchFundingService, researchFundingFromJsonObject } from "src/app/research/funding/research-funding";
-import { Lab, LabService, labFromJsonObject } from "../../lab/lab";
+import { Equipment, EquipmentCreateRequest, equipmentCreateRequestToJsonObject, EquipmentService, isEquipmentCreateRequest } from "../equipment";
+import { ResearchFunding, ResearchFundingService } from "src/app/research/funding/research-funding";
+import { Lab, LabService } from "../../lab/lab";
 import { Observable, first, firstValueFrom, map, switchMap } from "rxjs";
-import { EquipmentInstallation, EquipmentInstallationCreateRequest, EquipmentInstallationQuery, EquipmentInstallationService, equipmentInstallationCreateRequestToJsonObject, equipmentInstallationFromJsonObject, setEquipmentInstallationQueryParams } from "../installation/equipment-installation";
+import { EquipmentInstallation, EquipmentInstallationCreateRequest, EquipmentInstallationQuery, EquipmentInstallationService, equipmentInstallationCreateRequestToJsonObject, setEquipmentInstallationQueryParams } from "../installation/equipment-installation";
 import { HttpParams } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { EquipmentContext } from "../equipment-context";
 import { RelatedModelService } from "src/app/common/model/context";
 import { ProvisionStatus, isProvisionStatus } from "src/app/lab/common/provisionable/provision-status";
 import { UnitOfMeasurement } from "src/app/common/measurement/measurement";
-import { LabProvision, LabProvisionApprovalRequest, LabProvisionCreateRequest, LabProvisionInstallRequest, LabProvisionParams, LabProvisionPurchaseRequest, LabProvisionQuery, LabProvisionService, labProvisionApprovalRequestToJsonObject, labProvisionCreateRequestToJsonObject, labProvisionInstallRequestToJsonObject, labProvisionParamsFromJsonObject, labProvisionPurchaseRequestToJsonObject, setLabProvisionQueryParams } from "src/app/lab/common/provisionable/provision";
+import { LabProvision, LabProvisionApprovalRequest, LabProvisionCreateRequest, LabProvisionInstallRequest, LabProvisionPurchaseRequest, LabProvisionQuery, LabProvisionService, labProvisionApprovalRequestToJsonObject, labProvisionCreateRequestToJsonObject, labProvisionInstallRequestToJsonObject, labProvisionPurchaseRequestToJsonObject, setLabProvisionQueryParams } from "src/app/lab/common/provisionable/provision";
 
 export type EquipmentProvisionType
     = 'new_equipment'
     | 'declare_equipment';
 
-export interface EquipmentProvisionParams extends LabProvisionParams<EquipmentInstallation> {
-    readonly type: EquipmentProvisionType;
-    equipment: ModelRef<Equipment>;
-}
-
-export class EquipmentProvision extends LabProvision<EquipmentInstallation> implements EquipmentProvisionParams {
-    override readonly type: EquipmentProvisionType;
+export class EquipmentProvision extends LabProvision<EquipmentInstallation> {
     equipmentInstallation: ModelRef<EquipmentInstallation>;
     equipment: ModelRef<Equipment>;
 
-    constructor(params: EquipmentProvisionParams) {
-        super(params);
+    constructor(json: JsonObject) {
+        super(EquipmentInstallation, json);
 
-        this.type = params.type as any;
-        this.equipmentInstallation = params.target;
-        this.equipment = params.equipment;
-
-        this.status = params.status;
-        this.numRequired = params.numRequired;
-        this.estimatedCost = params.estimatedCost;
+        this.equipment = modelRefFromJson('equipment', Equipment, json);
+        this.equipmentInstallation = modelRefFromJson('equipmentInstallation', EquipmentInstallation, json);
     }
 
     get isActive() {
-        return ![ 'installed', 'cancelled' ].includes(this.status);
+        return !['installed', 'cancelled'].includes(this.status);
     }
 
     resolveEquipmentInstallation(using: EquipmentInstallationService) {
@@ -48,35 +37,21 @@ export class EquipmentProvision extends LabProvision<EquipmentInstallation> impl
     }
 
     async resolveEquipment(using: EquipmentService) {
-        return resolveModelRef(this, 'equipment', using as any);
+        return resolveRef(this.equipment, using);
     }
 }
 
-
-export function equipmentProvisionFromJsonObject(json: JsonObject): EquipmentProvision {
-    const baseParams = labProvisionParamsFromJsonObject(
-        (value: string) => {
-            if (![ 'new_software' ].includes(value)) {
-                throw new Error('Expected an equipment provision type')
-            }
-            return value as EquipmentProvisionType;
-        },
-        equipmentInstallationFromJsonObject,
-        json
-    );
-
-    const equipment = modelRefJsonDecoder('equipment', equipmentFromJsonObject)(json);
-
-    return new EquipmentProvision({
-        ...baseParams,
-        equipment
-    });
-}
-
 export interface EquipmentProvisionQuery extends LabProvisionQuery<EquipmentInstallation, EquipmentProvision, EquipmentInstallationQuery> {
+    installation: EquipmentInstallation | string;
 }
+
 function setEquipmentProvisionQueryParams(params: HttpParams, query: EquipmentProvisionQuery) {
-    params = setLabProvisionQueryParams(params, query, setEquipmentInstallationQueryParams);
+    params = setLabProvisionQueryParams(params, query);
+
+    if (query.installation) {
+        params = params.set('installation', modelId(query.installation))
+    }
+
     return params;
 }
 
@@ -150,16 +125,22 @@ export function equipmentProvisionInstallRequestToJsonObject(request: EquipmentP
 }
 
 @Injectable()
-export class EquipmentProvisionService extends LabProvisionService<EquipmentInstallation, EquipmentProvision> {
+export class EquipmentProvisionService extends LabProvisionService<EquipmentInstallation, EquipmentProvision, EquipmentProvisionQuery> {
 
     override readonly provisionableQueryParam: string = 'equipment';
     override readonly path: string = '/equipment-provisions';
-    override readonly modelFromJsonObject = equipmentProvisionFromJsonObject;
+    override readonly model = EquipmentProvision;
     override readonly setModelQueryParams = setEquipmentProvisionQueryParams;
 
     protected override readonly _provisionApprovalRequestToJsonObject = equipmentProvisionApprovalRequestToJsonObject;
     protected override readonly _provisionPurchaseRequestToJsonObject = equipmentProvisionPurchasedRequestToJsonObject;
     protected override readonly _provisionInstallRequestToJsonObject = equipmentProvisionInstallRequestToJsonObject;
+
+    getActiveProvisionsPage(installation: EquipmentInstallation | string): Observable<ModelIndexPage<EquipmentProvision>> {
+        return this.queryPage({
+            installation: installation
+        });
+    }
 
     newEquipment(request: NewEquipmentRequest) {
         return this._doCreate(

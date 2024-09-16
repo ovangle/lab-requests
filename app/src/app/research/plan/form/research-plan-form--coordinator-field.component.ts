@@ -2,10 +2,10 @@ import { CommonModule } from "@angular/common";
 import { Component } from "@angular/core";
 import { FormControl, ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { UserSearchComponent } from "src/app/user/common/user-search.component";
+import { UserSearchComponent } from "src/app/user/user-search.component";
 import { UserInfoComponent } from "src/app/user/user-info.component";
 import { AbstractResearchPlanDetailFieldComponent } from "./abstract-research-plan-form-field";
-import { User } from "src/app/user/common/user";
+import { User } from "src/app/user/user";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 
@@ -23,12 +23,12 @@ import { MatIconModule } from "@angular/material/icon";
     ],
     template: `
     @if (control) {
-        <user-search [formControl]="control"
-              includeRoles="lab-tech"
-              [discipline]="plan!.discipline"
-              clearOnFocus
-              required >
+        <mat-form-field>
             <mat-label>Coordinator</mat-label>
+            <user-search [formControl]="control"
+                         [includeRoles]="['lab-tech']"
+                         [discipline]="plan!.discipline"
+                         required />
 
 
             <button matIconSuffix mat-icon-button
@@ -36,18 +36,19 @@ import { MatIconModule } from "@angular/material/icon";
                     (click)="onSaveButtonClicked()">
                 <mat-icon>save</mat-icon>
             </button>
-            <button matIconSuffix mat-icon-button 
-                    color="warn" 
+            <button matIconSuffix mat-icon-button
+                    color="warn"
                     (click)="onCancelButtonClicked()">
                 <mat-icon>cancel</mat-icon>
             </button>
+
             @if (errors && errors['required']) {
                 <mat-error>A value is required</mat-error>
             }
-        </user-search>
+        </mat-form-field>
     } @else {
         <div class="field-content">
-            <div class="field"> 
+            <div class="field">
                 <div class="field-label"><b>Coordinator</b></div>
                 <div class="field-value">
                     <user-info [user]="plan!.coordinator" />

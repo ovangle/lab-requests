@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import TypedDict
+from typing import Any, TypedDict
 from uuid import UUID
 
 from sqlalchemy.dialects import postgresql
 
-from db.models.base.errors import ModelException
-from db.models.base.state import StatusTransitionTypeDecorator, TransitionMeta
+from db.models.base import ModelException
+from db.models.base.state import StatusTransitionTypeDecorator, TransitionMeta, transition_meta_from_json, transition_meta_to_json
 
 
 class WorkStatus(Enum):
@@ -33,8 +33,18 @@ class WorkStatusTransition(TransitionMeta[WorkStatus]):
     work_id: UUID
 
 
-class WORK_STATUS_TRANSITION(StatusTransitionTypeDecorator[WorkStatus]):
-    pass
+class WORK_STATUS_TRANSITION(StatusTransitionTypeDecorator[WorkStatus, WorkStatusTransition]):
+    def transition_from_json(self, json: dict):
+        return WorkStatusTransition(
+            **transition_meta_from_json(self.status, json),
+            work_id=UUID(json["work_id"])
+        )
+
+    def transition_to_json(self, transition: WorkStatusTransition) -> dict[str, Any]:
+        return {
+            **transition_meta_to_json(transition),
+            "work_id": str(transition["work_id"])
+        }
 
 
 class WorkStatusError(ModelException):

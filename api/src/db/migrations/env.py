@@ -8,7 +8,8 @@ from sqlalchemy.ext.asyncio import async_engine_from_config, AsyncConnection
 from alembic import context  # type: ignore
 
 import db
-from db.models import base, lab, research, uni, user
+from db import _import_models
+from db.models import base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -73,6 +74,7 @@ async def run_migrations_online() -> None:
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
 
+_import_models()
 
 if context.is_offline_mode():
     run_migrations_offline()

@@ -1,11 +1,12 @@
 __all__ = (
     "Storable",
-    "StorageType",
-    "STORAGE_TYPE_ENUM",
+    "LabStorageStrategy",
     "LabStorage",
+    "query_lab_storages",
     "LabStorageContainer",
+    "query_lab_storage_containers",
 )
 
 from .storable import Storable
-from .storage_type import StorageType, STORAGE_TYPE_ENUM
-from .lab_storage import LabStorage, LabStorageContainer
+from .storage_strategy import LabStorageStrategy
+from .lab_storage import LabStorage, query_lab_storages, LabStorageContainer, query_lab_storage_containers

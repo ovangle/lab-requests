@@ -1,4 +1,4 @@
-import { Component, Input, input } from '@angular/core';
+import { Component, inject, Input, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
@@ -7,7 +7,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { EquipmentTrainingDescriptionListComponent } from './training/training-description-list.component';
 import { EquipmentTrainingAcknowlegementComponent } from './training/training-acknowlegment-input.component';
 import { EquipmentTrainingDescriptionsInfoComponent } from './training/training-descriptions-info.component';
-import { Equipment } from './equipment';
+import { Equipment, EquipmentService } from './equipment';
+import { ModelRef } from '../common/model/model';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { of, shareReplay, switchMap } from 'rxjs';
+import { coerceBooleanProperty } from '@angular/cdk/coercion';
 
 export type EquipmentInfoDisplay
   = 'list-item'
@@ -26,16 +30,29 @@ export type EquipmentInfoDisplay
     EquipmentTagChipsComponent,
   ],
   template: `
-    <h1>
-      {{ equipment().name }}
-      <equipment-tag-chips [equipment]="equipment()">
-      </equipment-tag-chips>
-    </h1>
+  @if (equipment$ | async; as equipment) {
+      {{ equipment.name }}
+
+      @if (!this.hideTags()) {
+        <equipment-tag-chips [tags]="equipment.tags" />
+      }
+  }
   `,
   styles: [``],
 })
 export class EquipmentInfoComponent {
-  equipment = input.required<Equipment>();
-  display = input<EquipmentInfoDisplay>('list-item');
+  _equipmentService = inject(EquipmentService);
+  equipment = input.required<ModelRef<Equipment>>();
+  hideTags = input(false, { transform: coerceBooleanProperty });
+
+  readonly equipment$ = toObservable(this.equipment).pipe(
+    switchMap(equipment => {
+      if (equipment instanceof Equipment) {
+        return of(equipment)
+      }
+      return this._equipmentService.fetch(equipment)
+    }),
+    shareReplay(1)
+  )
 
 }

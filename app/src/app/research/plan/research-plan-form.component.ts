@@ -19,17 +19,16 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { CampusSearchComponent } from 'src/app/uni/campus/campus-search.component';
+import { UniCampusSelect } from 'src/app/uni/campus/campus-select.component';
 import { UniDisciplineSelect } from 'src/app/uni/discipline/discipline-select.component';
-import { UserSearchComponent } from 'src/app/user/common/user-search.component';
+import { UserSearchComponent } from 'src/app/user/user-search.component';
 
 import { Lab, LabService } from 'src/app/lab/lab';
-import { User } from 'src/app/user/common/user';
+import { User } from 'src/app/user/user';
 import { ResearchFunding } from '../funding/research-funding';
 import { ResearchFundingSelectComponent } from '../funding/research-funding-select.component';
 import { CreateResearchPlan, ResearchPlan, ResearchPlanService, UpdateResearchPlan } from './research-plan';
 import { ResearchPlanTaskForm, ResearchPlanTaskFormComponent, initialTasksFromFormArray, researchPlanTaskForm, researchPlanTaskSlicesFromFormArray } from './task/research-plan-task-form.component';
-import { LabResourceContainerFormComponent } from 'src/app/lab/lab-resource-consumer/resource-container-form.component';
 
 export type ResearchPlanForm = FormGroup<{
   title: FormControl<string>;
@@ -44,9 +43,7 @@ export function researchPlanForm(plan: ResearchPlan | null = null) {
 
   let tasks: FormArray<ResearchPlanTaskForm>;
   if (plan != null) {
-    tasks = new FormArray(plan.tasks.map(
-      task => researchPlanTaskForm(task)
-    ))
+    tasks = new FormArray(plan.tasks.items.map(task => researchPlanTaskForm(task)));
   } else {
     tasks = new FormArray([
       researchPlanTaskForm()
@@ -84,7 +81,7 @@ function patchFormValue(form: ResearchPlanForm, plan: ResearchPlan) {
 
   form.controls.tasks.clear();
   const tasks = form.controls.tasks;
-  for (const task of plan.tasks) {
+  for (const task of plan.tasks.items) {
     tasks.controls.push(researchPlanTaskForm(task))
   }
 }
@@ -135,12 +132,9 @@ function updateResearchPlanFromForm(form: ResearchPlanForm): UpdateResearchPlan 
     MatCheckboxModule,
     MatDatepickerModule,
 
-    UniDisciplineSelect,
     ResearchFundingSelectComponent,
-    CampusSearchComponent,
     UserSearchComponent,
-    ResearchPlanTaskFormComponent,
-    LabResourceContainerFormComponent
+    ResearchPlanTaskFormComponent
   ],
   template: `
     <form [formGroup]="form">
@@ -168,27 +162,30 @@ function updateResearchPlanFromForm(form: ResearchPlanForm): UpdateResearchPlan 
         @switch (currentUserPlanRole) {
 
           @case ('coordinator') {
-            <user-search formControlName="researcher"
-              [includeRoles]="_userSearchIncludeRoles"
-              createTemporaryIfNotFound
-              required >
+            <mat-form-field>
               <mat-label>Primary researcher</mat-label>
+              <user-search formControlName="researcher"
+                           [includeRoles]="_userSearchIncludeRoles"
+                           allowNotFound
+                           required />
 
               @if (researcherErrors && researcherErrors['required']) {
                 <mat-error>A value is required</mat-error>
               }
-            </user-search>
+            </mat-form-field>
           }
           @case ('researcher') {
-            <user-search formControlName="coordinator"
-                        [includeRoles]="_userSearchIncludeRoles" 
-                        required >
-                <mat-label>Coordinator</mat-label>
-                
-                @if (coordinatorErrors && coordinatorErrors['required']) {
-                  <mat-error>A value is required</mat-error>
-                }
-            </user-search>
+            <mat-form-field>
+              <mat-label>Coordinator</mat-label>
+              <user-search formControlName="coordinator"
+                           [includeRoles]="_userSearchIncludeRoles"
+                           allowNotFound
+                           required />
+
+              @if (coordinatorErrors && coordinatorErrors['required']) {
+                <mat-error>A value is required</mat-error>
+              }
+            </mat-form-field>
           }
         }
       }
@@ -217,9 +214,9 @@ function updateResearchPlanFromForm(form: ResearchPlanForm): UpdateResearchPlan 
             <div class="task-index">
               <b>{{$index + 1}}</b>
             </div>
-            <research-plan-task-form 
+            <research-plan-task-form
               [index]="$index"
-              [form]="control" 
+              [form]="control"
               [defaultLab]="researcherDefaultLab$ | async"
               [defaultSupervisor]="coordinator$ | async"
               [hideReviewControls]="hideReviewControls" />
@@ -229,9 +226,9 @@ function updateResearchPlanFromForm(form: ResearchPlanForm): UpdateResearchPlan 
 
       <div class="form-controls">
         <div (mouseenter)="_showAllFormErrors()">
-          <button mat-raised-button 
+          <button mat-raised-button
                   color="primary"
-                  [disabled]="!form.valid" 
+                  [disabled]="!form.valid"
                   (click)="onSaveButtonClick()">
             <mat-icon>save</mat-icon> SAVE
           </button>
@@ -308,7 +305,7 @@ export class ResearchPlanFormComponent {
     return (this.currentUser && this.currentUser!.roles.has('student')) ? 'researcher' : 'coordinator';
   }
 
-  _userSearchIncludeRoles = new Set<string>();
+  _userSearchIncludeRoles: string[] = [];
 
   @Input()
   get hideReviewControls(): boolean {
@@ -346,10 +343,26 @@ export class ResearchPlanFormComponent {
   ngOnInit() {
     switch (this.currentUserPlanRole) {
       case 'coordinator':
-        this._userSearchIncludeRoles.add('student');
+        if (!this._userSearchIncludeRoles.includes('student')) {
+          this._userSearchIncludeRoles = [
+            ...this._userSearchIncludeRoles,
+            'student'
+          ]
+        }
         break;
       case 'researcher':
-        this._userSearchIncludeRoles.add('lab-tech');
+        if (!this._userSearchIncludeRoles.includes('researcher')) {
+          this._userSearchIncludeRoles = [
+            ...this._userSearchIncludeRoles,
+            'researcher'
+          ]
+        }
+        if (!this._userSearchIncludeRoles.includes('lab-tech')) {
+          this._userSearchIncludeRoles = [
+            ...this._userSearchIncludeRoles,
+            'lab-tech'
+          ]
+        }
         break;
     }
 

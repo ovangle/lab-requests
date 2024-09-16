@@ -2,10 +2,10 @@ import { CommonModule } from "@angular/common";
 import { Component } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { UserSearchComponent } from "src/app/user/common/user-search.component";
+import { UserSearchComponent } from "src/app/user/user-search.component";
 import { UserInfoComponent } from "src/app/user/user-info.component";
 import { AbstractResearchPlanDetailFieldComponent } from "./abstract-research-plan-form-field";
-import { User } from "src/app/user/common/user";
+import { User } from "src/app/user/user";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 
@@ -23,28 +23,28 @@ import { MatIconModule } from "@angular/material/icon";
     ],
     template: `
     @if (contentEditable) {
-        <user-search [formControl]="control!"
-              includeRoles="lab-tech"
-              createTemporaryIfNotFound
-              clearOnFocus
-              required >
+        <mat-form-field>
             <mat-label>Primary researcher</mat-label>
+            <user-search [formControl]="control!"
+                         [includeRoles]="['lab-tech']"
+                         clearOnFocus
+                         required />
 
             <button matIconSuffix mat-icon-button
                     color="primary"
                     (click)="onSaveButtonClicked()">
                 <mat-icon>save</mat-icon>
             </button>
-            <button matIconSuffix mat-icon-button 
-                    color="warn" 
+            <button matIconSuffix mat-icon-button
+                    color="warn"
                     (click)="onCancelButtonClicked()">
                 <mat-icon>cancel</mat-icon>
             </button>
- 
+
             @if (errors && errors['required']) {
                 <mat-error>A value is required</mat-error>
             }
-        </user-search>
+        </mat-form-field>
     } @else {
         <div class="field-content" (dblclick)="onFieldDoubleClick()">
             <div class="field">

@@ -1,16 +1,13 @@
 from __future__ import annotations
 
+
 from pathlib import Path
 from typing import Literal
+
 from pydantic_settings import BaseSettings
 
-
 class DbSettings(BaseSettings):
-    api_debug: Literal["yes", "no"] = "no"
-
-    @property
-    def is_debug(self):
-        return self.api_debug == "yes"
+    debug_port: int = 8765
 
     db_user: str = "api"
     db_password: str = "secret"

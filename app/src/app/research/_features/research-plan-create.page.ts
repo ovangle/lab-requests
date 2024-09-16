@@ -17,7 +17,7 @@ import {
   ResearchPlanService,
 
 } from '../plan/research-plan';
-import { CurrentUser } from 'src/app/user/common/user';
+import { CurrentUser } from 'src/app/user/user';
 import { UserContext } from 'src/app/user/user-context';
 import { ResearchPlanFormComponent } from '../plan/research-plan-form.component';
 import { CommonModule } from '@angular/common';
@@ -33,7 +33,7 @@ import { CommonModule } from '@angular/common';
     <h1>Create research plan</h1>
 
     @if (currentUser$ | async; as currentUser) {
-      <research-plan-form 
+      <research-plan-form
         hideReviewControls
         [currentUser]="currentUser"
         (save)="onSave($event)" />
@@ -62,6 +62,6 @@ export class ResearchPlanCreatePage {
   );
 
   async onSave(plan: ResearchPlan) {
-    await this._router.navigate([ 'research', 'plans', plan.id ]);
+    await this._router.navigate(['research', 'plans', plan.id]);
   }
 }

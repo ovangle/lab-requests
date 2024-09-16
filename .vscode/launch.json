@@ -20,6 +20,23 @@
       "justMyCode": false
     },
     {
+      "name": "debug db script",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 8766
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/api",
+          "remoteRoot": "/srv/api"
+        }
+      ],
+      "logToFile": true,
+      "justMyCode": false
+    },
+    {
       "name": "launch client app",
       "type": "chrome",
       "request": "launch",

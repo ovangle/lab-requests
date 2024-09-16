@@ -1,23 +1,17 @@
 import { Directive, EventEmitter, InputSignal, Output, Signal, inject, input } from "@angular/core";
 import { AbstractControl, ControlContainer, FormControl, FormGroup, ValidationErrors, ValidatorFn } from "@angular/forms";
 import { Lab } from "../../lab";
-import { inputMaterialFromJson } from "../../lab-resource/types/input-material/input-material";
 import { Provisionable, ProvisionableCreateRequest } from "./provisionable";
 import { LabProvision, LabProvisionCreateRequest, LabProvisionService } from "./provision";
 import { Observable, firstValueFrom } from "rxjs";
-import { CostEstimateFormGroup, costEstimateFormGroup, costEstimateFromFormValue } from "src/app/research/funding/cost-estimate/cost-estimate-form.component";
 import { ResearchFunding } from "src/app/research/funding/research-funding";
-import { CostEstimate } from "src/app/research/funding/cost-estimate/cost-estimate";
-import { ModelRef } from "src/app/common/model/model";
+import { Model, ModelCreateRequest, ModelRef } from "src/app/common/model/model";
 import { UnitOfMeasurement } from "src/app/common/measurement/measurement";
 import { format } from "date-fns";
 import { A11yModule } from "@angular/cdk/a11y";
 
 export interface LabProvisionCreateFormControls {
-    quantityRequired: FormControl<[ number, UnitOfMeasurement ]>;
-
     hasCostEstimates: FormControl<boolean>;
-    estimatedCost?: CostEstimateFormGroup;
 
     note: FormControl<string>;
 }
@@ -42,7 +36,6 @@ export function labProvisionCreateFormGroup<
             }
         ),
         hasCostEstimates: new FormControl<boolean>(false, { nonNullable: true }),
-        estimatedCost: costEstimateFormGroup(options?.defaultFunding),
 
         note: new FormControl<string>('', { nonNullable: true })
     } as TControl & LabProvisionCreateFormControls);
@@ -71,31 +64,17 @@ export function labProvisionCreateRequestFromFormValue<
     TProvision extends LabProvision<TProvisionable>,
     TControl extends { [ K in keyof TControl ]: AbstractControl<any> },
     TType extends TProvision[ 'type' ],
-    TTarget extends ModelRef<TProvisionable> | ProvisionableCreateRequest<TProvisionable>
 >(
     type: TType,
-    target: TTarget,
+    target: Model | ModelCreateRequest<any>,
     value: LabProvisionCreateFormGroup<TControl>[ 'value' ],
-): LabProvisionCreateRequest<TProvisionable, TProvision> & { readonly type: TType, readonly target: TTarget } {
-    const quantityRequired = value.quantityRequired!;
-
-    let estimatedCost: CostEstimate | null;
-    if (value.hasCostEstimates) {
-        estimatedCost = costEstimateFromFormValue(value.estimatedCost!, {
-            quantityRequired
-        });
-    } else {
-        estimatedCost = null;
-    }
-
+): LabProvisionCreateRequest<TProvisionable, TProvision> & { readonly type: TType, readonly target: any } {
     return {
         type,
         target,
-        numRequired: quantityRequired[ 0 ],
-        unit: quantityRequired[ 1 ],
-        estimatedCost,
+        // estimatedCost,
         note: value.note
-    };
+    } as any;
 }
 
 @Directive()

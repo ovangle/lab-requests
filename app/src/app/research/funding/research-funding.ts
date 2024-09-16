@@ -4,9 +4,8 @@ import { Observable, map, of } from 'rxjs';
 import { Role, roleFromJson } from 'src/app/user/common/role';
 import {
   Model,
-  ModelParams,
+  ModelFactory,
   ModelQuery,
-  modelParamsFromJsonObject,
   setModelQueryParams,
 } from 'src/app/common/model/model';
 import { RestfulService } from 'src/app/common/model/model-service';
@@ -14,41 +13,26 @@ import { JsonObject } from 'src/app/utils/is-json-object';
 
 export const FUNDING_MODEL_NAMES = ['student_project'];
 
-export interface ResearchFundingParams extends ModelParams {
-  name: string;
-  description: string;
-}
-
 export class ResearchFunding extends Model {
   readonly name: string;
   readonly description: string;
 
-  constructor(params: ResearchFundingParams) {
-    super(params);
-    this.name = params.name!;
-    this.description = params.description!;
+  constructor(json: JsonObject) {
+    super(json);
+
+    if (typeof json['name'] !== 'string') {
+      throw new Error("Expected a string 'name'");
+    }
+    this.name = json['name'];
+    if (typeof json['description'] !== 'string') {
+      throw new Error("Expected a string 'description'");
+    }
+    this.description = json['description'];
   }
 
   match(lookup: string | ResearchFundingLookup): boolean {
     return lookupId(lookup) === this.id || lookupName(lookup) === this.name;
   }
-}
-
-export function researchFundingFromJsonObject(
-  json: JsonObject,
-): ResearchFunding {
-  const baseParams = modelParamsFromJsonObject(json);
-  if (typeof json['name'] !== 'string') {
-    throw new Error("Expected a string 'name'");
-  }
-  if (typeof json['description'] !== 'string') {
-    throw new Error("Expected a string 'description'");
-  }
-  return new ResearchFunding({
-    ...baseParams,
-    name: json['name'],
-    description: json['description'],
-  });
 }
 
 export interface ResearchFundingPatch {
@@ -107,10 +91,10 @@ function lookupName(lookup: string | ResearchFundingLookup): string | null {
 
 @Injectable({ providedIn: 'root' })
 export class ResearchFundingService extends RestfulService<ResearchFunding, ResearchFundingQuery> {
-  override readonly modelFromJsonObject = researchFundingFromJsonObject;
-  override readonly setModelQueryParams = setResearchFundingQueryParams;
-
   override readonly path: string = '/research/funding';
+  override readonly model = ResearchFunding;
+
+  override readonly setModelQueryParams = setResearchFundingQueryParams;
 
   lookup(lookup: string | ResearchFundingLookup, { useCache } = { useCache: true }): Observable<ResearchFunding | null> {
     if (useCache) {
@@ -132,7 +116,6 @@ export class ResearchFundingService extends RestfulService<ResearchFunding, Rese
     throw new Error('Research funding lookup must contain either id or name');
   }
 
-
   isNameUnique(name: string): Observable<boolean> {
     return this.queryPage({ name_eq: name }).pipe(
       map((page) => page.totalItemCount === 0),
@@ -143,4 +126,3 @@ export class ResearchFundingService extends RestfulService<ResearchFunding, Rese
     return this.query({});
   }
 }
-

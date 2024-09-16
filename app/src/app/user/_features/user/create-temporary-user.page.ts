@@ -1,7 +1,7 @@
 import { APP_BASE_HREF, CommonModule, Location } from "@angular/common";
 import { CUSTOM_ELEMENTS_SCHEMA, Component, inject } from "@angular/core";
 import { CreateTemporaryUserFormComponent } from "../../temporary-user/user-create-temporary-user-form.component";
-import { CreateTemporaryUserRequest, CreateTemporaryUserResult, TemporaryAccessUser, User, UserService } from "../../common/user";
+import { CreateTemporaryUserRequest, CreateTemporaryUserResult, TemporaryAccessUser, User, UserService } from "../../user";
 import { Router } from "@angular/router";
 import { firstValueFrom } from "rxjs";
 import { CreateTemporaryUserFlowComponent } from "../../temporary-user/user-temporary-user-flow.component";
@@ -35,15 +35,15 @@ import { MatIconModule } from "@angular/material/icon";
             <p>
                 A user has been created {{result!.user.email}}
             <p>
-                Either: 
-                Instruct the user to navigate to 
-                <div class="redirect-url"> 
+                Either:
+                Instruct the user to navigate to
+                <div class="redirect-url">
                     <common-show-url [url]="userRedirectUrl">
                         <mat-label>Url</mat-label>
                     </common-show-url>
                 </div>
 
-            <p> 
+            <p>
                 Or save and share the QR code:
 
                 <div class="redirect-qr">

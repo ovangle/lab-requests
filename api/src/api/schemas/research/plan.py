@@ -12,11 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from db import LocalSession, local_object_session
 from db.models.base.errors import DoesNotExist
 from db.models.lab.lab import Lab
-from db.models.research.plan import ResearchPlanAttachment, query_research_plans
+from db.models.research.plan import ResearchPlanAttachment, query_research_plan_attachments, query_research_plan_tasks, query_research_plans
 from db.models.uni import Discipline
 from db.models.user import User
-from db.models.research import (
-    ResearchFunding,
+from db.models.research.funding import ResearchFunding
+from db.models.research.plan import (
     ResearchPlan,
     ResearchPlanTask,
     ResearchPlanTaskAttrs,
@@ -32,6 +32,11 @@ from ..base import (
 )
 from ..user.user import UserLookup, UserDetail, lookup_user
 from ..lab.lab import LabLookup
+
+from ..equipment.equipment_lease import EquipmentLeaseIndex, EquipmentLeaseIndexPage
+from ..software.software_lease import SoftwareLeaseIndex, SoftwareLeaseIndexPage
+from ..material.material_allocation import MaterialAllocationIndex, MaterialAllocationIndexPage
+
 
 from .funding import (
     ResearchFundingCreateRequest,
@@ -69,6 +74,20 @@ class ResearchPlanTaskDetail(ModelDetail[ResearchPlanTask]):
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
+
+class ResearchPlanTaskIndex(ModelIndex[ResearchPlanTask]):
+    plan: UUID | None
+
+    async def item_from_model(self, model: ResearchPlanTask):
+        return await ResearchPlanTaskDetail.from_model(model)
+
+    def get_selection(self):
+        return query_research_plan_tasks(
+            plan=self.plan
+        )
+
+ResearchPlanTaskIndexPage = ModelIndexPage[ResearchPlanTask, ResearchPlanTaskDetail]
+
 
 
 class ResearchPlanTaskCreateRequest(ModelCreateRequest[ResearchPlanTask]):
@@ -143,12 +162,12 @@ class ResearchPlanTaskCreateRequest(ModelCreateRequest[ResearchPlanTask]):
         }
 
 
-class ResearchPlanAttachmentView(ModelDetail[ResearchPlanAttachment]):
+class ResearchPlanAttachmentDetail(ModelDetail[ResearchPlanAttachment]):
     id: UUID
     path: str
 
     @classmethod
-    async def from_base(cls, model: ResearchPlanAttachment):
+    async def from_model(cls, model: ResearchPlanAttachment):
         return cls(
             id=model.id,
             path=str(model.file),
@@ -156,6 +175,18 @@ class ResearchPlanAttachmentView(ModelDetail[ResearchPlanAttachment]):
             updated_at=model.updated_at,
         )
 
+class ResearchPlanAttachmentIndex(ModelIndex[ResearchPlanAttachment]):
+    plan: UUID | None
+
+    async def item_from_model(self, model: ResearchPlanAttachment):
+        return await ResearchPlanAttachmentDetail.from_model(model)
+
+    def get_selection(self):
+        return query_research_plan_attachments(
+            plan=self.plan
+        )
+
+ResearchPlanAttachmentIndexPage = ModelIndexPage[ResearchPlanAttachment, ResearchPlanAttachmentDetail]
 
 class ResearchPlanDetail(ModelDetail[ResearchPlan]):
     title: str = Field(max_length=256)
@@ -166,14 +197,19 @@ class ResearchPlanDetail(ModelDetail[ResearchPlan]):
 
     researcher: UserDetail
     coordinator: UserDetail
-    lab: UUID
+    lab_id: UUID
 
-    tasks: list[ResearchPlanTaskDetail]
-    attachments: list[ResearchPlanAttachmentView]
+    tasks: ResearchPlanTaskIndexPage
+    attachments: ResearchPlanAttachmentIndexPage
+
+    equipment_leases: EquipmentLeaseIndexPage
+    software_leases: SoftwareLeaseIndexPage
+    input_materials: MaterialAllocationIndexPage
+    output_materials: MaterialAllocationIndexPage
 
     @classmethod
-    async def from_model(cls, model: ResearchPlan, **kwargs) -> ResearchPlanDetail:
-        assert not kwargs
+    async def from_model(cls, model: ResearchPlan) -> ResearchPlanDetail:
+        db = local_object_session(model)
 
         funding = await ResearchFundingDetail.from_model(
             await model.awaitable_attrs.funding
@@ -183,14 +219,17 @@ class ResearchPlanDetail(ModelDetail[ResearchPlan]):
             await model.awaitable_attrs.coordinator
         )
 
-        task_models = await model.awaitable_attrs.tasks
-        tasks = await asyncio.gather(
-            *[ResearchPlanTaskDetail.from_base(t) for t in task_models]
-        )
+        task_index = ResearchPlanTaskIndex(plan=model.id)
+        attachment_index = ResearchPlanAttachmentIndex(plan=model.id)
 
-        attachment_models = await model.awaitable_attrs.attachments
-        attachments = await asyncio.gather(
-            *[ResearchPlanAttachmentView.from_base(a) for a in attachment_models]
+        equipment_lease_index = EquipmentLeaseIndex()
+        software_lease_index = SoftwareLeaseIndex()
+
+        input_material_index = MaterialAllocationIndex(
+            only_inputs=True
+        )
+        output_material_index = MaterialAllocationIndex(
+            only_outputs=True
         )
 
         return await super()._from_base(
@@ -201,9 +240,14 @@ class ResearchPlanDetail(ModelDetail[ResearchPlan]):
             funding=funding,
             researcher=researcher,
             coordinator=coordinator,
-            lab=model.lab_id,
-            tasks=tasks,
-            attachments=attachments,
+            lab_id=model.lab_id,
+            tasks=await task_index.load_page(db),
+            attachments=await attachment_index.load_page(db),
+
+            equipment_leases=await equipment_lease_index.load_page(db),
+            software_leases=await software_lease_index.load_page(db),
+            input_materials=await input_material_index.load_page(db),
+            output_materials=await output_material_index.load_page(db),
         )
 
 
@@ -237,7 +281,7 @@ class ResearchPlanIndex(ModelIndex[ResearchPlan]):
 
 
 # TODO: PEP 695
-ResearchPlanIndexPage = ModelIndexPage[ResearchPlan]
+ResearchPlanIndexPage = ModelIndexPage[ResearchPlan, ResearchPlanDetail]
 
 
 class ResearchPlanCreateRequest(ModelCreateRequest[ResearchPlan]):

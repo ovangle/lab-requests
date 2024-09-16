@@ -1,5 +1,5 @@
 import { Component, computed, inject, input } from "@angular/core";
-import { SoftwareProvision } from "./software-provision";
+import { SoftwareInstallationProvision, SoftwareProvisionType } from "./software-provision";
 import { LabProvisionInfoComponent } from "src/app/lab/common/provisionable/provision-info.component";
 import { SoftwareInstallationService } from "../installation/software-installation";
 import { toObservable } from "@angular/core/rxjs-interop";
@@ -17,23 +17,23 @@ import { SoftwareProvisionTypePipe } from "./software-provision-type.pipe";
         LabProvisionInfoComponent
     ],
     template: `
-    <lab-provision-info 
+    <lab-provision-info
         [provision]="provision()"
         hideQuantityInfo
     >
         <div #provisionTypeInfo>
             {{provisionType() | softwareProvisionType}}
-            
+
         </div>
 
-        <div #provisionTargetInfo> 
+        <div #provisionTargetInfo>
             <div class="requested-version-info">
                 Requested minimum version: <span class="version-info">{{provision().minVersion}}</span>
             </div>
 
             @if (softwareInstallation$ | async; as installation) {
                 <div class="current-version-info">
-                    Current: <span class="version-info">{{installation.version}}</span>
+                    Current: <span class="version-info">{{installation.installedVersion}}</span>
                 </div>
             } @else {
                 <div class="current-version-info">
@@ -51,11 +51,11 @@ import { SoftwareProvisionTypePipe } from "./software-provision-type.pipe";
 })
 export class SoftwareProvisionInfoComponent {
     _softwareInstallationService = inject(SoftwareInstallationService);
-    provision = input.required<SoftwareProvision>();
+    provision = input.required<SoftwareInstallationProvision>();
 
     softwareInstallation$ = toObservable(this.provision).pipe(
         switchMap(provision => provision.resolveTarget(this._softwareInstallationService))
     )
 
-    provisionType = computed(() => this.provision().type)
+    provisionType = computed(() => this.provision().type as SoftwareProvisionType)
 }

@@ -1,13 +1,13 @@
 from abc import abstractmethod
 from datetime import datetime
 from enum import Enum
-from typing import Callable, Generic, TypeVar, TypedDict
+from typing import Any, Callable, Generic, TypeVar, TypedDict
 from uuid import UUID
 
 from sqlalchemy import Dialect, TypeDecorator
 from sqlalchemy.dialects import postgresql
 
-from db.models.base.errors import ModelException
+from db.models.base import ModelException
 
 
 TStatus = TypeVar("TStatus", bound=Enum)
@@ -20,7 +20,7 @@ class TransitionMeta(TypedDict, Generic[TStatus]):
     note: str
 
 
-def _transition_meta_to_json(meta: TransitionMeta):
+def transition_meta_to_json(meta: TransitionMeta):
     return dict(
         status=str(meta["status"]),
         at=meta["at"].isoformat(),
@@ -29,7 +29,7 @@ def _transition_meta_to_json(meta: TransitionMeta):
     )
 
 
-def _transition_meta_from_json(status: TStatus, json: dict) -> TransitionMeta[TStatus]:
+def transition_meta_from_json(status: TStatus, json: dict) -> TransitionMeta[TStatus]:
     if json["status"] != status:
         raise ValueError("Unexpected status in json")
 
@@ -44,7 +44,7 @@ def _transition_meta_from_json(status: TStatus, json: dict) -> TransitionMeta[TS
 TMeta = TypeVar("TMeta", bound=TransitionMeta)
 
 
-class StatusTransitionTypeDecorator(TypeDecorator, Generic[TStatus]):
+class StatusTransitionTypeDecorator(TypeDecorator, Generic[TStatus, TMeta]):
     impl = postgresql.JSONB
 
     def __init__(self, status: TStatus, repeatable: bool = False):
@@ -59,10 +59,19 @@ class StatusTransitionTypeDecorator(TypeDecorator, Generic[TStatus]):
         """
         self.status = status
         self.repeatable = repeatable
+        super().__init__()
+
+    @abstractmethod
+    def transition_from_json(self, json: dict[str, Any]) -> TransitionMeta[TStatus]:
+        ...
+
+    @abstractmethod
+    def transition_to_json(self, transition: TMeta) -> dict[str, Any]:
+        ...
 
     def process_bind_param(
         self,
-        value: list[TransitionMeta[TStatus]] | TransitionMeta[TStatus] | None,
+        value: list[TMeta] | TMeta | None,
         dialect: Dialect,
     ):
         if value is None:
@@ -70,13 +79,13 @@ class StatusTransitionTypeDecorator(TypeDecorator, Generic[TStatus]):
 
         if self.repeatable:
             if not isinstance(value, list):
-                raise ModelException("non-repeatable status metadata")
-            return [_transition_meta_to_json(item) for item in value]
+                raise ValueError("non-repeatable status metadata")
+            return [self.transition_to_json(item) for item in value]
 
         if isinstance(value, dict) or value is None:
             if self.repeatable:
-                raise ModelException("repeatable status metadata must have array value")
-            return _transition_meta_to_json(value) if value else None
+                raise ValueError("repeatable status metadata must have array value")
+            return self.transition_to_json(value) if value else None
 
         raise TypeError("Expected a list, dict or None")
 
@@ -84,10 +93,10 @@ class StatusTransitionTypeDecorator(TypeDecorator, Generic[TStatus]):
         if self.repeatable:
             if not isinstance(value, list):
                 raise ValueError("expected a list of metadatas")
-            return [_transition_meta_from_json(self.status, item) for item in value]
+            return [self.transition_from_json(item) for item in value]
         else:
             return (
-                _transition_meta_from_json(self.status, value)
+                self.transition_from_json(value)
                 if isinstance(value, dict)
                 else None
             )

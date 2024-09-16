@@ -1,9 +1,7 @@
 import { Injectable, Type, inject } from '@angular/core';
 import {
   Model,
-  ModelParams,
   ModelIndexPage,
-  modelParamsFromJsonObject,
   ModelQuery,
   setModelQueryParams,
 } from 'src/app/common/model/model';
@@ -20,39 +18,21 @@ export function isOtherCampusCode(code: CampusCode | null | undefined) {
   return code === 'OTH';
 }
 
-export interface CampusParams extends ModelParams {
+export class Campus extends Model {
   readonly code: CampusCode;
   readonly name: string;
-}
 
-export function campusFromJsonObject(json: JsonObject): Campus {
-  if (typeof json !== 'object' || json == null) {
-    throw new Error('Expected a campus');
-  }
-  const obj: { [k: string]: unknown } = json as any;
+  constructor(json: JsonObject) {
+    super(json);
+    if (!isCampusCode(json['code'])) {
+      throw new Error('Expected a campus code');
+    }
+    this.code = json['code'];
 
-  const baseParams = modelParamsFromJsonObject(obj);
-
-  if (!isCampusCode(obj['code'])) {
-    throw new Error('Expected a campus code');
-  }
-
-  return new Campus({
-    ...baseParams,
-    code: obj['code'],
-    name: obj['name'] as string,
-  });
-}
-
-export class Campus extends Model implements CampusParams {
-  readonly code: CampusCode;
-
-  readonly name: string;
-
-  constructor(params: CampusParams) {
-    super(params);
-    this.code = params.code;
-    this.name = params.name;
+    if (typeof json['name'] !== 'string') {
+      throw new Error("Expected a string 'name'");
+    }
+    this.name = json['name'];
   }
 
   match(lookup: string | CampusLookup) {
@@ -127,9 +107,10 @@ export function setCampusQueryParams(
 
 @Injectable({ providedIn: 'root' })
 export class CampusService extends RestfulService<Campus, CampusQuery> {
-  override readonly modelFromJsonObject = campusFromJsonObject;
+  override path = '/uni/campus';
+  override readonly model = Campus;
+
   override readonly setModelQueryParams = setCampusQueryParams;
-  override path = '/uni/campuses';
 
   lookup(lookup: string | CampusLookup, { useCache } = { useCache: true }): Observable<Campus | null> {
     if (useCache) {

@@ -1,15 +1,17 @@
 import { parseISO } from "date-fns";
 import { firstValueFrom } from "rxjs";
-import { ModelRef, isModelRef, modelRefJsonDecoder } from "src/app/common/model/model";
+import { ModelRef, isModelRef, modelRefFromJson } from "src/app/common/model/model";
 import { ModelService } from "src/app/common/model/model-service";
-import { User, userFromJsonObject } from "src/app/user/common/user";
+import { User } from "src/app/user/user";
 import { JsonObject } from "src/app/utils/is-json-object";
 
 const _PROVISION_STATUSES: ReadonlyArray<string> = [
     'requested',
     'approved',
+    'rejected',
+    'denied',
     'purchased',
-    'installed',
+    'completed',
     'cancelled'
 ]
 
@@ -58,7 +60,7 @@ export function provisionStatusMetadataFromJsonObject<TStatus extends ProvisionS
     const at = parseISO(json[atKey] as string);
 
     const byKey = status + 'By';
-    const by = modelRefJsonDecoder(byKey, userFromJsonObject)(json);
+    const by = modelRefFromJson(byKey, User, json);
 
     const noteKey = status + 'Note';
     if (typeof json[noteKey] !== 'string') {

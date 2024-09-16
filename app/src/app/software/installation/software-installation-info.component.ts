@@ -23,10 +23,10 @@ export type SoftwareInstallationInfoDisplay = 'list-item';
         SoftwareProvisionInfoComponent
     ],
     template: `
-    <lab-installation-info 
+    <lab-installation-info
         [installation]="softwareInstallation()"
         [display]="display()" >
-        <div class=".installable-title"> 
+        <div class=".installable-title">
             @if (software$ | async; as software) {
                 <software-info [software]="software" />
             }
@@ -48,7 +48,7 @@ export class SoftwareInstallationInfoComponent {
     readonly softwareInstallation = input.required<SoftwareInstallation>();
     readonly display = input<SoftwareInstallationInfoDisplay>('list-item');
 
-    readonly version = computed(() => this.softwareInstallation().version);
+    readonly version = computed(() => this.softwareInstallation().installedVersion);
 
     software$ = toObservable(this.softwareInstallation).pipe(
         switchMap(installation => installation.resolveInstallable(this._softwareService))

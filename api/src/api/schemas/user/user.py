@@ -29,11 +29,11 @@ from ..uni.campus import CampusLookup
 
 
 class UserDetail(ModelDetail[User]):
-    id: UUID
     domain: UserDomain
     email: str
     name: str
     disciplines: set[Discipline]
+    primary_discipline: Discipline
     base_campus: UUID
 
     disabled: bool
@@ -48,6 +48,7 @@ class UserDetail(ModelDetail[User]):
             name=model.name,
             base_campus=model.campus_id,
             disciplines=set(model.disciplines),
+            primary_discipline=model.disciplines[0],
             disabled=model.disabled,
             roles=set(model.roles),
             **kwargs,
@@ -86,26 +87,40 @@ async def lookup_user(db: LocalSession, ref: UserRef):
 class UserIndex(ModelIndex[User]):
     __item_detail_type__ = UserDetail
 
+    id_in: str | None = None
+
     search: str | None = None
     include_roles: str | None = None
 
     discipline: Discipline | None = None
 
+    supervises_lab: UUID | None = None
+
+    async def item_from_model(self, model: User):
+        return await UserDetail.from_model(model)
+
     def get_selection(self):
+        if self.id_in:
+            id_in = map(UUID, id_in.split(','))
+        else:
+            id_in = None
+
         if self.include_roles:
             include_role_set = set(self.include_roles.split(","))
         else:
             include_role_set = None
 
         return query_users(
+            id_in=id_in,
             search=self.search,
             include_roles=include_role_set,
             discipline=self.discipline,
+            supervises_lab=self.supervises_lab,
         )
 
 
 # TODO: PEP 695
-UserIndexPage = ModelIndexPage[User]
+UserIndexPage = ModelIndexPage[User, UserDetail]
 
 
 class AlterPasswordRequest(ModelUpdateRequest[User]):

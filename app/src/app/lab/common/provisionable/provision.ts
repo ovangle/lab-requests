@@ -1,249 +1,320 @@
-import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
+import { JsonObject, isJsonObject, nullableFromJson } from "src/app/utils/is-json-object";
 import { ProvisionStatus, ProvisionStatusMetadata, isProvisionStatus, provisionStatusMetadataFromJsonObject } from "./provision-status";
 import { Injectable } from "@angular/core";
 import { HttpParams } from "@angular/common/http";
 import { Observable, firstValueFrom } from "rxjs";
 import { ModelService, RestfulService as RelatedModelService } from "src/app/common/model/model-service";
-import { Model, ModelCreateRequest, ModelParams, ModelQuery, ModelRef, ModelUpdateRequest, isModelRef, modelId, modelParamsFromJsonObject, modelRefJsonDecoder, resolveModelRef, resolveRef, setModelQueryParams } from "src/app/common/model/model";
+import { Model, ModelCreateRequest, ModelFactory, ModelQuery, ModelRef, ModelUpdateRequest, isModelRef, modelId, modelRefFromJson, resolveRef, setModelQueryParams } from "src/app/common/model/model";
 import { Provisionable, ProvisionableCreateRequest } from "./provisionable";
-import { Lab, labFromJsonObject } from "../../lab";
-import { CostEstimate, costEstimateFromJsonObject, costEstimateToJsonObject } from "src/app/research/funding/cost-estimate/cost-estimate";
+import { Lab } from "../../lab";
 import { UnitOfMeasurement, isUnitOfMeasurement } from "src/app/common/measurement/measurement";
-import { ResearchFunding, ResearchFundingService, researchFundingFromJsonObject } from "src/app/research/funding/research-funding";
+import { ResearchFunding, ResearchFundingService } from "src/app/research/funding/research-funding";
+import { ResearchBudget, ResearchPurchase, ResearchPurchaseOrder } from "src/app/research/budget/research-budget";
+import { isUUID } from "src/app/utils/is-uuid";
+import { parseISO } from "date-fns";
+import { LabWork } from "../lab-work";
 
-export interface LabProvisionParams<
-    TProvisionable extends Provisionable<any>
-> extends ModelParams {
-    type: string;
+export interface ProvisionEvent {
     status: ProvisionStatus;
-    target: ModelRef<TProvisionable>;
-    lab: ModelRef<Lab>;
-
-    unit: UnitOfMeasurement;
-    numRequired: number;
-
-    funding: ModelRef<ResearchFunding> | null;
-
-    estimatedCost: CostEstimate | null;
-    purchaseCost: CostEstimate | null;
-
-    requestedStatusMetadata: ProvisionStatusMetadata<'requested'>;
-    approvalStatusMetadata?: ProvisionStatusMetadata<'approved'>;
-    purchaseStatusMetadata?: ProvisionStatusMetadata<'purchased'>;
-    installedStatusMetadata?: ProvisionStatusMetadata<'installed'>;
-    cancelledStatusMetadata?: ProvisionStatusMetadata<'cancelled'>;
+    at: Date;
+    byId: string;
+    note: string;
 }
 
-export function labProvisionParamsFromJsonObject<
-    TProvisionable extends Provisionable<any>,
-    TType extends string
->(
-    typeFromString: (type: string) => TType,
-    targetFromJsonObject: (json: JsonObject) => TProvisionable,
-    json: JsonObject
-): LabProvisionParams<TProvisionable> & { readonly type: TType; } {
-    const baseParams = modelParamsFromJsonObject(json);
-
-    if (!isProvisionStatus(json[ 'status' ])) {
-        throw new Error("Expected a provision status 'status'");
+function provisionEventFromJsonObject(json: JsonObject): ProvisionEvent {
+    if (!isProvisionStatus(json['status'])) {
+        throw new Error(`Expected a provision status 'status'`);
     }
 
-    if (typeof json[ 'type' ] !== 'string') {
-        throw new Error("Expected a string 'type'");
+    if (typeof json['at'] !== 'string') {
+        throw new Error(`Expected a datetime string 'at'`);
+    }
+    if (!isUUID(json['byId'])) {
+        throw new Error(`Expected a uuid 'byId'`);
     }
 
-    let target: TProvisionable | string;
-    if (typeof json[ 'target' ] === 'string') {
-        target = json[ 'target' ];
-    } else if (isJsonObject(json[ 'target' ])) {
-        target = targetFromJsonObject(json[ 'target' ]);
-    } else {
-        throw new Error("Expected a string or json object (or null)")
+    if (typeof json['note'] !== 'string') {
+        throw new Error(`Expected a string 'note'`);
     }
 
-    let estimatedCost: CostEstimate | null;
-    if (isJsonObject(json[ 'estimatedCost' ])) {
-        estimatedCost = costEstimateFromJsonObject(json[ 'estimatedCost' ]);
-    } else if (json[ 'estimatedCost' ] == null) {
-        estimatedCost = null;
-    } else {
-        throw new Error("Expected a json object or null, 'estimatedCost'");
-    }
-
-    let purchaseCost: CostEstimate | null;
-    if (isJsonObject(json[ 'actualCost' ])) {
-        purchaseCost = costEstimateFromJsonObject(json[ 'actualCost' ]);
-    } else if (json[ 'actualCost' ] == null) {
-        purchaseCost = null;
-    } else {
-        throw new Error("Expected a json object or null, 'actualCost'");
-    }
-
-    let lab = modelRefJsonDecoder(
-        'lab',
-        labFromJsonObject
-    )(json);
-
-    let funding = modelRefJsonDecoder(
-        'funding',
-        researchFundingFromJsonObject,
-        { nullable: true }
-    )(json);
-
-    if (!isUnitOfMeasurement(json[ 'unit' ])) {
-        throw new Error("Expected a unit of measurement, 'unit'");
-    }
-    if (typeof json[ 'numRequired' ] !== 'number') {
-        throw new Error("Expected a number 'numRequired'");
-    }
     return {
-        ...baseParams,
-        type: typeFromString(json[ 'type' ]),
-        status: json[ 'status' ],
-        lab,
-        target,
-
-        funding,
-        estimatedCost,
-        purchaseCost,
-        unit: json[ 'unit' ],
-        numRequired: json[ 'numRequired' ],
-        requestedStatusMetadata: provisionStatusMetadataFromJsonObject('requested', json)!,
-        approvalStatusMetadata: provisionStatusMetadataFromJsonObject('approved', json),
-        purchaseStatusMetadata: provisionStatusMetadataFromJsonObject('purchased', json),
-        installedStatusMetadata: provisionStatusMetadataFromJsonObject('installed', json),
-        cancelledStatusMetadata: provisionStatusMetadataFromJsonObject('cancelled', json)
-    }
+        status: json['status'],
+        at: parseISO(json['at']),
+        byId: json['byId'],
+        note: json['note']
+    };
 }
+
+
 
 export abstract class LabProvision<
     TProvisionable extends Provisionable<any>,
-> extends Model implements LabProvisionParams<TProvisionable> {
-    type: string;
-    status: ProvisionStatus;
-    target: TProvisionable | string;
-    lab: ModelRef<Lab>;
+> extends Model implements ResearchPurchaseOrder {
+    readonly type: string;
+    readonly action: string;
+    readonly status: ProvisionStatus;
+    readonly targetId: string;
+    readonly labId: string;
 
-    unit: UnitOfMeasurement;
-    numRequired: number;
-
-    get quantityRequired(): [ number, UnitOfMeasurement ] {
-        return [ this.numRequired, this.unit ];
+    readonly budget: ResearchBudget;
+    readonly purchase: ResearchPurchase | null;
+    get orderedById() {
+        return this.requestedById;
     }
+    readonly estimatedCost: number;
 
-    funding: ModelRef<ResearchFunding> | null;
+    readonly work: LabWork;
 
-    estimatedCost: CostEstimate | null;
-    purchaseCost: CostEstimate | null;
+    readonly requestedById: string;
+    readonly requestedAt: Date;
 
-    requestedStatusMetadata: ProvisionStatusMetadata<'requested'>;
+    readonly allRequests: ReadonlyArray<ProvisionEvent>;
 
-    get reason(): string {
-        return this.requestedStatusMetadata.note!;
-    }
+    readonly isRejected: boolean;
+    readonly rejectedAt: Date | null;
+    readonly rejectedById: string | null;
 
-    approvalStatusMetadata?: ProvisionStatusMetadata<'approved'>;
-    get isApproved() { return this.approvalStatusMetadata !== undefined; }
+    readonly allRejections: ReadonlyArray<ProvisionEvent>;
 
-    purchaseStatusMetadata?: ProvisionStatusMetadata<'purchased'>;
-    get isPurchased() { return this.purchaseStatusMetadata !== undefined; }
+    readonly isDenied: boolean;
+    readonly deniedAt: Date | null;
+    readonly deniedById: string | null;
 
-    installedStatusMetadata?: ProvisionStatusMetadata<'installed'>;
-    get isInstalled() { return this.installedStatusMetadata !== undefined; }
+    readonly isApproved: boolean;
+    readonly approvedAt: Date | null;
+    readonly approvedById: string | null;
 
-    cancelledStatusMetadata?: ProvisionStatusMetadata<'cancelled'>;
-    get isCancelled() { return this.cancelledStatusMetadata !== undefined; }
+    readonly isPurchased: boolean;
+    readonly purchasedAt: Date | null;
+    readonly purchasedById: string | null;
 
-    constructor(params: LabProvisionParams<TProvisionable>) {
-        super(params);
-        this.type = params.type;
-        this.status = params.status;
-        this.target = params.target;
-        this.lab = params.lab;
+    readonly isCompleted: boolean;
+    readonly completedAt: Date | null;
+    readonly completedById: string | null;
 
-        this.funding = params.funding;
-        this.estimatedCost = params.estimatedCost;
-        this.purchaseCost = params.purchaseCost;
+    readonly isCancelled: boolean;
+    readonly cancelledAt: Date | null;
+    readonly cancelledById: string | null;
 
-        this.unit = params.unit;
-        this.numRequired = params.numRequired;
 
-        this.requestedStatusMetadata = params.requestedStatusMetadata;
-        this.approvalStatusMetadata = params.approvalStatusMetadata;
-        this.purchaseStatusMetadata = params.purchaseStatusMetadata;
-        this.installedStatusMetadata = params.installedStatusMetadata;
-        this.cancelledStatusMetadata = params.cancelledStatusMetadata;
-    }
+    readonly isFinalised: boolean;
+    readonly finalisedAt: Date | null;
+    readonly finalisedById: string | null;
 
-    provisionStatusMetadata(status: ProvisionStatus) {
-        switch (status) {
-            case 'requested':
-                return this.requestedStatusMetadata;
-            case 'approved':
-                return this.approvalStatusMetadata;
-            case 'purchased':
-                return this.purchaseStatusMetadata;
-            case 'installed':
-                return this.installedStatusMetadata;
-            case 'cancelled':
-                return this.cancelledStatusMetadata;
-            default:
-                throw new Error(`Unrecognised provision status ${status}`);
+    constructor(targetModel: ModelFactory<TProvisionable>, json: JsonObject) {
+        super(json);
+
+        if (typeof json['type'] !== 'string') {
+            throw new Error("Expected a provision type 'type'")
         }
-    }
+        this.type = json['type'];
 
-    get statusMetadataHistory(): ReadonlyArray<ProvisionStatusMetadata<any>> {
-        const metadatas: ProvisionStatusMetadata<any>[] = [
-            this.requestedStatusMetadata
-        ];
-        if (this.status === 'requested') {
-            return metadatas;
+        if (!isProvisionStatus(json['status'])) {
+            throw new Error("Expected a provision status 'status'");
         }
 
-        metadatas.push(this.approvalStatusMetadata!);
-        if (this.status === 'approved') {
-            return metadatas;
+        this.status = json['status'];
+        if (typeof json['type'] !== 'string') {
+            throw new Error("Expected a string 'type'");
+        }
+        this.type = json['type'];
+        if (typeof json['action'] !== 'string') {
+            throw new Error("Expected a string 'action'");
+        }
+        this.action = json['action'];
+
+        if (!isUUID(json['targetId'])) {
+            throw new Error("Expected a uuid 'targetId'");
+        }
+        this.targetId = json['targetId'];
+        if (!isUUID(json['labId'])) {
+            throw new Error("Epxected a uuid 'labId'")
+        }
+        this.labId = json['labId']
+
+        if (!isJsonObject(json['budget'])) {
+            throw new Error("Expected a json object 'budget'");
+        }
+        this.budget = new ResearchBudget(json['budget']);
+
+        if (typeof json['estimatedCost'] !== 'number') {
+            throw new Error("Expected a number 'estimatedCost'");
+        }
+        this.estimatedCost = json['estimatedCost'];
+
+        if (json['purchase'] == null) {
+            this.purchase = null;
+        } else if (isJsonObject(json['purchase'])) {
+            this.purchase = new ResearchPurchase(json['purchase']);
+        } else {
+            throw new Error("Expected a json object 'purhcase'");
         }
 
-        metadatas.push(this.purchaseStatusMetadata!);
-        if (this.status === 'purchased') {
-            return metadatas;
+        if (!isJsonObject(json['work'])) {
+            throw new Error("Expected a json object 'work'");
+        }
+        this.work = new LabWork(json['work']);
+
+        if (!isUUID(json['requestedById'])) {
+            throw new Error("Expected a uuid 'requestedById");
+        }
+        this.requestedById = json['requestedById'];
+
+        if (typeof json['requestedAt'] !== 'string') {
+            throw new Error("Expected a datetime string 'requestedAt'");
+        }
+        this.requestedAt = parseISO(json['requestedAt']);
+
+        if (!Array.isArray(json['allRequests']) || !json['allRequests'].every(isJsonObject)) {
+            throw new Error("Expected a list of json objects 'allRequests'");
+        }
+        this.allRequests = json['allRequests'].map(provisionEventFromJsonObject);
+
+        if (typeof json['isRejected'] !== 'boolean') {
+            throw new Error("Expected a boolean 'isRejected'");
+        }
+        this.isRejected = json['isRejected'];
+
+        if (json['rejectedAt'] === null) {
+            this.rejectedAt = null;
+        } else if (typeof json['rejectedAt'] === 'string') {
+            this.rejectedAt = parseISO(json['rejectedAt']);
+        } else {
+            throw new Error("Expected a datetime string 'rejectedAt'");
         }
 
-        metadatas.push(this.installedStatusMetadata!);
-        if (this.status === 'installed') {
-            return metadatas;
+        if (json['rejectedById'] !== null || !isUUID(json['rejectedById'])) {
+            throw new Error("Expected a uuid 'rejectedById");
+        } else {
+            this.rejectedById = json['rejectedById'];
         }
 
-        if (this.status === 'cancelled') {
-            metadatas.push(this.cancelledStatusMetadata!);
-            return metadatas;
+        if (!Array.isArray(json['allRejections']) || !json['allRejections'].every(isJsonObject)) {
+            throw new Error("Expected a list of json objects 'allRejections'");
+        }
+        this.allRejections = json['allRejections'].map(provisionEventFromJsonObject);
+
+        if (typeof json['isDenied'] !== 'boolean') {
+            throw new Error("Expected a boolean 'isDenied'");
+        }
+        this.isDenied = json['isDenied'];
+
+        if (json['deniedAt'] === null) {
+            this.deniedAt = null;
+        } else if (typeof json['deniedAt'] === 'string') {
+            this.deniedAt = parseISO(json['deniedAt']);
+        } else {
+            throw new Error("Expected a datetime string 'deniedAt'");
         }
 
-        throw new Error('Unrecognised provision status');
-    }
+        if (json['deniedById'] !== null || !isUUID(json['deniedById'])) {
+            throw new Error("Expected a uuid 'deniedById");
+        } else {
+            this.deniedById = json['deniedById'];
+        }
 
+        if (typeof json['isApproved'] !== 'boolean') {
+            throw new Error("Expected a boolean 'isApproved'");
+        }
+        this.isApproved = json['isApproved'];
 
-    get currentStatusMetadata(): ProvisionStatusMetadata<(typeof this)[ 'status' ]> {
-        return this.provisionStatusMetadata(this.status)!;
+        if (json['approvedAt'] === null) {
+            this.approvedAt = null;
+        } else if (typeof json['approvedAt'] === 'string') {
+            this.approvedAt = parseISO(json['approvedAt']);
+        } else {
+            throw new Error("Expected a datetime string 'approvedAt'");
+        }
+
+        if (json['approvedById'] !== null || !isUUID(json['approvedById'])) {
+            throw new Error("Expected a uuid 'approvedById");
+        } else {
+            this.approvedById = json['approvedById'];
+        }
+
+        if (typeof json['isPurchased'] !== 'boolean') {
+            throw new Error("Expected a boolean 'isPurchased'");
+        }
+        this.isPurchased = json['isPurchased'];
+
+        if (json['purchasedAt'] === null) {
+            this.purchasedAt = null;
+        } else if (typeof json['purchasedAt'] === 'string') {
+            this.purchasedAt = parseISO(json['purchasedAt']);
+        } else {
+            throw new Error("Expected a datetime string 'purchasedAt'");
+        }
+
+        if (json['purchasedById'] !== null || !isUUID(json['purchasedById'])) {
+            throw new Error("Expected a uuid 'purchasedById");
+        } else {
+            this.purchasedById = json['purchasedById'];
+        }
+
+        if (typeof json['isCompleted'] !== 'boolean') {
+            throw new Error("Expected a boolean 'isCompleted'");
+        }
+        this.isCompleted = json['isCompleted'];
+
+        if (json['completedAt'] === null) {
+            this.completedAt = null;
+        } else if (typeof json['completedAt'] === 'string') {
+            this.completedAt = parseISO(json['completedAt']);
+        } else {
+            throw new Error("Expected a datetime string 'completedAt'");
+        }
+
+        if (json['completedById'] !== null || !isUUID(json['completedById'])) {
+            throw new Error("Expected a uuid 'completedById");
+        } else {
+            this.completedById = json['completedById'];
+        }
+
+        if (typeof json['isCancelled'] !== 'boolean') {
+            throw new Error("Expected a boolean 'isCancelled'");
+        }
+        this.isCancelled = json['isCancelled'];
+
+        if (json['cancelledAt'] === null) {
+            this.cancelledAt = null;
+        } else if (typeof json['cancelledAt'] === 'string') {
+            this.cancelledAt = parseISO(json['cancelledAt']);
+        } else {
+            throw new Error("Expected a datetime string 'cancelledAt'");
+        }
+
+        if (json['cancelledById'] !== null || !isUUID(json['cancelledById'])) {
+            throw new Error("Expected a uuid 'cancelledById");
+        } else {
+            this.cancelledById = json['cancelledById'];
+        }
+
+        if (typeof json['isFinalised'] !== 'boolean') {
+            throw new Error("Expected a boolean 'isFinalised'");
+        }
+        this.isFinalised = json['isFinalised'];
+
+        if (json['finalisedAt'] === null) {
+            this.finalisedAt = null;
+        } else if (typeof json['finalisedAt'] === 'string') {
+            this.finalisedAt = parseISO(json['finalisedAt']);
+        } else {
+            throw new Error("Expected a datetime string 'finalisedAt'");
+        }
+
+        if (json['finalisedById'] !== null || !isUUID(json['finalisedById'])) {
+            throw new Error("Expected a uuid 'finalisedById");
+        } else {
+            this.finalisedById = json['finalisedById'];
+        }
     }
 
     async resolveTarget(service: ModelService<TProvisionable>): Promise<TProvisionable> {
-        if (typeof this.target === 'string') {
-            this.target = await firstValueFrom(service.fetch(this.target));
-        }
-        return this.target;
+        return firstValueFrom(service.fetch(this.targetId));
     }
 
-    async resolveLab(service: ModelService<Lab>) {
-        if (typeof this.lab === 'string') {
-            this.lab = await firstValueFrom(service.fetch(this.lab));
-        }
-        return this.lab;
-    }
-
-    async resolveFunding(using: ResearchFundingService) {
-        return await resolveModelRef(this, 'funding', using as any);
+    resolveLab(service: ModelService<Lab>): Promise<Lab> {
+        return firstValueFrom(service.fetch(this.labId));
     }
 }
 
@@ -252,19 +323,16 @@ export interface LabProvisionQuery<
     TProvision extends LabProvision<TProvisionable>,
     TProvisionableQuery extends ModelQuery<TProvisionable> = ModelQuery<TProvisionable>
 > extends ModelQuery<TProvision> {
-    target?: ModelRef<TProvisionable> | Partial<TProvisionableQuery>;
+    lab?: Lab | string;
 }
 export function setLabProvisionQueryParams<TProvisionableQuery extends ModelQuery<any> = ModelQuery<any>>(
     params: HttpParams,
     query: Partial<LabProvisionQuery<any, any, TProvisionableQuery>>,
-    setTargetQueryParams: (params: HttpParams, targetQuery: Partial<TProvisionableQuery>) => HttpParams
 ): HttpParams {
     params = setModelQueryParams(params, query);
 
-    if (isModelRef(query.target)) {
-        params = params.set('target', modelId(query.target));
-    } else if (query.target) {
-        setTargetQueryParams(params, query.target)
+    if (query.lab) {
+        params = params.set('lab', modelId(query.lab))
     }
 
     return params;
@@ -280,7 +348,7 @@ export interface LabProvisionCreateRequest<
     readonly unit: UnitOfMeasurement;
     readonly numRequired: number;
 
-    readonly estimatedCost: CostEstimate | null;
+    readonly estimatedCost?: number;
 
     readonly note: string;
 }
@@ -288,7 +356,7 @@ export interface LabProvisionCreateRequest<
 type CreateTarget<
     TProvisionable extends Provisionable<any>,
     TCreate extends LabProvisionCreateRequest<TProvisionable, any>
-> = Exclude<TCreate[ 'target' ], ModelRef<TProvisionable>>;
+> = Exclude<TCreate['target'], ModelRef<TProvisionable>>;
 
 export function labProvisionCreateRequestToJsonObject<
     TProvisionable extends Provisionable<any>,
@@ -309,7 +377,7 @@ export function labProvisionCreateRequestToJsonObject<
         target,
         unit: request.unit,
         numRequired: request.numRequired,
-        estimatedCost: request.estimatedCost ? costEstimateToJsonObject(request.estimatedCost) : null,
+        estimatedCost: request.estimatedCost,
         note: request.note
     };
 }

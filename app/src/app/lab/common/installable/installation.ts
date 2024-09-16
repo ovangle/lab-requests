@@ -1,5 +1,5 @@
-import { Model, ModelCreateRequest, ModelIndexPage, ModelParams, ModelQuery, ModelUpdateRequest, modelId, modelParamsFromJsonObject, resolveModelRef, resolveRef, setModelQueryParams } from "src/app/common/model/model";
-import { Lab, LabService, labFromJsonObject } from "../../lab";
+import { Model, ModelCreateRequest, ModelFactory, ModelIndexPage, ModelQuery, ModelRef, ModelUpdateRequest, modelId, modelIndexPageFromJsonObject, modelRefFromJson, resolveRef, setModelQueryParams } from "src/app/common/model/model";
+import { Lab, LabService } from "../../lab";
 import { NEVER, Observable, first, firstValueFrom, map, of, race, switchMap, timer } from "rxjs";
 import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
 import { HttpParams } from "@angular/common/http";
@@ -8,83 +8,67 @@ import { ModelService, RestfulService } from "src/app/common/model/model-service
 import { Installable } from "./installable";
 import { ModelContext, RelatedModelService } from "src/app/common/model/context";
 import { Provisionable } from "../provisionable/provisionable";
-import { LabProvision, labProvisionParamsFromJsonObject } from "../provisionable/provision";
-
-
-export interface LabInstallationParams<TInstallable extends Installable<any>, TProvision extends LabProvision<any>> extends ModelParams {
-    lab: Lab | string;
-    installable: TInstallable | string;
-
-    currentProvisions: readonly TProvision[];
-}
-
-export function labInstallationParamsFromJsonObject<TInstallable extends Installable<any>, TProvision extends LabProvision<any>>(
-    installableFromJsonObject: (json: JsonObject) => TInstallable,
-    provisionFromJsonObject: (json: JsonObject) => TProvision,
-    installableKey: string,
-    json: JsonObject
-): LabInstallationParams<TInstallable, TProvision> {
-    const baseParams = modelParamsFromJsonObject(json);
-
-    let lab: Lab | string;
-    if (typeof json['lab'] === 'string') {
-        lab = json['lab']
-    } else if (isJsonObject(json['lab'])) {
-        lab = labFromJsonObject(json['lab']);
-    } else {
-        throw new Error("Expected a string or json object 'lab'");
-    }
-
-    let installable: TInstallable | string;
-    const jsonInstallable = json[installableKey];
-    if (typeof jsonInstallable === 'string') {
-        installable = jsonInstallable;
-    } else if (isJsonObject(jsonInstallable)) {
-        installable = installableFromJsonObject(jsonInstallable);
-    } else {
-        throw new Error(`Expected a string or json object '${installableKey}'`)
-    }
-
-    if (!Array.isArray(json['currentProvisions'])) {
-        throw new Error(`Expected an array 'currentProvisions'`);
-    }
-    const currentProvisions = json['currentProvisions'].map((item) => {
-        if (!isJsonObject(item)) {
-            throw new Error('currentProvisions must be an array of json objects');
-        }
-        return provisionFromJsonObject(item);
-    });
-
-    return { ...baseParams, lab, installable, currentProvisions };
-}
+import { LabProvision } from "../provisionable/provision";
+import { isUUID } from "src/app/utils/is-uuid";
+import { Allocatable, LabAllocation } from "../allocatable/lab-allocation";
 
 /**
  * Represents an item which can be 'installed' into a lab.
  */
 export abstract class LabInstallation<
     TInstallable extends Installable<any>,
-    TProvision extends LabProvision<any>
-> extends Model implements Provisionable<TProvision> {
-    lab: Lab | string;
-    installable: TInstallable | string;
-    currentProvisions: readonly any[];
+    TProvision extends LabProvision<any> = LabProvision<any>,
+    TAllocation extends LabAllocation<any> = LabAllocation<any>
+> extends Model implements Provisionable<TProvision>, Allocatable<TAllocation> {
+    readonly type: string;
+    readonly labId: string;
 
-    constructor(params: LabInstallationParams<TInstallable, TProvision>) {
-        super(params);
+    readonly provisionType: string;
+    readonly activeProvisions: ModelIndexPage<TProvision>;
 
-        this.lab = params.lab;
-        this.installable = params.installable;
-        this.currentProvisions = params.currentProvisions;
+    readonly allocationType: string;
+    readonly activeAllocations: ModelIndexPage<TAllocation>;
+
+    abstract readonly installableId: string;
+
+    constructor(provisionModel: ModelFactory<TProvision>, allocationModel: ModelFactory<TAllocation>, json: JsonObject) {
+        super(json);
+
+        if (typeof json['type'] !== 'string') {
+            throw new Error("Expected a string 'type'")
+        }
+        this.type = json['type'];
+
+        if (!isUUID(json['labId'])) {
+            throw new Error("Expected a string 'labId'")
+        }
+        this.labId = json['labId'];
+
+        if (typeof json['provisionType'] !== 'string') {
+            throw new Error(`Expected a string 'provisionType'`);
+        }
+        this.provisionType = json['provisionType'];
+        if (!isJsonObject(json['activeProvisions'])) {
+            throw new Error(`Expected a json object 'currentProvisions'`);
+        }
+        this.activeProvisions = modelIndexPageFromJsonObject(
+            provisionModel,
+            json['activeProvisions']
+        );
+
+        if (typeof json['allocationType'] !== 'string') {
+            throw new Error(`Expected a string 'allocationType'`);
+        }
+        this.allocationType = json['allocationType'];
+
+        if (!isJsonObject(json['activeAllocations'])) {
+            throw new Error(`Expected a json object 'activeAllocations'`);
+        }
+        this.activeAllocations = modelIndexPageFromJsonObject(
+            allocationModel,
+            json['activeAllocations']
+        );
     }
-
-    resolveLab(service: LabService): Promise<Lab> {
-        return firstValueFrom(resolveRef(this.lab, service));
-    }
-
-    resolveInstallable(service: ModelService<TInstallable & Model>): Promise<TInstallable> {
-        return resolveModelRef(this, 'installable', service as any);
-    }
-
 }
 
 export interface LabInstallationQuery<TInstallable extends Installable<any>, T extends LabInstallation<TInstallable, any>> extends ModelQuery<T> {
@@ -116,7 +100,7 @@ export abstract class LabInstallationService<
         const installableId = modelId(installable);
 
         const fromCache = this.findCache(
-            value => modelId(value.installable) === installableId && modelId(value.lab) === labId
+            value => value.installableId === installableId && value.labId === labId
         ).pipe(
             switchMap(value => value != null ? of(value) : NEVER)
         );

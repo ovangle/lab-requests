@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, input, Input } from '@angular/core';
 import {
   ControlValueAccessor,
   FormArray,
@@ -17,7 +17,7 @@ import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
 import { MatIconModule } from '@angular/material/icon';
 
 @Component({
-  selector: 'lab-equipment-training-acknowledgement',
+  selector: 'equipment-training-acknowledgement',
   standalone: true,
   imports: [
     CommonModule,
@@ -35,7 +35,7 @@ import { MatIconModule } from '@angular/material/icon';
 
       <mat-card-content>
         <mat-selection-list [formControl]="selectedControl">
-          @for (description of trainingDescriptions; track description) {
+          @for (description of trainingDescriptions(); track description) {
             <mat-list-option [value]="description">{{
               description
             }}</mat-list-option>
@@ -78,12 +78,12 @@ import { MatIconModule } from '@angular/material/icon';
 })
 export class EquipmentTrainingAcknowlegementComponent
   implements ControlValueAccessor {
-  @Input({ required: true })
-  trainingDescriptions: string[] = [];
+  trainingDescriptions = input.required<string[]>();
 
   readonly selectedControl = new FormControl<string[]>([], {
     nonNullable: true,
   });
+
   @Input()
   get readonly(): boolean {
     return this.selectedControl.disabled;

@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from datetime import datetime
 from typing import Generic, TypeVar, override
 from uuid import UUID
 
@@ -7,6 +8,7 @@ from fastapi import Depends
 from api.auth.context import (
     get_current_authenticated_user,
 )
+from api.schemas.lab.lab_work import LabWorkDetail
 from db import LocalSession, get_db
 from db.models.lab.lab import Lab
 from db.models.lab.provisionable import (
@@ -16,11 +18,14 @@ from db.models.lab.provisionable import (
     ProvisionTransition,
 )
 from db.models.research.funding import ResearchFunding
+from db.models.research.funding.research_budget import ResearchBudget
 from db.models.user import User
 
+from ..research.funding import ResearchPurchaseDetail, ResearchPurchaseOrderDetail
 from ..base import (
     ModelCreateRequest,
     ModelDetail,
+    ModelIndex,
     ModelRequestContextError,
     ModelUpdateRequest,
 )
@@ -28,50 +33,105 @@ from ..base import (
 TProvision = TypeVar("TProvision", bound=LabProvision)
 
 
-class LabProvisionDetail(ModelDetail[TProvision], Generic[TProvision]):
+class LabProvisionDetail(ResearchPurchaseOrderDetail, Generic[TProvision]):
     type: str
+    action: str
     status: ProvisionStatus
 
     lab_id: UUID
-    funding_id: UUID | None
+    target_id: UUID
 
-    estimated_cost: float
-    purchase_cost: float
+    budget_id: UUID | None
+    purchase: ResearchPurchaseDetail | None
 
-    request: ProvisionTransition
+    work: LabWorkDetail | None
+
+    requested_by_id: UUID
+    requested_at: datetime
+
     all_requests: list[ProvisionTransition]
 
-    current_rejection: ProvisionTransition | None
-    rejections: list[ProvisionTransition]
+    is_rejected: bool
+    rejected_at: datetime | None
+    rejected_by_id: UUID | None
 
-    denial: ProvisionTransition | None
-    approval: ProvisionTransition | None
-    requisition: ProvisionTransition | None
-    completion: ProvisionTransition | None
-    cancellation: ProvisionTransition | None
+    all_rejections: list[ProvisionTransition]
+
+    is_denied: bool
+    denied_at: datetime | None
+    denied_by_id: UUID | None
+
+    is_approved: bool
+    approved_at: datetime | None
+    approved_by_id: UUID | None
+
+    is_purchased: bool
+    purchased_at: datetime | None
+    purchased_by_id: UUID | None
+
+    is_completed: bool
+    completed_at: datetime | None
+    completed_by_id: UUID | None
+
+    is_cancelled: bool
+    cancelled_at: datetime | None
+    cancelled_by_id: UUID | None
+
+    is_finalised: bool
+    finalised_at: datetime | None
+    finalised_by_id: UUID | None
 
     @classmethod
     async def _from_lab_provision(cls, lab_provision: LabProvision, **kwargs):
+        purchase = await ResearchPurchaseDetail.from_model(await lab_provision.awaitable_attrs.purchase)
+
         return await cls._from_base(
             lab_provision,
             type=lab_provision.type,
+            action=lab_provision.action,
             status=lab_provision.status,
             lab_id=lab_provision.lab_id,
-            funding_id=lab_provision.funding_id,
-            estimated_cost=lab_provision.estimated_cost,
-            purchase_cost=lab_provision.purchase_cost,
-            request=lab_provision.request,
-            all_requests=lab_provision.requests,
-            current_rejection=lab_provision.current_rejection,
-            rejections=lab_provision.rejections,
-            denial=lab_provision.denial,
-            approval=lab_provision.approval,
-            requisition=lab_provision.requisition,
-            completion=lab_provision.completion,
-            cancellation=lab_provision.cancellation,
+            target_id=lab_provision.target_id,
+
+            budget_id=lab_provision.budget_id,
+            purchase=purchase,
+            requested_by_id=lab_provision.requested_by_id,
+            requested_at=lab_provision.requested_at,
+            all_requests=lab_provision.all_requests,
+            is_rejected=lab_provision.is_rejected,
+            rejected_at=lab_provision.rejected_at,
+            rejected_by_id=lab_provision.rejected_by_id,
+            all_rejections=lab_provision.all_rejections,
+            is_denied=lab_provision.is_denied,
+            denied_at=lab_provision.denied_at,
+            denied_by_id=lab_provision.denied_by_id,
+
+            is_approved=lab_provision.is_approved,
+            approved_at=lab_provision.approved_at,
+            approved_by_id=lab_provision.approved_by_id,
+
+            is_purchased=lab_provision.is_purchased,
+            purchased_at=lab_provision.purchased_at,
+            purchased_by_id=lab_provision.purchased_by_id,
+
+            is_completed=lab_provision.is_completed,
+            completed_at=lab_provision.completed_at,
+            completed_by_id=lab_provision.completed_by_id,
+
+            is_cancelled=lab_provision.is_cancelled,
+            cancelled_at=lab_provision.cancelled_at,
+            cancelled_by_id=lab_provision.cancelled_by_id,
+
+            is_finalised=lab_provision.is_finalised,
+            finalised_at=lab_provision.finalised_at,
+            finalised_by_id=lab_provision.finalised_by_id,
+
             **kwargs
         )
 
+
+class LabProvisionIndex(ModelIndex[TProvision], Generic[TProvision]):
+    pass
 
 class LabProvisionCreateRequest(
     ModelCreateRequest[TProvision],
@@ -85,7 +145,14 @@ class LabProvisionCreateRequest(
     type: str
 
     lab_id: UUID
-    funding_id: UUID | None = None
+
+    async def get_lab(self, db: LocalSession):
+        return await Lab.get_by_id(db, self.lab_id)
+
+    budget_id: UUID | None = None
+
+    async def get_budget(self, db: LocalSession):
+        return (await ResearchBudget.get_by_id(db, self.budget_id)) if self.budget_id else None
 
     estimated_cost: float | None = None
 
@@ -98,7 +165,7 @@ class LabProvisionCreateRequest(
         type: str,
         *,
         lab: Lab,
-        funding: ResearchFunding | None,
+        budget: ResearchBudget | None,
         current_user: User,
         note: str
     ) -> TProvision: ...
@@ -108,20 +175,18 @@ class LabProvisionCreateRequest(
     ) -> TProvision:
         if not current_user:
             raise ModelRequestContextError("Expected authenticated request context")
-        lab = await Lab.get_by_id(db, self.lab_id)
-        if self.funding_id:
-            funding = await ResearchFunding.get_by_id(db, self.funding_id)
-        else:
-            funding = None
+
+        lab = await self.get_lab(db)
+        budget = await self.get_budget(db)
+
         return await self.do_create_lab_provision(
             db,
             self.type,
             current_user=current_user,
-            note=self.note,
+            budget=budget,
             lab=lab,
-            funding=funding,
+            note=self.note,
         )
-
 
 class LabProvisionRejection(ModelUpdateRequest[TProvision], Generic[TProvision]):
     provision_id: UUID
@@ -183,3 +248,14 @@ class LabProvisionComplete(ModelUpdateRequest[TProvision], Generic[TProvision]):
         if not current_user:
             raise ModelRequestContextError("Expected authenticated request context")
         return await model.complete(current_user, note=self.note)
+
+class LabProvisionCancel(ModelUpdateRequest[TProvision], Generic[TProvision]):
+    provision_id: UUID
+    note: str
+
+    async def do_update(
+        self, model: TProvision, current_user: User | None = None, **kwargs
+    ):
+        if not current_user:
+            raise ModelRequestContextError("Expected authenticated request context")
+        return await model.cancel(current_user, note=self.note)

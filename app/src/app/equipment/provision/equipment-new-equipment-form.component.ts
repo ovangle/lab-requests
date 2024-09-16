@@ -6,7 +6,7 @@ import { AbstractLabProvisionCreateFormComponent, LabProvisionCreateFormGroup, l
 import { ResearchFunding } from "src/app/research/funding/research-funding";
 import { EquipmentProvision, EquipmentProvisionService, NewEquipmentRequest } from "./equipment-provision";
 import { ModelRef, isModelRef } from "src/app/common/model/model";
-import { EquipmentInstallation, EquipmentInstallationCreateRequest, EquipmentInstallationParams, EquipmentInstallationService } from "../installation/equipment-installation";
+import { EquipmentInstallation, EquipmentInstallationCreateRequest, EquipmentInstallationService } from "../installation/equipment-installation";
 import { NEVER, firstValueFrom, switchMap } from "rxjs";
 import { MatFormField, MatFormFieldModule } from "@angular/material/form-field";
 import { toObservable } from "@angular/core/rxjs-interop";
@@ -31,7 +31,7 @@ export function newEquipmentFormGroup(): NewEquipmentFormGroup {
 }
 
 export function newEquipmentRequestFromFormValue(
-    target: ModelRef<EquipmentInstallation> | EquipmentInstallationCreateRequest,
+    target: EquipmentInstallation | EquipmentInstallationCreateRequest,
     value: NewEquipmentFormGroup[ 'value' ]
 ): NewEquipmentRequest {
     return {
@@ -59,7 +59,7 @@ export function newEquipmentRequestFromFormValue(
     <form [formGroup]="form" (ngSubmit)="onFormSubmit()">
         <common-quantity-input formControlName="quantityRequired"
                                unit="item"
-                               required> 
+                               required>
             <div #controlLabel>{{isExistingInstallation() ? 'Additional quantity': 'Quantity'}} required</div>
 
             @if (quantityRequiredErrors && quantityRequiredErrors['required']) {

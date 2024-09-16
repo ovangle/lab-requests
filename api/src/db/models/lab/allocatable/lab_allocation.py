@@ -1,5 +1,6 @@
-from datetime import datetime, timezone
-from typing import ClassVar, Generic, Self, TypeVar
+from abc import abstractmethod
+from datetime import date, datetime, timezone
+from typing import ClassVar, Generic, Self, Type, TypeVar
 from uuid import UUID, uuid4
 
 from sqlalchemy import Column, ForeignKey, Table
@@ -14,6 +15,7 @@ from db.models.user import User
 from db.models.lab.provisionable import LabProvision
 
 from .allocatable import Allocatable
+from .allocation_consumer import LabAllocationConsumer
 from .allocation_status import (
     ALLOCATION_STATUS_TRANSITION,
     AllocationStatus,
@@ -73,7 +75,16 @@ class LabAllocation(Base, Generic[TAllocatable]):
     lab_id: Mapped[UUID] = mapped_column(ForeignKey("lab.id"))
     lab: Mapped[Lab] = relationship()
 
-    async def get_allocatable(self):
+    consumer_type: Mapped[str] = mapped_column(postgresql.VARCHAR(64))
+    consumer_id: Mapped[UUID] = mapped_column(ForeignKey("lab_allocation_consumer.id"))
+    consumer: Mapped[LabAllocationConsumer] = relationship()
+
+    start_date: Mapped[date | None] = mapped_column(postgresql.DATE, nullable=True)
+    end_date: Mapped[date | None] = mapped_column(postgresql.DATE, nullable=True)
+
+
+    @abstractmethod
+    async def get_target(self):
         raise NotImplementedError
 
     request_at: Mapped[datetime] = mapped_column(postgresql.TIMESTAMP(timezone=True))
@@ -127,6 +138,18 @@ class LabAllocation(Base, Generic[TAllocatable]):
         ALLOCATION_STATUS_TRANSITION(AllocationStatus.APPROVED), nullable=True
     )
 
+    @property
+    def is_approved(self):
+        return self.approval is not None
+
+    @property
+    def approved_by_id(self):
+        return self.approval['by_id'] if self.approval else None
+
+    @property
+    def approved_at(self):
+        return self.approval['at'] if self.approval else None
+
     async def approve(self, by: User, note: str):
         if self.status not in {AllocationStatus.REQUESTED, AllocationStatus.REJECTED}:
             raise AllocationStatusError(
@@ -143,6 +166,22 @@ class LabAllocation(Base, Generic[TAllocatable]):
         ALLOCATION_STATUS_TRANSITION(AllocationStatus.REJECTED, repeatable=True),
         server_default="[]",
     )
+
+    @property
+    def rejection(self):
+        return self.rejections[-1] if self.rejections else None
+
+    @property
+    def is_rejected(self):
+        return self.rejection is not None
+
+    @property
+    def rejected_by_id(self):
+        return self.rejection['by_id'] if self.rejection else None
+
+    @property
+    def rejected_at(self):
+        return self.rejection['at'] if self.rejection else None
 
     async def reject(self, by: User, note: str) -> Self:
         if self.status not in {AllocationStatus.REQUESTED, AllocationStatus.REJECTED}:
@@ -161,6 +200,18 @@ class LabAllocation(Base, Generic[TAllocatable]):
     denial: Mapped[AllocationStatusTransition | None] = mapped_column(
         ALLOCATION_STATUS_TRANSITION(AllocationStatus.DENIED), nullable=True
     )
+
+    @property
+    def is_denied(self):
+        return self.denial is not None
+
+    @property
+    def denied_by_id(self):
+        return self.denial['by_id'] if self.denial else None
+
+    @property
+    def denied_at(self):
+        return self.denial['at'] if self.denial else None
 
     async def deny(self, by: User, note: str) -> Self:
         """
@@ -183,6 +234,14 @@ class LabAllocation(Base, Generic[TAllocatable]):
     setup: Mapped[AllocationStatusTransition | None] = mapped_column(
         ALLOCATION_STATUS_TRANSITION(AllocationStatus.SETUP), nullable=True
     )
+
+    @property
+    def setup_begin_at(self):
+        return self.setup['at'] if self.setup else None
+
+    @property
+    def setup_by_id(self):
+        return self.setup['by_id'] if self.setup else None
 
     setup_provisions: Mapped[list[LabProvision]] = relationship(
         secondary=lab_allocation_setup_provisions
@@ -208,18 +267,40 @@ class LabAllocation(Base, Generic[TAllocatable]):
         ALLOCATION_STATUS_TRANSITION(AllocationStatus.PREPARED), nullable=True
     )
 
-    async def mark_as_prepared(self, by: User, note: str):
+    @property
+    def prepared_at(self):
+        return self.prepared['at'] if self.prepared else None
+
+    async def mark_as_prepared(self, note: str):
         if self.status != AllocationStatus.SETUP:
             raise AllocationStatusError(self.status, AllocationStatus.PREPARED, f"")
 
+        setup_by_id = self.setup['by_id']
+
         self.prepared = self.__allocation_status_metadata(
-            AllocationStatus.PREPARED, by, note
+            AllocationStatus.PREPARED, setup_by_id, note
         )
 
     progress_events: Mapped[list[AllocationStatusTransition]] = mapped_column(
         ALLOCATION_STATUS_TRANSITION(AllocationStatus.IN_PROGRESS, repeatable=True),
         server_default="[]",
     )
+
+    @property
+    def commenced_event(self):
+        return self.progress_events[0] if self.progress_events else None
+
+    @property
+    def is_commenced(self):
+        return bool(self.progress_events)
+
+    @property
+    def commenced_at(self):
+        return self.commenced_event['at'] if self.progress_events else None
+
+    @property
+    def commenced_by_id(self):
+        return self.commenced_event['by_id'] if self.progress_events else None
 
     async def begin(self, by: User, note: str) -> Self:
         if self.status != AllocationStatus.PREPARED:
@@ -231,7 +312,7 @@ class LabAllocation(Base, Generic[TAllocatable]):
         ]
         return await self.save()
 
-    async def add_progress(self, by: User, note: str) -> Self:
+    async def add_progress(self, note: str) -> Self:
         if self.status != AllocationStatus.IN_PROGRESS:
             raise AllocationStatusError(
                 self.status, AllocationStatus.IN_PROGRESS, f"Allocation not in progress"
@@ -239,7 +320,7 @@ class LabAllocation(Base, Generic[TAllocatable]):
 
         self.in_progress = [
             *self.in_progress,
-            self.__allocation_status_metadata(AllocationStatus.IN_PROGRESS, by, note),
+            self.__allocation_status_metadata(AllocationStatus.IN_PROGRESS, self.commenced_by_id, note),
         ]
         return await self.save()
 
@@ -250,6 +331,14 @@ class LabAllocation(Base, Generic[TAllocatable]):
     @property
     def is_completed(self):
         return self.completion is not None
+
+    @property
+    def completed_at(self):
+        return self.completion['at'] if self.completion else None
+
+    @property
+    def completed_by_id(self):
+        return self.completion['by_id'] if self.completion else None
 
     async def complete(self, by: User):
         if self.status != AllocationStatus.IN_PROGRESS:
@@ -277,6 +366,14 @@ class LabAllocation(Base, Generic[TAllocatable]):
     def is_cancelled(self):
         return self.cancellation is not None
 
+    @property
+    def cancelled_at(self):
+        return self.cancellation['at'] if self.cancellation else None
+
+    @property
+    def cancelled_by_id(self):
+        return self.cancellation['by_id'] if self.cancellation else None
+
     async def cancel(self, by: User, note: str) -> Self:
         if not self.status.is_cancellable:
             raise AllocationStatusError(
@@ -298,6 +395,19 @@ class LabAllocation(Base, Generic[TAllocatable]):
         secondary=lab_allocation_teardown_provisions
     )
 
+    teardown: Mapped[AllocationStatusTransition | None] = mapped_column(
+        ALLOCATION_STATUS_TRANSITION(AllocationStatus.TEARDOWN), nullable=True
+    )
+
+    @property
+    def teardown_begin_at(self):
+        return self.teardown['at'] if self.teardown else None
+
+    @property
+    def teardown_by_id(self):
+        return self.teardown['by_id'] if self.teardown else None
+
+
     async def begin_teardown(self, triggered_by: User, note: str) -> Self:
         teardown_provisions: list[LabProvision] = (
             await self.awaitable_attrs.teardown_provisions
@@ -312,33 +422,45 @@ class LabAllocation(Base, Generic[TAllocatable]):
         raise NotImplementedError
 
     finalisation: Mapped[AllocationStatusTransition | None] = mapped_column(
-        ALLOCATION_STATUS_TRANSITION(AllocationStatus.FINALIZED), nullable=True
+        ALLOCATION_STATUS_TRANSITION(AllocationStatus.FINALISED), nullable=True
     )
 
-    async def finalise(self, by: User, *, note: str) -> Self:
+    @property
+    def is_finalised(self):
+        return self.finalisation is not None
+
+    @property
+    def finalised_at(self):
+        return self.finalisation['at'] if self.finalisation else None
+
+    @property
+    def finalised_by_id(self):
+        return self.finalisation['by_id'] if self.finalisation else None
+
+    async def mark_as_final(self, *, note: str) -> Self:
         if self.status not in {
             AllocationStatus.COMPLETED,
             AllocationStatus.CANCELLED,
         }:
             raise AllocationStatusError(
                 self.status,
-                AllocationStatus.FINALIZED,
+                AllocationStatus.FINALISED,
                 "must be completed or cancelled",
             )
 
         requires_teardown = await self.has_pending_teardown_provisions()
         if requires_teardown:
             raise AllocationStatusError(
-                self.status, AllocationStatus.FINALIZED, "pending teardown tasks"
+                self.status, AllocationStatus.FINALISED, "pending teardown tasks"
             )
 
         self.finalisation = self.__allocation_status_metadata(
-            AllocationStatus.FINALIZED, by, note
+            AllocationStatus.FINALISED, self.teardown['by_id'], note
         )
         return await self.save()
 
     def __allocation_status_metadata(
-        self, status: AllocationStatus, by: User, note: str
+        self, status: AllocationStatus, by: User | UUID, note: str
     ):
         return AllocationStatusTransition(
             allocation_id=self.id,

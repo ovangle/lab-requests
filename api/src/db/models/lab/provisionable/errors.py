@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal
 from uuid import UUID
-from db.models.base import ModelException
-from db.models.base.base import model_id
+from db.models.base import ModelException, model_id
 from db.models.lab.provisionable.provision_status import ProvisionStatus
 
 from ..lab import Lab

@@ -4,31 +4,12 @@ import { ResearchPlan, ResearchPlanService, UpdateResearchPlan } from "./researc
 import { ActivatedRoute } from "@angular/router";
 import { roundToNearestMinutes } from "date-fns";
 import { Observable, first, firstValueFrom, map, switchMap, tap } from "rxjs";
-import { LabResourceConsumerDelegateContext, LabResourceConsumerPatch } from "src/app/lab/lab-resource-consumer/resource-container";
-import { Resource, ResourcePatch } from "src/app/lab/lab-resource/resource";
-import { ResourceType } from "src/app/lab/lab-resource/resource-type";
 
 
 
 @Injectable()
-export class ResearchPlanContext extends ModelContext<ResearchPlan> implements LabResourceConsumerDelegateContext<ResearchPlan> {
+export class ResearchPlanContext extends ModelContext<ResearchPlan> {
     override readonly service = inject(ResearchPlanService);
-
-    applyResourceConsumerPatch(patch: LabResourceConsumerPatch): Observable<ResearchPlan> {
-        return this.committed$.pipe(
-            first(),
-            map(plan => [
-                plan,
-                {
-                    title: plan.title,
-                    description: plan.description,
-                    funding: plan.funding,
-                    ...patch
-                }
-            ] as [ ResearchPlan, UpdateResearchPlan ]),
-            switchMap(([ plan, request ]) => this.service.update(plan, request))
-        );
-    }
 }
 
 export function provideResearchPlanDetailContext(): Provider {

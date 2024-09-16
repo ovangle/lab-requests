@@ -5,13 +5,13 @@ import { FormArray, FormControl, FormGroup, ReactiveFormsModule, ValidationError
 import { BooleanInput, NumberInput, coerceBooleanProperty, coerceNumberProperty } from "@angular/cdk/coercion";
 import { MatInputModule } from "@angular/material/input";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { ResearchPlanTaskParams, CreateResearchPlanTask, ResearchPlanTaskSlice } from "./research-plan-task";
+import { CreateResearchPlanTask, ResearchPlanTask, ResearchPlanTaskSlice } from "./research-plan-task";
 import { Lab } from "src/app/lab/lab";
-import { User } from "src/app/user/common/user";
+import { User } from "src/app/user/user";
 import { MatDatepickerModule } from "@angular/material/datepicker";
-import { UserSearchComponent } from "src/app/user/common/user-search.component";
+import { UserSearchComponent } from "src/app/user/user-search.component";
 import { LabSearchComponent } from "src/app/lab/lab-search.component";
-import { ResizeTextareaOnInputDirective } from "src/app/common/forms/resize-textarea-on-input.directive";
+import { TextFieldModule } from "@angular/cdk/text-field";
 
 
 export type ResearchPlanTaskForm = FormGroup<{
@@ -22,7 +22,7 @@ export type ResearchPlanTaskForm = FormGroup<{
   supervisor: FormControl<User | null>;
 }>;
 
-export function researchPlanTaskForm(task?: ResearchPlanTaskParams): ResearchPlanTaskForm {
+export function researchPlanTaskForm(task?: ResearchPlanTask): ResearchPlanTaskForm {
   return new FormGroup({
     description: new FormControl(
       task?.description || '',
@@ -96,8 +96,8 @@ export function researchPlanTaskSlicesFromFormArray(arr: FormArray<ResearchPlanT
     MatDatepickerModule,
     MatFormFieldModule,
     MatInputModule,
+    TextFieldModule,
 
-    ResizeTextareaOnInputDirective,
     LabSearchComponent,
     UserSearchComponent
   ],
@@ -106,8 +106,8 @@ export function researchPlanTaskSlicesFromFormArray(arr: FormArray<ResearchPlanT
       <div class="base-controls">
         <mat-form-field class="description-field">
           <mat-label>Description</mat-label>
-          <textarea matInput resizeOnInput
-                    formControlName="description" required> 
+          <textarea matInput cdkTextareaAutosize
+                    formControlName="description" required>
           </textarea>
           @if (descriptionErrors && descriptionErrors['required']) {
             <mat-error>A description is required</mat-error>
@@ -132,14 +132,15 @@ export function researchPlanTaskSlicesFromFormArray(arr: FormArray<ResearchPlanT
 
       @if (!hideReviewControls) {
         <div class="review-controls">
-          <lab-search formControlName="lab">
+          <mat-form-field>
             <mat-label>Lab</mat-label>
-          </lab-search>
+          <lab-search formControlName="lab" />
+          </mat-form-field>
 
-          <user-search formControlName="supervisor" 
-                      [includeRoles]="technicianRoles">
+          <mat-form-field>
             <mat-label>Technician</mat-label>
-          </user-search>
+            <user-search formControlName="supervisor" [includeRoles]="technicianRoles" />
+          </mat-form-field>
         </div>
       }
     <div>
@@ -156,7 +157,7 @@ export function researchPlanTaskSlicesFromFormArray(arr: FormArray<ResearchPlanT
   }
 
   .base-controls, .review-controls {
-    display: flex; 
+    display: flex;
     flex-grow: 1;
   }
 
@@ -241,6 +242,6 @@ export class ResearchPlanTaskFormComponent {
     if (lab) {
       roles.add(`lab-tech-${lab.discipline}`)
     }
-    return roles;
+    return Array.from(roles);
   }
 }

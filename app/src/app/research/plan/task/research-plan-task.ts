@@ -1,5 +1,5 @@
 import { Injectable, Type, inject } from "@angular/core";
-import { Model, ModelIndexPage, ModelParams, ModelQuery, modelParamsFromJsonObject, setModelQueryParams } from "src/app/common/model/model";
+import { Model, ModelIndexPage, ModelQuery, modelRefFromJson, setModelQueryParams } from "src/app/common/model/model";
 import { ModelService, RestfulService } from "src/app/common/model/model-service";
 import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
 import { ResearchPlan } from "../research-plan";
@@ -8,27 +8,12 @@ import { Observable, firstValueFrom, map } from "rxjs";
 import { format, formatISO, parseISO } from "date-fns";
 import { RelatedModelService } from "src/app/common/model/context";
 import { ResearchPlanContext } from "../research-plan-context";
-import { Lab, LabService, labFromJsonObject } from "src/app/lab/lab";
-import { User, UserService, userFromJsonObject } from "src/app/user/common/user";
-import { ThisReceiver } from "@angular/compiler";
-import { P } from "@angular/cdk/keycodes";
+import { Lab, LabService } from "src/app/lab/lab";
+import { User, UserService } from "src/app/user/user";
+import { isUUID } from "src/app/utils/is-uuid";
 
 
-export interface ResearchPlanTaskParams extends ModelParams {
-  readonly planId: string;
-  readonly id: string;
-  readonly index: number;
-
-  readonly description: string;
-
-  readonly startDate: Date | null;
-  readonly endDate: Date | null;
-
-  readonly lab: Lab | string;
-  readonly supervisor: User | string;
-}
-
-export class ResearchPlanTask extends Model implements ResearchPlanTaskParams {
+export class ResearchPlanTask extends Model {
   planId: string;
   index: number;
   description: string;
@@ -36,86 +21,53 @@ export class ResearchPlanTask extends Model implements ResearchPlanTaskParams {
   startDate: Date | null;
   endDate: Date | null;
 
-  lab: Lab | string;
-  supervisor: string | User;
+  labId: string;
+  supervisorId: string;
 
-  constructor(params: ResearchPlanTaskParams) {
-    super(params);
-    this.planId = params.planId;
-    this.index = params.index;
-    this.description = params.description;
-    this.startDate = params.startDate;
-    this.endDate = params.endDate;
-    this.lab = params.lab;
-    this.supervisor = params.supervisor;
+  constructor(json: JsonObject) {
+    super(json);
+    if (!isUUID(json['planId'])) {
+      throw new Error("Expected a string 'planId'");
+    }
+    this.planId = json['planId']
+
+    if (typeof json['index'] !== 'number') {
+      throw new Error("ResearchPlanTask: 'index' must be an number");
+    }
+    this.index = json['index'];
+
+    if (typeof json['description'] !== 'string') {
+      throw new Error("ResearchPlanTask: Expected a string 'description'");
+    }
+    this.description = json['description'];
+
+    if (typeof json['startDate'] !== 'string' && json['startDate'] !== null) {
+      throw new Error("ResearchPlanTask: 'startDate' must be a string or null");
+    }
+    this.startDate = json['startDate'] ? parseISO(json['startDate']) : null;
+    if (typeof json['endDate'] !== 'string' && json['endDate'] !== null) {
+      throw new Error("ResearchPlanTask: 'endDate' must be a string or null");
+    }
+    this.endDate = json['endDate'] ? parseISO(json['endDate']) : null;
+
+    if (!isUUID(json['labId'])) {
+      throw new Error("Expected a uuid 'labId'")
+    }
+    this.labId = json['labId']
+    if (!isUUID(json['supervisorId'])) {
+      throw new Error("Expected a UUID 'supervisorId");
+    }
+    this.supervisorId = json['supervisorId'];
   }
 
   async resolveLab(labs: LabService) {
-    if (typeof this.lab === 'string') {
-      this.lab = await firstValueFrom(labs.fetch(this.lab));
-    }
-    return this.lab;
+    return await firstValueFrom(labs.fetch(this.labId));
   }
 
   async resolveSupervisor(userService: UserService) {
-    if (typeof this.supervisor === 'string') {
-      this.supervisor = await firstValueFrom(userService.fetch(this.supervisor));
-    }
-    return this.supervisor;
-  }
-}
+    return await firstValueFrom(userService.fetch(this.supervisorId));
 
-export function researchPlanTaskFromJson(json: JsonObject): ResearchPlanTask {
-  const baseParams = modelParamsFromJsonObject(json);
-
-  if (typeof json['planId'] !== 'string') {
-    throw new Error("Expected a string 'planId'");
   }
-
-  if (typeof json['index'] !== 'number') {
-    throw new Error("ResearchPlanTask: 'index' must be an number");
-  }
-
-  if (typeof json['description'] !== 'string') {
-    throw new Error("ResearchPlanTask: Expected a string 'description'");
-  }
-
-  if (typeof json['startDate'] !== 'string' && json['startDate'] !== null) {
-    throw new Error("ResearchPlanTask: 'startDate' must be a string or null");
-  }
-  const startDate = json['startDate'] ? parseISO(json['startDate']) : null;
-  if (typeof json['endDate'] !== 'string' && json['endDate'] !== null) {
-    throw new Error("ResearchPlanTask: 'endDate' must be a string or null");
-  }
-  const endDate = json['endDate'] ? parseISO(json['endDate']) : null;
-
-  let lab: Lab | string;
-  if (isJsonObject(json['labId'])) {
-    lab = labFromJsonObject(json['labId']);
-  } else if (typeof json['labId'] === 'string') {
-    lab = json['labId']
-  } else {
-    throw new Error("Expected a json object or string 'labId'");
-  }
-  let supervisor: User | string;
-  if (isJsonObject(json['supervisorId'])) {
-    supervisor = userFromJsonObject(json['supervisorId']);
-  } else if (typeof json['supervisorId'] === 'string') {
-    supervisor = json['supervisorId']
-  } else {
-    throw new Error("Expected a json object or string 'supervisorId'");
-  }
-
-  return new ResearchPlanTask({
-    ...baseParams,
-    planId: json['planId'],
-    description: json['description'],
-    startDate,
-    endDate,
-    index: json['index'],
-    lab,
-    supervisor
-  });
 }
 
 export interface ResearchPlanTaskQuery extends ModelQuery<ResearchPlanTask> {
@@ -165,7 +117,7 @@ export function researchPlanTaskSliceToJson(slice: ResearchPlanTaskSlice): JsonO
 @Injectable()
 export class ResearchPlanTaskService extends RelatedModelService<ResearchPlan, ResearchPlanTask, ResearchPlanTaskQuery> {
   override readonly context = inject(ResearchPlanContext);
-  override readonly modelFromJsonObject = researchPlanTaskFromJson;
+  override readonly model = ResearchPlanTask;
   override readonly setModelQueryParams = setResearchPlanTaskQueryParams;
   override readonly path = 'tasks';
 

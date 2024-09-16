@@ -1,9 +1,12 @@
 import { CommonModule } from "@angular/common";
-import { Component, Input, TemplateRef, ViewChild, inject } from "@angular/core";
+import { Component, Input, TemplateRef, ViewChild, computed, inject, input, viewChild } from "@angular/core";
 import { MatAutocomplete, MatAutocompleteModule } from "@angular/material/autocomplete";
 import { ModelSearchControl, NotFoundValue } from "./search-control";
-import { ModelSearchInputComponent } from "./search-input-field.component";
+import { ModelSearchInputComponent } from "./search-input.component";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
+import { toObservable } from "@angular/core/rxjs-interop";
+import { switchMap } from "rxjs";
+import { Model } from "../model";
 
 @Component({
     selector: 'common-model-search-autocomplete',
@@ -14,20 +17,20 @@ import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
     ],
     template: `
     <mat-autocomplete [displayWith]="displayValue" >
-        @if (search!.modelOptions$ | async; as modelOptions) {
+        @if (modelOptions$ | async; as modelOptions) {
             @for (model of modelOptions; track model.id) {
                 <mat-option [value]="model">
-                    {{search!.formatModel(model)}}
+                    {{searchControl().formatModel(model)}}
                 </mat-option>
             }
         }
 
-        @if (search!.allowNotFound) {
-            <mat-option [value]="search!.__NOT_FOUND__">
-                @if (notFoundTemplate) {
+        @if (allowNotFound()) {
+            <mat-option [value]="searchControl().__NOT_FOUND__">
+                @if (notFoundTemplate(); as notFoundTemplate) {
                     <ng-container *ngTemplateOutlet="notFoundTemplate" />
                 } @else {
-                    A value was not found
+                    <p>A value was not found</p>
                 }
             </mat-option>
         }
@@ -35,28 +38,20 @@ import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
     `
 
 })
-export class ModelSearchAutocompleteComponent {
-    readonly inputComponent = inject(ModelSearchInputComponent);
-    get search(): ModelSearchControl<any> | undefined {
-        return this.inputComponent.search;
-    }
+export class ModelSearchAutocompleteComponent<T extends Model> {
+    searchControl = input.required<ModelSearchControl<T>>();
 
-    @Input()
-    get allowNotFound() {
-        return this.search!.allowNotFound;
-    }
-    set allowNotFound(input: BooleanInput) {
-        this.search!.allowNotFound = coerceBooleanProperty(input);
-    }
+    readonly modelOptions$ = toObservable(this.searchControl).pipe(
+        switchMap(control => control.modelOptions$)
+    );
 
-    @Input()
-    notFoundTemplate: TemplateRef<any> | undefined;
+    matAutocomplete = viewChild.required(MatAutocomplete);
 
-    @ViewChild(MatAutocomplete, { static: true })
-    autocomplete: MatAutocomplete | undefined;
+    allowNotFound = input(false, { transform: coerceBooleanProperty })
+    notFoundTemplate = input<TemplateRef<any>>();
 
     displayValue = (value: any) => {
-        return this.search!.displayValue(value);
+        return this.searchControl().displayValue(value);
     }
 
 }

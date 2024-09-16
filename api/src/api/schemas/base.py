@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 from abc import abstractmethod
 import asyncio
 from datetime import datetime
-from typing import Any, ClassVar, Generic, Self, TypeVar, TypedDict, cast
+from typing import Any, Awaitable, Callable, ClassVar, Generic, Self, TypeVar, TypedDict, cast
 import typing
 from uuid import UUID
 from fastapi import Depends
@@ -42,6 +44,8 @@ class ModelDetail(BaseModel, Generic[TModel]):
             **kwargs,
         )
 
+    # TODO: pass db explicitly to from_model?
+    #       (saves calling local_object_session as first line of every non-trivial from_model)
     @classmethod
     @abstractmethod
     async def from_model(cls, model: TModel) -> Self: ...
@@ -86,41 +90,24 @@ class ModelUpdateRequest(ModelRequest[TModel], Generic[TModel]):
 TDetail = TypeVar("TDetail", bound=ModelDetail)
 
 
-class ModelIndexPage(BaseModel, Generic[TModel]):
-    items: list[ModelDetail[TModel]]
+class ModelIndexPage(BaseModel, Generic[TModel, TDetail]):
+    items: list[TDetail]
     total_item_count: int
     total_page_count: int
     page_index: int
     page_size: int
 
-
-class ModelIndex(BaseModel, Generic[TModel]):
-    # the python class of the model type
-    @abstractmethod
-    async def item_from_model(self, model: TModel) -> ModelDetail[TModel]:
-        raise NotImplementedError
-
-    page_size: int = Field(default_factory=lambda: api_settings.api_page_size_default)
-    page_index: int = 0
-
-    async def _gather_items(
-        self, selected_items: ScalarResult[TModel]
-    ) -> list[ModelDetail[TModel]]:
-        item_responses = [self.item_from_model(item) for item in selected_items]
-        return await asyncio.gather(*item_responses)
-
-    @abstractmethod
-    def get_selection(self) -> Select[tuple[TModel]]:
-        """
-        Gets a selection of the models included in the index.
-        """
-        ...
-
-    async def load_page(self, db: LocalSession) -> ModelIndexPage[TModel]:
-        if self.page_index <= 0:
+    @classmethod
+    async def from_selection(
+        cls,
+        db: LocalSession,
+        selection: Select[tuple[TModel]],
+        item_from_model: Callable[[TModel], Awaitable[TDetail]],
+        page_size: int = 20,
+        page_index: int = 1,
+    ) -> ModelIndexPage[TModel, TDetail]:
+        if page_index <= 0:
             raise IndexError("Pages are 1-indexed")
-
-        selection = self.get_selection()
 
         total_item_count = (
             await db.scalar(
@@ -130,16 +117,46 @@ class ModelIndex(BaseModel, Generic[TModel]):
             )
             or 0
         )
-        total_page_count = total_item_count // self.page_size
+        total_page_count = total_item_count // page_size
 
-        selection = selection.offset((self.page_index - 1) * self.page_size).limit(
-            self.page_size
+        selection = selection.offset((page_index - 1) * page_size).limit(
+            page_size
         )
-        items = await self._gather_items(await db.scalars(selection))
-        return ModelIndexPage[TModel](
+
+        item_responses = [item_from_model(item) for item in await db.scalars(selection)]
+        items = await asyncio.gather(*item_responses)
+
+        return cls(
             items=items,
             total_item_count=total_item_count,
             total_page_count=total_page_count,
-            page_index=self.page_index,
+            page_index=page_index,
+            page_size=page_size,
+        )
+
+
+
+class ModelIndex(BaseModel, Generic[TModel]):
+    # the python class of the model type
+    @abstractmethod
+    async def item_from_model(self, model: TModel) -> ModelDetail[TModel]:
+        raise NotImplementedError
+
+    page_size: int = Field(default_factory=lambda: api_settings.api_page_size_default)
+    page_index: int = 1
+
+    @abstractmethod
+    def get_selection(self) -> Select[tuple[TModel]]:
+        """
+        Gets a selection of the models included in the index.
+        """
+        ...
+
+    async def load_page(self, db: LocalSession) -> ModelIndexPage[TModel, Any]:
+        return await ModelIndexPage.from_selection(
+            db,
+            self.get_selection(),
+            self.item_from_model,
             page_size=self.page_size,
+            page_index=self.page_index
         )

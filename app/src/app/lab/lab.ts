@@ -1,92 +1,70 @@
-import { Campus, CampusLookup, campusFromJsonObject, formatCampus } from 'src/app/uni/campus/campus';
+import { Campus, CampusLookup, formatCampus } from 'src/app/uni/campus/campus';
 import { Discipline, formatDiscipline, isDiscipline } from 'src/app/uni/discipline/discipline';
 
 import {
   Model,
   ModelIndexPage,
-  ModelParams,
   ModelQuery,
   ModelRef,
   modelId,
   modelIndexPageFromJsonObject,
-  modelParamsFromJsonObject,
   setModelQueryParams,
 } from 'src/app/common/model/model';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
-import { User, userFromJsonObject } from 'src/app/user/common/user';
+import { User, UserService } from 'src/app/user/user';
 import { Injectable, Type } from '@angular/core';
 import { RestfulService } from '../common/model/model-service';
-import { EquipmentInstallation, equipmentInstallationFromJsonObject } from '../equipment/installation/equipment-installation';
-import { EquipmentProvision, equipmentProvisionFromJsonObject } from '../equipment/provision/equipment-provision';
+import { EquipmentInstallation } from '../equipment/installation/equipment-installation';
+import { EquipmentProvision } from '../equipment/provision/equipment-provision';
 import { Equipment } from '../equipment/equipment';
 import { HttpParams } from '@angular/common/http';
 import { StorageType, isStorageType } from './storage/lab-storage-type';
+import { isUUID } from '../utils/is-uuid';
+import { LabStorage } from './common/storable/lab-storage';
+import { LabDisposal } from './common/disposable/lab-disposal';
 
-export interface LabParams extends ModelParams {
-  readonly id: string;
+
+export class Lab extends Model {
   readonly discipline: Discipline;
   readonly campus: Campus;
 
-  readonly supervisors: readonly User[];
+  readonly supervisors: ModelIndexPage<User>;
 
-  // The storage types available in the lab.
-  readonly storageTypes: readonly StorageType[];
-}
+  readonly storages: ModelIndexPage<LabStorage>;
+  readonly disposals: ModelIndexPage<LabDisposal>;
 
-export class Lab extends Model implements LabParams {
-  readonly discipline: Discipline;
-  readonly campus: Campus;
+  constructor(json: JsonObject) {
+    super(json);
 
-  readonly supervisors: readonly User[];
-  readonly storageTypes: readonly StorageType[];
-  constructor(params: LabParams) {
-    super(params);
-    this.discipline = params.discipline;
-    this.campus = params.campus;
-    this.supervisors = params.supervisors;
-    this.storageTypes = [...params.storageTypes];
+    if (!isDiscipline(json['discipline'])) {
+      throw new Error("Expected a Discipline 'discipline'");
+    }
+    this.discipline = json['discipline'];
+
+    if (!isJsonObject(json['campus'])) {
+      throw new Error("Expected a json object 'campus'");
+    }
+    this.campus = new Campus(json['campus']);
+
+    if (!isJsonObject(json['supervisors'])) {
+      throw new Error("Expected a json object 'supervisors'");
+    }
+    this.supervisors = modelIndexPageFromJsonObject(User, json['supervisors']);
+
+    if (!isJsonObject(json['storages'])) {
+      throw new Error("Expected a json object 'storages'");
+    }
+    this.storages = modelIndexPageFromJsonObject(LabStorage, json['storages'])
+
+    if (!isJsonObject(json['disposals'])) {
+      throw new Error("Expected a json object 'disposals'");
+    }
+    this.disposals = modelIndexPageFromJsonObject(LabDisposal, json['disposals']);
   }
 
   get name(): string {
     return `${formatCampus(this.campus)} -- ${formatDiscipline(this.discipline)} lab`
   }
-}
-export function labFromJsonObject(json: JsonObject): Lab {
-  if (!isJsonObject(json)) {
-    throw new Error('Not a json object');
-  }
-  const base = modelParamsFromJsonObject(json);
-
-  if (typeof json['id'] !== 'string') {
-    throw new Error("Expected a string 'id'");
-  }
-  if (!isDiscipline(json['discipline'])) {
-    throw new Error("Expected a Discipline 'discipline'");
-  }
-
-  if (!isJsonObject(json['campus'])) {
-    throw new Error("Expected a json object 'campus'");
-  }
-  const campus = campusFromJsonObject(json['campus']);
-
-  if (!Array.isArray(json['supervisors']) || !json['supervisors'].every(isJsonObject)) {
-    throw new Error("Expected an array of json objects 'supervisors'");
-  }
-  const supervisors = json['supervisors'].map(userFromJsonObject);
-
-  if (!Array.isArray(json['storageTypes']) || !json['storageTypes'].every(s => isStorageType(s))) {
-    throw new Error("Expected an array of storage types 'storageTypes'");
-  }
-  const storageTypes = json['storageTypes'];
-
-  return new Lab({
-    ...base,
-    id: json['id'],
-    discipline: json['discipline'],
-    campus,
-    supervisors,
-    storageTypes
-  });
 }
 
 export interface LabQuery extends ModelQuery<Lab> {
@@ -104,75 +82,44 @@ function setLabQueryParams(params: HttpParams, query: Partial<LabQuery>) {
     params = params.set('campus', modelId(query.campus));
   }
 
-  if (Array.isArray(query.discipline)) {
+  if (Array.isArray(query.discipline) && query.discipline.length > 0) {
     params = params.set('discipline', query.discipline.join(','))
-  } else if (query.discipline) {
+  } else if (isDiscipline(query.discipline)) {
     params = params.set('discipline', query.discipline);
   }
 
   return params;
 }
 
-export interface LabProfileParams extends LabParams {
-  readonly equipmentInstallPage: ModelIndexPage<EquipmentInstallation>;
-  readonly equipmentProvisionPage: ModelIndexPage<EquipmentProvision>;
-}
-
-export class LabProfile extends Lab implements LabProfileParams {
+export class LabProfile extends Lab {
   readonly equipmentInstallPage: ModelIndexPage<EquipmentInstallation>;
   get equipmentInstalls() {
     return this.equipmentInstallPage.items;
   }
-  readonly equipmentProvisionPage: ModelIndexPage<EquipmentProvision>;
-  get equipmentProvisions() {
-    return this.equipmentProvisionPage.items;
-  }
 
-  constructor(params: LabProfileParams) {
-    super(params);
-    this.equipmentInstallPage = params.equipmentInstallPage;
-    this.equipmentProvisionPage = params.equipmentProvisionPage;
+  constructor(json: JsonObject) {
+    super(json);
+
+    if (!isJsonObject(json['equipmentInstalls'])) {
+      throw new Error("Expected a json object 'equipmentInstalls'");
+    }
+    this.equipmentInstallPage = modelIndexPageFromJsonObject(
+      EquipmentInstallation,
+      json['equipmentInstalls']
+    );
   }
 
   getInstall(equipment: Equipment): EquipmentInstallation | null {
     return this.equipmentInstalls
-      .find(install => modelId(install.equipment) == equipment.id) || null;
+      .find(install => install.equipmentId == equipment.id) || null;
   }
-
-  getProvision(equipment: Equipment): EquipmentProvision | null {
-    return this.equipmentProvisions
-      .find(provision => modelId(provision.target) == equipment.id) || null;
-  }
-}
-
-export function labProfileFromJsonObject(object: JsonObject) {
-  const labParams = labFromJsonObject(object);
-  if (!isJsonObject(object['equipmentInstalls'])) {
-    throw new Error("Expected a json object 'equipmentInstalls'");
-  }
-  const equipmentInstallPage = modelIndexPageFromJsonObject(
-    equipmentInstallationFromJsonObject,
-    object['equipmentInstalls'],
-  );
-  if (!isJsonObject(object['equipmentProvisions'])) {
-    throw new Error("Expected a json object 'equipmentProvisions'");
-  }
-  const equipmentProvisionPage = modelIndexPageFromJsonObject(
-    equipmentProvisionFromJsonObject,
-    object['equipmentProvisions'],
-  );
-
-  return new LabProfile({
-    ...labParams,
-    equipmentInstallPage,
-    equipmentProvisionPage
-  })
 }
 
 
 @Injectable({ providedIn: 'root' })
 export class LabService extends RestfulService<Lab, LabQuery> {
-  override path: string = '/labs';
-  override readonly modelFromJsonObject = labFromJsonObject;
+  override path: string = '/labs/lab';
+  override readonly model = Lab;
+
   override readonly setModelQueryParams = setLabQueryParams;
 }

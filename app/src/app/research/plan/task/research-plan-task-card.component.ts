@@ -4,7 +4,7 @@ import { CommonModule } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogActions, MatDialogContent, MatDialogModule, MatDialogRef, MatDialogTitle } from '@angular/material/dialog';
 
-import { User, UserService } from "src/app/user/common/user";
+import { User, UserService } from "src/app/user/user";
 import { ResearchPlanTask } from "./research-plan-task";
 import { Lab, LabService } from "src/app/lab/lab";
 import { MatCardModule } from "@angular/material/card";
@@ -52,7 +52,7 @@ import { ResearchPlanContext } from "../research-plan-context";
           CANCEL
         </button>
       } @else {
-        <button mat-button 
+        <button mat-button
                 color="primary"
                 (click)="onEditButtonClick()">
           EDIT

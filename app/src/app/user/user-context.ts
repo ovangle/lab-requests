@@ -4,7 +4,7 @@ import {
   User,
   UserService,
   CurrentUser,
-} from './common/user';
+} from './user';
 import {
   BehaviorSubject,
   Observable,

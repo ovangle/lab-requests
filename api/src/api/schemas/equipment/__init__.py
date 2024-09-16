@@ -7,6 +7,9 @@ __all__ = (
     "EquipmentInstallationDetail",
     "EquipmentInstallationIndex",
     "EquipmentInstallationIndexPage",
+    "EquipmentInstallationProvisionCreateRequest",
+    "NewEquipmentRequest",
+    "DeclareEquipmentInstallationRequest"
 )
 
 from .equipment import (
@@ -20,5 +23,7 @@ from .equipment_installation import (
     EquipmentInstallationDetail,
     EquipmentInstallationIndex,
     EquipmentInstallationIndexPage,
+    EquipmentInstallationProvisionCreateRequest,
+    NewEquipmentRequest,
+    DeclareEquipmentInstallationRequest
 )
-from .equipment_provision import EquipmentProvisionDetail

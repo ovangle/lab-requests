@@ -5,154 +5,144 @@ import { HttpParams } from '@angular/common/http';
 
 import {
   Model,
-  ModelParams,
+  ModelIndexPage,
   ModelQuery,
   ModelRef,
+  ModelUpdateRequest,
   modelId,
-  modelParamsFromJsonObject,
+  modelIndexPageFromJsonObject,
+  modelRefFromJson,
   setModelQueryParams,
 } from 'src/app/common/model/model';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import {
   ResearchFunding,
-  researchFundingFromJsonObject,
+  ResearchFundingService,
 } from '../funding/research-funding';
-import { User, UserLookup, userFromJsonObject } from 'src/app/user/common/user';
+import { User, UserLookup } from 'src/app/user/user';
 import {
   RestfulService,
 } from 'src/app/common/model/model-service';
 
-import { CreateResearchPlanTask, ResearchPlanTask, ResearchPlanTaskSlice, researchPlanTaskFromJson, researchPlanTaskSliceToJson } from './task/research-plan-task';
-import { Lab, labFromJsonObject } from 'src/app/lab/lab';
+import { CreateResearchPlanTask, ResearchPlanTask, ResearchPlanTaskSlice, researchPlanTaskSliceToJson } from './task/research-plan-task';
+import { Lab, LabService } from 'src/app/lab/lab';
 import { Discipline, isDiscipline } from 'src/app/uni/discipline/discipline';
-import { ResourceConsumerParams, resourceContainerParamsFromJson, LabResourceConsumer, LabResourceConsumerPatch, resourceConsumerPatchToJsonObject } from 'src/app/lab/lab-resource-consumer/resource-container';
+import { EquipmentLease } from 'src/app/equipment/lease/equipment-lease';
+import { MaterialAllocation } from 'src/app/material/material-allocation';
+import { SoftwareLease } from 'src/app/software/lease/software-lease';
+import { isUUID } from 'src/app/utils/is-uuid';
+import { LabAllocationConsumer } from 'src/app/lab/common/allocatable/lab-allocation-consumer';
 
-export interface ResearchPlanAttachment extends ModelParams {
-  readonly id: string;
+export class ResearchPlanAttachment extends Model {
   readonly path: string;
+
+  constructor(json: JsonObject) {
+    super(json);
+    if (typeof json['path'] !== 'string') {
+      throw new Error("ResearchPlanAttachment: 'path' must be a string");
+    }
+    this.path = json['path'];
+  }
 }
 
-export function researchPlanAttachmentFromJsonObject(json: JsonObject) {
-  const baseParams = modelParamsFromJsonObject(json);
-  if (typeof json[ 'path' ] !== 'string') {
-    throw new Error("ResearchPlanAttachment: 'path' must be a string");
-  }
-  return {
-    ...baseParams,
-    path: json[ 'path' ],
-  };
-}
-
-export interface ResearchPlanParams extends ResourceConsumerParams, ModelParams {
-  readonly id: string;
-
-  readonly discipline: Discipline;
-  readonly title: string;
-  readonly description: string;
-
-  readonly funding: ResearchFunding;
-
-  readonly researcher: User;
-  readonly coordinator: User;
-  readonly lab: Lab | string;
-
-  readonly tasks: readonly ResearchPlanTask[];
-  readonly attachments: readonly ResearchPlanAttachment[];
-}
-
-export function researchPlanFromJsonObject(json: JsonObject): ResearchPlan {
-  const containerParams = resourceContainerParamsFromJson(json);
-
-  if (!isDiscipline(json[ 'discipline' ])) {
-    throw new Error("Expected a discipline 'discipline'");
-  }
-
-  if (typeof json[ 'title' ] !== 'string') {
-    throw new Error("ResearchPlanParams: 'title' must be a string");
-  }
-  if (typeof json[ 'description' ] !== 'string') {
-    throw new Error("ResearchPlanParams: 'description' must be a string");
-  }
-  if (!isJsonObject(json[ 'funding' ])) {
-    throw new Error("ResearchPlanParams: 'funding' must be a json object");
-  }
-  const funding = researchFundingFromJsonObject(json[ 'funding' ]);
-
-  if (!isJsonObject(json[ 'researcher' ])) {
-    throw new Error("ResearchPlanParams: 'researcher' must be a json object");
-  }
-  const researcher = userFromJsonObject(json[ 'researcher' ]);
-
-  if (!isJsonObject(json[ 'coordinator' ])) {
-    throw new Error("ResearchPlanParams: 'coordinator' must be a json object");
-  }
-  const coordinator = userFromJsonObject(json[ 'coordinator' ]);
-
-  let lab: Lab | string;
-  if (isJsonObject(json[ 'lab' ])) {
-    lab = labFromJsonObject(json[ 'lab' ]);
-  } else if (typeof json[ 'lab' ] === 'string') {
-    lab = json[ 'lab' ]
-  } else {
-    throw new Error("Expected a json object or string 'lab'");
-  }
-
-  if (!Array.isArray(json[ 'tasks' ]) || !json[ 'tasks' ].every(isJsonObject)) {
-    throw new Error(
-      "ResearchPlanParams: 'tasks' must be an array of json objects",
-    );
-  }
-  const tasks = json[ 'tasks' ].map((o) => researchPlanTaskFromJson(o));
-
-  if (
-    !Array.isArray(json[ 'attachments' ]) ||
-    !json[ 'attachments' ].every(isJsonObject)
-  ) {
-    throw new Error(
-      "ResearchPlanParams: 'attachments' must be an array of json objects",
-    );
-  }
-  const attachments = json[ 'attachments' ].map((o) =>
-    researchPlanAttachmentFromJsonObject(o),
-  );
-
-  return new ResearchPlan({
-    ...containerParams,
-    title: json[ 'title' ],
-    discipline: json[ 'discipline' ],
-    description: json[ 'description' ],
-    funding,
-    researcher,
-    coordinator,
-    lab,
-    tasks,
-    attachments,
-  });
-}
-
-export class ResearchPlan extends LabResourceConsumer implements ResearchPlanParams {
-  discipline: Discipline;
+export class ResearchPlan extends LabAllocationConsumer {
   title: string;
   description: string;
+  discipline: Discipline;
   funding: ResearchFunding;
+
   researcher: User;
   coordinator: User;
 
-  lab: Lab | string;
-  tasks: readonly ResearchPlanTask[];
-  attachments: readonly ResearchPlanAttachment[];
+  tasks: ModelIndexPage<ResearchPlanTask>;
+  attachments: ModelIndexPage<ResearchPlanAttachment>;
 
-  constructor(params: ResearchPlanParams) {
-    super(params);
-    this.discipline = params.discipline;
-    this.title = params.title;
-    this.description = params.description;
-    this.funding = params.funding;
-    this.researcher = params.researcher;
-    this.coordinator = params.coordinator;
-    this.lab = params.lab;
-    this.tasks = params.tasks;
-    this.attachments = params.attachments;
+  equipmentLeases: ModelIndexPage<EquipmentLease>;
+  softwareLeases: ModelIndexPage<SoftwareLease>;
+  inputMaterials: ModelIndexPage<MaterialAllocation>;
+  outputMaterials: ModelIndexPage<MaterialAllocation>;
+
+  constructor(json: JsonObject) {
+    super(json);
+
+    if (!isDiscipline(json['discipline'])) {
+      throw new Error("Expected a discipline 'discipline'");
+    }
+    this.discipline = json['discipline'];
+
+    if (typeof json['title'] !== 'string') {
+      throw new Error("ResearchPlanParams: 'title' must be a string");
+    }
+    this.title = json['title'];
+    if (typeof json['description'] !== 'string') {
+      throw new Error("ResearchPlanParams: 'description' must be a string");
+    }
+    this.description = json['description'];
+    if (!isJsonObject(json['funding'])) {
+      throw new Error("ResearchPlanParams: 'funding' must be a json object");
+    }
+    this.funding = new ResearchFunding(json['funding']);
+
+    if (!isJsonObject(json['researcher'])) {
+      throw new Error("ResearchPlanParams: 'researcher' must be a json object");
+    }
+    this.researcher = new User(json['researcher']);
+
+    if (!isJsonObject(json['coordinator'])) {
+      throw new Error("ResearchPlanParams: 'coordinator' must be a json object");
+    }
+    this.coordinator = new User(json['coordinator']);
+
+    if (!isJsonObject(json['tasks'])) {
+      throw new Error("Expected a json object 'tasks'");
+    }
+    this.tasks = modelIndexPageFromJsonObject(ResearchPlanTask, json['tasks']);
+
+    if (!isJsonObject(json['attachments'])) {
+      throw new Error("Expected a json object 'attachments'");
+    }
+    this.attachments = modelIndexPageFromJsonObject(ResearchPlanAttachment, json['attachments']);
+
+    if (!isJsonObject(json['equimentLeases'])) {
+      throw new Error("Expected a json object 'equimentLeases'");
+    }
+    this.equipmentLeases = modelIndexPageFromJsonObject(EquipmentLease, json['equimentLeases']);
+
+    if (!isJsonObject(json['softwareLeases'])) {
+      throw new Error("Expected a json object 'softwareLeases'");
+    }
+    this.softwareLeases = modelIndexPageFromJsonObject(SoftwareLease, json['softwareLeases']);
+    if (!isJsonObject(json['inputMaterials'])) {
+      throw new Error("Expected a json object 'inputMaterials'");
+    }
+    this.inputMaterials = modelIndexPageFromJsonObject(MaterialAllocation, json['inputMaterials']);
+
+    if (!isJsonObject(json['outputMaterials'])) {
+      throw new Error("Expected a json object 'outputMaterials'");
+    }
+    this.outputMaterials = modelIndexPageFromJsonObject(MaterialAllocation, json['outputMaterials']);
+  }
+
+  resolveLab(labService: LabService): Promise<Lab> {
+    throw new Error('Method not implemented.');
+  }
+  resolveResearchFunding(service: ResearchFundingService): Promise<ResearchFunding> {
+    throw new Error('Method not implemented.');
+  }
+
+  getAllocationPage(allocationType: string) {
+    switch (allocationType) {
+      case 'equipment_lease':
+        return this.equipmentLeases;
+      case 'software_lease':
+        return this.softwareLeases;
+      case 'input_material':
+        return this.inputMaterials;
+      case 'output_material':
+        return this.outputMaterials;
+      default:
+        throw new Error(`Unrecognised allocation type for research plan ${allocationType}`);
+    }
   }
 }
 
@@ -169,7 +159,7 @@ function createResearchPlanToJsonObject(plan: CreateResearchPlan) {
   return { ...plan };
 }
 
-export interface UpdateResearchPlan extends LabResourceConsumerPatch {
+export interface UpdateResearchPlan extends ModelUpdateRequest<ResearchPlan> {
   title: string;
   description: string;
   funding: ResearchFunding | null;
@@ -177,14 +167,11 @@ export interface UpdateResearchPlan extends LabResourceConsumerPatch {
 }
 
 function updateResearchPlanToJsonObject(plan: ResearchPlan, patch: Partial<UpdateResearchPlan>) {
-  const resourceConsumerAttrs = resourceConsumerPatchToJsonObject(plan, patch)
-
   return {
     title: typeof patch.title === 'string' ? patch.title : plan.title,
     description: typeof patch.description === 'string' ? patch.description : plan.description,
     funding: modelId(patch.funding || null),
     tasks: Array.isArray(patch.tasks) ? patch.tasks.map(t => researchPlanTaskSliceToJson(t)) : [],
-    ...resourceConsumerAttrs
   };
 }
 
@@ -213,9 +200,9 @@ function setResearchPlanQueryParams(params: HttpParams, query: Partial<ResearchP
 
 @Injectable({ providedIn: 'root' })
 export class ResearchPlanService extends RestfulService<ResearchPlan, ResearchPlanQuery> {
-  override readonly modelFromJsonObject = researchPlanFromJsonObject;
-  override readonly setModelQueryParams = setResearchPlanQueryParams;
   override path = '/research/plans';
+  override readonly model = ResearchPlan;
+  override readonly setModelQueryParams = setResearchPlanQueryParams;
 
   create(request: CreateResearchPlan) {
     return this._doCreate(
@@ -251,7 +238,7 @@ export class ResearchPlanService extends RestfulService<ResearchPlan, ResearchPl
         request
       ]
     };
-    return this._alterTasks(task, [ slice ]);
+    return this._alterTasks(task, [slice]);
   }
 
   removeTask(task: ResearchPlanTask) {
@@ -260,7 +247,7 @@ export class ResearchPlanService extends RestfulService<ResearchPlan, ResearchPl
       endIndex: task.index + 1,
       items: []
     };
-    return this._alterTasks(task, [ slice ]);
+    return this._alterTasks(task, [slice]);
   }
 
   _resourceIndexUrl$(plan: ResearchPlan, resourceType: string) {

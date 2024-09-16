@@ -1,6 +1,6 @@
 import { ModelService } from "src/app/common/model/model-service";
 import { LabProvision, LabProvisionCreateRequest, LabProvisionParams, LabProvisionQuery, LabProvisionService, labProvisionCreateRequestToJsonObject, labProvisionParamsFromJsonObject, setLabProvisionQueryParams } from "../../common/provisionable/provision";
-import { LabStorage, LabStorageCreateRequest, StorageType, labStorageCreateRequestToJsonObject, labStorageFromJsonObject } from "../lab-storage";
+import { LabStorage, LabStorageCreateRequest, StorageType, labStorageCreateRequestToJsonObject, labStorageFromJsonObject } from "../../common/storable/lab-storage";
 import { Injectable } from "@angular/core";
 import { ModelRef, modelId } from "src/app/common/model/model";
 import { Equipment } from "src/app/equipment/equipment";
@@ -116,5 +116,3 @@ export class LabStorageProvisionService extends LabProvisionService<
     }
 
 }
-
-

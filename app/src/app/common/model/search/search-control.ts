@@ -1,10 +1,13 @@
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
-import { inject, ChangeDetectorRef, Input, Output, Type, DestroyRef } from "@angular/core";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR } from "@angular/forms";
-import { Observable, startWith, switchMap, of, shareReplay, filter, withLatestFrom, map, BehaviorSubject, connectable, Connectable, firstValueFrom, first, skipWhile } from "rxjs";
+import { inject, ChangeDetectorRef, Input, Output, Type, DestroyRef, Directive, input, viewChild, effect } from "@angular/core";
+import { takeUntilDestroyed, toObservable } from "@angular/core/rxjs-interop";
+import { AbstractControlDirective, ControlValueAccessor, FormControl, NG_VALUE_ACCESSOR, NgControl } from "@angular/forms";
+import { Observable, startWith, switchMap, of, shareReplay, filter, withLatestFrom, map, BehaviorSubject, connectable, Connectable, firstValueFrom, first, skipWhile, tap, combineLatest, defer } from "rxjs";
 import { disabledStateToggler } from "src/app/utils/forms/disable-state-toggler";
 import { Model, ModelQuery } from "../model";
+import { MatFormFieldControl } from "@angular/material/form-field";
+import { ModelService } from "../model-service";
+import { ModelSearchInputComponent } from "./search-input.component";
 
 export class NotFoundValue {
     constructor(readonly searchInput: string) {
@@ -20,18 +23,71 @@ export function is_NOT_FOUND(obj: unknown): obj is _NOT_FOUND {
         && (obj as any)._label === '_NOT_FOUND_';
 }
 
-export interface ModelSearchComponent<T extends Model> {
-    readonly searchControl: ModelSearchControl<T>;
-}
+@Directive()
+export abstract class ModelSearchComponent<T extends Model> implements MatFormFieldControl<T | NotFoundValue> {
 
-export function provideModelSearchValueAccessor<T extends ModelSearchComponent<any>>(componentType: Type<T>) {
-    return {
-        provide: NG_VALUE_ACCESSOR,
-        multi: true,
-        useFactory: (component: T) => component.searchControl,
-        deps: [ componentType ]
-    };
+    abstract readonly controlType: string;
+    abstract readonly id: string;
 
+    readonly ngControl = inject(NgControl, { self: true });
+    readonly searchInput = viewChild.required(ModelSearchInputComponent<T>);
+
+    constructor(
+        readonly searchControl: ModelSearchControl<T>
+    ) {
+        this.ngControl.valueAccessor = this.searchControl;
+
+        effect(() => {
+            const searchInput = this.searchInput();
+            searchInput.focusedSubject.subscribe(this.focusedSubject);
+        })
+
+        inject(DestroyRef).onDestroy(() => {
+            this.focusedSubject.complete();
+        })
+    }
+
+    readonly focusedSubject = new BehaviorSubject(false);
+    get focused() {
+        return this.focusedSubject.value;
+    }
+
+    get empty() {
+        return this.value == null;
+    }
+
+    get shouldLabelFloat() {
+        return !this.empty || this.focused;
+    }
+
+    errorState = false;
+    autofilled = true;
+    userAriaDescribedBy = undefined;
+    disableAutomaticLabeling = false;
+
+    get value() { return this.searchControl.value; }
+    get disabled() { return this.searchControl.disabled; }
+
+    readonly placeholder = '';
+
+    _required = input(false, { transform: coerceBooleanProperty, alias: 'required' });
+    _required$ = toObservable(this._required);
+    get required() { return this._required(); }
+
+    readonly describedByIdsSubject = new BehaviorSubject<string[]>([]);
+    setDescribedByIds(ids: string[]): void {
+        this.describedByIdsSubject.next(ids);
+    }
+    onContainerClick(event: MouseEvent): void {
+        this.searchInput().focus()
+    }
+    readonly stateChanges = defer(() => combineLatest([
+        this.searchControl.valueChanges,
+        this._required$,
+        this.focusedSubject,
+    ]).pipe(
+        map(() => undefined)
+    ));
 }
 
 export class ModelSearchControl<T extends Model, TQuery extends ModelQuery<T> = ModelQuery<T>> implements ControlValueAccessor {
@@ -40,21 +96,18 @@ export class ModelSearchControl<T extends Model, TQuery extends ModelQuery<T> = 
     readonly _destroyRef = inject(DestroyRef);
     readonly _cd = inject(ChangeDetectorRef);
 
-    readonly searchControl = new FormControl<T | _NOT_FOUND | string>('', { nonNullable: true });
-
-    allowNotFound: boolean = false;
+    readonly formControl = new FormControl<T | _NOT_FOUND | string>('', { nonNullable: true });
 
     constructor(
         readonly getModelOptions: (search: string) => Observable<T[]>,
-        readonly formatModel: (model: T) => string,
-        readonly formatNotFoundValue: (v: NotFoundValue) => string = (_: any) => '---'
+        readonly formatModel: (model: T | NotFoundValue) => string,
     ) {
-        this.value$.pipe(
+        this.valueChanges.pipe(
             takeUntilDestroyed()
         ).subscribe(v => this._onChange(v));
     }
 
-    readonly modelOptions$: Observable<T[]> = this.searchControl.valueChanges.pipe(
+    readonly modelOptions$: Observable<T[]> = this.formControl.valueChanges.pipe(
         startWith(''),
         switchMap(search => {
             if (typeof search === 'string') {
@@ -62,45 +115,51 @@ export class ModelSearchControl<T extends Model, TQuery extends ModelQuery<T> = 
             } else if (is_NOT_FOUND(search)) {
                 return of([]);
             } else {
-                return of([ search ]);
+                return of([search]);
             }
         }),
+        tap(modelOptions => console.log('model options', modelOptions)),
         shareReplay(1)
     );
 
-    _searchInput$: Observable<string> = this.searchControl.valueChanges.pipe(
+    _searchInput$: Observable<string> = this.formControl.valueChanges.pipe(
         filter((value): value is string => typeof value === 'string'),
     );
     get searchInput() {
-        return this.searchControl.value!;
+        return this.formControl.value!;
     }
     setSearchInput(searchInput: string) {
-        this.searchControl.setValue(searchInput);
+        this.formControl.setValue(searchInput);
     }
 
     query$: Observable<Partial<TQuery>> = this._searchInput$.pipe(
         map(search => ({ search } as Partial<TQuery>))
     );
 
-    value$: Observable<T | NotFoundValue> = this.searchControl.valueChanges.pipe(
+    private __value: T | NotFoundValue | null = null;
+    valueChanges: Observable<T | NotFoundValue> = this.formControl.valueChanges.pipe(
         filter(value => {
             return typeof value !== 'string' || is_NOT_FOUND(value)
         }),
         withLatestFrom(this._searchInput$),
-        map(([ value, searchInput ]) => {
-            console.log('value', value, 'searchInput', searchInput)
+        map(([value, searchInput]) => {
             return is_NOT_FOUND(value) ? new NotFoundValue(searchInput) : value as T
         }),
+        tap((v) => this.__value = v),
         shareReplay(1)
     );
 
+    get value(): T | NotFoundValue | null {
+        return this.__value;
+    }
+
     writeValue(obj: T | NotFoundValue | null): void {
         if (obj instanceof NotFoundValue) {
-            this.searchControl.setValue(__NOT_FOUND__);
+            this.formControl.setValue(__NOT_FOUND__);
         } else if (obj === null) {
-            this.searchControl.setValue('')
+            this.formControl.setValue('')
         } else {
-            this.searchControl.setValue(obj);
+            this.formControl.setValue(obj);
         }
     }
 
@@ -112,19 +171,20 @@ export class ModelSearchControl<T extends Model, TQuery extends ModelQuery<T> = 
     registerOnTouched(fn: any): void {
         this._onTouched = fn;
     }
-    setDisabledState = disabledStateToggler(this.searchControl);
+    setDisabledState = disabledStateToggler(this.formControl);
+    get disabled() { return this.formControl.disabled; }
 
     reset() {
-        this.searchControl.setValue('');
+        this.formControl.setValue('');
     }
 
     _lastValue: string = '';
     displayValue(value: string | T | _NOT_FOUND): string {
         if (typeof value === 'string') {
             return this._lastValue = value;
-        } if (is_NOT_FOUND(value)) {
+        } else if (is_NOT_FOUND(value)) {
             const v = new NotFoundValue(this._lastValue);
-            return this.formatNotFoundValue(v);
+            return this.formatModel(v);
         } else {
             return this.formatModel(value);
         }

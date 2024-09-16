@@ -1,5 +1,5 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, inject } from "@angular/core";
-import { TemporaryAccessUser, UserService } from "../../common/user";
+import { TemporaryAccessUser, UserService } from "../../user";
 import { Observable, defer, first, firstValueFrom, map, shareReplay, switchMap } from "rxjs";
 import { ActivatedRoute, Router, RouterModule } from "@angular/router";
 import { AlterPasswordFormComponent, AlterPasswordRequest } from "../../common/alter-password-form.component";
@@ -42,10 +42,10 @@ function temporaryUserInfoFromRoute(): Observable<[TemporaryAccessUser, string]>
     @if (user$ | async; as user) {
         <h1>Welcome, {{ user.name }}</h1>
 
-        @if (user.tokenIsExpired) {
+        @if (user.tokenExpired) {
             <p> Your temporary access token has expired. </p>
             <p> Contact the tech involved to issue a new token</p>
-        } @else if (user.tokenIsConsumed) {
+        } @else if (user.tokenConsumed) {
             <p> The temporary access token has already been used. </p>
             <p> If this wasn't you, contact <a href="email:t.stephenson@cqu.edu.au">the site admin</a></p>
             <p> Otherwise, login <a routerLink="/user/login">here</a>

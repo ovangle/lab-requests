@@ -1,64 +1,58 @@
-import { Model, ModelCreateRequest, ModelParams, ModelQuery, ModelRef, ModelUpdateRequest, modelId, modelParamsFromJsonObject } from "src/app/common/model/model";
-import { Software, SoftwareService, softwareFromJsonObject } from "../software";
-import { firstValueFrom } from "rxjs";
+import { Model, ModelCreateRequest, ModelQuery, ModelRef, ModelUpdateRequest, modelId, modelRefFromJson } from "src/app/common/model/model";
+import { Software, SoftwareService } from "../software";
+import { filter, firstValueFrom, map, Observable } from "rxjs";
 import { JsonObject } from "src/app/utils/is-json-object";
 import { HttpParams } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
-import { LabInstallation, LabInstallationParams, LabInstallationQuery, LabInstallationService, labInstallationParamsFromJsonObject, setLabInstallationQueryParams } from "src/app/lab/common/installable/installation";
+import { LabInstallation, LabInstallationQuery, LabInstallationService, setLabInstallationQueryParams } from "src/app/lab/common/installable/installation";
 import { Provisionable, ProvisionableCreateRequest } from "src/app/lab/common/provisionable/provisionable";
-import { SoftwareProvision, SoftwareProvisionInstallRequest, softwareProvisionFromJsonObject } from "../provision/software-provision";
+import { SoftwareInstallationProvision, SoftwareProvisionInstallRequest } from "../provision/software-provision";
 import { SoftwareContext } from "../software-context";
 import { Lab } from "src/app/lab/lab";
+import { ModelService } from "src/app/common/model/model-service";
+import { SoftwareLease } from "../lease/software-lease";
+import { isUUID } from "src/app/utils/is-uuid";
 
 
-export interface SoftwareInstallationParams extends LabInstallationParams<Software, SoftwareProvision> {
-    software: Software | string;
-    version: string;
+export class SoftwareInstallation extends LabInstallation<Software, SoftwareInstallationProvision> {
+    softwareId: string;
+    get installableId() { return this.softwareId }
 
-    currentProvisions: readonly SoftwareProvision[];
-}
+    softwareName: string;
 
-export class SoftwareInstallation extends LabInstallation<Software, SoftwareProvision> implements SoftwareInstallationParams {
-    software: Software | string;
-    version: string;
-    override currentProvisions: readonly SoftwareProvision[];
+    installedVersion: string;
 
-    constructor(params: SoftwareInstallationParams) {
-        super(params);
+    constructor(json: JsonObject) {
+        super(SoftwareInstallationProvision, SoftwareLease, json);
 
-        this.software = params.software;
-        this.version = params.version;
-        this.currentProvisions = [ ...params.currentProvisions ];
+        if (!isUUID(json['softwareId'])) {
+            throw new Error("Expected a uuid 'softwareId'");
+        }
+        this.softwareId = json['softwareId'];
+
+        if (typeof json['softwareName'] !== 'string') {
+            throw new Error("Expected a string 'softwareName'");
+        }
+        this.softwareName = json['softwareName'];
+
+        if (typeof json['installedVersion'] !== 'string') {
+            throw new Error("Expected a string 'installedVersion'")
+        }
+        this.installedVersion = json['installedVersion'];
     }
 
     async resolveSoftware(service: SoftwareService) {
-        if (typeof this.software === 'string') {
-            this.software = await firstValueFrom(service.fetch(this.software));
+        return await firstValueFrom(service.fetch(this.softwareId));
+    }
+
+    async resolveInstallable(service: ModelService<Software>) {
+        if (!(service instanceof SoftwareService)) {
+            throw new Error('Service must be a SoftwareService');
         }
-        return this.software;
+        return await this.resolveSoftware(service);
     }
 }
 
-export function softwareInstallationFromJsonObject(json: JsonObject): SoftwareInstallation {
-    const baseParams = labInstallationParamsFromJsonObject(
-        softwareFromJsonObject,
-        softwareProvisionFromJsonObject,
-        'software',
-        json
-    );
-
-    const software: Software | string = baseParams.installable;
-    if (typeof json[ 'version' ] !== 'string') {
-        throw new Error("Expected a string 'version'")
-    }
-
-
-    return new SoftwareInstallation({
-        ...baseParams,
-        software,
-        version: json[ 'version' ]
-    });
-}
 
 export interface SoftwareInstallationQuery extends LabInstallationQuery<Software, SoftwareInstallation> {
     software?: ModelRef<Software>;
@@ -88,8 +82,21 @@ export function softwareInstallationCreateRequestToJsonObject(request: SoftwareI
 @Injectable({ providedIn: 'root' })
 export class SoftwareInstallationService extends LabInstallationService<Software, SoftwareInstallation, SoftwareInstallationQuery> {
     override readonly path = '/installations';
-    override readonly modelFromJsonObject = softwareInstallationFromJsonObject;
+    override readonly model = SoftwareInstallation;
     override readonly setModelQueryParams = setSoftwareInstallationQueryParams;
 
     override readonly context = inject(SoftwareContext);
+
+    getForLabSoftware(software: ModelRef<Software>, lab: ModelRef<Lab>): Observable<SoftwareInstallation> {
+        return this.queryOne({ software, lab }).pipe(
+            map((result) => {
+                if (result == null) {
+                    throw new Error('A (possibly empty) install exists for every lab');
+                }
+                return result;
+            })
+
+        );
+
+    }
 }

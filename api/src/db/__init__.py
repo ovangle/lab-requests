@@ -3,6 +3,7 @@ import json
 
 from alembic import command
 from alembic.config import Config
+import debugpy
 from fastapi.encoders import jsonable_encoder
 
 from sqlalchemy.ext.asyncio import (
@@ -14,11 +15,10 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.dialects import postgresql
 
-
 from .settings import DbSettings
 
-settings = DbSettings()
-url = settings.db_url
+db_settings = DbSettings()
+url = db_settings.db_url
 
 engine = create_async_engine(
     url,
@@ -69,23 +69,41 @@ async def create_type(connection: AsyncConnection, enum_type: postgresql.ENUM):
 
 
 async def create_db_types(db_binding):
+    from db.models.uni.discipline import DISCIPLINE_ENUM
+    from db.models.research.funding import PURCHASE_STATUS_ENUM
+
     from db.models.lab.allocatable import ALLOCATION_STATUS_ENUM
     from db.models.lab.provisionable import PROVISION_STATUS_ENUM
+    from db.models.lab.work import WORK_STATUS_ENUM
 
-    await db_binding.run_sync(ALLOCATION_STATUS_ENUM.create)
-    await db_binding.run_sync(PROVISION_STATUS_ENUM.create)
+    from db.models.material.material_inventory import MATERIAL_INVENTORY_IMPORT_TYPE_ENUM, MATERIAL_INVENTORY_EXPORT_TYPE_ENUM
 
+    def do_create(enum_t):
+        return db_binding.run_sync(enum_t.create)
+
+    await do_create(DISCIPLINE_ENUM)
+
+    await do_create(ALLOCATION_STATUS_ENUM)
+    await do_create(PROVISION_STATUS_ENUM)
+    await do_create(PURCHASE_STATUS_ENUM)
+    await do_create(WORK_STATUS_ENUM)
+
+    await do_create(MATERIAL_INVENTORY_IMPORT_TYPE_ENUM)
+    await do_create(MATERIAL_INVENTORY_EXPORT_TYPE_ENUM)
+
+def _import_models():
+    import db.models.user
+    import db.models.lab
+    import db.models.material
+    import db.models.research.funding
+    import db.models.research.plan
+    import db.models.software
+    import db.models.uni
+    import db.models.equipment
 
 async def init_db():
     from db.models.base import Base
-    import db.models.equipment
-    import db.models.lab
-    import db.models.material
-    import db.models.research
-    import db.models.software
-    import db.models.uni
-    import db.models.user
-
+    _import_models()
     alembic_cfg = _get_alembic_config()
 
     async with engine.begin() as db:
@@ -96,6 +114,7 @@ async def init_db():
 
 async def seed_db():
     from .seeds import seed_all
+    _import_models()
 
     async with local_sessionmaker() as db:
         await seed_all(db)

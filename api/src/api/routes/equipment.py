@@ -1,19 +1,19 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends
 
+from api.auth.context import get_current_authenticated_user
 from api.schemas.equipment.equipment import (
     EquipmentCreateRequest,
     EquipmentDetail,
     EquipmentIndex,
 )
-from api.schemas.equipment.equipment_installation import EquipmentInstallationDetail
+from api.schemas.equipment.equipment_installation import DeclareEquipmentInstallationRequest, EquipmentInstallationDetail, EquipmentInstallationIndex, EquipmentInstallationProvisionDetail, NewEquipmentRequest
 from db import get_db
 from db.models.equipment.equipment import Equipment, query_equipments
 from db.models.equipment.equipment_installation import EquipmentInstallation
 
 
 equipments = APIRouter(prefix="/equipments")
-
 
 @equipments.get("/equipment")
 async def index_equipments(
@@ -24,7 +24,10 @@ async def index_equipments(
     page: int = 0,
     db=Depends(get_db),
 ):
-    tags_ = set(tags or "".split(","))
+    if tags:
+        tags_ = set(tags.split(','))
+    else:
+        tags_ = set()
 
     equipment_index = EquipmentIndex(
         lab_id=lab_id,
@@ -38,8 +41,8 @@ async def index_equipments(
 
 
 @equipments.post("/equipment")
-async def create_equipment(create_req: EquipmentCreateRequest, db=Depends(get_db)):
-    model = await create_req.do_create(db)
+async def create_equipment(create_req: EquipmentCreateRequest, db=Depends(get_db), current_user=Depends(get_current_authenticated_user)):
+    model = await create_req.do_create(db, current_user=current_user)
     return await EquipmentDetail.from_model(model)
 
 
@@ -48,10 +51,18 @@ async def read_equipment(equipment_id: UUID, db=Depends(get_db)) -> EquipmentDet
     equipment = await Equipment.get_for_id(db, equipment_id)
     return await EquipmentDetail.from_model(equipment)
 
-
 @equipments.get("/installation")
-async def index_equipment_installations():
-    raise NotImplementedError
+async def index_equipment_installations(lab: UUID | None = None, equipment: UUID | None = None, db=Depends(get_db)):
+    index = EquipmentInstallationIndex(lab=lab, equipment=equipment)
+    return await index.load_page(db)
+
+@equipments.post("/installation")
+async def create_installation(create_req: DeclareEquipmentInstallationRequest | NewEquipmentRequest, db=Depends(get_db), current_user=Depends(get_current_authenticated_user)):
+    installation = await create_req.do_create(db, current_user=current_user)
+    if isinstance(installation, EquipmentInstallation):
+        return await EquipmentInstallationDetail.from_model(installation)
+    else:
+        return await EquipmentInstallationProvisionDetail.from_model(installation)
 
 
 @equipments.get("/installation/{installation_id}")

@@ -3,16 +3,19 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, select, or_
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects import postgresql as psql
 
-from db import LocalSession
-from db.models.lab.installable.lab_installation import LabInstallation
-
-from ..base import Base
-from ..fields import uuid_pk
-from ..lab.installable.installable import Installable
+from db import LocalSession, local_object_session
+from db.models.base import Base
+from db.models.base.base import model_id
+from db.models.fields import uuid_pk
+from db.models.lab import Lab
+from db.models.lab.installable import LabInstallation, Installable
+from db.models.lab.lab import query_labs
+from db.models.uni.campus import Campus
+from db.models.uni.discipline import DISCIPLINE_ENUM, Discipline
 
 from .errors import EquipmentDoesNotExist
 
@@ -32,12 +35,11 @@ class Equipment(Installable, Base):
         psql.ARRAY(psql.TEXT), server_default="{}"
     )
 
+    disciplines: Mapped[list[Discipline]] = mapped_column(psql.ARRAY(DISCIPLINE_ENUM), server_default="{}")
+
     equipment_installations: Mapped[list[EquipmentInstallation]] = relationship(
         back_populates="equipment"
     )
-
-    async def installations(self) -> list[LabInstallation]:
-        return await self.awaitable_attrs.equipment_installations
 
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID):
@@ -46,30 +48,48 @@ class Equipment(Installable, Base):
             raise EquipmentDoesNotExist(for_id=id)
         return e
 
+    async def get_installation(self, lab: Lab | UUID) -> LabInstallation[Equipment]:
+        from .equipment_installation import EquipmentInstallation
+
+        db = local_object_session(self)
+
+        return await EquipmentInstallation.get_for_installable_lab(db, self, lab)
 
 def query_equipments(
-    lab: UUID | None = None,
+    search: str | None = None,
     name_eq: str | None = None,
     name_istartswith: str | None = None,
-    has_tags: set[str] | str | None = None,
+    has_tags: set[str] | None = None,
+    lab: Select[tuple[Lab]] | list[Lab | UUID] | Lab | UUID | None = None,
+    installed_campus: list[Campus | UUID] | Campus | UUID | None = None,
+    installed_discipline: list[Discipline] | Discipline | None = None
 ) -> Select[tuple[Equipment]]:
+    from .equipment_installation import EquipmentInstallation, query_equipment_installations
     clauses: list = []
 
-    if lab is not None:
-        subquery = (
-            select(EquipmentInstallation.equipment_id)
-            .where(EquipmentInstallation.lab_id == lab)
-            .scalar_subquery()
+    if search:
+        # TODO: Implement full text search properly.
+        clauses.append(
+            or_(
+                Equipment.name.ilike(f"%{search}%"),
+                Equipment.description.ilike(f"%{search}%")
+            )
         )
-        clauses.append(Equipment.id.in_(subquery))
+
+    if (lab is not None) or (installed_campus is not None) or (installed_discipline is not None):
+        installations = query_equipment_installations(
+            lab=lab,
+            installed_campus=installed_campus,
+            installed_discipline=installed_discipline
+        )
+        clauses.append(Equipment.id.in_(
+            installations.select(EquipmentInstallation.equipment_id).scalar_subquery())
+        )
 
     if name_eq is not None:
         clauses.append(Equipment.name == name_eq)
     elif name_istartswith:
         clauses.append(Equipment.name._ilike(f"{name_istartswith}%"))
-
-    if isinstance(has_tags, str):
-        has_tag = set([has_tags])
 
     if has_tags:
         clauses.append(*[Equipment.tags.contains(tag) for tag in has_tags])

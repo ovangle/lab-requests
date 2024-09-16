@@ -1,7 +1,7 @@
 import { Injectable, inject } from "@angular/core";
-import { Model, ModelCreateRequest, ModelIndexPage, ModelParams, ModelQuery, ModelRef, ModelUpdateRequest, isEqualModelRefs, modelIndexPageFromJsonObject, modelParamsFromJsonObject, setModelQueryParams } from "../common/model/model";
+import { Model, ModelCreateRequest, ModelIndexPage, ModelQuery, ModelRef, ModelUpdateRequest, isEqualModelRefs, modelId, modelIndexPageFromJsonObject, setModelQueryParams } from "../common/model/model";
 import { JsonObject, isJsonObject } from "../utils/is-json-object";
-import { SoftwareInstallation, SoftwareInstallationQuery, SoftwareInstallationService, softwareInstallationFromJsonObject } from "./installation/software-installation";
+import { SoftwareInstallation, SoftwareInstallationQuery, SoftwareInstallationService } from "./installation/software-installation";
 import { ModelService, RestfulService } from "../common/model/model-service";
 import { HttpParams } from "@angular/common/http";
 import { Installable } from "../lab/common/installable/installable";
@@ -9,22 +9,11 @@ import { Provisionable } from "../lab/common/provisionable/provisionable";
 import { Lab } from "../lab/lab";
 import { LabProvisionService, LabProvisionQuery, LabProvision } from "../lab/common/provisionable/provision";
 import { LabInstallationService } from "../lab/common/installable/installation";
-import { SoftwareProvision } from "./provision/software-provision";
-import { Observable, firstValueFrom } from "rxjs";
+import { SoftwareInstallationProvision } from "./provision/software-provision";
+import { Observable, firstValueFrom, of } from "rxjs";
 
 
-export interface SoftwareParams extends ModelParams {
-    name: string;
-    description: string;
-    tags: readonly string[];
-
-    requiresLicense: boolean;
-    isPaidSoftware: boolean;
-
-    currentInstallations: SoftwareInstallation[];
-}
-
-export class Software extends Model implements SoftwareParams, Installable<SoftwareInstallation> {
+export class Software extends Model implements Installable<SoftwareInstallation> {
     name: string;
     description: string;
     tags: string[];
@@ -32,86 +21,68 @@ export class Software extends Model implements SoftwareParams, Installable<Softw
     requiresLicense: boolean;
     isPaidSoftware: boolean;
 
-    currentInstallations: SoftwareInstallation[];
+    installations: ModelIndexPage<SoftwareInstallation>;
 
-    constructor(params: SoftwareParams) {
-        super(params);
-        this.name = params.name;
-        this.description = params.description;
-        this.tags = [ ...params.tags ];
+    constructor(json: JsonObject) {
+        super(json);
 
-        this.requiresLicense = params.requiresLicense;
-        this.isPaidSoftware = params.isPaidSoftware;
+        if (typeof json['name'] !== 'string') {
+            throw new Error("Expected a string 'name'");
+        }
+        this.name = json['name'];
+        if (typeof json['description'] !== 'string') {
+            throw new Error("Expected a string 'description'");
+        }
+        this.description = json['description'];
 
-        this.currentInstallations = params.currentInstallations;
+        if (!Array.isArray(json['tags'])
+            || !json['tags'].every((t) => typeof t === 'string')
+        ) {
+            throw new Error("Expected an array of strings 'tags'");
+        }
+        this.tags = [...json['tags']]
+
+        if (!isJsonObject(json['installations'])) {
+            throw new Error("Expected a json object 'installations'");
+        }
+        this.installations = modelIndexPageFromJsonObject(
+            'installations',
+            SoftwareInstallation,
+            json
+        );
+
+        if (typeof json['requiresLicense'] !== 'boolean') {
+            throw new Error("Expected a boolean 'requiresLicense'")
+        }
+        this.requiresLicense = json['requiresLicense'];
+
+        if (typeof json['isPaidSoftware'] !== 'boolean') {
+            throw new Error("Expected a boolean 'isPaidSoftware'");
+        }
+        this.isPaidSoftware = json['isPaidSoftware'];
     }
 
+    getInstallation(lab: ModelRef<Lab>, using: SoftwareInstallationService): Promise<SoftwareInstallation> {
+        for (const install of this.installations.items) {
+            if (install.labId === modelId(lab)) {
+                return Promise.resolve(install);
+            }
+        }
 
-    getCurrentInstallation(
-        lab: ModelRef<Lab>,
-    ): SoftwareInstallation | undefined {
-        return this.currentInstallations.find(
-            (install) => isEqualModelRefs(install.lab, lab)
-        )
+        return firstValueFrom(using.getForLabSoftware(this, lab));
     }
 
     queryInstallations(
         query: Partial<SoftwareInstallationQuery>,
-        usingService: ModelService<SoftwareInstallation, SoftwareInstallationQuery>
+        using: SoftwareInstallationService
     ): Observable<ModelIndexPage<SoftwareInstallation>> {
-        return usingService.queryPage({
+        return using.queryPage({
             ...query,
             software: this.id
         });
     }
 }
 
-export function softwareFromJsonObject(json: JsonObject): Software {
-    const baseParams = modelParamsFromJsonObject(json);
-
-    if (typeof json[ 'name' ] !== 'string') {
-        throw new Error("Expected a string 'name'");
-    }
-    if (typeof json[ 'description' ] !== 'string') {
-        throw new Error("Expected a string 'description'");
-    }
-
-    if (!Array.isArray(json[ 'tags' ])
-        || !json[ 'tags' ].every((t) => typeof t === 'string')
-    ) {
-        throw new Error("Expected an array of strings 'tags'");
-    }
-
-    if (!isJsonObject(json[ 'installations' ])) {
-        throw new Error("Expected a json object 'installations'");
-    }
-
-    if (!Array.isArray(json[ 'currentInstallations' ]) || !json[ 'currentInstallations' ].every(isJsonObject)) {
-        throw new Error("Expected an array of json objects 'currentInstallations'")
-    }
-
-    const currentInstallations = json[ 'currentInstallations' ]
-        .map(softwareInstallationFromJsonObject);
-
-
-    if (typeof json[ 'requiresLicense' ] !== 'boolean') {
-        throw new Error("Expected a boolean 'requiresLicense'")
-    }
-
-    if (typeof json[ 'isPaidSoftware' ] !== 'boolean') {
-        throw new Error("Expected a boolean 'isPaidSoftware'");
-    }
-
-    return new Software({
-        ...baseParams,
-        name: json[ 'name' ],
-        description: json[ 'description' ],
-        tags: json[ 'tags' ],
-        requiresLicense: json[ 'requiresLicense' ],
-        isPaidSoftware: json[ 'isPaidSoftware' ],
-        currentInstallations
-    });
-}
 
 export interface SoftwareQuery extends ModelQuery<Software> { }
 function setSoftwareQueryParams(params: HttpParams, query: Partial<SoftwareQuery>) {
@@ -133,7 +104,7 @@ function softwareUpdateRequestToJsonObject(request: SoftwareCreateRequest): Json
 @Injectable({ providedIn: 'root' })
 export class SoftwareService extends RestfulService<Software, SoftwareQuery> {
     override readonly path = '/software';
-    override readonly modelFromJsonObject = softwareFromJsonObject;
+    override readonly model = Software;
     override readonly setModelQueryParams = setSoftwareQueryParams;
 
     create(request: SoftwareCreateRequest) {

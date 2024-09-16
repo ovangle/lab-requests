@@ -1,5 +1,5 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, EventEmitter, Input, Output, inject } from "@angular/core";
-import { CreateTemporaryUserRequest, CreateTemporaryUserResult, User, UserService } from "../common/user";
+import { CreateTemporaryUserRequest, CreateTemporaryUserResult, User, UserService } from "../user";
 import { APP_BASE_HREF } from "@angular/common";
 import { CreateTemporaryUserFormComponent } from "./user-create-temporary-user-form.component";
 import { firstValueFrom } from "rxjs";
@@ -23,9 +23,9 @@ import urlJoin from "url-join";
             <p>
                 A temporary user has been created {{result!.user.email}}
             <p>
-                Either: 
-                Instruct the user to navigate to 
-                <div class="redirect-url"> 
+                Either:
+                Instruct the user to navigate to
+                <div class="redirect-url">
                     {{userRedirectUrl}}
                 </div>
 

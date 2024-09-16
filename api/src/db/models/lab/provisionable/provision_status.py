@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Annotated, ClassVar, TypedDict
+from typing import Annotated, Any, ClassVar, TypedDict
 from uuid import UUID
 import warnings
 
@@ -11,7 +11,7 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy.dialects import postgresql
 
 from db import LocalSession
-from db.models.base.errors import ModelException
+from db.models.base import ModelException
 from db.models.base.state import StatusTransitionTypeDecorator
 from db.models.user import User
 
@@ -50,6 +50,7 @@ class ProvisionStatus(Enum):
     def is_pending(self):
         return self in [
             ProvisionStatus.REQUESTED,
+            ProvisionStatus.REJECTED,
             ProvisionStatus.APPROVED,
             ProvisionStatus.PURCHASED,
         ]
@@ -96,7 +97,14 @@ def _provision_transition_to_json(metadata: ProvisionTransition):
     }
 
 
-class PROVISION_STATUS_TRANSITION(StatusTransitionTypeDecorator[ProvisionStatus]):
+class PROVISION_STATUS_TRANSITION(StatusTransitionTypeDecorator[ProvisionStatus, ProvisionTransition]):
+    def transition_from_json(self, json: dict[str, Any]):
+        return _provision_transition_from_json(json)
+
+
+    def transition_to_json(self, transition: ProvisionTransition):
+        return _provision_transition_to_json(transition)
+
     def copy(self, **kw):
         return PROVISION_STATUS_TRANSITION(self.status, repeatable=self.repeatable)
 

@@ -1,13 +1,31 @@
 import { CommonModule } from "@angular/common";
 import { Component, inject } from "@angular/core";
-import { RouterModule } from "@angular/router";
-import { EquipmentContext } from "../equipment-context";
-import { EquipmentInstallationListComponent } from "../installation/equipment-installation-list.component";
+import { ActivatedRoute, RouterModule } from "@angular/router";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { EquipmentTrainingDescriptionsInfoComponent } from "../training/training-descriptions-info.component";
 import { EquipmentTagChipsComponent } from "../tag/equipment-tag-chips.component";
 import { EquipmentDetailStateService, EquipmentDetailSubpage, setDetailPageSubroute } from "./equipment-detail.state";
+import { map, switchMap, tap } from "rxjs";
+import { EquipmentService } from "../equipment";
+import { EquipmentContext } from "../equipment-context";
+import { EquipmentTrainingDescriptionListComponent } from "../training/training-description-list.component";
+import { EquipmentInstallationTableComponent } from "../installation/equipment-installation-table.component";
+
+function equipmentFromRouteParams() {
+    const route = inject(ActivatedRoute);
+    const equipmentService = inject(EquipmentService);
+
+    return route.paramMap.pipe(
+        map(params => params.get('equipment_id')),
+        switchMap(equipmentId => {
+            if (equipmentId == null) {
+                throw new Error(`No equipment_id in route params`)
+            }
+            return equipmentService.fetch(equipmentId);
+        })
+    );
+}
 
 @Component({
     selector: 'equipment-detail-page',
@@ -17,50 +35,44 @@ import { EquipmentDetailStateService, EquipmentDetailSubpage, setDetailPageSubro
         RouterModule,
         MatButtonModule,
         MatIconModule,
-        EquipmentInstallationListComponent,
+        EquipmentTrainingDescriptionListComponent,
         EquipmentTrainingDescriptionsInfoComponent,
-        EquipmentTagChipsComponent
+        EquipmentTagChipsComponent,
+        EquipmentInstallationTableComponent
     ],
     host: {
         '[class.scaffold-content-full-width]': 'true'
     },
     template: `
     @if (equipment$ | async; as equipment) {
-      <div class="equipment-page-header">
         <div class="equipment-page-title">
             <h1>
                 {{equipment.name}}
             </h1>
+        </div>
 
-            @if (showTagChips$ | async) {
-                <equipment-tag-chips [equipment]="equipment" />
+        <div class="general-info">
+            <equipment-tag-chips [tags]="equipment.tags" />
+            <div class="description">
+                {{equipment.description}}
+            </div>
+        </div>
+        <equipment-training-description-list [trainingDescriptions]="equipment.trainingDescriptions" />
+
+        <div class="installations">
+            <div class="installations-header">
+            <h4>Installations</h4>
+            <a mat-icon-button [routerLink]="[{outlets: {form: addEquipmentFormLink$ | async}}]">
+                <mat-icon>add</mat-icon>
+            </a>
+            </div>
+            @if (equipment.installations.totalItemCount === 0) {
+                <p>Equipment has no installations</p>
+            } @else {
+                <equipment-installation-table [installations]="equipment.installations.items" />
             }
         </div>
 
-        @if (updateLinkVisible$ | async) {
-            <a mat-raised-button 
-               routerLink="./update" 
-               color="primary"
-               [disabled]="updateLinkDisabled$ | async">
-                <mat-icon>edit</mat-icon>Edit
-            </a>
-        }
-      </div>
-
-      @if (showDescription$ | async) {
-        <p><em>{{ equipment.description }}</em></p>
-      }
-      <router-outlet (activate)="_onRouterOutletActivate($event)" (deactivate)="_onRouterOutletDeactivate()" />
-
-      @if (showDetail$ | async) {
-        <lab-equipment-training-descriptions-info
-            [trainingDescriptions]="equipment.trainingDescriptions"
-        />
-
-        <equipment-installation-list [equipment]="equipment">
-            <div class="list-title">Installations</div>
-        </equipment-installation-list>
-      }
     }
     `,
     styles: `
@@ -73,27 +85,21 @@ import { EquipmentDetailStateService, EquipmentDetailSubpage, setDetailPageSubro
     }
     `,
     providers: [
-        EquipmentDetailStateService
+        EquipmentContext
     ]
 })
 export class EquipmentDetailPage {
     readonly context = inject(EquipmentContext);
-    readonly equipment$ = this.context.committed$;
+    readonly equipment$ = equipmentFromRouteParams().pipe(
+        tap(equipment => this.context.nextCommitted(equipment))
+    );
 
-    readonly _equipmentDetailState = inject(EquipmentDetailStateService);
-    readonly showTagChips$ = this._equipmentDetailState.select((s) => s.showTagChips);
+    readonly addEquipmentFormLink$ = this.equipment$.pipe(
+        map((equipment) => [
+            'equipment-forms',
+            'equipment-installation',
+            { equipment: equipment.id }
+        ])
+    );
 
-    readonly updateLinkVisible$ = this._equipmentDetailState.select((s) => s.updateLinkVisible);
-    readonly updateLinkDisabled$ = this._equipmentDetailState.select((s) => s.updateLinkDisabled);
-    readonly showDescription$ = this._equipmentDetailState.select((s) => s.showDescription);
-    readonly showDetail$ = this._equipmentDetailState.select((s) => s.showDetail);
-
-    _onRouterOutletActivate(page: EquipmentDetailSubpage) {
-        const action = setDetailPageSubroute(page);
-        this._equipmentDetailState.dispatch(action);
-    }
-
-    _onRouterOutletDeactivate() {
-        this._equipmentDetailState.dispatch(setDetailPageSubroute(null));
-    }
 }

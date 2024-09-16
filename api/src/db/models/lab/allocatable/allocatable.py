@@ -1,4 +1,4 @@
-from typing import TypeVar
+from typing import ClassVar, TypeVar
 
 from sqlalchemy.orm import Mapped
 
@@ -9,5 +9,8 @@ from ..provisionable.provisionable import Provisionable
 
 class Allocatable(Provisionable, Base):
     __abstract__ = True
+    __allocation_type__: ClassVar[str]
 
-    allocation_type: Mapped[str]
+    @property
+    def allocation_type(self):
+        return type(self).__allocation_type__

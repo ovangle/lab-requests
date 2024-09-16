@@ -1,57 +1,48 @@
 import { validate as validateIsUUID } from 'uuid';
 
-import { ModelParams, Model, modelParamsFromJsonObject, ModelQuery, modelId, ModelRef, isModelRef } from "src/app/common/model/model";
-import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
-import { Lab, LabService, labFromJsonObject } from '../../lab/lab';
-import { NEVER, Observable, firstValueFrom, map, of, race, switchMap, timer } from 'rxjs';
-import { Injectable, Type, inject } from '@angular/core';
-import { EquipmentContext } from '../equipment-context';
-import { Equipment, EquipmentCreateRequest, EquipmentService, equipmentCreateRequestToJsonObject, equipmentFromJsonObject } from '../equipment';
+import { ModelQuery, modelId, ModelRef, isModelRef } from "src/app/common/model/model";
+import { JsonObject } from "src/app/utils/is-json-object";
+import { Lab } from '../../lab/lab';
+import { NEVER, Observable, of, race, switchMap, timer } from 'rxjs';
+import { Injectable, } from '@angular/core';
+import { Equipment, EquipmentCreateRequest, EquipmentService, equipmentCreateRequestToJsonObject } from '../equipment';
 import { HttpParams } from '@angular/common/http';
-import { RelatedModelService } from 'src/app/common/model/context';
-import { LabInstallation, LabInstallationParams, LabInstallationQuery, labInstallationParamsFromJsonObject, setLabInstallationQueryParams } from 'src/app/lab/common/installable/installation';
-import { EquipmentProvision, equipmentProvisionFromJsonObject } from '../provision/equipment-provision';
+import { LabInstallation, LabInstallationQuery, setLabInstallationQueryParams } from 'src/app/lab/common/installable/installation';
+import { EquipmentProvision } from '../provision/equipment-provision';
 import { ProvisionableCreateRequest } from 'src/app/lab/common/provisionable/provisionable';
-
-export interface EquipmentInstallationParams extends LabInstallationParams<Equipment, EquipmentProvision> {
-    numInstalled: number;
-}
+import { EquipmentLease } from '../lease/equipment-lease';
+import { isUUID } from 'src/app/utils/is-uuid';
+import { RestfulService } from 'src/app/common/model/model-service';
 
 export class EquipmentInstallation
-    extends LabInstallation<Equipment, EquipmentProvision>
-    implements EquipmentInstallationParams {
+    extends LabInstallation<Equipment, EquipmentProvision> {
 
     numInstalled: number;
 
-    get equipment() { return this.installable; }
-
-    constructor(params: EquipmentInstallationParams) {
-        super(params);
-        this.lab = params.lab;
-        this.numInstalled = params.numInstalled;
+    readonly equipmentId: string;
+    get installableId() {
+        return this.equipmentId;
     }
+    readonly equipmentName: string;
 
-    resolveEquipment(using: EquipmentService) {
-        return this.resolveInstallable(using);
+    constructor(json: JsonObject) {
+        super(EquipmentProvision, EquipmentLease, json);
+
+        if (!isUUID(json['equipmentId'])) {
+            throw new Error(`Expected a uuid 'equipmentId'`);
+        }
+        this.equipmentId = json['equipmentId'];
+
+        if (typeof json['equipmentName'] !== 'string') {
+            throw new Error(`Expected a string 'equipmentName'`);
+        }
+        this.equipmentName = json['equipmentName']
+
+        if (typeof json['numInstalled'] !== 'number') {
+            throw new Error("Expected a number 'numInstalled'");
+        }
+        this.numInstalled = json['numInstalled'];
     }
-}
-
-export function equipmentInstallationFromJsonObject(json: JsonObject): EquipmentInstallation {
-    const baseParams = labInstallationParamsFromJsonObject(
-        equipmentFromJsonObject,
-        equipmentProvisionFromJsonObject,
-        'equipment',
-        json
-    );
-
-    if (typeof json[ 'numInstalled' ] !== 'number') {
-        throw new Error(`Expected a number 'numInstalled'`);
-    }
-
-    return new EquipmentInstallation({
-        ...baseParams,
-        numInstalled: json[ 'numInstalled' ]
-    });
 }
 
 export interface EquipmentInstallationQuery extends LabInstallationQuery<Equipment, EquipmentInstallation> {
@@ -67,7 +58,9 @@ export function setEquipmentInstallationQueryParams(params: HttpParams, query: E
 }
 
 export interface EquipmentInstallationCreateRequest extends ProvisionableCreateRequest<EquipmentInstallation> {
-    equipment: ModelRef<Equipment> | EquipmentCreateRequest;
+    equipment?: ModelRef<Equipment> | EquipmentCreateRequest;
+    lab: ModelRef<Lab>;
+    numInstalled: number;
 }
 
 export function equipmentInstallationCreateRequestToJsonObject(
@@ -88,14 +81,11 @@ export function equipmentInstallationCreateRequestToJsonObject(
 }
 
 
-@Injectable()
-export class EquipmentInstallationService extends RelatedModelService<Equipment, EquipmentInstallation, EquipmentInstallationQuery> {
-    override readonly context = inject(EquipmentContext);
-    override readonly modelFromJsonObject = equipmentInstallationFromJsonObject;
+@Injectable({ providedIn: 'root' })
+export class EquipmentInstallationService extends RestfulService<EquipmentInstallation, EquipmentInstallationQuery> {
+    readonly path = '/equipments/installation';
+    override readonly model = EquipmentInstallation;
     override readonly setModelQueryParams = setEquipmentInstallationQueryParams;
-
-    override readonly path = 'installations';
-    readonly equipment$ = this.context.committed$;
 
     fetchForLabEquipment(lab: Lab | string, equipment: Equipment | string): Observable<EquipmentInstallation | null> {
         const labId = modelId(lab);
@@ -104,7 +94,7 @@ export class EquipmentInstallationService extends RelatedModelService<Equipment,
         const fromCache = timer(0).pipe(
             switchMap(() => {
                 for (const install of this._cache.values()) {
-                    if (modelId(install.lab) === labId && modelId(install.equipment) === equipmentId) {
+                    if (install.labId === labId && install.equipmentId === equipmentId) {
                         return of(install);
                     }
                 }

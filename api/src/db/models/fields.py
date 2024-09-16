@@ -36,4 +36,5 @@ action_timestamp = Annotated[
     datetime | None, mapped_column(postgresql.TIME(timezone=True), server_default=None)
 ]
 action_user_fk = Annotated[UUID | None, mapped_column(ForeignKey("users.id"))]
+
 action_notes = Annotated[str, mapped_column(postgresql.TEXT)]

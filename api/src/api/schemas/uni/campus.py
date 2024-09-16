@@ -17,7 +17,6 @@ from ..base import (
 
 
 class CampusDetail(ModelDetail[Campus]):
-    id: UUID
     code: str
     name: str
 
@@ -56,13 +55,13 @@ class CampusIndex(ModelIndex[Campus]):
     search: str | None = None
 
     async def item_from_model(self, model: Campus):
-        return CampusDetail.from_model(model)
+        return await CampusDetail.from_model(model)
 
     def get_selection(self):
         return query_campuses(code_eq=self.code_eq, search=self.search)
 
 
-CampusIndexPage = ModelIndexPage[Campus]
+CampusIndexPage = ModelIndexPage[Campus, CampusDetail]
 
 
 class CampusUpdateRequest(ModelUpdateRequest[Campus]):

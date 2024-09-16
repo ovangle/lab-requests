@@ -1,6 +1,0 @@
-#! /bin/bash
-
-frozen_modules=$([[ -n "$API_DEBUG" ]] && echo 'on' || echo 'off')
-python -X frozen_modules=${frozen_modules} -m main
-
-

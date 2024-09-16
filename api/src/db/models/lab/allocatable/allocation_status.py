@@ -10,7 +10,7 @@ from sqlalchemy.orm import mapped_column
 
 from enum import Enum
 
-from db.models.base.errors import ModelException
+from db.models.base import ModelException
 
 
 class AllocationStatus(Enum):
@@ -34,7 +34,11 @@ class AllocationStatus(Enum):
 
     TEARDOWN = "teardown"
 
-    FINALIZED = "finalized"
+    FINALISED = "finalised"
+
+    @property
+    def is_pending(self):
+        return self not in {AllocationStatus.FINALISED, AllocationStatus.DENIED}
 
     @property
     def is_repeatable(self):
@@ -117,7 +121,7 @@ class ALLOCATION_STATUS_TRANSITION(types.TypeDecorator):
     def process_result_value(self, value: list[dict] | dict | None, dialect: Dialect):
         if self.repeatable:
             if not isinstance(value, list):
-                raise ValueError("expected a list of metadatas")
+                raise ModelException("expected a list of metadatas")
             return [_allocation_status_transition_from_json(m) for m in value]
         else:
             return (
@@ -130,7 +134,7 @@ class ALLOCATION_STATUS_TRANSITION(types.TypeDecorator):
         return ALLOCATION_STATUS_TRANSITION(self.status, repeatable=self.repeatable)
 
 
-class AllocationStatusError(ModelException):
+class AllocationStatusError(ValueError):
     def __init__(
         self,
         status: AllocationStatus,

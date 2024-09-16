@@ -2,16 +2,15 @@ import { Component, inject } from "@angular/core";
 import { ResearchPlanContext } from "../plan/research-plan-context";
 import { firstValueFrom } from "rxjs";
 import { ResearchPlan, ResearchPlanService } from "../plan/research-plan";
-import { LabResourceContainerFormComponent } from "src/app/lab/lab-resource-consumer/resource-container-form.component";
 
 @Component({
     standalone: true,
-    imports: [
-        LabResourceContainerFormComponent
-    ],
+    imports: [],
     template: `
+    <!--
     <lab-resource-container-form
         [modelContext]="_context" />
+    -->
     `
 
 })

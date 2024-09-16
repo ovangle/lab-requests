@@ -11,5 +11,6 @@ class Discipline(Enum):
     CIVIL = "civil"
     MECHANICAL = "mechanical"
 
+DISCIPLINE_ENUM = postgresql.ENUM(name='uni_discipline', create_type=False)
 
 uni_discipline = Annotated[Discipline, mapped_column(postgresql.ENUM(Discipline))]

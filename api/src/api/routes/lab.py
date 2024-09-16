@@ -13,7 +13,7 @@ from api.schemas.lab import LabDetail
 labs = APIRouter(prefix="/labs", tags=["labs"])
 
 
-@labs.get("/")
+@labs.get("/lab")
 async def index_labs(
     search: str | None = None,
     campus: UUID | None = None,
@@ -39,11 +39,7 @@ async def index_labs(
     else:
         id_in = []
 
-    labs = LabIndex()
-    labs.campus = campus_model
-    labs.discipline = discipline
-    labs.search = search
-    labs.id_in = id_in
+    labs = LabIndex(campus=campus_model, discipline=discipline, search=search, id_in=id_in, page_index=page)
     return await labs.load_page(db)
 
 

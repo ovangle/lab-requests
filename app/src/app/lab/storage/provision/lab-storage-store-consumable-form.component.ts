@@ -3,7 +3,7 @@ import { AbstractLabProvisionCreateFormComponent, LabProvisionCreateFormGroup, i
 import { LabStorageProvision, StoreConsumableRequest } from "./lab-storage-provision";
 import { ModelRef } from "src/app/common/model/model";
 import { ResearchFunding } from "src/app/research/funding/research-funding";
-import { LabStorage, LabStorageCreateRequest } from "../lab-storage";
+import { LabStorage, LabStorageCreateRequest } from "../../common/storable/lab-storage";
 
 export type StoreConsumableFormGroup = LabProvisionCreateFormGroup<{
 

@@ -14,4 +14,5 @@ COPY . .
 ENV PYTHONPATH="/srv/api/src"
 
 EXPOSE 8000
-CMD ["python", "-X", "frozen_modules=off", "-m", "main"]
+ENTRYPOINT ["python", "-X", "frozen_modules=off", "-m", "main"]
+CMD ["api", "serve"]

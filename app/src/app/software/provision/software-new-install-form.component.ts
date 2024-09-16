@@ -2,7 +2,7 @@ import { Component, inject, input } from "@angular/core";
 import { ControlContainer, FormControl, FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { SoftwareInstallation, SoftwareInstallationCreateRequest } from "../installation/software-installation";
 import { AbstractLabProvisionCreateFormComponent, LabProvisionCreateFormGroup, labProvisionCreateFormGroup, labProvisionCreateRequestFromFormValue } from "src/app/lab/common/provisionable/abstract-lab-provision-create-form.component";
-import { NewSoftwareRequest, SoftwareProvision, SoftwareProvisionService } from "./software-provision";
+import { NewSoftwareRequest, SoftwareInstallationProvision, SoftwareProvisionService } from "./software-provision";
 import { LabProvisionCreateRequest } from "src/app/lab/common/provisionable/provision";
 import { Software } from "../software";
 import { MatButton, MatButtonModule } from "@angular/material/button";
@@ -56,18 +56,17 @@ export function newSoftwareRequestFromFormValue(
         MatFormFieldModule,
         MatIcon,
 
-        ResearchFundingCostEstimateFormComponent,
         SoftwareUpgradeProvisionCreateFormComponent
     ],
     template: `
     @if (currentInstallation(); as installation) {
         <!-- If this software is already installed in the current lab,
              then replace this with a request to upgrade the software
-             if necessary 
+             if necessary
         -->
-        <software-upgrade-install-form 
-            [formGroup]="form"
-            [currentInstallation]="installation" />
+        <software-upgrade-install-form
+            [target]="installation"
+            [formGroup]="form" />
     } @else {
         <form [formGroup]="form" (ngSubmit)="onFormSubmit()">
 
@@ -82,10 +81,12 @@ export function newSoftwareRequestFromFormValue(
         }
 
         @if (form.value.hasCostEstimates) {
+            <!--
             <research-funding-cost-estimate-form formGroupName="estimatedCost"
-                [funding]="funding()" 
+                [funding]="funding()"
                 [quantityRequired]="[1, 'install']"
             />
+            -->
         }
 
         @if (isStandaloneForm) {
@@ -100,9 +101,8 @@ export function newSoftwareRequestFromFormValue(
     `
 })
 export class NewSoftwareProvisionCreateFormComponent
-    extends AbstractLabProvisionCreateFormComponent<SoftwareInstallation, SoftwareProvision, NewSoftwareFormGroup> {
+    extends AbstractLabProvisionCreateFormComponent<SoftwareInstallationProvision, NewSoftwareFormGroup, NewSoftwareRequest> {
     readonly _softwareProvisionService = inject(SoftwareProvisionService);
-    readonly _controlContainer = inject(ControlContainer, { optional: true });
 
     software = input.required<Software>();
     lab = input.required<Lab>();
@@ -110,9 +110,6 @@ export class NewSoftwareProvisionCreateFormComponent
     funding = input<ResearchFunding>();
 
     currentInstallation = input<SoftwareInstallation>();
-
-    _standaloneForm: NewSoftwareFormGroup | undefined;
-    get isStandaloneForm() { return this._standaloneForm !== undefined; }
 
     override get form(): NewSoftwareFormGroup {
         if (this._controlContainer?.control instanceof FormGroup) {
@@ -124,7 +121,7 @@ export class NewSoftwareProvisionCreateFormComponent
         return this._standaloneForm;
     }
 
-    override createFromForm(form: NewSoftwareFormGroup): Observable<SoftwareProvision> {
+    createFromForm(form: NewSoftwareFormGroup): Observable<SoftwareInstallationProvision> {
         if (!form.valid) {
             throw new Error('Invalid form has no value');
         }
