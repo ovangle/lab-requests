@@ -6,7 +6,7 @@ from db.models.lab.lab import Lab, query_labs
 from db.models.uni.campus import Campus
 from db.models.uni.discipline import Discipline
 
-from api.schemas.lab import LabIndex, LabIndexPage, LabDetail
+from api.schemas.lab import LabIndexPage, LabDetail
 from api.schemas.uni.campus import CampusLookup, lookup_campus
 from api.schemas.lab import LabDetail
 
@@ -39,8 +39,12 @@ async def index_labs(
     else:
         id_in = []
 
-    labs = LabIndex(campus=campus_model, discipline=discipline, search=search, id_in=id_in, page_index=page)
-    return await labs.load_page(db)
+    return await LabIndexPage.from_selection(
+        db,
+        query_labs(campus=campus_model, discipline=discipline, search=search, id_in=id_in),
+        LabDetail.from_model,
+        page_index=1
+    )
 
 
 @labs.get("/lab/{lab_id}")

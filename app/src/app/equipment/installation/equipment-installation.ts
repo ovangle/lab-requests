@@ -1,14 +1,14 @@
 import { validate as validateIsUUID } from 'uuid';
 
-import { ModelQuery, modelId, ModelRef, isModelRef } from "src/app/common/model/model";
+import { ModelQuery, modelId, ModelRef, isModelRef, ModelUpdateRequest } from "src/app/common/model/model";
 import { JsonObject } from "src/app/utils/is-json-object";
 import { Lab } from '../../lab/lab';
 import { NEVER, Observable, of, race, switchMap, timer } from 'rxjs';
-import { Injectable, } from '@angular/core';
+import { inject, Injectable, } from '@angular/core';
 import { Equipment, EquipmentCreateRequest, EquipmentService, equipmentCreateRequestToJsonObject } from '../equipment';
 import { HttpParams } from '@angular/common/http';
 import { LabInstallation, LabInstallationQuery, setLabInstallationQueryParams } from 'src/app/lab/common/installable/installation';
-import { EquipmentProvision } from '../provision/equipment-provision';
+import { EquipmentProvision, EquipmentProvisionService, EquipmentTransferRequest, NewEquipmentRequest } from '../provision/equipment-provision';
 import { ProvisionableCreateRequest } from 'src/app/lab/common/provisionable/provisionable';
 import { EquipmentLease } from '../lease/equipment-lease';
 import { isUUID } from 'src/app/utils/is-uuid';
@@ -17,6 +17,7 @@ import { RestfulService } from 'src/app/common/model/model-service';
 export class EquipmentInstallation
     extends LabInstallation<Equipment, EquipmentProvision> {
 
+    installedModelName: string;
     numInstalled: number;
 
     readonly equipmentId: string;
@@ -38,6 +39,11 @@ export class EquipmentInstallation
         }
         this.equipmentName = json['equipmentName']
 
+        if (typeof json['installedModelName'] !== 'string') {
+            throw new Error(`Expected a string 'modelName'`);
+        }
+        this.installedModelName = json['installedModelName'];
+
         if (typeof json['numInstalled'] !== 'number') {
             throw new Error("Expected a number 'numInstalled'");
         }
@@ -57,14 +63,15 @@ export function setEquipmentInstallationQueryParams(params: HttpParams, query: E
     return params;
 }
 
-export interface EquipmentInstallationCreateRequest extends ProvisionableCreateRequest<EquipmentInstallation> {
+export interface EquipmentInstallationRequest extends ProvisionableCreateRequest<EquipmentInstallation>, ModelUpdateRequest<EquipmentInstallation> {
     equipment?: ModelRef<Equipment> | EquipmentCreateRequest;
-    lab: ModelRef<Lab>;
+    lab?: ModelRef<Lab>;
+    modelName?: string;
     numInstalled: number;
 }
 
 export function equipmentInstallationCreateRequestToJsonObject(
-    request: EquipmentInstallationCreateRequest
+    request: EquipmentInstallationRequest
 ): JsonObject {
     let equipment: JsonObject | string;
     if (isModelRef(request.equipment)) {
@@ -74,10 +81,11 @@ export function equipmentInstallationCreateRequestToJsonObject(
     }
 
     return {
-        lab: modelId(request.lab),
-        equipment
+        lab: request.lab ? modelId(request.lab) : undefined,
+        equipment,
+        numInstalled: request.numInstalled,
+        modelName: request.modelName
     };
-
 }
 
 
@@ -86,6 +94,8 @@ export class EquipmentInstallationService extends RestfulService<EquipmentInstal
     readonly path = '/equipments/installation';
     override readonly model = EquipmentInstallation;
     override readonly setModelQueryParams = setEquipmentInstallationQueryParams;
+
+    readonly provisionService = inject(EquipmentProvisionService);
 
     fetchForLabEquipment(lab: Lab | string, equipment: Equipment | string): Observable<EquipmentInstallation | null> {
         const labId = modelId(lab);
@@ -104,5 +114,32 @@ export class EquipmentInstallationService extends RestfulService<EquipmentInstal
 
         const fromServer = this.queryOne({ lab, equipment });
         return race(fromCache, fromServer);
+    }
+
+    create(request: EquipmentInstallationRequest): Observable<EquipmentInstallation> {
+        if (request.lab == undefined) {
+            throw new Error('Lab is required for create request');
+        }
+
+        return this._doCreate(
+            equipmentInstallationCreateRequestToJsonObject,
+            request
+        );
+    }
+
+    update(installation: ModelRef<EquipmentInstallation>, request: EquipmentInstallationRequest): Observable<EquipmentInstallation> {
+        return this._doUpdate(
+            installation,
+            equipmentInstallationCreateRequestToJsonObject,
+            request
+        );
+    }
+
+    newEquipment(request: NewEquipmentRequest) {
+        return this.provisionService.newEquipment(request);
+    }
+
+    transferEquipment(request: EquipmentTransferRequest) {
+        return this.provisionService.transferEquipment(request);
     }
 }

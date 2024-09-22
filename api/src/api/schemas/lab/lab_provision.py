@@ -21,11 +21,10 @@ from db.models.research.funding import ResearchFunding
 from db.models.research.funding.research_budget import ResearchBudget
 from db.models.user import User
 
-from ..research.funding import ResearchPurchaseDetail, ResearchPurchaseOrderDetail
+from ..research.funding import ResearchPurchaseDetail, ResearchPurchaseOrderCreate, ResearchPurchaseOrderDetail
 from ..base import (
     ModelCreateRequest,
     ModelDetail,
-    ModelIndex,
     ModelRequestContextError,
     ModelUpdateRequest,
 )
@@ -130,9 +129,6 @@ class LabProvisionDetail(ResearchPurchaseOrderDetail, Generic[TProvision]):
         )
 
 
-class LabProvisionIndex(ModelIndex[TProvision], Generic[TProvision]):
-    pass
-
 class LabProvisionCreateRequest(
     ModelCreateRequest[TProvision],
     Generic[TProvision],
@@ -142,32 +138,26 @@ class LabProvisionCreateRequest(
         "current_user": Depends(get_current_authenticated_user),
     }
 
-    type: str
+    action: str
+    lab: UUID
 
-    lab_id: UUID
-
-    async def get_lab(self, db: LocalSession):
-        return await Lab.get_by_id(db, self.lab_id)
-
-    budget_id: UUID | None = None
-
-    async def get_budget(self, db: LocalSession):
-        return (await ResearchBudget.get_by_id(db, self.budget_id)) if self.budget_id else None
-
-    estimated_cost: float | None = None
-
+    purchase: ResearchPurchaseOrderCreate
     note: str
 
     @abstractmethod
-    async def do_create_lab_provision(
+    async def _do_create_lab_provision(
         self,
         db: LocalSession,
-        type: str,
+        action: str,
         *,
         lab: Lab,
         budget: ResearchBudget | None,
+        estimated_cost: float,
+        purchase_url: str | None,
+        purchase_instructions: str,
         current_user: User,
-        note: str
+        note: str,
+        **kwargs
     ) -> TProvision: ...
 
     async def do_create(
@@ -176,16 +166,20 @@ class LabProvisionCreateRequest(
         if not current_user:
             raise ModelRequestContextError("Expected authenticated request context")
 
-        lab = await self.get_lab(db)
-        budget = await self.get_budget(db)
+        lab = await Lab.get_by_id(db, self.lab)
+        budget = await ResearchBudget.get_by_id(db, self.purchase.budget)
 
-        return await self.do_create_lab_provision(
+        return await self._do_create_lab_provision(
             db,
-            self.type,
+            self.action,
             current_user=current_user,
             budget=budget,
+            purchase_url=self.purchase.url,
+            estimated_cost=self.purchase.estimated_cost,
+            purchase_instructions=self.purchase.instructions,
             lab=lab,
             note=self.note,
+            **kwargs
         )
 
 class LabProvisionRejection(ModelUpdateRequest[TProvision], Generic[TProvision]):
@@ -258,4 +252,4 @@ class LabProvisionCancel(ModelUpdateRequest[TProvision], Generic[TProvision]):
     ):
         if not current_user:
             raise ModelRequestContextError("Expected authenticated request context")
-        return await model.cancel(current_user, note=self.note)
+        return await model.cancel(current_user, cancelled_note=self.note)

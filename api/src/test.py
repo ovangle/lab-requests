@@ -1,9 +1,10 @@
 import asyncio
+from uuid import UUID
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from db import local_sessionmaker
-
-from db.models.lab.lab_equipment import LabEquipment, LabEquipmentProvision
+from db.models.research.funding.research_budget import ResearchBudget, query_research_budgets
+from db.models.research.funding.research_funding import ResearchFunding, query_research_fundings
 
 
 # async def delete_all_users(db):
@@ -18,17 +19,12 @@ from db.models.lab.lab_equipment import LabEquipment, LabEquipmentProvision
 
 
 async def main():
-    async with local_sessionmaker() as db:
-        for e in await db.scalars(select(LabEquipment)):
-            print(e.name)
-            for provision in await db.scalars(
-                select(LabEquipmentProvision).where(
-                    LabEquipmentProvision.equipment_id == e.id
-                )
-            ):
-                print("provisioned", provision.status)
-                print(provision.installation_id)
+    async with local_sessionmaker() as session:
+        query = query_research_budgets(funding=query_research_fundings(name_eq="lab"))
 
+        for b in await session.scalars(query):
+            print(b)
+    print('done')
 
 #     async with async_sessionmaker() as db:
 #         await delete_all_users(db)
@@ -56,4 +52,5 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    result = asyncio.run(main())
+    print('result', result)

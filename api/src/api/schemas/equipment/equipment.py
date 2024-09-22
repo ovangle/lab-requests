@@ -13,6 +13,7 @@ from sqlalchemy import not_, select
 from db import LocalSession, local_object_session
 from db.models.base.base import model_id
 from db.models.equipment.equipment import query_equipments
+from db.models.equipment.equipment_installation import query_equipment_installations
 from db.models.lab import Lab
 from db.models.lab.provisionable import ProvisionStatus
 from db.models.equipment import (
@@ -32,11 +33,10 @@ from ..base import (
     ModelUpdateRequest,
     ModelDetail,
     ModelLookup,
-    ModelIndex,
 )
 
 if TYPE_CHECKING:
-    from .equipment_installation import DeclareEquipmentInstallationRequest, EquipmentInstallationIndexPage
+    from .equipment_installation import CreateEquipmentInstallationRequest, EquipmentInstallationIndexPage
 
 
 class EquipmentDetail(ModelDetail[Equipment]):
@@ -54,11 +54,13 @@ class EquipmentDetail(ModelDetail[Equipment]):
 
     @classmethod
     async def from_model(cls, model: Equipment):
-        from .equipment_installation import EquipmentInstallationIndex
+        from .equipment_installation import EquipmentInstallationIndexPage, EquipmentInstallationDetail
         db = local_object_session(model)
 
-        installation_index = EquipmentInstallationIndex(
-            equipment=model_id(model)
+        installations = await EquipmentInstallationIndexPage.from_selection(
+            db,
+            query_equipment_installations(equipment=model),
+            EquipmentInstallationDetail.from_model
         )
 
         return cls(
@@ -67,37 +69,11 @@ class EquipmentDetail(ModelDetail[Equipment]):
             description=model.description,
             training_descriptions=list(model.training_descriptions),
             tags=set(model.tags),
-            installations=await installation_index.load_page(db),
+            installations=installations,
             disciplines=model.disciplines,
 
             created_at=model.created_at,
             updated_at=model.updated_at,
-        )
-
-
-class EquipmentIndex(ModelIndex[Equipment]):
-    search: str | None = None
-
-    lab_id: UUID | None
-    name_istartswith: str | None = None
-    name_eq: str | None = None
-    has_tags: set[str] = Field(default_factory=set)
-
-    installed_campus: list[UUID] | None = None
-    discipline: list[Discipline] | None = None
-
-    async def item_from_model(self, model: Equipment):
-        return await EquipmentDetail.from_model(model)
-
-    def get_selection(self):
-        return query_equipments(
-            search=self.search,
-            lab=self.lab_id,
-            name_istartswith=self.name_istartswith,
-            name_eq=self.name_eq,
-            has_tags=self.has_tags,
-            installed_campus=cast(list[Campus | UUID] | None, self.installed_campus),
-            installed_discipline=self.discipline
         )
 
 
@@ -130,7 +106,7 @@ class EquipmentCreateRequest(ModelCreateRequest[Equipment]):
     tags: list[str] | None = None
     training_descriptions: list[str] | None = None
 
-    installations: list[DeclareEquipmentInstallationRequest] = Field(default_factory=list)
+    installations: list[CreateEquipmentInstallationRequest] = Field(default_factory=list)
 
     async def do_create(
         self, db: LocalSession, current_user: User | None = None, **kwargs

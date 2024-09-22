@@ -1,6 +1,7 @@
 import { Injectable, inject } from "@angular/core";
 import { ActivatedRoute, ActivatedRouteSnapshot, ChildActivationEnd, NavigationEnd, Router, RouterEvent, UrlSegment } from "@angular/router";
 import { BehaviorSubject, Observable, Subject, Subscription, buffer, combineLatest, endWith, filter, map, tap } from "rxjs";
+import { ModelContext } from "src/app/common/model/context";
 
 export interface ScaffoldFormPane {
   toggleIsOpen(formPath: UrlSegment[] | null): void
@@ -10,6 +11,7 @@ export interface ScaffoldFormPane {
 export class ScaffoldFormPaneControl {
   _router = inject(Router);
   readonly _isOpenSubject = new BehaviorSubject<boolean>(false);
+  _context: ModelContext<any> | undefined;
 
   connect(formPane: ScaffoldFormPane): Subscription {
     const navigationEnd = this._router.events.pipe(filter(isNavigationEnd));
@@ -17,7 +19,7 @@ export class ScaffoldFormPaneControl {
     return this._router.events.pipe(
       filter(isFormRouteActivationEnd),
       buffer(navigationEnd),
-      map(activations => activations[ 0 ] || null),
+      map(activations => activations[0] || null),
       endWith(null),
       tap((activation: ChildActivationEnd | null) => {
         if (activation == null) {
@@ -32,12 +34,21 @@ export class ScaffoldFormPaneControl {
     ).subscribe((isOpen) => this._isOpenSubject.next(isOpen));
   }
 
-  async open(formPath: any[]): Promise<boolean> {
-    return await this._router.navigate([ '/', { outlets: { form: formPath } } ]);
+  async open(context: ModelContext<any>, formPath: any[]): Promise<boolean> {
+    this._context = context;
+    return await this._router.navigate(['/', {
+      outlets: {
+        form: formPath
+      }
+    }]);
   }
 
   async close(): Promise<boolean> {
-    return this._router.navigate([ { outlets: { form: null } } ]);
+    if (this._context) {
+      await this._context.refresh();
+    }
+
+    return this._router.navigate([{ outlets: { form: null } }]);
   }
 
   get isOpen(): boolean {
@@ -54,7 +65,7 @@ function formPathFromChildActivation(childActivation: ChildActivationEnd): UrlSe
   let snapshot: ActivatedRouteSnapshot | null = childActivation.snapshot;
   let formPath: any[] = [];
   while (snapshot) {
-    formPath = [ ...formPath, ...snapshot.url ];
+    formPath = [...formPath, ...snapshot.url];
     snapshot = snapshot.firstChild;
   }
   return formPath;

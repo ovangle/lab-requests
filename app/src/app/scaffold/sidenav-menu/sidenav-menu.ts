@@ -1,6 +1,6 @@
 import { Injectable, inject } from "@angular/core";
 import { SidenavMenuGroup, SidenavMenuLink, SidenavMenuNode } from "./model";
-import { BehaviorSubject, Observable, Subscription, combineLatest, connectable, defer, filter, map, shareReplay } from "rxjs";
+import { BehaviorSubject, Observable, Subscription, combineLatest, connectable, defer, filter, map, shareReplay, tap } from "rxjs";
 import { UserContext } from "src/app/user/user-context";
 import { CurrentUser } from "src/app/user/user";
 import { formatDiscipline } from "src/app/uni/discipline/discipline";
@@ -15,19 +15,19 @@ const _STATIC_NODES: SidenavMenuNode[] = [
     type: 'link',
     title: 'Home',
     icon: 'home',
-    routerLink: ['/user', 'home'],
+    routerLink: ['/', { outlets: { default: ['user', 'home'] } }],
   },
   {
     type: 'link',
     title: 'Equipment',
     icon: 'build_circle',
-    routerLink: ['/equipment']
+    routerLink: ['/', { outlets: { default: ['equipment'] } }],
   },
   {
     type: 'link',
     title: 'Software',
     icon: 'build_circle',
-    routerLink: ['/software']
+    routerLink: ['/', { outlets: { default: ['software'] } }],
   }
 ]
 
@@ -47,9 +47,7 @@ export class SidenavMenuRoot {
     map(user => user == null)
   );
 
-  readonly _currentUser = defer(() => this.userContext.user.pipe(
-    filter((u): u is CurrentUser => u != null)
-  ));
+  readonly _currentUser = this.userContext.user;
 
   readonly labsGroup$: Observable<SidenavMenuGroup> = this._currentUser.pipe(
     map(user => {

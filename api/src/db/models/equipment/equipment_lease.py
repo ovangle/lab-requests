@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from db.models.base import Base, model_id
 from db.models.fields import uuid_pk
 from db.models.lab.allocatable import LabAllocation
+from db.models.lab.allocatable.allocation_consumer import LabAllocationConsumer
 from db.models.lab.allocatable.allocation_status import AllocationStatus
 from .equipment_installation import EquipmentInstallation
 
@@ -28,13 +29,20 @@ class EquipmentLease(LabAllocation[EquipmentInstallation]):
 
 
 def query_equipment_leases(
-    target: EquipmentInstallation | UUID | None = None,
+    consumer: LabAllocationConsumer | UUID | None = None,
+    installation: EquipmentInstallation | UUID | None = None,
     only_pending: bool = False
 ) -> Select[tuple[EquipmentLease]]:
     where_clauses: list = []
-    if target:
+
+    if consumer:
         where_clauses.append(
-            EquipmentLease.installation_id == model_id(target)
+            EquipmentLease.consumer_id == model_id(consumer)
+        )
+
+    if installation:
+        where_clauses.append(
+            EquipmentLease.installation_id == model_id(installation)
         )
 
     if only_pending:

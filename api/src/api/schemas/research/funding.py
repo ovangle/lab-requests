@@ -15,6 +15,7 @@ from db.models.research.funding import (
     ResearchPurchaseOrder,
     PurchaseStatus,
 )
+from db.models.research.funding.purchase import query_research_purchases
 
 
 from ..base import (
@@ -23,7 +24,6 @@ from ..base import (
     ModelDetail,
     ModelLookup,
     ModelIndexPage,
-    ModelIndex,
 )
 
 
@@ -53,17 +53,6 @@ class ResearchFundingLookup(ModelLookup[ResearchFunding]):
         if self.name:
             return await ResearchFunding.get_for_name(db, self.name)
         raise ValueError("Either id or name must be provided")
-
-
-class ResearchFundingIndex(ModelIndex[ResearchFunding]):
-    name_eq: str | None
-    text: str
-
-    async def item_from_model(self, model: ResearchFunding):
-        return await ResearchFundingDetail.from_model(model)
-
-    def get_selection(self):
-        return query_research_fundings(name_eq=self.name_eq, text=self.text)
 
 
 # TODO: PEP 695
@@ -109,30 +98,6 @@ async def lookup_or_create_research_funding(
             return await ref_or_create.do_create(db)
         case _:
             return await lookup_research_funding(db, ref_or_create)
-
-
-class ResearchPurchaseOrderDetail(ModelDetail[ResearchPurchaseOrder]):
-    budget: ResearchBudgetSummary
-
-    ordered_by_id: UUID
-    estimated_cost: float
-    purchase: ResearchPurchaseDetail
-
-    @classmethod
-    async def _from_purchase_order(cls, purchase_order: ResearchPurchaseOrder):
-        budget = await ResearchBudgetSummary.from_model(
-            await purchase_order.awaitable_attrs.budget
-        )
-        purchase = await ResearchPurchaseDetail.from_model(
-            await purchase_order.get_or_create_purchase()
-        )
-
-        return cls._from_base(
-            purchase_order,
-            budget=budget,
-            ordered_by_id=purchase_order.created_by_id,
-            purchase=purchase
-        )
 
 
 
@@ -184,19 +149,6 @@ class ResearchPurchaseDetail(ModelDetail[ResearchPurchase]):
             is_finalised=model.is_finalised
         )
 
-class ResearchPurchaseIndex(ModelIndex[ResearchPurchase]):
-    budget: UUID | None = None
-
-    async def item_from_model(self, model: ResearchPurchase):
-        return await ResearchPurchaseDetail.from_model(model)
-
-    def get_selection(self) -> Select[tuple[ResearchPurchase]]:
-        clauses = []
-        if self.budget:
-            clauses.append(ResearchPurchase.budget_id == self.budget)
-
-        return select(ResearchPurchase).where(*clauses)
-
 
 ResearchPurchaseIndexPage = ModelIndexPage[ResearchPurchase, ResearchPurchaseDetail]
 
@@ -207,30 +159,74 @@ class ResearchBudgetSummary(ModelDetail[ResearchBudget]):
     """
 
     funding: ResearchFundingDetail
+    lab_id: UUID
+    research_plan_id: UUID | None
 
     @classmethod
-    async def _from_research_purchase(cls, model: ResearchBudget, **kwargs):
+    async def _from_research_budget(cls, model: ResearchBudget, **kwargs) -> Self:
         funding = await ResearchFundingDetail.from_model(await model.awaitable_attrs.funding)
-        return await cls._from_base(model, funding=funding, **kwargs)
+
+        return await cls._from_base(
+            model,
+            funding=funding,
+            lab_id=model.lab_id,
+            research_plan_id=model.research_plan_id,
+            **kwargs
+        )
 
     @classmethod
     async def from_model(cls, model: ResearchBudget):
-        return cls._from_research_purchase(model)
+        return await cls._from_research_budget(model)
+
 
 
 class ResearchBudgetDetail(ResearchBudgetSummary):
     purchases: ResearchPurchaseIndexPage
 
     @classmethod
-    async def _from_research_purchase(cls, model: ResearchBudget) -> Self:
+    async def _from_research_budget(cls, model: ResearchBudget, **kwargs) -> Self:
         db = local_object_session(model)
-        purchase_index = ResearchPurchaseIndex(budget=model.id)
-
-        return await super()._from_research_purchase(
-            model,
-            purchases=await purchase_index.load_page(db)
+        purchases = await ResearchPurchaseIndexPage.from_selection(
+            db,
+            query_research_purchases(budget=model),
+            item_from_model=ResearchPurchaseDetail.from_model
         )
 
-class ResearchBudgetIndex(ModelIndex[ResearchBudget]):
-    async def item_from_model(self, model: ResearchBudget):
-        return await ResearchBudgetDetail.from_model(model)
+        return await super()._from_research_budget(
+            model,
+            purchases=purchases
+        )
+
+ResearchBudgetIndexPage = ModelIndexPage[ResearchBudget, ResearchBudgetDetail]
+
+
+class ResearchPurchaseOrderDetail(ModelDetail[ResearchPurchaseOrder]):
+    budget: ResearchBudgetSummary
+
+    ordered_by_id: UUID
+    estimated_cost: float
+    purchase: ResearchPurchaseDetail
+
+    @classmethod
+    async def _from_purchase_order(cls, purchase_order: ResearchPurchaseOrder):
+        budget = await ResearchBudgetSummary.from_model(
+            await purchase_order.awaitable_attrs.budget
+        )
+        purchase = await ResearchPurchaseDetail.from_model(
+            await purchase_order.get_or_create_purchase()
+        )
+
+        return cls._from_base(
+            purchase_order,
+            budget=budget,
+            ordered_by_id=purchase_order.created_by_id,
+            purchase=purchase
+        )
+
+
+class ResearchPurchaseOrderCreate(ModelCreateRequest[ResearchPurchaseOrder]):
+    type: str
+    budget: UUID
+    estimated_cost: float
+    url: str | None = None
+    instructions: str

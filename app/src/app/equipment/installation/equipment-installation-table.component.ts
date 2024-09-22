@@ -6,6 +6,7 @@ import { LabInfoComponent } from "src/app/lab/lab-info.component";
 import { CommonModule } from "@angular/common";
 import { RouterModule } from "@angular/router";
 import { MatIconModule } from "@angular/material/icon";
+import { MatButtonModule } from "@angular/material/button";
 
 @Component({
     selector: 'equipment-installation-table',
@@ -14,12 +15,27 @@ import { MatIconModule } from "@angular/material/icon";
         CommonModule,
         RouterModule,
 
+        MatButtonModule,
         MatIconModule,
         MatTableModule,
 
         LabInfoComponent
     ],
     template: `
+    <div class="table-header">
+        <h3>Installations</h3>
+        <div class="table-actions">
+            <a mat-button [routerLink]="['/', {
+                outlets: {form: ['equipment', 'installation', 'declare'] }
+            }]">Declare</a>
+
+            <a mat-button [routerLink]="['/', {
+                outlets: {form: ['equipment', 'installation', 'new']  }
+            }]">New</a>
+        </div>
+
+    </div>
+
     <mat-table [dataSource]="installations()">
         <ng-container matColumnDef="lab">
             <mat-header-cell *matHeaderCellDef>Lab</mat-header-cell>
@@ -39,10 +55,17 @@ import { MatIconModule } from "@angular/material/icon";
             <mat-header-cell *matHeaderCellDef></mat-header-cell>
             <mat-cell *matCellDef="let installation">
 
-                <a mat-icon-button [routerLink]="[
-                    {outlets: {form: updateInstallationLink(installation)}}
-                ]">
-                    <mat-icon>pencil</mat-icon>
+                <a mat-button [routerLink]="['/', {
+                    outlets: {form: ['equipment', 'installation', {equipment_installation: installation.id}]}
+                }]">
+                    <mat-icon>edit</mat-icon> EDIT
+                </a>
+
+                <a mat-button [routerLink]="['/', {
+                    outlets: {form: ['equipment', 'installation', 'transfer', {equipment_installation: installation.id}]}
+
+                }]">
+                    <mat-icon>east</mat-icon> TRANSFER
                 </a>
 
             </mat-cell>

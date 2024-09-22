@@ -43,13 +43,18 @@ class ResearchFunding(Base):
             raise ResearchFundingDoesNotExist(for_name=name)
         return instance
 
+    @property
+    def is_lab_funding(self):
+        return self.name == 'lab'
+
 
 def query_research_fundings(
     name_eq: str | None = None, text: str | None = None
 ) -> Select[tuple[ResearchFunding]]:
     clauses: list = []
+
     if name_eq is not None:
-        clauses.append(ResearchFunding.name.ilike(f"%{name_eq}%"))
+        clauses.append(ResearchFunding.name.ilike(name_eq))
 
     if text is not None:
         clauses.append(

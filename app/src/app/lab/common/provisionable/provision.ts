@@ -9,7 +9,7 @@ import { Provisionable, ProvisionableCreateRequest } from "./provisionable";
 import { Lab } from "../../lab";
 import { UnitOfMeasurement, isUnitOfMeasurement } from "src/app/common/measurement/measurement";
 import { ResearchFunding, ResearchFundingService } from "src/app/research/funding/research-funding";
-import { ResearchBudget, ResearchPurchase, ResearchPurchaseOrder } from "src/app/research/budget/research-budget";
+import { CreatePurchaseOrder, createPurchaseOrderToJsonObject, ResearchBudget, ResearchPurchase, ResearchPurchaseOrder } from "src/app/research/budget/research-budget";
 import { isUUID } from "src/app/utils/is-uuid";
 import { parseISO } from "date-fns";
 import { LabWork } from "../lab-work";
@@ -343,42 +343,22 @@ export interface LabProvisionCreateRequest<
     TProvision extends LabProvision<TProvisionable>
 > extends ModelCreateRequest<TProvision> {
     readonly type: string;
-    readonly target: ModelRef<TProvisionable> | ProvisionableCreateRequest<TProvisionable>;
-
-    readonly unit: UnitOfMeasurement;
-    readonly numRequired: number;
-
-    readonly estimatedCost?: number;
-
     readonly note: string;
+    readonly lab: ModelRef<Lab>;
+    readonly purchaseOrder?: CreatePurchaseOrder;
 }
-
-type CreateTarget<
-    TProvisionable extends Provisionable<any>,
-    TCreate extends LabProvisionCreateRequest<TProvisionable, any>
-> = Exclude<TCreate['target'], ModelRef<TProvisionable>>;
 
 export function labProvisionCreateRequestToJsonObject<
     TProvisionable extends Provisionable<any>,
     TCreate extends LabProvisionCreateRequest<TProvisionable, any>
 >(
-    createTargetRequestToJson: (create: CreateTarget<TProvisionable, TCreate>) => JsonObject,
     request: TCreate
 ): JsonObject {
-    let target: JsonObject | string;
-    if (isModelRef(request.target)) {
-        target = modelId(request.target);
-    } else {
-        target = createTargetRequestToJson(request.target);
-    }
-
     return {
         type: request.type,
-        target,
-        unit: request.unit,
-        numRequired: request.numRequired,
-        estimatedCost: request.estimatedCost,
-        note: request.note
+        note: request.note,
+        lab: modelId(request.lab),
+        purchaseOrder: request.purchaseOrder ? createPurchaseOrderToJsonObject(request.purchaseOrder) : undefined
     };
 }
 
@@ -433,18 +413,14 @@ export abstract class LabProvisionService<
 > extends RelatedModelService<TProvision, TQueryProvision> {
     abstract readonly provisionableQueryParam: string;
 
-    abstract create<TRequest extends LabProvisionCreateRequest<TProvisionable, TProvision>>(
-        request: TRequest
-    ): Observable<TProvision>;
-
     protected _provisionApprovalRequestToJsonObject(approval: LabProvisionApprovalRequest<TProvisionable, TProvision>): JsonObject {
         return labProvisionPurchaseRequestToJsonObject(approval);
     }
 
     markAsApproved(provision: TProvision, request: LabProvisionApprovalRequest<TProvisionable, TProvision>): Observable<TProvision> {
         return this._doUpdate(
-            (_, approval) => this._provisionApprovalRequestToJsonObject(approval),
             provision,
+            (approval) => this._provisionApprovalRequestToJsonObject(approval),
             request
         );
     }
@@ -455,8 +431,8 @@ export abstract class LabProvisionService<
 
     markAsPurchased(provision: TProvision, request: LabProvisionPurchaseRequest<TProvisionable, TProvision>) {
         return this._doUpdate(
-            (_, request) => this._provisionPurchaseRequestToJsonObject(request),
             provision,
+            (request) => this._provisionPurchaseRequestToJsonObject(request),
             request
         );
     }
@@ -467,8 +443,8 @@ export abstract class LabProvisionService<
 
     markAsInstalled(provision: TProvision, request: LabProvisionInstallRequest<TProvisionable, TProvision>) {
         return this._doUpdate(
-            (_, request) => this._provisionInstallRequestToJsonObject(request),
             provision,
+            (request) => this._provisionInstallRequestToJsonObject(request),
             request
         );
     }
@@ -479,8 +455,8 @@ export abstract class LabProvisionService<
 
     cancelProvision(provision: TProvision, request: LabProvisionCancellationRequest<TProvisionable, TProvision>) {
         return this._doUpdate(
-            (_, request) => this._cancellationRequestToJsonObject(request),
             provision,
+            (request) => this._cancellationRequestToJsonObject(request),
             request
         );
     }

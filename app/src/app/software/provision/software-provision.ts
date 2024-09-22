@@ -79,7 +79,6 @@ export interface NewSoftwareRequest extends _SoftwareProvisionCreateRequest {
 function newSoftwareRequestToJsonObject(request: NewSoftwareRequest): JsonObject {
     return {
         ...labProvisionCreateRequestToJsonObject(
-            softwareInstallationCreateRequestToJsonObject,
             request
         ),
         minVersion: request.minVersion,
@@ -94,9 +93,6 @@ export interface UpgradeSoftwareVersionRequest extends _SoftwareProvisionCreateR
 
 function upgradeSoftwareVersionRequestToJsonObject(request: UpgradeSoftwareVersionRequest) {
     const baseRequest = labProvisionCreateRequestToJsonObject(
-        (obj: never) => {
-            throw new Error("unreachable");
-        },
         request
     );
     return {
@@ -142,17 +138,6 @@ export class SoftwareProvisionService extends LabProvisionService<SoftwareInstal
             upgradeSoftwareVersionRequestToJsonObject,
             upgradeSoftwareVersion
         );
-    }
-
-    override create<TRequest extends LabProvisionCreateRequest<SoftwareInstallation, SoftwareInstallationProvision>>(request: TRequest): Observable<SoftwareInstallationProvision> {
-        switch (request.type) {
-            case 'new_software':
-                return this.newSoftware(request as any);
-            case 'upgrade_software':
-                return this.upgradeVersion(request as any);
-            default:
-                throw new Error(`Unrecognised software provision type ${request.type}`)
-        }
     }
 
     protected override readonly _provisionApprovalRequestToJsonObject = softwareProvisionApprovalRequestToJsonObject;

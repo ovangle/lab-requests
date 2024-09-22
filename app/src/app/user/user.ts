@@ -1,5 +1,5 @@
 import { HttpErrorResponse, HttpParams, HttpStatusCode } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import {
   Observable,
   catchError,
@@ -13,13 +13,14 @@ import { Discipline, isDiscipline } from 'src/app/uni/discipline/discipline';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import {
   Model,
+  ModelFactory,
   ModelIndexPage,
   ModelQuery,
   ModelRef,
   modelIndexPageFromJsonObject,
   setModelQueryParams,
 } from '../common/model/model';
-import { RestfulService } from '../common/model/model-service';
+import { ModelService, RestfulService } from '../common/model/model-service';
 import { Actor } from './actor';
 import { Role, roleFromJson } from './common/role';
 import { Lab, LabService } from 'src/app/lab/lab';
@@ -131,7 +132,6 @@ export class CurrentUser extends User {
     this.plans = modelIndexPageFromJsonObject('plans', ResearchPlan, json);
   }
 }
-
 
 export class TemporaryAccessUser extends User {
   tokenExpiresAt: Date;

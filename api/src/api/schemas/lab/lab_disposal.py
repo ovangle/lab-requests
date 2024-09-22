@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import select
 from db.models.lab.disposable import LabDisposal, DisposalStrategy, query_lab_disposals
 
-from ..base import ModelDetail, ModelIndex, ModelIndexPage
+from ..base import ModelDetail, ModelIndexPage
 
 class DisposalStrategyDetail(ModelDetail[DisposalStrategy]):
     name: str
@@ -16,15 +16,6 @@ class DisposalStrategyDetail(ModelDetail[DisposalStrategy]):
             name=model.name,
             description=model.description
         )
-
-
-class DisposalStrategyIndex(ModelIndex[DisposalStrategy]):
-    async def item_from_model(self, model: DisposalStrategy) -> ModelDetail[DisposalStrategy]:
-        return await DisposalStrategyDetail.from_model(model)
-
-    def get_selection(self):
-        # If we're loading this, we're loading them all
-        return select(DisposalStrategy)
 
 
 class LabDisposalDetail(ModelDetail[LabDisposal]):
@@ -44,14 +35,6 @@ class LabDisposalDetail(ModelDetail[LabDisposal]):
             lab_id=model.lab_id
         )
 
-class LabDisposalIndex(ModelIndex[LabDisposal]):
-    lab: UUID | None = None
-
-    async def item_from_model(cls, model: LabDisposal):
-        return await LabDisposalDetail.from_model(model)
-
-    def get_selection(self):
-        return query_lab_disposals(lab=self.lab)
 
 
 LabDisposalIndexPage = ModelIndexPage[LabDisposal, LabDisposalDetail]

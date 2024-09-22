@@ -1,8 +1,8 @@
 import { CommonModule } from "@angular/common";
-import { Component, Input, TemplateRef, effect, inject, input, model } from "@angular/core";
+import { Component, Input, TemplateRef, computed, effect, inject, input, model } from "@angular/core";
 import { AbstractControlDirective, NG_VALUE_ACCESSOR, NgControl, ReactiveFormsModule } from "@angular/forms";
 import { MatFormFieldControl, MatFormFieldModule } from "@angular/material/form-field";
-import { combineLatest, Observable } from "rxjs";
+import { combineLatest, map, Observable } from "rxjs";
 import { Lab, LabService } from "./lab";
 import { Discipline, formatDiscipline, isDiscipline } from "../uni/discipline/discipline";
 import { Campus } from "../uni/campus/campus";
@@ -11,7 +11,7 @@ import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 import { ModelSearchInputComponent } from "../common/model/search/search-input.component";
 import { ModelSearchComponent, ModelSearchControl, NotFoundValue } from "../common/model/search/search-control";
 import { ModelSearchAutocompleteComponent } from "../common/model/search/search-autocomplete.component";
-import { ModelRef } from "../common/model/model";
+import { modelId, ModelRef } from "../common/model/model";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 let _currentId = 0;
@@ -36,7 +36,8 @@ function _nextControlId() {
     <common-model-search-autocomplete
         #modelSearchAutocomplete
         [searchControl]="searchControl"
-        [notFoundTemplate]="notFoundTemplate()" />
+        [notFoundTemplate]="notFoundTemplate()"
+        [disabledOptions]="disabledLabs()" />
     `,
     providers: [
         { provide: MatFormFieldControl, useExisting: LabSearchComponent },
@@ -63,6 +64,9 @@ export class LabSearchComponent extends ModelSearchComponent<Lab> {
 
     campus = input<ModelRef<Campus> | ModelRef<Campus>[]>();
     discipline = input<Discipline | Discipline[] | null>();
+
+    // Omit options from the returned query set because they cannot be selected
+    disabledLabs = input<ModelRef<Lab>[]>([]);
 
     notFoundTemplate = input<TemplateRef<unknown>>();
     allowNotFound = input(false, { transform: coerceBooleanProperty });

@@ -11,11 +11,8 @@ from api.schemas.user.temporary_access_user import (
     FinalizeTemporaryUserRequest,
     TemporaryUserDetail,
 )
-from api.schemas.user.user import AlterPasswordRequest
 from db import LocalSession, get_db
 from db.models.uni.discipline import Discipline
-
-from api.schemas.user import UserDetail, UserIndex
 from db.models.user import (
     NativeUserCredentials,
     User,
@@ -24,16 +21,52 @@ from db.models.user import (
     query_users,
 )
 
+from api.schemas.user import UserDetail, UserIndexPage, AlterPasswordRequest
+
+
 
 users = APIRouter(prefix="/users", tags=["users"])
 
 
 @users.get("/")
 async def index_users(
-    index: UserIndex,
+    id_in: str | None = None,
+    search: str | None = None,
+    include_roles: str | None = None,
+    discipline: str | None = None,
+    supervises_lab: UUID | None = None,
+    page_index: int = 1,
     db=Depends(get_db),
 ):
-    return await index.load_page(db)
+
+    if id_in:
+        id_set = [UUID(v) for v in id_in.split(',')]
+    else:
+        id_set = None
+
+    if discipline:
+        discipline_set = set(Discipline(v) for v in discipline.split(','))
+    else:
+        discipline_set = None
+
+    if include_roles:
+        include_role_set = set(include_roles.split(","))
+    else:
+        include_role_set = None
+
+    selection = query_users(
+            id_in=id_set,
+            search=search,
+            include_roles=include_role_set,
+            discipline=discipline_set,
+            supervises_lab=supervises_lab,
+        )
+    return await UserIndexPage.from_selection(
+        db,
+        selection,
+        item_from_model = UserDetail.from_model,
+        page_index=page_index
+    )
 
 
 @users.get("/me")

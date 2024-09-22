@@ -62,14 +62,8 @@ export class Software extends Model implements Installable<SoftwareInstallation>
         this.isPaidSoftware = json['isPaidSoftware'];
     }
 
-    getInstallation(lab: ModelRef<Lab>, using: SoftwareInstallationService): Promise<SoftwareInstallation> {
-        for (const install of this.installations.items) {
-            if (install.labId === modelId(lab)) {
-                return Promise.resolve(install);
-            }
-        }
-
-        return firstValueFrom(using.getForLabSoftware(this, lab));
+    getInstallation(lab: ModelRef<Lab>) {
+        return this.installations.items.find(install => install.labId == modelId(lab)) || null;
     }
 
     queryInstallations(

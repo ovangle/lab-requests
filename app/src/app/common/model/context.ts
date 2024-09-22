@@ -14,7 +14,7 @@ import {
   ViewRef,
   inject,
 } from '@angular/core';
-import { Model, ModelQuery } from './model';
+import { Model, ModelQuery, ModelRef } from './model';
 import {
   BehaviorSubject,
   Connectable,
@@ -29,6 +29,7 @@ import {
   first,
   firstValueFrom,
   map,
+  of,
   shareReplay,
   switchMap,
   tap,
@@ -38,161 +39,82 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { JsonObject } from 'src/app/utils/is-json-object';
 import urlJoin from 'url-join';
 import { TemplateBindingParseResult } from '@angular/compiler';
+import { ActivatedRoute, ParamMap } from '@angular/router';
 
 export interface ReadOnlyModelContext<T extends Model> {
   readonly committed$: Observable<T>;
 }
 
+export const MODEL_CONTEXT_SERVICE = new InjectionToken<ModelService<any>>('ROUTE_SERVICE');
+export const MODEL_CONTEXT_SOURCE = new InjectionToken<Observable<any>>('MODEL_CONTEXT_SOURCE');
+
+
 @Injectable()
-export abstract class ModelContext<T extends Model> implements ReadOnlyModelContext<T> {
-  abstract readonly service: ModelService<T>;
-  readonly _destroyRef = inject(DestroyRef, { optional: true });
+export abstract class ModelContext<T extends Model, TService extends ModelService<T> = ModelService<T>> implements ReadOnlyModelContext<T> {
+  readonly committedSubject = new ReplaySubject<T | null>(1);
+  readonly mCommitted$ = this.committedSubject.asObservable();
+  readonly committed$ = this.mCommitted$.pipe(
+    filter((m): m is T => m != null)
+  );
 
-  constructor() {
-    if (this._destroyRef != null) {
-      this._destroyRef.onDestroy(() => {
-        this.committedSubject.complete()
-      });
-    }
-  }
-
-  readonly committedSubject = new ReplaySubject<T>(1);
-  readonly committed$: Observable<T> = this.committedSubject.asObservable();
   readonly url$ = this.committed$.pipe(
     switchMap(committed => this.service.modelUrl(committed)),
     shareReplay(1)
   );
 
-  nextCommitted(value: T) {
-    this.committedSubject.next(value);
+  constructor(
+    @Inject(MODEL_CONTEXT_SERVICE) readonly service: TService,
+    @Inject(MODEL_CONTEXT_SOURCE) source: Observable<T | null>) {
+    source.subscribe(this.committedSubject);
+
+    inject(DestroyRef).onDestroy(() => {
+      this.committedSubject.complete();
+    })
   }
 
-  sendCommittedId(source: Observable<string>): Subscription {
-    return this.sendCommitted(
-      source.pipe(switchMap(id => this.service.fetch(id)))
-    );
-  }
-
-  sendCommitted(source: Observable<T>): Subscription {
-    return source.subscribe((committed) => {
-      // console.log('sending committed', this,committed)
-      this.committedSubject.next(committed);
-    });
+  nextCommitted(value: ModelRef<T>) {
+    if (typeof value === 'string') {
+      this.service.fetch(value).subscribe((v) => this.committedSubject.next(v))
+    } else {
+      this.committedSubject.next(value);
+    }
   }
 
   async refresh(): Promise<void> {
-    const refreshed = firstValueFrom(this.committed$.pipe(
+    const refreshed = await firstValueFrom(this.committed$.pipe(
       first(),
-      switchMap(committed => this.service.fetch(committed.id, { useCache: false })),
-      tap(refreshed => this.nextCommitted(refreshed))
+      switchMap(committed => this.service.fetch(committed, { useCache: false })),
     ));
-  }
-
-  /*
-  async commit(updateRequest: TUpdate): Promise<T> {
-    const current = await firstValueFrom(this.committed$);
-
-    const committed = await this._doUpdate(current.id, updateRequest);
-    this.committedSubject.next(committed);
-    return committed;
-  }
-  */
-}
-
-@Injectable()
-export abstract class RelatedModelService<
-  TContextModel extends Model,
-  T extends Model,
-  TQuery extends ModelQuery<T> = ModelQuery<T>,
-> extends ModelService<T, TQuery> {
-  abstract readonly context: ModelContext<TContextModel>;
-  abstract path: string;
-
-  get indexUrl$(): Observable<string> {
-    return this.context.url$.pipe(
-      first(),
-      map(url => urlJoin(url, this.path) + '/')
-    );
-  }
-
-  resourceUrl(id: string) {
-    return this.indexUrl$.pipe(
-      map(indexUrl => urlJoin(indexUrl, id) + '/')
-    );
-  }
-
-  override modelUrl(model: T): Observable<string> {
-    return this.resourceUrl(model.id);
-  }
-
-  protected override _doFetch(id: string): Observable<JsonObject> {
-    return this.resourceUrl(id).pipe(
-      switchMap(resourceUrl => this._httpClient.get<JsonObject>(resourceUrl)),
-    );
-  }
-
-  protected override _doQueryPage(params: HttpParams): Observable<JsonObject> {
-    return this.indexUrl$.pipe(
-      switchMap(indexUrl => this._httpClient.get<JsonObject>(indexUrl + '/', { params })),
-    );
+    this.committedSubject.next(refreshed);
   }
 }
 
-@Directive()
-export abstract class AbstractModelContextDirective<T extends Model> {
+export interface ModelContextType<T extends Model, TService extends ModelService<T>> {
+  new(service: TService, source: Observable<T | null>): ModelContext<T, TService>;
+}
 
-  protected readonly modelSubject = new BehaviorSubject<T | null>(null);
-  readonly currentModel$ = this.modelSubject.asObservable();
+export function provideModelContextFromRoute<T extends Model, TService extends ModelService<T>>(
+  serviceType: Type<TService>,
+  contextType: ModelContextType<T, TService>,
+  param: string,
+  isOptionalParam: boolean
+): Provider {
+  return {
+    provide: contextType,
+    useFactory: (service: TService, route: ActivatedRoute) => {
+      const source = route.paramMap.pipe(
+        map(paramMap => {
+          const id = paramMap.get(param)
+          if (id == null && !isOptionalParam) {
+            throw new Error(`Expected :${param} in activated route params`);
+          }
+          return id;
+        }),
+        switchMap(ref => ref ? service.fetch(ref) : of(null))
+      )
 
-  protected nextModel(model: T | null) {
-    this.modelSubject.next(model);
-  }
-
-  protected readonly currentViewSubject = new BehaviorSubject<EmbeddedViewRef<unknown> | null>(null);
-  readonly currentView$ = this.currentViewSubject.asObservable();
-
-  constructor(readonly contextType: Type<ModelContext<T>>) {
-    const context = new (contextType)();
-
-    context.sendCommitted(
-      this.currentModel$.pipe(filter((m): m is T => m != null))
-    );
-
-    const viewContainer = inject(ViewContainerRef);
-    const templateRef = inject(TemplateRef<unknown>);
-
-    const viewInjector = Injector.create({
-      providers: [
-        { provide: contextType, useValue: context }
-      ],
-      parent: inject(Injector)
-    });
-
-    combineLatest([
-      this.modelSubject,
-      this.currentViewSubject,
-    ]).pipe(
-      map(([ model, currentView ]) => {
-        if (model != null && currentView == null) {
-          currentView = viewContainer.createEmbeddedView(
-            templateRef,
-            { injector: viewInjector }
-          );
-        }
-        if (model == null && currentView != null) {
-          viewContainer.clear();
-          currentView = null
-        }
-        return currentView;
-      })
-    ).subscribe(this.currentViewSubject);
-
-    inject(DestroyRef).onDestroy(() => {
-      this.modelSubject.complete();
-      if (this.currentViewSubject.value) {
-        viewContainer.clear();
-      }
-      this.currentViewSubject.complete();
-    });
+      return new contextType(service, source);
+    },
+    deps: [serviceType, ActivatedRoute]
   }
 }

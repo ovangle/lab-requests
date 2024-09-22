@@ -1,21 +1,19 @@
 
-import { ChangeDetectionStrategy, Component, inject, input, effect, computed, Output, EventEmitter } from "@angular/core";
+import { ChangeDetectionStrategy, Component, inject, input, effect, computed, Output, EventEmitter, ChangeDetectorRef, Injectable } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { ControlContainer, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { AbstractControl, ControlContainer, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { Lab, LabService } from "src/app/lab/lab";
+import { Lab } from "src/app/lab/lab";
 import { LabSearchComponent } from "src/app/lab/lab-search.component";
 import { Equipment, EquipmentCreateRequest } from '../equipment';
-import { Discipline } from "src/app/uni/discipline/discipline";
-import { Campus } from "src/app/uni/campus/campus";
 import { LabInfoComponent } from "src/app/lab/lab-info.component";
 import { EquipmentInstallation } from "./equipment-installation";
-import { firstValueFrom } from "rxjs";
-import { CreateEquipmentInstallationFormPage } from "../_forms/create-equipment-installation.form";
-import { toObservable } from "@angular/core/rxjs-interop";
+import { firstValueFrom, map, Observable, of } from "rxjs";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
+import { EquipmentContext } from "../equipment-context";
+import { modelId } from "src/app/common/model/model";
 
 export type EquipmentInstallationFormGroup = FormGroup<{
     equipment: FormControl<Equipment | null>;
@@ -26,18 +24,42 @@ export type EquipmentInstallationFormGroup = FormGroup<{
 
 export function equipmentInstallationFormGroupFactory() {
     const fb = inject(FormBuilder);
-    const labService = inject(LabService);
+    const equipmentContext = inject(EquipmentContext, { optional: true });
 
-
-    return async (installation?: EquipmentInstallation): Promise<EquipmentInstallationFormGroup> => {
-        let lab: Lab | null = null;
-        if (installation) {
-            lab = await firstValueFrom(labService.fetch(installation.labId));
+    const validateLabUnique = async (control: AbstractControl): Promise<ValidationErrors | null> => {
+        const lab = control.value as Lab | null;
+        if (lab == null) {
+            return null;
         }
+        const labId = modelId(lab);
+
+        console.log('labId', labId);
+        const existingInstallations = await firstValueFrom(
+            equipmentContext ? equipmentContext.committed$.pipe(
+                map(equipment => equipment.installations.items),
+            ) : of([])
+        );
+        console.log('existing installs', existingInstallations);
+
+        for (const install of existingInstallations) {
+            if (install.labId == labId) {
+                return { notUnique: true };
+            }
+        }
+        return null;
+    };
+
+
+    return (): EquipmentInstallationFormGroup => {
         return fb.group({
             equipment: fb.control<Equipment | null>(null),
-            lab: fb.control<Lab | null>(lab, {
-                validators: Validators.required
+            lab: fb.control<Lab | null>(null, {
+                validators: [
+                    Validators.required,
+                ],
+                asyncValidators: [
+                    validateLabUnique
+                ]
             }),
             modelName: fb.control<string>('', { nonNullable: true }),
             numInstalled: fb.control<number>(1, { nonNullable: true, validators: [Validators.required, Validators.min(1)] })
@@ -64,7 +86,6 @@ export function equipmentInstallationFormGroupFactory() {
         LabSearchComponent
     ],
     template: `
-    @if (form) {
         <form [formGroup]="form" (ngSubmit)="_onSubmit()">
             @if (lab(); as lab) {
                 <lab-info [lab]="lab" />
@@ -72,10 +93,20 @@ export function equipmentInstallationFormGroupFactory() {
                 <mat-form-field>
                     <mat-label>Lab</mat-label>
                     <lab-search required formControlName="lab"
-                                [discipline]="labDisciplines()"/>
+                                [discipline]="labDisciplines()"
+                                [disabledLabs]="equipment().installedLabIds"/>
+
+
+                    <button mat-icon-button matSuffix (click)="form.patchValue({lab: null})">
+                        <mat-icon>cancel</mat-icon>
+                    </button>
 
                     @if (labErrors && labErrors['required']) {
                         <mat-error>A value is required</mat-error>
+                    }
+
+                    @if (labErrors && labErrors['notUnique']) {
+                        <mat-error>An installation already exists for this lab</mat-error>
                     }
                 </mat-form-field>
             }
@@ -89,6 +120,14 @@ export function equipmentInstallationFormGroupFactory() {
             <mat-form-field>
                 <mat-label>Number installed</mat-label>
                 <input matInput type="number" formControlName="numInstalled" />
+
+                @if (numInstalledErrors && numInstalledErrors['required']) {
+                    <mat-error>A value is required</mat-error>
+                }
+
+                @if (numInstalledErrors && numInstalledErrors['min']) {
+                    <mat-error>Installation must contain at least one instance of the equiment</mat-error>
+                }
             </mat-form-field>
 
             @if (_standaloneForm) {
@@ -103,24 +142,35 @@ export function equipmentInstallationFormGroupFactory() {
                 </div>
             }
         </form>
+    `,
+    styles: `
+    .form-actions {
+        float: right
     }
     `,
     changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EquipmentInstallationFormComponent {
     controlContainer = inject(ControlContainer, { self: true, optional: true });
+    _cd = inject(ChangeDetectorRef);
 
     _standaloneFormFactory = equipmentInstallationFormGroupFactory();
-    _standaloneForm: EquipmentInstallationFormGroup | null = null;
-    get form(): EquipmentInstallationFormGroup | null {
+    _standaloneForm: EquipmentInstallationFormGroup | undefined;
+
+    get form(): EquipmentInstallationFormGroup {
         if (this.controlContainer) {
             return this.controlContainer.control as EquipmentInstallationFormGroup;
         } else {
-            return this._standaloneForm;
+            if (this._standaloneForm == null) {
+                this._standaloneForm = this._standaloneFormFactory();
+            }
+            return this._standaloneForm!;
         }
     }
 
-    equipment = input<Equipment>();
+    equipment = input.required<Equipment>();
+    installation = input<EquipmentInstallation | null>();
+
     labDisciplines = computed(() => {
         const equipment = this.equipment();
         return equipment?.disciplines;
@@ -138,20 +188,26 @@ export class EquipmentInstallationFormComponent {
         return this.form!.controls.lab.errors;
     }
 
+    get numInstalledErrors() {
+        return this.form.controls.numInstalled.errors;
+    }
+
     constructor() {
-        if (!this.controlContainer) {
-            this._standaloneFormFactory().then(form => {
-                this._standaloneForm = form;
-            });
-        }
-        /*
         effect(() => {
             const lab = this.lab();
             if (lab) {
                 this.form.patchValue({ lab });
             }
         });
-        */
+
+        this.form.statusChanges.subscribe(() => {
+            for (const [name, control] of Object.entries(this.form.controls)) {
+                console.log(name, control.errors);
+            }
+            console.log('form status', this.form.status);
+            console.log('form errors', this.form.errors);
+            console.log('isValid', this.form.valid)
+        })
     }
 
     _onSubmit() {

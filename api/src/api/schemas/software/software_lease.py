@@ -1,8 +1,8 @@
-from ..base import ModelDetail, ModelIndex, ModelIndexPage
+from ..base import ModelDetail, ModelIndexPage
 
 from db.models.software import SoftwareLease, query_software_leases
 
-from api.schemas.lab.lab_allocation import LabAllocationDetail, LabAllocationIndex
+from api.schemas.lab.lab_allocation import LabAllocationDetail
 from .software_installation import SoftwareInstallationDetail
 
 
@@ -18,13 +18,5 @@ class SoftwareLeaseDetail(LabAllocationDetail[SoftwareLease]):
             model,
             installation=installation_detail
         )
-
-class SoftwareLeaseIndex(LabAllocationIndex[SoftwareLease]):
-    def item_from_model(self, model: SoftwareLease):
-        return SoftwareLeaseDetail.from_model(model)
-
-    def get_selection(self):
-        return query_software_leases()
-
 
 SoftwareLeaseIndexPage = ModelIndexPage[SoftwareLease, SoftwareLeaseDetail]

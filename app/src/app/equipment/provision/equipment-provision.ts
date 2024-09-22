@@ -1,21 +1,17 @@
-import { Model, ModelCreateRequest, ModelIndexPage, ModelQuery, ModelRef, ModelUpdateRequest, modelId, modelRefFromJson, resolveRef } from "src/app/common/model/model";
-import { JsonObject, isJsonObject } from "src/app/utils/is-json-object";
-import { Equipment, EquipmentCreateRequest, equipmentCreateRequestToJsonObject, EquipmentService, isEquipmentCreateRequest } from "../equipment";
-import { ResearchFunding, ResearchFundingService } from "src/app/research/funding/research-funding";
-import { Lab, LabService } from "../../lab/lab";
-import { Observable, first, firstValueFrom, map, switchMap } from "rxjs";
-import { EquipmentInstallation, EquipmentInstallationCreateRequest, EquipmentInstallationQuery, EquipmentInstallationService, equipmentInstallationCreateRequestToJsonObject, setEquipmentInstallationQueryParams } from "../installation/equipment-installation";
 import { HttpParams } from "@angular/common/http";
-import { Injectable, inject } from "@angular/core";
-import { EquipmentContext } from "../equipment-context";
-import { RelatedModelService } from "src/app/common/model/context";
-import { ProvisionStatus, isProvisionStatus } from "src/app/lab/common/provisionable/provision-status";
-import { UnitOfMeasurement } from "src/app/common/measurement/measurement";
+import { Injectable } from "@angular/core";
+import { Observable } from "rxjs";
+import { ModelIndexPage, ModelRef, modelId, modelRefFromJson, resolveRef } from "src/app/common/model/model";
 import { LabProvision, LabProvisionApprovalRequest, LabProvisionCreateRequest, LabProvisionInstallRequest, LabProvisionPurchaseRequest, LabProvisionQuery, LabProvisionService, labProvisionApprovalRequestToJsonObject, labProvisionCreateRequestToJsonObject, labProvisionInstallRequestToJsonObject, labProvisionPurchaseRequestToJsonObject, setLabProvisionQueryParams } from "src/app/lab/common/provisionable/provision";
+import { CreatePurchaseOrder } from "src/app/research/budget/research-budget";
+import { JsonObject } from "src/app/utils/is-json-object";
+import { Lab } from "../../lab/lab";
+import { Equipment, EquipmentService } from "../equipment";
+import { EquipmentInstallation, EquipmentInstallationQuery, EquipmentInstallationService } from "../installation/equipment-installation";
 
 export type EquipmentProvisionType
     = 'new_equipment'
-    | 'declare_equipment';
+    | 'equipment_transfer';
 
 export class EquipmentProvision extends LabProvision<EquipmentInstallation> {
     equipmentInstallation: ModelRef<EquipmentInstallation>;
@@ -64,40 +60,53 @@ interface _EquipmentProvisionCreateRequest extends LabProvisionCreateRequest<Equ
  */
 export interface NewEquipmentRequest extends _EquipmentProvisionCreateRequest {
     readonly type: 'new_equipment';
-    target: ModelRef<EquipmentInstallation> | EquipmentInstallationCreateRequest;
+    equipment: Equipment | string;
     numRequired: number;
 }
 
 export function newEquipmentRequestToJsonObject(request: NewEquipmentRequest): JsonObject {
     return {
         ...labProvisionCreateRequestToJsonObject(
-            equipmentInstallationCreateRequestToJsonObject,
             request
-        )
+        ),
+        equipment: modelId(request.equipment),
+        numRequired: request.numRequired,
     };
 }
 
 /**
- * Declare equipment that already exists in the lab,
- * skipping approval, purchase and installation.
+ * Creates a provision to transfer equipment currently installed in the source
+ * lab to the destination lab.
  */
-export interface DeclareEquipmentRequest extends _EquipmentProvisionCreateRequest {
-    readonly type: 'declare_equipment';
-    readonly target: ModelRef<EquipmentInstallation> | EquipmentInstallationCreateRequest;
-    numInstalled: number;
+export interface EquipmentTransferRequest extends _EquipmentProvisionCreateRequest {
+    readonly type: 'equipment_transfer';
+    equipment: Equipment | string;
+    /**
+     * The source of the transfer
+    */
+    lab: Lab | string;
+    destinationLab: Lab | string;
+    numTransferred: number;
+    /*
+     * Covers the cost of transportation, if any
+     */
+    purchaseOrder?: CreatePurchaseOrder;
 }
 
-export function declareEquipmentRequestToJsonObject(request: DeclareEquipmentRequest): JsonObject {
+export function transferEquipmentRequestToJsonObject(request: EquipmentTransferRequest) {
     return {
         ...labProvisionCreateRequestToJsonObject(
-            equipmentInstallationCreateRequestToJsonObject,
-            request
-        )
-    };
+            request,
+        ),
+        equipment: modelId(request.equipment),
+        targetLab: modelId(request.destinationLab),
+        numTransferred: request.numTransferred,
+    }
 }
+
 export type EquipmentProvisionCreateRequest
     = NewEquipmentRequest
-    | DeclareEquipmentRequest;
+    | EquipmentTransferRequest
 
 export interface EquipmentProvisionApprovalRequest extends LabProvisionApprovalRequest<EquipmentInstallation, EquipmentProvision> {
 }
@@ -124,7 +133,7 @@ export function equipmentProvisionInstallRequestToJsonObject(request: EquipmentP
     return labProvisionInstallRequestToJsonObject(request)
 }
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class EquipmentProvisionService extends LabProvisionService<EquipmentInstallation, EquipmentProvision, EquipmentProvisionQuery> {
 
     override readonly provisionableQueryParam: string = 'equipment';
@@ -148,20 +157,11 @@ export class EquipmentProvisionService extends LabProvisionService<EquipmentInst
             request
         );
     }
-    declareEquipment(request: DeclareEquipmentRequest) {
+
+    transferEquipment(request: EquipmentTransferRequest) {
         return this._doCreate(
-            declareEquipmentRequestToJsonObject,
+            transferEquipmentRequestToJsonObject,
             request
         );
     }
-
-    override create<TRequest extends LabProvisionCreateRequest<EquipmentInstallation, EquipmentProvision>>(request: TRequest): Observable<EquipmentProvision> {
-        switch (request.type) {
-            case 'new_equipment':
-                return this.newEquipment(request as NewEquipmentRequest);
-            default:
-                throw new Error(`Unrecognised equipment provision type ${request.type}`);
-        }
-    }
-
 }

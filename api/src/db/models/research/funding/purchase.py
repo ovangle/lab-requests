@@ -11,7 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship, declared_attr
 from db import LocalSession, local_object_session
 from db.models.base import Base
 from db.models.base.base import model_id
-from db.models.base.errors import DoesNotExist
+from db.models.base.errors import DoesNotExist, ModelException
 from db.models.fields import uuid_pk
 from db.models.user import User
 
@@ -46,11 +46,12 @@ class ResearchPurchaseOrder(Base):
             _purchase_order_types[purchase_order_type] = cls
         super().__init_subclass__(**kwargs)
 
-    budget_id: Mapped[UUID | None] = mapped_column(ForeignKey("research_budget.id"), nullable=True, default=None)
+    budget_id: Mapped[UUID] = mapped_column(ForeignKey("research_budget.id"), default=None)
 
     @declared_attr
     def budget(cls) -> Mapped[ResearchBudget | None]:
-        return relationship(overlaps="funding")
+        return relationship()
+
 
     @declared_attr
     def funding(cls) -> Mapped[ResearchFunding | None]:
@@ -68,7 +69,10 @@ class ResearchPurchaseOrder(Base):
     created_by_id: Mapped[UUID] = mapped_column(ForeignKey('user.id'))
     estimated_cost: Mapped[float] = mapped_column(postgresql.FLOAT, default=0.0)
 
-    async def get_or_create_purchase(self) -> ResearchPurchase | None:
+    purchase_url: Mapped[str | None] = mapped_column(postgresql.VARCHAR(1024), default=None)
+    purchase_instructions: Mapped[str] = mapped_column(postgresql.TEXT, default='')
+
+    async def get_or_create_purchase(self) -> ResearchPurchase:
         budget: ResearchBudget | None = await self.awaitable_attrs.budget
         if budget:
             if not self.purchase_id:
@@ -77,6 +81,8 @@ class ResearchPurchaseOrder(Base):
             else:
                 purchase = await self.awaitable_attrs.purchase
             return purchase
+        else:
+            raise ModelException("Purchase has no budget")
 
 async def get_purchase_order_for_type_and_id(db: LocalSession, type: str, id: UUID):
     try:
@@ -147,7 +153,7 @@ class ResearchPurchase(Base):
 
         self._order_mark = self.__mk_status_transition(
             PurchaseStatus.ORDERED,
-            purchase_order.created_by,
+            purchase_order.created_by_id,
             note=f'from {self.purchase_order_type} purchase order {self.purchase_order_id}'
         )
 
@@ -178,7 +184,7 @@ class ResearchPurchase(Base):
                 marked_by,
                 note
             )
-        return await self.save()
+        return await self.__save()
 
     receipt_description: Mapped[str] = mapped_column(postgresql.TEXT, default='')
 
@@ -216,7 +222,7 @@ class ResearchPurchase(Base):
         self.receipt_description = receipt_description
         self.paid = self.__mk_status_transition(PurchaseStatus.PAID, by, note=note)
 
-        return await self.save()
+        return await self.__save()
 
 
     review_mark: Mapped[PurchaseStatusTransition | None] = mapped_column(
@@ -247,7 +253,7 @@ class ResearchPurchase(Base):
             by,
             note
         )
-        return await self.save()
+        return await self.__save()
 
     def __mk_status_transition(self, status: PurchaseStatus, by: User | UUID, note: str):
         return PurchaseStatusTransition(
@@ -258,3 +264,22 @@ class ResearchPurchase(Base):
             by_id=model_id(by),
             note=note
         )
+
+    async def __save(self):
+        db = local_object_session(self)
+        db.add(self)
+        await db.commit()
+        return self
+
+
+def query_research_purchases(
+    budget: ResearchBudget | UUID | None = None
+):
+    where_clauses = []
+
+    if budget:
+        where_clauses.append(
+            ResearchPurchase.budget_id == model_id(budget)
+        )
+
+    return select(ResearchPurchase).where(*where_clauses)

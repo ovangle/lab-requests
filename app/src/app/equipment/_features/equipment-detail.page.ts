@@ -6,26 +6,12 @@ import { MatIconModule } from "@angular/material/icon";
 import { EquipmentTrainingDescriptionsInfoComponent } from "../training/training-descriptions-info.component";
 import { EquipmentTagChipsComponent } from "../tag/equipment-tag-chips.component";
 import { EquipmentDetailStateService, EquipmentDetailSubpage, setDetailPageSubroute } from "./equipment-detail.state";
-import { map, switchMap, tap } from "rxjs";
+import { firstValueFrom, map, switchMap, tap } from "rxjs";
 import { EquipmentService } from "../equipment";
-import { EquipmentContext } from "../equipment-context";
+import { EquipmentContext, provideEquipmentContextFromRoute } from "../equipment-context";
 import { EquipmentTrainingDescriptionListComponent } from "../training/training-description-list.component";
 import { EquipmentInstallationTableComponent } from "../installation/equipment-installation-table.component";
-
-function equipmentFromRouteParams() {
-    const route = inject(ActivatedRoute);
-    const equipmentService = inject(EquipmentService);
-
-    return route.paramMap.pipe(
-        map(params => params.get('equipment_id')),
-        switchMap(equipmentId => {
-            if (equipmentId == null) {
-                throw new Error(`No equipment_id in route params`)
-            }
-            return equipmentService.fetch(equipmentId);
-        })
-    );
-}
+import { ScaffoldFormPaneControl } from "src/app/scaffold/form-pane/form-pane-control";
 
 @Component({
     selector: 'equipment-detail-page',
@@ -49,6 +35,12 @@ function equipmentFromRouteParams() {
             <h1>
                 {{equipment.name}}
             </h1>
+
+            <div class="equipment-actions">
+                <button mat-raised-button >
+                    <mat-icon>edit</mat-icon>EDIT
+                </button>
+            </div>
         </div>
 
         <div class="general-info">
@@ -62,7 +54,9 @@ function equipmentFromRouteParams() {
         <div class="installations">
             <div class="installations-header">
             <h4>Installations</h4>
-            <a mat-icon-button [routerLink]="[{outlets: {form: addEquipmentFormLink$ | async}}]">
+            <a mat-icon-button [routerLink]="['/', { outlets: {
+                form: ['equipment', 'installation', {equipment: equipment.id} ]
+            }}]">
                 <mat-icon>add</mat-icon>
             </a>
             </div>
@@ -85,14 +79,13 @@ function equipmentFromRouteParams() {
     }
     `,
     providers: [
-        EquipmentContext
+        provideEquipmentContextFromRoute()
     ]
 })
 export class EquipmentDetailPage {
     readonly context = inject(EquipmentContext);
-    readonly equipment$ = equipmentFromRouteParams().pipe(
-        tap(equipment => this.context.nextCommitted(equipment))
-    );
+    readonly equipment$ = this.context.committed$;
+    readonly formPane = inject(ScaffoldFormPaneControl);
 
     readonly addEquipmentFormLink$ = this.equipment$.pipe(
         map((equipment) => [
@@ -101,5 +94,10 @@ export class EquipmentDetailPage {
             { equipment: equipment.id }
         ])
     );
+
+    async editEquipment() {
+        const equipment = await firstValueFrom(this.equipment$);
+        await this.formPane.open(this.context, ['equipment', { equipment: equipment.id }]);
+    }
 
 }

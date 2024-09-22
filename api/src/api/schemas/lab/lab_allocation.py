@@ -4,7 +4,7 @@ from uuid import UUID
 
 from db.models.lab.allocatable import Allocatable, LabAllocation, AllocationStatus, AllocationStatusTransition
 
-from ..base import BaseModel, ModelDetail, ModelIndex
+from ..base import BaseModel, ModelDetail
 
 TAllocation = TypeVar("TAllocation", bound=LabAllocation)
 
@@ -67,7 +67,7 @@ class LabAllocationDetail(ModelDetail[TAllocation], Generic[TAllocation]):
 
     @classmethod
     async def _from_lab_allocation(cls, model: LabAllocation[Any], **kwargs):
-        return cls._from_base(
+        return await cls._from_base(
             model,
             type=model.type,
             lab_id=model.lab_id,
@@ -125,7 +125,3 @@ class LabAllocationDetail(ModelDetail[TAllocation], Generic[TAllocation]):
         )
 
 TAllocationDetail = TypeVar('TAllocationDetail', bound=LabAllocationDetail)
-
-class LabAllocationIndex(ModelIndex[TAllocation], Generic[TAllocation]):
-    target: UUID | None = None
-    only_pending: bool

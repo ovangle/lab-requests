@@ -4,4 +4,4 @@ __all__ = (
     "UserIndex",
 )
 
-from .user import UserDetail, UserLookup, UserIndex
+from .user import UserDetail, UserLookup, UserIndexPage, AlterPasswordRequest

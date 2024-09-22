@@ -6,7 +6,6 @@ import { ResearchPlan } from "../research-plan";
 import { HttpParams } from "@angular/common/http";
 import { Observable, firstValueFrom, map } from "rxjs";
 import { format, formatISO, parseISO } from "date-fns";
-import { RelatedModelService } from "src/app/common/model/context";
 import { ResearchPlanContext } from "../research-plan-context";
 import { Lab, LabService } from "src/app/lab/lab";
 import { User, UserService } from "src/app/user/user";
@@ -114,9 +113,8 @@ export function researchPlanTaskSliceToJson(slice: ResearchPlanTaskSlice): JsonO
 }
 
 
-@Injectable()
-export class ResearchPlanTaskService extends RelatedModelService<ResearchPlan, ResearchPlanTask, ResearchPlanTaskQuery> {
-  override readonly context = inject(ResearchPlanContext);
+@Injectable({ providedIn: 'root' })
+export class ResearchPlanTaskService extends RestfulService<ResearchPlanTask, ResearchPlanTaskQuery> {
   override readonly model = ResearchPlanTask;
   override readonly setModelQueryParams = setResearchPlanTaskQueryParams;
   override readonly path = 'tasks';

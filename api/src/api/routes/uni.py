@@ -3,7 +3,6 @@ from fastapi import APIRouter, Depends
 
 from api.schemas.uni.campus import (
     CampusDetail,
-    CampusIndex,
     CampusIndexPage,
     lookup_campus,
 )
@@ -17,11 +16,21 @@ uni = APIRouter(prefix="/uni")
 async def index_campuses(
     code_eq: str | None = None,
     text_like: str | None = None,
-    page: int = 1,
+    page_index: int = 1,
     db=Depends(get_db),
 ) -> CampusIndexPage:
-    index = CampusIndex(code_eq=code_eq, search=text_like, page_index=page)
-    return await index.load_page(db)
+
+    selection = query_campuses(
+        code_eq=code_eq,
+        search=text_like
+    )
+
+    return await CampusIndexPage.from_selection(
+        db,
+        selection,
+        CampusDetail.from_model,
+        page_index=page_index
+    )
 
 
 @uni.get("/campus/{id}")

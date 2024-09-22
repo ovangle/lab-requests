@@ -2,20 +2,35 @@ import { Routes } from "@angular/router";
 
 export const EQUIPMENT_FORM_ROUTES: Routes = [
   {
-    path: 'equipment-installation',
+    path: 'equipment',
+    loadComponent: async () => {
+      const m = await import('./_forms/equipment.form-page');
+      return m.EquipmentFormPage
+    }
+  },
+  {
+    path: 'installation',
     children: [
       {
-        path: '',
+        path: 'edit',
+        pathMatch: 'full',
         loadComponent: async () => {
-          const m = await import('./_forms/create-equipment-installation.form');
-          return m.CreateEquipmentInstallationFormPage;
+          const m = await import('./_forms/equipment-installation.form-page');
+          return m.EquipmentInstallationFormPage;
         }
       },
       {
-        path: ':installation_id',
+        path: 'new',
         loadComponent: async () => {
-          const m = await import('./_forms/update-equipment-installation.form');
-          return m.UpdateEquipmentInstallationFormPage;
+          const m = await import('./_forms/equipment-new-equipment.form-page');
+          return m.EquipmentNewEquipmentFormPage;
+        }
+      },
+      {
+        path: 'transfer',
+        loadComponent: async () => {
+          const m = await import('./_forms/equipment-transfer.form-page');
+          return m.EquipmentTransferFormPage;
         }
       }
     ]
@@ -26,14 +41,14 @@ export const EQUIPMENT_FORM_ROUTES: Routes = [
       {
         path: '',
         loadComponent: async () => {
-          const m = await import('./_forms/create-equipment-lease.form')
+          const m = await import('./_forms/equipment-lease.form-page')
           return m.EquipmentLeaseFormPage;
         }
       },
       {
         path: ':lease_id',
         loadComponent: async () => {
-          const m = await import('./_forms/create-equipment-lease.form');
+          const m = await import('./_forms/equipment-lease.form-page');
           return m.EquipmentLeaseFormPage;
         }
       }
@@ -44,35 +59,13 @@ export const EQUIPMENT_FORM_ROUTES: Routes = [
 export const EQUIPMENT_ROUTES: Routes = [
   {
     path: '',
+    pathMatch: 'full',
     loadComponent: () => import('./_features/equipment-index.page')
       .then(module => module.EquipmentIndexPage),
-    children: [
-      {
-        path: ':equipment_id',
-        // pathMatch: 'full',
-        loadComponent: () => import('./_features/equipment-detail.page')
-          .then(module => module.EquipmentDetailPage),
-        children: [
-          {
-            path: 'update',
-            outlet: 'form',
-            loadComponent: async () => {
-              const m = await import('./_forms/update-equipment.form-page');
-              return m.UpdateEquipmentFormPage;
-            }
-          }
-        ]
-      },
-      {
-        path: 'create',
-        outlet: 'form',
-        loadComponent: async () => {
-          const m = await import('./_forms/create-equipment.form');
-          return m.EquipmentCreateFormPage;
-        }
-      }
-    ]
   },
-
+  {
+    path: ':equipment',
+    loadComponent: () => import('./_features/equipment-detail.page')
+      .then(module => module.EquipmentDetailPage),
+  },
 ];
-;

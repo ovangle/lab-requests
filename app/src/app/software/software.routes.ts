@@ -1,5 +1,4 @@
 import { Routes } from "@angular/router";
-import { provideSoftwareDetailContext } from "./software-context";
 
 
 export const SOFTWARE_ROUTES: Routes = [
@@ -10,12 +9,9 @@ export const SOFTWARE_ROUTES: Routes = [
             .then(module => module.SoftwareIndexPage)
     },
     {
-        path: ':software_id',
+        path: ':software',
         loadComponent: () => import('./_feature/software-detail.page')
             .then(module => module.SoftwareDetailPage),
-        providers: [
-            provideSoftwareDetailContext()
-        ],
         children: [
             {
                 path: 'installations',
@@ -29,7 +25,7 @@ export const SOFTWARE_ROUTES: Routes = [
                         }
                     },
                     {
-                        path: ':installation_id',
+                        path: ':software_installation',
                         pathMatch: 'full',
                         loadComponent: async () => {
                             const m = await import('./_feature/software-detail--installation-detail.page');

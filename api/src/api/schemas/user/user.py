@@ -1,28 +1,18 @@
 from __future__ import annotations
-import asyncio
-from datetime import datetime
-from http import HTTPStatus
-from typing import Any, Self, Set
+from typing import Any
 
-from typing_extensions import override
 from uuid import UUID
-from fastapi import HTTPException
-from pydantic import BaseModel
 
-from pydantic.types import SecretStr
-from sqlalchemy import func, select
 
-from db import LocalSession, local_object_session
+from db import LocalSession
 from db.models.uni.discipline import Discipline
-from db.models.user import TemporaryAccessToken, User, UserDomain, query_users
+from db.models.user import User, UserDomain
 
 
 from ..base import (
-    ModelCreateRequest,
     ModelLookup,
     ModelDetail,
     ModelUpdateRequest,
-    ModelIndex,
     ModelIndexPage,
 )
 from ..uni.campus import CampusLookup
@@ -84,39 +74,6 @@ async def lookup_user(db: LocalSession, ref: UserRef):
     return await ref.get(db)
 
 
-class UserIndex(ModelIndex[User]):
-    __item_detail_type__ = UserDetail
-
-    id_in: str | None = None
-
-    search: str | None = None
-    include_roles: str | None = None
-
-    discipline: Discipline | None = None
-
-    supervises_lab: UUID | None = None
-
-    async def item_from_model(self, model: User):
-        return await UserDetail.from_model(model)
-
-    def get_selection(self):
-        if self.id_in:
-            id_in = map(UUID, id_in.split(','))
-        else:
-            id_in = None
-
-        if self.include_roles:
-            include_role_set = set(self.include_roles.split(","))
-        else:
-            include_role_set = None
-
-        return query_users(
-            id_in=id_in,
-            search=self.search,
-            include_roles=include_role_set,
-            discipline=self.discipline,
-            supervises_lab=self.supervises_lab,
-        )
 
 
 # TODO: PEP 695

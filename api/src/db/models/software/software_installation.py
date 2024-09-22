@@ -108,6 +108,12 @@ class SoftwareInstallationProvision(LabInstallationProvision[SoftwareInstallatio
         )
         return await cls._create(db, provision)
 
+    @classmethod
+    async def _create(cls, db: LocalSession, provision):
+        db.add(provision)
+        await db.commit()
+        return provision
+
 def query_software_installation_provisions(
     installation: SoftwareInstallation | UUID | None = None,
     only_pending: bool=False

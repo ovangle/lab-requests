@@ -111,7 +111,12 @@ class LabProvision(
 
     # Polymorphic type of this provision. Different provisionables have different provision types. Maps to a unique python type
     type: Mapped[str] = mapped_column(psql.VARCHAR(64))
+    # The action being performed by this provision.
+    # Discriminates between provisions with the same type.
     action: Mapped[str] = mapped_column(psql.VARCHAR(64))
+
+    # A map of action dependent parameters for this provision
+    action_params: Mapped[dict[str, Any]] = mapped_column(psql.JSON, server_default="{}")
 
     status: Mapped[ProvisionStatus] = mapped_column(PROVISION_STATUS_ENUM)
 
@@ -137,8 +142,12 @@ class LabProvision(
         self,
         action: str,
         *,
-        lab: Lab,
-        budget: ResearchBudget | None = None,
+        lab: Lab | UUID,
+        budget: ResearchBudget,
+        estimated_cost: float,
+        purchase_url: str | None,
+        purchase_instructions: str,
+
         note: str,
         requested_by: User,
         **kwargs
@@ -155,9 +164,15 @@ class LabProvision(
         if action not in provision_type.actions:
             raise ProvisionActionError(provision_type, action)
         self.action = action
-        self.lab_id = lab.id
+        self.lab_id = model_id(lab)
 
-        self.budget_id = budget.id if budget else None
+        if budget.lab_id != self.lab_id:
+            raise ValueError("Budget must be for same lab")
+
+        self.budget_id = budget.id
+        self.estimated_cost = estimated_cost
+        self.purchase_url = purchase_url
+        self.purchase_instructions = purchase_instructions
 
         self._set_request(requested_by, note=note, initial=True)
 
@@ -217,7 +232,7 @@ class LabProvision(
         rejection = self.__mk_status_metadata(ProvisionStatus.REJECTED, by, note=note)
         self.all_rejections.insert(0, rejection)
 
-        return await self.save()
+        return await self.__save()
 
     approval: Mapped[ProvisionTransition | None] = mapped_column(
         PROVISION_STATUS_TRANSITION(ProvisionStatus.APPROVED)
@@ -257,7 +272,7 @@ class LabProvision(
                 by, note="approved no purchase required"
             )
 
-        return await self.save()
+        return await self.__save()
 
     denial: Mapped[ProvisionTransition | None] = mapped_column(
         PROVISION_STATUS_TRANSITION(ProvisionStatus.DENIED)
@@ -284,7 +299,7 @@ class LabProvision(
             )
 
         self.denial = self.__mk_status_metadata(ProvisionStatus.DENIED, by, note=note)
-        return await self.save()
+        return await self.__save()
 
     requisition: Mapped[ProvisionTransition | None] = mapped_column(
         PROVISION_STATUS_TRANSITION(ProvisionStatus.PURCHASED)
@@ -324,7 +339,7 @@ class LabProvision(
         if self.is_work_ready():
             self.work = await self.work.mark_as_ready(by, "after requisition purhcased")
 
-        return await self.save()
+        return await self.__save()
 
     work_id: Mapped[UUID] = mapped_column(ForeignKey("lab_work.id"))
     work: Mapped[LabWork] = relationship()
@@ -345,7 +360,7 @@ class LabProvision(
         return self.completion['at'] if self.completion else None
 
     @property
-    def completed_by_id(self):
+    def completed_by_id(self) -> UUID | None:
         return self.completion['by_id'] if self.completion else None
 
     async def complete(self, by: User, note: str):
@@ -365,7 +380,7 @@ class LabProvision(
         self.completion = self.__mk_status_metadata(
             ProvisionStatus.COMPLETED, by, note=note
         )
-        return await self.save()
+        return await self.__save()
 
     @property
     def is_finalised(self):
@@ -374,7 +389,7 @@ class LabProvision(
     @property
     def finalised_at(self) -> datetime | None:
         if self.is_denied:
-            return self.denied_At
+            return self.denied_at
         elif self.is_completed:
             return self.completed_at
         elif self.is_cancelled:
@@ -387,7 +402,7 @@ class LabProvision(
         if self.is_denied:
             return self.denied_by_id
         elif self.is_completed:
-            return self.completed_by_id,
+            return self.completed_by_id
         elif self.is_cancelled:
             return self.cancelled_by_id
         else:
@@ -433,7 +448,7 @@ class LabProvision(
             by=cancelled_by,
             note=cancelled_note,
         )
-        return await self.save()
+        return await self.__save()
 
     def __mk_status_metadata(self, status: ProvisionStatus, by: User | UUID, note: str):
         return ProvisionTransition(
@@ -443,3 +458,9 @@ class LabProvision(
             by_id=model_id(by),
             note=note,
         )
+
+    async def __save(self):
+        db = local_object_session(self)
+        db.add(self)
+        await db.commit()
+        return self

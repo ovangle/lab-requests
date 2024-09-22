@@ -15,7 +15,7 @@ import {
 import { RestfulService } from 'src/app/common/model/model-service';
 import { JsonObject, isJsonObject } from 'src/app/utils/is-json-object';
 import { Lab } from '../lab/lab';
-import { EquipmentInstallation, EquipmentInstallationCreateRequest, EquipmentInstallationService } from './installation/equipment-installation';
+import { EquipmentInstallation, equipmentInstallationCreateRequestToJsonObject, EquipmentInstallationRequest, EquipmentInstallationService } from './installation/equipment-installation';
 import { Installable } from '../lab/common/installable/installable';
 import { firstValueFrom } from 'rxjs';
 import { Discipline, isDiscipline } from '../uni/discipline/discipline';
@@ -88,32 +88,23 @@ export class Equipment extends Model implements Installable<EquipmentInstallatio
     );
   }
 
-  async getInstallation(lab: ModelRef<Lab>, using: EquipmentInstallationService) {
-    return await firstValueFrom(using.fetchForLabEquipment(lab, this));
+  get installedLabIds(): ModelRef<Lab>[] {
+    return this.installations.items.map(installation => installation.labId);
+  }
+
+  getInstallation(lab: ModelRef<Lab>) {
+    return this.installations.items.find(install => install.labId === modelId(lab)) || null;
   }
 }
 
 
-
-
-export interface EquipmentUpdateRequest extends ModelUpdateRequest<Equipment> {
-  description: string;
-  tags: string[];
-  trainingDescriptions: string[];
-}
-
-function equipentUpdateRequestToJsonObject(patch: EquipmentUpdateRequest): JsonObject {
-  return {
-    ...patch
-  };
-}
 
 export interface EquipmentCreateRequest extends ModelCreateRequest<Equipment> {
   name: string;
   description?: string;
   tags?: string[];
   trainingDescriptions?: string[];
-  installations?: EquipmentInstallationCreateRequest[];
+  installations?: EquipmentInstallationRequest[];
 
 }
 
@@ -126,7 +117,13 @@ export function isEquipmentCreateRequest(obj: unknown): obj is EquipmentCreateRe
 
 export function equipmentCreateRequestToJsonObject(request: EquipmentCreateRequest): JsonObject {
   return {
-    ...request
+    name: request.name,
+    description: request.description,
+    tags: request.tags,
+    trainingDescriptions: request.trainingDescriptions,
+    installations: request.installations
+      ? request.installations.map(equipmentInstallationCreateRequestToJsonObject)
+      : undefined
   };
 }
 
@@ -183,10 +180,10 @@ export class EquipmentService extends RestfulService<Equipment, EquipmentQuery> 
     );
   }
 
-  update(equipment: ModelRef<Equipment>, request: EquipmentUpdateRequest) {
+  update(equipment: ModelRef<Equipment>, request: EquipmentCreateRequest) {
     return this._doUpdate(
-      (_, request) => equipentUpdateRequestToJsonObject(request),
       equipment,
+      equipmentCreateRequestToJsonObject,
       request
     );
   }

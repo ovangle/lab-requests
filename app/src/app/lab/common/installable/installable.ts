@@ -9,7 +9,7 @@ import { LabProvision, LabProvisionService } from "../provisionable/provision";
 
 export interface Installable<TInstallation extends LabInstallation<any, any>> extends Model {
     installations: ModelIndexPage<TInstallation>;
-    getInstallation(lab: Lab | string, using: ModelService<TInstallation>): Promise<TInstallation | null>;
+    getInstallation(lab: Lab | string): TInstallation | null;
 }
 
 @Injectable()

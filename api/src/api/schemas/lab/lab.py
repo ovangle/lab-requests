@@ -6,19 +6,21 @@ from pydantic import Field
 from sqlalchemy import select
 
 from db import LocalSession, local_object_session
+from db.models.lab.disposable.lab_disposal import query_lab_disposals
 from db.models.lab.lab import query_labs
+from db.models.lab.storable.lab_storage import query_lab_storages
 from db.models.uni import Discipline
 from db.models.lab import Lab
 from db.models.uni.campus import Campus
-from db.models.user import User
+from db.models.user import User, query_users
 
-from ..base import ModelLookup, ModelIndexPage, ModelDetail, ModelIndex
+from ..base import ModelLookup, ModelIndexPage, ModelDetail
 
-from ..user.user import UserIndex, UserIndexPage
+from ..user.user import UserDetail, UserIndexPage
 from ..uni.campus import CampusDetail
 
-from .lab_storage import LabStorageIndex, LabStorageIndexPage
-from .lab_disposal import LabDisposalIndex, LabDisposalIndexPage
+from .lab_storage import LabStorageDetail, LabStorageIndexPage
+from .lab_disposal import LabDisposalDetail, LabDisposalIndexPage
 
 
 class LabDetail(ModelDetail[Lab]):
@@ -37,18 +39,31 @@ class LabDetail(ModelDetail[Lab]):
 
         campus = await CampusDetail.from_model(await model.awaitable_attrs.campus)
 
-        supervisor_index = UserIndex(supervises_lab=model.id)
+        supervisors = await UserIndexPage.from_selection(
+            db,
+            query_users(supervises_lab=model),
+            item_from_model=UserDetail.from_model,
+        )
 
-        lab_storage_index = LabStorageIndex(lab=model.id)
-        lab_disposal_index = LabDisposalIndex(lab=model.id)
+        lab_storages = await LabStorageIndexPage.from_selection(
+            db,
+            query_lab_storages(lab=model),
+            LabStorageDetail.from_model,
+        )
+        lab_disposals = await LabDisposalIndexPage.from_selection(
+            db,
+            query_lab_disposals(lab=model),
+            LabDisposalDetail.from_model
+        )
+
 
         return await cls._from_base(
             model,
             discipline=model.discipline,
             campus=campus,
-            supervisors=await supervisor_index.load_page(db),
-            storages=await lab_storage_index.load_page(db),
-            disposals=await lab_disposal_index.load_page(db),
+            supervisors=supervisors,
+            storages=lab_storages,
+            disposals=lab_disposals
         )
 
 
@@ -65,28 +80,6 @@ async def lookup_lab(db: LocalSession, ref: LabLookup | UUID):
     if isinstance(ref, UUID):
         return await Lab.get_by_id(db, ref)
     return await ref.get(db)
-
-
-class LabIndex(ModelIndex[Lab]):
-    __item_detail_type__ = LabDetail
-
-    campus: Campus | None = None
-    discipline: Discipline | None = None
-    search: str | None = None
-    id_in: list[UUID] | None = None
-    supervised_by: UUID | None = None
-
-    async def item_from_model(self, model: Lab):
-        return await LabDetail.from_model(model)
-
-    def get_selection(self):
-        return query_labs(
-            campus=self.campus,
-            discipline=self.discipline,
-            search=self.search,
-            id_in=self.id_in,
-            supervised_by=self.supervised_by
-        )
 
 
 # TODO: PEP 695 type

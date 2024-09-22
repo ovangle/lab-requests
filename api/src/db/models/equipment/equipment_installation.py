@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal, TypedDict
 from uuid import UUID
 from sqlalchemy import ForeignKey, ScalarResult, Select, UniqueConstraint, select
 from sqlalchemy.dialects import postgresql as psql
@@ -13,6 +13,7 @@ from db.models.lab.installable.lab_installation import LabInstallation, LabInsta
 from db.models.lab.lab import Lab, query_labs
 from db.models.lab.provisionable.lab_provision import LabProvision, ProvisionType
 from db.models.lab.provisionable.provision_status import ProvisionStatus
+from db.models.research.funding.research_budget import ResearchBudget
 from db.models.uni.campus import Campus
 from db.models.uni.discipline import Discipline
 from db.models.user import User
@@ -124,6 +125,49 @@ def query_equipment_installations(
     return select(EquipmentInstallation).where(*where_clauses)
 
 
+class NewEquipmentParams(TypedDict):
+    action: Literal["new_equipment"]
+    num_required: int
+
+def _new_equipment_params_to_json(params: NewEquipmentParams) -> dict[str, Any]:
+    return {
+        "action": "new_equipment",
+        "num_required": params["num_required"]
+    }
+
+def new_equipment_params_from_provision(provision: EquipmentInstallationProvision) -> NewEquipmentParams:
+    if provision.action != 'new_equipment':
+        raise ValueError(f"Cannot parse action params from '{provision.action} provision. Expected 'new_equipment' provision")
+    json = provision.action_params
+    return {
+        "action": "new_equipment",
+        "num_required": int(json["num_required"])
+    }
+
+
+class TransferEquipmentParams(TypedDict):
+    action: Literal["equipment_transfer"]
+    destination_lab_id: UUID
+    num_transferred: int
+
+def _transfer_equipment_params_to_json(params: TransferEquipmentParams):
+    return {
+        "action": "equipment_transfer",
+        "destination_lab_id": str(params["destination_lab_id"]),
+        "num_transferred": int(params["num_transferred"])
+    }
+
+def transfer_equipment_params_from_provision(provision: EquipmentInstallationProvision) -> TransferEquipmentParams:
+    if provision.action != 'equipment_transfer':
+        raise ValueError(f"Cannot parse action params from '{provision.action} provision. Expected 'equipment_transfer' provision")
+
+    json = provision.action_params
+    return {
+        "action": "equipment_transfer",
+        "destination_lab_id": UUID(json["destination_lab_id"]),
+        "num_transferred": json["num_transferred"]
+    }
+
 class EquipmentInstallationProvision(LabInstallationProvision[EquipmentInstallation]):
     __provision_type__ = ProvisionType(
         "equipment_installation_provision",
@@ -139,24 +183,31 @@ class EquipmentInstallationProvision(LabInstallationProvision[EquipmentInstallat
     installation_id: Mapped[UUID] = mapped_column(ForeignKey("equipment_installation.id"))
     installation: Mapped[EquipmentInstallation] = relationship()
 
-    quantity_required: Mapped[int] = mapped_column(psql.INTEGER)
-
     @classmethod
     async def new_equipment(
         cls,
         db: LocalSession,
         installation: EquipmentInstallation,
+        budget: ResearchBudget,
         *,
-        quantity_required: int,
+        num_required: int,
+        estimated_cost: float,
+        purchase_url: str | None,
+        purchase_instructions: str,
         requested_by: User,
         note: str
     ):
-        lab = await installation.awaitable_attrs.lab
         provision = cls(
-            action="new_equipment",
-            lab=lab,
-            installation=installation,
-            quantity_required=quantity_required,
+            "new_equipment",
+            installation,
+            action_params=_new_equipment_params_to_json({
+                "action": "new_equipment",
+                "num_required": num_required
+            }),
+            budget=budget,
+            estimated_cost=estimated_cost,
+            purchase_url=purchase_url,
+            purchase_instructions=purchase_instructions,
             requested_by=requested_by,
             note=note
         )
@@ -165,45 +216,34 @@ class EquipmentInstallationProvision(LabInstallationProvision[EquipmentInstallat
         return provision
 
     @classmethod
-    async def declare_equipment(
+    async def transfer_equipment(
         cls,
         db: LocalSession,
         installation: EquipmentInstallation,
+        destination_lab: Lab,
         *,
-        quantity_required: int,
-        requested_by: User,
-        note: str
-    ):
-        lab = await installation.awaitable_attrs.lab
-        provision = cls(
-            action="upgrade_equipment",
-            lab=lab,
-            installation=installation,
-            quantity_required=quantity_required,
-            requested_by=requested_by,
-            note=note
-        )
-        db.add(provision)
-        await db.commit()
-        return provision
-
-    @classmethod
-    async def upgrade_equipment(
-        cls,
-        db: LocalSession,
-        installation: EquipmentInstallation,
-        *,
-        quantity_required: int,
+        budget: ResearchBudget,
+        estimated_cost: float,
+        purchase_url: str | None,
+        purchase_instructions: str,
+        num_transferred: int,
         requested_by: User,
         note: str
     ):
         lab: Lab = await installation.awaitable_attrs.lab
 
         provision = cls(
-            action="upgrade_equipment",
-            lab=lab,
-            installation=installation,
-            quantity_required=quantity_required,
+            "equipment_transfer",
+            installation,
+            action_params=_transfer_equipment_params_to_json({
+                "action": "equipment_transfer",
+                "destination_lab_id": destination_lab.id,
+                "num_transferred": num_transferred
+            }),
+            budget=budget,
+            estimated_cost=estimated_cost,
+            purchase_url=purchase_url,
+            purchase_instructions=purchase_instructions,
             requested_by=requested_by,
             note=note
         )
@@ -211,6 +251,7 @@ class EquipmentInstallationProvision(LabInstallationProvision[EquipmentInstallat
         db.add(provision)
         await db.commit()
         return provision
+
 
 def query_equipment_installation_provisions(
     installation: EquipmentInstallation | UUID | None = None,

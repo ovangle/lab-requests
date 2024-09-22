@@ -1,9 +1,9 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends
 
+from api.schemas.base import ModelIndexPage
 from api.schemas.research.plan import (
     ResearchPlanCreateRequest,
-    ResearchPlanIndex,
     ResearchPlanIndexPage,
     ResearchPlanDetail,
     ResearchPlanUpdateRequest,
@@ -12,10 +12,12 @@ from db import get_db
 from db.models.research.funding import ResearchFunding, query_research_fundings
 
 from api.schemas.research.funding import (
-    ResearchFundingIndex,
+    ResearchBudgetDetail,
+    ResearchBudgetIndexPage,
     ResearchFundingIndexPage,
     ResearchFundingDetail,
 )
+from db.models.research.funding.research_budget import ResearchBudget, query_research_budgets
 from db.models.research.plan import ResearchPlan, query_research_plans
 
 research = APIRouter(prefix="/research", tags=["research"])
@@ -23,10 +25,18 @@ research = APIRouter(prefix="/research", tags=["research"])
 
 @research.get("/funding")
 async def index_research_fundings(
-    name: str | None = None, page_index: int = 0, db=Depends(get_db)
+    name: str | None = None, page_index: int = 1, db=Depends(get_db)
 ) -> ResearchFundingIndexPage:
-    index = ResearchFundingIndex(name_eq=name, page_index=page_index, text="")
-    return await index.load_page(db)
+    selection = query_research_fundings(
+        name_eq=name,
+        text=''
+    )
+    return await ResearchFundingIndexPage.from_selection(
+        db,
+        selection,
+        ResearchFundingDetail.from_model,
+        page_index=page_index
+    )
 
 
 @research.get("/funding/{funding_id}")
@@ -36,15 +46,54 @@ async def get_research_funding(
     funding = await ResearchFunding.get_for_id(db, funding_id)
     return await ResearchFundingDetail.from_model(funding)
 
+@research.get("/budget")
+async def index_budgets(
+    funding: UUID | None = None,
+    funding_name: str | None = None,
+    lab: UUID | None = None,
+    research_plan: UUID | None = None,
+    page_index: int = 1,
+    db = Depends(get_db)
+) -> ResearchBudgetIndexPage:
+    if funding:
+        funding_ = funding
+    elif funding_name:
+        funding_ = query_research_fundings(name_eq=funding_name)
+    else:
+        funding = None
+
+    selection = query_research_budgets(
+        funding = funding_,
+        lab=lab,
+        research_plan=research_plan,
+    )
+
+    return await ResearchBudgetIndexPage.from_selection(
+        db,
+        selection,
+        item_from_model=ResearchBudgetDetail.from_model,
+        page_index=page_index
+    )
+
+
 
 @research.get("/plan")
 async def index_plans(
     researcher: UUID | None = None,
     coordinator: UUID | None = None,
+    page_index: int = 1,
     db=Depends(get_db),
 ) -> ResearchPlanIndexPage:
-    plan_index = ResearchPlanIndex(researcher=researcher, coordinator=coordinator)
-    return await plan_index.load_page(db)
+    return await ResearchPlanIndexPage.from_selection(
+        db,
+        query_research_plans(
+            researcher=researcher,
+            coordinator=coordinator
+        ),
+        ResearchPlanDetail.from_model,
+        page_index=page_index
+    )
+
 
 
 @research.post("/plan")

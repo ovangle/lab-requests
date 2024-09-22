@@ -57,8 +57,7 @@ class ModelLookup(BaseModel, Generic[TModel]):
 
 
 class ModelRequest(BaseModel, Generic[TModel]):
-    @abstractmethod
-    async def handle_request(self, *, db: LocalSession, **kwargs): ...
+    pass
 
 
 class ModelRequestContextError(Exception):
@@ -71,21 +70,10 @@ class ModelCreateRequest(ModelRequest[TModel], Generic[TModel]):
     async def do_create(self, db: LocalSession, **kwargs) -> TModel:
         raise NotImplementedError
 
-    async def handle_request(self, db: LocalSession, **kwargs):
-        return await self.do_create(db, **kwargs)
-
 
 class ModelUpdateRequest(ModelRequest[TModel], Generic[TModel]):
     @abstractmethod
-    async def resolve_model(self, db: LocalSession, id: UUID, **kwargs) -> TModel: ...
-
-    @abstractmethod
     async def do_update(self, model: TModel, **kwargs: Any) -> TModel: ...
-
-    async def handle_request(self, db: LocalSession, **kwargs):
-        model = await self.resolve_model(db, **kwargs)
-        return await self.do_update(model, **kwargs)
-
 
 TDetail = TypeVar("TDetail", bound=ModelDetail)
 
@@ -132,31 +120,4 @@ class ModelIndexPage(BaseModel, Generic[TModel, TDetail]):
             total_page_count=total_page_count,
             page_index=page_index,
             page_size=page_size,
-        )
-
-
-
-class ModelIndex(BaseModel, Generic[TModel]):
-    # the python class of the model type
-    @abstractmethod
-    async def item_from_model(self, model: TModel) -> ModelDetail[TModel]:
-        raise NotImplementedError
-
-    page_size: int = Field(default_factory=lambda: api_settings.api_page_size_default)
-    page_index: int = 1
-
-    @abstractmethod
-    def get_selection(self) -> Select[tuple[TModel]]:
-        """
-        Gets a selection of the models included in the index.
-        """
-        ...
-
-    async def load_page(self, db: LocalSession) -> ModelIndexPage[TModel, Any]:
-        return await ModelIndexPage.from_selection(
-            db,
-            self.get_selection(),
-            self.item_from_model,
-            page_size=self.page_size,
-            page_index=self.page_index
         )

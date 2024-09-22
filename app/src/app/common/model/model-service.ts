@@ -79,13 +79,20 @@ export abstract class ModelService<T extends Model, TQuery extends ModelQuery<T>
     );
   }
 
-  protected abstract _doFetch(id: string): Observable<JsonObject>;
+  abstract _doFetch(id: string): Observable<JsonObject>;
 
-  fetch(id: string, options = { useCache: true }): Observable<T> {
-    if (options.useCache && this._cache.has(id)) {
-      return of(this._cache.get(id)!);
+  fetch(ref: ModelRef<T>, options = { useCache: true }): Observable<T> {
+    if (options.useCache) {
+      if (typeof ref === 'string') {
+        const cached = this._cache.get(ref);
+        if (cached) {
+          return of(cached);
+        }
+      } else {
+        return of(ref);
+      }
     }
-    return this._doFetch(id).pipe(
+    return this._doFetch(modelId(ref)).pipe(
       map(response => this.modelFromJsonObject(response)),
       this._cacheOne
     );
@@ -131,7 +138,7 @@ export abstract class ModelService<T extends Model, TQuery extends ModelQuery<T>
     );
   }
 
-  protected abstract _doQueryPage(params: HttpParams): Observable<JsonObject>;
+  abstract _doQueryPage(params: HttpParams): Observable<JsonObject>;
 
   queryPage(lookup: Partial<TQuery>, pageNum = 1): Observable<ModelIndexPage<T>> {
     let params = this.setModelQueryParams(new HttpParams(), lookup);
@@ -190,7 +197,7 @@ export abstract class RestfulService<
     return urlJoin(this.resourceUrl(id), name);
   }
 
-  protected override _doFetch(
+  override _doFetch(
     id: string,
     options?: { params: { [k: string]: any } | HttpParams },
   ): Observable<JsonObject> {
@@ -199,14 +206,14 @@ export abstract class RestfulService<
     });
   }
 
-  protected override _doQueryPage(
+  override _doQueryPage(
     params: HttpParams | { [k: string]: string | number | string[] },
   ): Observable<JsonObject> {
     return this._httpClient
       .get<JsonObject>(this.indexUrl, { params: params })
   }
 
-  protected _doCreate<TCreate extends ModelCreateRequest<T>>(
+  _doCreate<TCreate extends ModelCreateRequest<T>>(
     requestToJsonObject: (request: TCreate) => JsonObject,
     request: TCreate
   ): Observable<T> {
@@ -220,11 +227,11 @@ export abstract class RestfulService<
   }
 
   _doUpdate<TUpdate extends ModelUpdateRequest<T>>(
-    updateRequestToJsonObject: (model: ModelRef<T>, update: TUpdate) => JsonObject,
     model: ModelRef<T>,
+    updateRequestToJsonObject: (update: TUpdate) => JsonObject,
     request: TUpdate
   ) {
-    const body = updateRequestToJsonObject(model, request);
+    const body = updateRequestToJsonObject(request);
     return this._httpClient.put<JsonObject>(this.resourceUrl(modelId(model)), body).pipe(
       map(response => this.modelFromJsonObject(response)),
       this._cacheOne

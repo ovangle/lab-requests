@@ -1,46 +1,52 @@
-import { Injectable, inject } from '@angular/core';
-import { ModelContext } from '../common/model/context';
-import {
-  User,
-  UserService,
-  CurrentUser,
-} from './user';
+import { DestroyRef, Injectable, inject } from '@angular/core';
 import {
   BehaviorSubject,
-  Observable,
   filter,
   firstValueFrom,
-  map,
   of,
   startWith,
   switchMap,
-  tap,
+  tap
 } from 'rxjs';
+import { ModelContext } from '../common/model/context';
 import { LoginContext } from '../oauth/login-context';
 import { Role } from './common/role';
+import {
+  CurrentUser,
+  User,
+  UserService,
+} from './user';
 
 @Injectable({ providedIn: 'root' })
-export class UserContext extends ModelContext<User> {
-  readonly service = inject(UserService);
-  readonly loginContext = inject(LoginContext);
+export class UserContext extends ModelContext<CurrentUser> {
+  readonly loginContext: LoginContext;
 
-  readonly user = new BehaviorSubject<CurrentUser | null>(null);
-
-  constructor() {
-    super();
-
-    this.loginContext.accessTokenData$
-      .pipe(
-        startWith(this.loginContext.currentAccessTokenData),
-        switchMap((tokenData) =>
-          tokenData != null ? this.service.me() : of(null),
-        ),
-      )
-      .subscribe(this.user);
+  get user() {
+    return this.committed$;
   }
 
+  constructor() {
+    const loginContext = inject(LoginContext);
+    const userService = inject(UserService);
+
+    super(
+      userService as any,
+      loginContext.accessTokenData$.pipe(
+        startWith(loginContext.currentAccessTokenData),
+        switchMap((tokenData) => tokenData != null ? userService.me() : of(null)),
+      )
+    );
+
+    this.loginContext = loginContext;
+    const syncCurrentUser = this.committed$.subscribe((u) => this._currentUser.next(u as CurrentUser));
+    inject(DestroyRef).onDestroy(() => {
+      syncCurrentUser.unsubscribe();
+    })
+  }
+
+  readonly _currentUser = new BehaviorSubject<CurrentUser | null>(null);
   get currentUser(): User | null {
-    return this.user.value;
+    return this._currentUser.value;
   }
 
   async hasRole(role: Role): Promise<boolean> {

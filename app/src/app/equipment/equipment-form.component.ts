@@ -44,8 +44,31 @@ import { UniDisciplineSelect } from '../uni/discipline/discipline-select.compone
 import { EquipmentNameUniqueValidator } from './equipment-name-unique-validator';
 import { EquipmentInstallationFormGroup, equipmentInstallationFormGroupFactory } from './installation/equipment-installation-form.component';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { switchMap } from 'rxjs';
+import { firstValueFrom, switchMap } from 'rxjs';
 import { EquipmentInstallation } from './installation/equipment-installation';
+import { LabService } from '../lab/lab';
+import { ThisReceiver } from '@angular/compiler';
+import { modelId } from '../common/model/model';
+import { coerceBooleanProperty } from '@angular/cdk/coercion';
+
+function equipmentFormGroupFactory() {
+  const fb = inject(FormBuilder);
+  const equipmentNameUnique = inject(EquipmentNameUniqueValidator);
+
+  return () => fb.group({
+    name: fb.control('', {
+      validators: [Validators.required],
+      asyncValidators: [(c) => equipmentNameUnique.validate(c)]
+    }),
+    description: fb.control<string>('', { nonNullable: true }),
+    disciplines: fb.control<string[]>([], { nonNullable: true }),
+    tags: fb.control<string[]>([], { nonNullable: true }),
+    trainingDescriptions: fb.control<string[]>([], { nonNullable: true }),
+    installations: fb.array<EquipmentInstallationFormGroup>([])
+  });
+}
+
+export type EquipmentFormGroup = ReturnType<ReturnType<typeof equipmentFormGroupFactory>>;
 
 /**
  * Nested form describing basic info about a piece of equipment.
@@ -73,8 +96,7 @@ import { EquipmentInstallation } from './installation/equipment-installation';
     EquipmentTrainingDescriptionsFieldHint
   ],
   template: `
-    <form [formGroup]="formGroup" (ngSubmit)="_onFormSubmit()">
-
+    <form [formGroup]="form" (ngSubmit)="_onFormSubmit()">
         <div class="equipment-form">
             <h4>General</h4>
             <mat-form-field>
@@ -120,33 +142,38 @@ import { EquipmentInstallation } from './installation/equipment-installation';
             </mat-form-field>
         </div>
 
-        <div class="installations">
-            <div class="installations-header">
-                <h4>Installations</h4>
+        @if (!hideInstallations()) {
+          <div class="installations">
+              <div class="installations-header">
+                  <h4>Installations</h4>
 
-                <button mat-icon-button (click)="addInstallationForm()">
-                    <mat-icon>add</mat-icon>
-                </button>
-            </div>
+                  <button mat-icon-button (click)="addInstallationForm()">
+                      <mat-icon>add</mat-icon>
+                  </button>
+              </div>
 
-            @let formArray = formGroup.controls.installations;
+              @let formArray = form.controls.installations;
 
-            @if (formArray.length == 0) {
-                No installations
-            } @else {
-                @for (form of formArray.controls; track form) {
-                    <equipment-installation-form [formGroup]="form" />
-                }
-            }
-        </div>
-        <div class="form-controls">
-            <button mat-raised-button type="submit" [disabled]="!formGroup.valid">
-                <mat-icon>save</mat-icon> SAVE
-            </button>
-            <button mat-button (click)="_onCancelButtonClick()">
-                <mat-icon>cancel</mat-icon> CANCEL
-            </button>
-        </div>
+              @if (formArray.length == 0) {
+                  No installations
+              } @else {
+                  @for (form of formArray.controls; track form) {
+                      <equipment-installation-form [formGroup]="form" />
+                  }
+              }
+          </div>
+        }
+
+        @if (_standaloneForm) {
+          <div class="form-controls">
+              <button mat-raised-button type="submit" [disabled]="!form.valid">
+                  <mat-icon>save</mat-icon> SAVE
+              </button>
+              <button mat-button (click)="_onCancelButtonClick()">
+                  <mat-icon>cancel</mat-icon> CANCEL
+              </button>
+          </div>
+        }
     </form>
   `,
   styles:
@@ -159,30 +186,37 @@ import { EquipmentInstallation } from './installation/equipment-installation';
 })
 export class EquipmentFormComponent {
   readonly equipmentService = inject(EquipmentService);
+  readonly labService = inject(LabService);
 
-  readonly controlContainer = inject(ControlContainer, { self: true });
-  readonly _equipmentNameUnique = inject(EquipmentNameUniqueValidator);
+  readonly controlContainer = inject(ControlContainer, { self: true, optional: true });
+  readonly _createEquipmentFormGroup = equipmentFormGroupFactory();
   readonly _createEquipmentInstallationFormGroup = equipmentInstallationFormGroupFactory()
-  readonly _fb = inject(FormBuilder);
 
-  readonly formGroup = this._fb.group({
-    name: this._fb.control('', {
-      validators: [Validators.required],
-      asyncValidators: [(c) => this._equipmentNameUnique.validate(c)]
-    }),
-    description: this._fb.control<string>('', { nonNullable: true }),
-    disciplines: this._fb.control<string[]>([], { nonNullable: true }),
-    tags: this._fb.control<string[]>([], { nonNullable: true }),
-    trainingDescriptions: this._fb.control<string[]>([], { nonNullable: true }),
-    installations: this._fb.array<EquipmentInstallationFormGroup>([])
+  _standaloneForm: EquipmentFormGroup | undefined;
+  get form(): EquipmentFormGroup {
+    if (this.controlContainer) {
+      return this.controlContainer.control as EquipmentFormGroup;
+    }
+    if (this._standaloneForm === undefined) {
+      this._standaloneForm = this._createEquipmentFormGroup();
+    }
+    return this._standaloneForm!;
 
-  });
+  }
 
-  readonly equipment = input<Equipment>();
+  readonly equipment = input<Equipment | null>();
   readonly isUpdateForm = computed(() => this.equipment() != null);
 
+  _hideInstallations = input(false, { transform: coerceBooleanProperty, alias: 'hideInstallations' });
+  hideInstallations = computed(() => {
+    const directHideInstallations = this._hideInstallations();
+    const isUpdate = this.isUpdateForm();
+
+    return directHideInstallations || isUpdate;
+  })
+
   @Output()
-  readonly submit = new EventEmitter<EquipmentCreateRequest>();
+  readonly submit = new EventEmitter<EquipmentFormGroup['value']>();
   @Output()
   readonly cancel = new EventEmitter<void>();
 
@@ -190,19 +224,64 @@ export class EquipmentFormComponent {
     const syncFormValue = toObservable(this.equipment).pipe(
       switchMap(async equipment => {
         if (equipment) {
-          this.formGroup.setValue({
+          this.form.patchValue({
             name: equipment.name,
             description: equipment.description,
             trainingDescriptions: equipment.trainingDescriptions,
             disciplines: equipment.disciplines,
             tags: equipment.tags,
-            installations: []
           });
 
-          for (const install of equipment.installations.items) {
-            await this.addInstallationForm(install);
+          // Ensure that we cache labs for all the installations.
+          const labIds = equipment.installations.items.map(install => install.labId);
+          await firstValueFrom(this.labService.fetchAll(labIds));
+
+          const _syncInstallationFormValue = async (f: EquipmentInstallationFormGroup, install: EquipmentInstallation) => {
+            const lab = await firstValueFrom(this.labService.fetch(install.labId));
+
+            f.setValue({
+              equipment: equipment!,
+              lab,
+              numInstalled: install.numInstalled,
+              modelName: install.installedModelName,
+            })
           }
 
+          const installationFormArr = this.form.controls.installations;
+          const seenInstallIds = new Set();
+          for (const control of installationFormArr.controls) {
+            const lab = control.value.lab;
+            if (lab) {
+              const installAtLab = equipment.installations.items.find(
+                i => i.labId == modelId(lab)
+              );
+              if (installAtLab) {
+                seenInstallIds.add(installAtLab.id);
+                await _syncInstallationFormValue(control, installAtLab)
+                continue
+              }
+            }
+          }
+
+          for (const install of equipment.installations.items) {
+            if (seenInstallIds.has(install.id)) {
+              continue;
+            }
+
+            let populatedEmptyLabForm = false
+            for (const control of installationFormArr.controls) {
+              if (control.value.lab == null) {
+                await _syncInstallationFormValue(control, install);
+                populatedEmptyLabForm = true;
+                continue;
+              }
+            }
+
+            if (!populatedEmptyLabForm) {
+              const control = this.addInstallationForm();
+              await _syncInstallationFormValue(control, install);
+            }
+          }
         }
       })
     ).subscribe();
@@ -214,13 +293,14 @@ export class EquipmentFormComponent {
   }
 
   get nameErrors(): ValidationErrors | null {
-    return this.formGroup.controls.name.errors;
+    return this.form.controls.name.errors;
   }
 
-  async addInstallationForm(installation?: EquipmentInstallation) {
-    const formArr = this.formGroup.controls.installations;
-    const form = await this._createEquipmentInstallationFormGroup(installation);
+  addInstallationForm() {
+    const formArr = this.form.controls.installations;
+    const form = this._createEquipmentInstallationFormGroup();
     formArr.push(form);
+    return form;
   }
 
   _onAddInstallationButtonClick() {
@@ -229,21 +309,7 @@ export class EquipmentFormComponent {
 
 
   _onFormSubmit() {
-    const value = this.formGroup.value;
-
-    const request: EquipmentCreateRequest = {
-      name: value!.name!,
-      description: value!.description,
-      trainingDescriptions: value!.trainingDescriptions,
-      installations: value.installations!.map(
-        installation => ({
-          modelName: installation.modelName!,
-          lab: installation.lab!.id,
-          numInstalled: installation.numInstalled!,
-        })
-      )
-    };
-    this.submit.emit(request);
+    this.submit.emit(this.form.value);
   }
 
   _onCancelButtonClick() {

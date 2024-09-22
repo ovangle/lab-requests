@@ -11,8 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import LocalSession, local_object_session
 from db.models.base.errors import DoesNotExist
+from db.models.equipment.equipment_lease import query_equipment_leases
 from db.models.lab.lab import Lab
+from db.models.material.material_allocation import query_material_allocations
 from db.models.research.plan import ResearchPlanAttachment, query_research_plan_attachments, query_research_plan_tasks, query_research_plans
+from db.models.software.software_lease import query_software_leases
 from db.models.uni import Discipline
 from db.models.user import User
 from db.models.research.funding import ResearchFunding
@@ -28,14 +31,13 @@ from ..base import (
     ModelCreateRequest,
     ModelUpdateRequest,
     ModelLookup,
-    ModelIndex,
 )
 from ..user.user import UserLookup, UserDetail, lookup_user
 from ..lab.lab import LabLookup
 
-from ..equipment.equipment_lease import EquipmentLeaseIndex, EquipmentLeaseIndexPage
-from ..software.software_lease import SoftwareLeaseIndex, SoftwareLeaseIndexPage
-from ..material.material_allocation import MaterialAllocationIndex, MaterialAllocationIndexPage
+from ..equipment.equipment_lease import EquipmentLeaseDetail, EquipmentLeaseIndexPage
+from ..software.software_lease import SoftwareLeaseDetail, SoftwareLeaseIndexPage
+from ..material.material_allocation import MaterialAllocationDetail, MaterialAllocationIndexPage
 
 
 from .funding import (
@@ -75,16 +77,6 @@ class ResearchPlanTaskDetail(ModelDetail[ResearchPlanTask]):
             updated_at=model.updated_at,
         )
 
-class ResearchPlanTaskIndex(ModelIndex[ResearchPlanTask]):
-    plan: UUID | None
-
-    async def item_from_model(self, model: ResearchPlanTask):
-        return await ResearchPlanTaskDetail.from_model(model)
-
-    def get_selection(self):
-        return query_research_plan_tasks(
-            plan=self.plan
-        )
 
 ResearchPlanTaskIndexPage = ModelIndexPage[ResearchPlanTask, ResearchPlanTaskDetail]
 
@@ -175,17 +167,6 @@ class ResearchPlanAttachmentDetail(ModelDetail[ResearchPlanAttachment]):
             updated_at=model.updated_at,
         )
 
-class ResearchPlanAttachmentIndex(ModelIndex[ResearchPlanAttachment]):
-    plan: UUID | None
-
-    async def item_from_model(self, model: ResearchPlanAttachment):
-        return await ResearchPlanAttachmentDetail.from_model(model)
-
-    def get_selection(self):
-        return query_research_plan_attachments(
-            plan=self.plan
-        )
-
 ResearchPlanAttachmentIndexPage = ModelIndexPage[ResearchPlanAttachment, ResearchPlanAttachmentDetail]
 
 class ResearchPlanDetail(ModelDetail[ResearchPlan]):
@@ -219,17 +200,37 @@ class ResearchPlanDetail(ModelDetail[ResearchPlan]):
             await model.awaitable_attrs.coordinator
         )
 
-        task_index = ResearchPlanTaskIndex(plan=model.id)
-        attachment_index = ResearchPlanAttachmentIndex(plan=model.id)
-
-        equipment_lease_index = EquipmentLeaseIndex()
-        software_lease_index = SoftwareLeaseIndex()
-
-        input_material_index = MaterialAllocationIndex(
-            only_inputs=True
+        tasks = await ResearchPlanTaskIndexPage.from_selection(
+            db,
+            query_research_plan_tasks(plan=model),
+            ResearchPlanTaskDetail.from_model
         )
-        output_material_index = MaterialAllocationIndex(
-            only_outputs=True
+        attachments = await ResearchPlanAttachmentIndexPage.from_selection(
+            db,
+            query_research_plan_attachments(plan=model.id),
+            item_from_model=ResearchPlanAttachmentDetail.from_model
+        )
+
+        equipment_leases = await EquipmentLeaseIndexPage.from_selection(
+            db,
+            query_equipment_leases(consumer=model),
+            EquipmentLeaseDetail.from_model
+        )
+        software_leases = await SoftwareLeaseIndexPage.from_selection(
+            db,
+            query_software_leases(consumer=model),
+            SoftwareLeaseDetail.from_model
+        )
+
+        input_materials = await MaterialAllocationIndexPage.from_selection(
+            db,
+            query_material_allocations(consumer=model, only_inputs=True),
+            MaterialAllocationDetail.from_model
+        )
+        output_materials = await MaterialAllocationIndexPage.from_selection(
+            db,
+            query_material_allocations(consumer=model, only_inputs=True),
+            MaterialAllocationDetail.from_model
         )
 
         return await super()._from_base(
@@ -241,13 +242,13 @@ class ResearchPlanDetail(ModelDetail[ResearchPlan]):
             researcher=researcher,
             coordinator=coordinator,
             lab_id=model.lab_id,
-            tasks=await task_index.load_page(db),
-            attachments=await attachment_index.load_page(db),
+            tasks=tasks,
+            attachments=attachments,
 
-            equipment_leases=await equipment_lease_index.load_page(db),
-            software_leases=await software_lease_index.load_page(db),
-            input_materials=await input_material_index.load_page(db),
-            output_materials=await output_material_index.load_page(db),
+            equipment_leases=equipment_leases,
+            software_leases=software_leases,
+            input_materials=input_materials,
+            output_materials=output_materials
         )
 
 
@@ -264,20 +265,6 @@ async def lookup_research_plan(db: LocalSession, lookup: ResearchPlanLookup | UU
     if isinstance(lookup, UUID):
         lookup = ResearchPlanLookup(id=lookup)
     return await lookup.get(db)
-
-
-class ResearchPlanIndex(ModelIndex[ResearchPlan]):
-
-    researcher: UUID | None = None
-    coordinator: UUID | None = None
-
-    async def item_from_model(self, model: ResearchPlan):
-        return await ResearchPlanDetail.from_model(model)
-
-    def get_selection(self) -> Select[tuple[ResearchPlan]]:
-        return query_research_plans(
-            researcher=self.researcher, coordinator=self.coordinator
-        )
 
 
 # TODO: PEP 695

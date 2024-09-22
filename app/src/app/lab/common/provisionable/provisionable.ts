@@ -20,5 +20,5 @@ export interface Provisionable<
 export interface ProvisionableCreateRequest<
     TProvisionable extends Provisionable<any>,
 > extends ModelCreateRequest<TProvisionable> {
-    lab: ModelRef<Lab>;
+    lab?: ModelRef<Lab>;
 }

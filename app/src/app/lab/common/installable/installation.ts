@@ -6,7 +6,7 @@ import { HttpParams } from "@angular/common/http";
 import { Injectable, inject } from "@angular/core";
 import { ModelService, RestfulService } from "src/app/common/model/model-service";
 import { Installable } from "./installable";
-import { ModelContext, RelatedModelService } from "src/app/common/model/context";
+import { ModelContext } from "src/app/common/model/context";
 import { Provisionable } from "../provisionable/provisionable";
 import { LabProvision } from "../provisionable/provision";
 import { isUUID } from "src/app/utils/is-uuid";
@@ -92,7 +92,7 @@ export abstract class LabInstallationService<
     TInstallable extends Installable<TInstallation>,
     TInstallation extends LabInstallation<TInstallable, any>,
     TInstallationQuery extends LabInstallationQuery<TInstallable, TInstallation> = LabInstallationQuery<TInstallable, TInstallation>
-> extends RelatedModelService<TInstallable, TInstallation, TInstallationQuery> {
+> extends RestfulService<TInstallation, TInstallationQuery> {
     labService = inject(LabService);
 
     fetchForInstallableLab(installable: TInstallable | string, lab: Lab | string): Observable<TInstallation | null> {

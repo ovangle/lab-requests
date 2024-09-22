@@ -12,6 +12,7 @@ from db.models.base.base import model_id
 from db.models.base.errors import ModelException
 from db.models.fields import uuid_pk
 from db.models.lab.allocatable import LabAllocation
+from db.models.lab.allocatable.allocation_consumer import LabAllocationConsumer
 from db.models.material.material import Material
 from db.models.user import User
 
@@ -49,7 +50,7 @@ class MaterialAllocation(LabAllocation[MaterialInventory]):
     )
 
     def __init__(self, inventory: MaterialInventory | UUID, is_input: bool, is_output: bool, **kw):
-        self.inventory_id = inventory.id
+        self.inventory_id = model_id(inventory)
         if not (is_input or is_output):
             raise ValueError('Must be either an input or an output')
         self.is_input = is_input
@@ -67,11 +68,9 @@ class MaterialAllocation(LabAllocation[MaterialInventory]):
 
         inventory: MaterialInventory = await self.awaitable_attrs.inventory
         consumption = MaterialConsumption(
-            input_material_id=self.id,
-            inventory=inventory,
+            input_material=self,
             quantity=quantity,
             recorded_by=by,
-            note=note,
         )
         db.add(consumption)
         await db.commit()
@@ -84,22 +83,24 @@ class MaterialAllocation(LabAllocation[MaterialInventory]):
         if not self.is_output:
             raise MaterialAllocationError("Only an output material can record a production")
         production = MaterialProduction(
-            output_material_id=self.id,
-            inventory=self.inventory,
+            output_material=self,
             quantity=quantity,
             recorded_by=by,
-            note=note,
         )
         db.add(production)
         await db.commit()
         return production
 
 def query_material_allocations(
+    consumer: LabAllocationConsumer | UUID | None = None,
     inventory: MaterialInventory | UUID | None = None,
     only_inputs: bool = False,
     only_outputs: bool = False
 ) -> Select[tuple[MaterialAllocation]]:
     where_clauses: list = []
+
+    if consumer:
+        where_clauses.append(MaterialAllocation.consumer_id == model_id(consumer))
 
     if inventory:
         where_clauses.append(MaterialAllocation.inventory_id == model_id(inventory))
@@ -135,8 +136,16 @@ class MaterialConsumption(MaterialInventoryExport):
             quantity=quantity
         )
 
-def query_material_consumptions():
-    raise NotImplementedError
+def query_material_consumptions(
+    input_material: MaterialAllocation | UUID | None = None
+):
+    where_clauses = []
+    if input_material:
+        where_clauses.append(
+            MaterialConsumption.input_material_id == model_id(input_material)
+        )
+
+    return select(MaterialConsumption).where(*where_clauses)
 
 class MaterialProduction(MaterialInventoryImport):
     __import_type__ = MaterialInventoryImportType.PRODUCTION
@@ -161,5 +170,13 @@ class MaterialProduction(MaterialInventoryImport):
         )
 
 
-def query_material_productions():
-    raise NotImplementedError
+def query_material_productions(
+    output_material: MaterialAllocation | UUID | None = None
+):
+    where_clauses = []
+    if output_material:
+        where_clauses.append(
+            MaterialProduction.output_material_id == model_id(output_material)
+        )
+
+    return select(MaterialProduction).where(*where_clauses)

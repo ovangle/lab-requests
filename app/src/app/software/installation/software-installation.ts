@@ -9,7 +9,7 @@ import { Provisionable, ProvisionableCreateRequest } from "src/app/lab/common/pr
 import { SoftwareInstallationProvision, SoftwareProvisionInstallRequest } from "../provision/software-provision";
 import { SoftwareContext } from "../software-context";
 import { Lab } from "src/app/lab/lab";
-import { ModelService } from "src/app/common/model/model-service";
+import { ModelService, RestfulService } from "src/app/common/model/model-service";
 import { SoftwareLease } from "../lease/software-lease";
 import { isUUID } from "src/app/utils/is-uuid";
 
@@ -80,12 +80,10 @@ export function softwareInstallationCreateRequestToJsonObject(request: SoftwareI
 }
 
 @Injectable({ providedIn: 'root' })
-export class SoftwareInstallationService extends LabInstallationService<Software, SoftwareInstallation, SoftwareInstallationQuery> {
+export class SoftwareInstallationService extends RestfulService<SoftwareInstallation, SoftwareInstallationQuery> {
     override readonly path = '/installations';
     override readonly model = SoftwareInstallation;
     override readonly setModelQueryParams = setSoftwareInstallationQueryParams;
-
-    override readonly context = inject(SoftwareContext);
 
     getForLabSoftware(software: ModelRef<Software>, lab: ModelRef<Lab>): Observable<SoftwareInstallation> {
         return this.queryOne({ software, lab }).pipe(

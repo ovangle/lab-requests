@@ -17,6 +17,7 @@ from db.models.lab.lab import Lab
 from db.models.lab.provisionable.provisionable import Provisionable
 from db.models.lab.allocatable import Allocatable
 from db.models.research.funding import ResearchFunding
+from db.models.research.funding.research_budget import ResearchBudget
 from db.models.user import User
 
 from ..provisionable import LabProvision
@@ -54,6 +55,7 @@ class LabInstallation(Allocatable, Provisionable, Base, Generic[TInstallable]):
     installable_id: Mapped[UUID] = mapped_column(postgresql.UUID)
 
     created_by_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
+    updated_by_id: Mapped[UUID | None] = mapped_column(ForeignKey("user.id"), nullable=True, default=None)
 
     @validates("type")
     def validate_type(self, value, key):
@@ -101,11 +103,28 @@ class LabInstallationProvision(LabProvision[TInstallation], Generic[TInstallatio
     installation_id: Mapped[UUID]
     installation: Mapped[TInstallation]
 
-    def __init__(self, action: str, *, lab: Lab, installation: TInstallation, requested_by: User, note: str, funding: ResearchFunding | None = None, estimated_cost: float | None = None, **kwargs):
-        super().__init__(action,
-            lab=lab,
-            funding=funding,
+    def __init__(
+        self,
+        action: str,
+        installation: TInstallation,
+        *,
+        action_params: dict[str, Any],
+        budget: ResearchBudget,
+        estimated_cost: float,
+        purchase_url: str | None,
+        purchase_instructions: str,
+        requested_by: User,
+        note: str,
+        **kwargs
+    ):
+        super().__init__(
+            action,
+            action_params=action_params,
+            lab=installation.lab_id,
+            budget=budget,
             estimated_cost=estimated_cost,
+            purchase_url=purchase_url,
+            purchase_instructions=purchase_instructions,
             requested_by=requested_by,
-            note=note,
+            note=note
         )

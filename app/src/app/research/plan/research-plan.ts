@@ -166,12 +166,12 @@ export interface UpdateResearchPlan extends ModelUpdateRequest<ResearchPlan> {
   tasks?: ResearchPlanTaskSlice[];
 }
 
-function updateResearchPlanToJsonObject(plan: ResearchPlan, patch: Partial<UpdateResearchPlan>) {
+function updateResearchPlanToJsonObject(patch: Partial<UpdateResearchPlan>) {
   return {
-    title: typeof patch.title === 'string' ? patch.title : plan.title,
-    description: typeof patch.description === 'string' ? patch.description : plan.description,
-    funding: modelId(patch.funding || null),
-    tasks: Array.isArray(patch.tasks) ? patch.tasks.map(t => researchPlanTaskSliceToJson(t)) : [],
+    title: patch.title,
+    description: patch.description,
+    funding: patch.funding ? modelId(patch.funding) : undefined,
+    tasks: Array.isArray(patch.tasks) ? patch.tasks.map(t => researchPlanTaskSliceToJson(t)) : undefined,
   };
 }
 
@@ -213,9 +213,9 @@ export class ResearchPlanService extends RestfulService<ResearchPlan, ResearchPl
 
   update(plan: ResearchPlan, request: Partial<UpdateResearchPlan>) {
     return this._doUpdate(
-      /* FIXME: updateResearchPlanToJsonObject should not require the plan */
-      (_, request) => updateResearchPlanToJsonObject(plan, request),
-      plan, request
+      plan,
+      (request) => updateResearchPlanToJsonObject(request),
+      request
     )
   }
 

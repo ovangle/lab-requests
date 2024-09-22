@@ -6,7 +6,7 @@ import { LoginContext } from './oauth/login-context';
   template: `
     <scaffold-layout>
       <div class="content" role="main">
-        <router-outlet />
+        <router-outlet name="default" />
       </div>
 
       <div class="form-pane-content">

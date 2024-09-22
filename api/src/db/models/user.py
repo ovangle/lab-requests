@@ -144,7 +144,7 @@ def query_users(
     id_in: list[UUID] | None = None,
     search: str | None = None,
     include_roles: set[str] | None = None,
-    discipline: Discipline | None = None,
+    discipline: set[Discipline] | Discipline | None = None,
     supervises_lab: Lab | UUID | None = None,
 ) -> Select[tuple[User]]:
     where_clauses: list = [User.disabled.is_(False)]

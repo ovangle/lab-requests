@@ -36,14 +36,17 @@ import { MatCardModule } from '@angular/material/card';
     EquipmentInstallationInfoComponent,
 
     UniCampusSelect,
-    UniDisciplineSelect
+    UniDisciplineSelect,
   ],
   template: `
   <div class="equipment-index-header">
     <h2>Equipment</h2>
 
     <div class="equipment-controls">
-      <a mat-button [routerLink]="[{outlets: {form: 'create'}}]">
+      <a mat-button [routerLink]="['/', {outlets: {
+        default: 'equipment',
+        form: 'equipment-forms/equipment/create'
+      }}]">
         Add equipment
       </a>
     </div>
@@ -88,15 +91,16 @@ import { MatCardModule } from '@angular/material/card';
       <ng-container matColumnDef="name">
         <mat-header-cell *matHeaderCellDef>Name</mat-header-cell>
         <mat-cell *matCellDef="let equipment">
-          <a [routerLink]="['./', equipment.id]">{{equipment.name}}</a>
+          <a [routerLink]="['/', {outlets: {default: ['equipment', equipment.id]}}]">{{equipment.name}}</a>
         </mat-cell>
 
         <mat-header-row *matHeaderRowDef="['name']" />
         <mat-row *matRowDef="let row; columns: ['name'];" />
       </ng-container>
     </mat-table>
-
   </main>
+
+
   `,
   host: {
     '[class.scaffold-content-full-width]': 'true'

@@ -168,12 +168,12 @@ export class EquipmentLeaseFormComponent {
     readonly currentInstallCount$: Observable<number | 'unknown'> = this.form.valueChanges.pipe(
         startWith(this.form.value),
         withLatestFrom(this.lab$),
-        switchMap(([formValue, lab]) => {
+        map(([formValue, lab]) => {
             const equipment = formValue.equipment;
             if (equipment instanceof Equipment) {
-                return equipment.getInstallation(lab, this._installationService)
+                return equipment.getInstallation(lab)
             }
-            return of(null);
+            return null;
         }),
         map(installation => installation?.numInstalled || 'unknown')
     );

@@ -6,7 +6,7 @@ import { ModelSearchInputComponent } from "./search-input.component";
 import { BooleanInput, coerceBooleanProperty } from "@angular/cdk/coercion";
 import { toObservable } from "@angular/core/rxjs-interop";
 import { switchMap } from "rxjs";
-import { Model } from "../model";
+import { Model, modelId, ModelRef } from "../model";
 
 @Component({
     selector: 'common-model-search-autocomplete',
@@ -19,7 +19,7 @@ import { Model } from "../model";
     <mat-autocomplete [displayWith]="displayValue" >
         @if (modelOptions$ | async; as modelOptions) {
             @for (model of modelOptions; track model.id) {
-                <mat-option [value]="model">
+                <mat-option [value]="model" [disabled]="_disabledOptionIds().includes(model.id)">
                     {{searchControl().formatModel(model)}}
                 </mat-option>
             }
@@ -40,6 +40,8 @@ import { Model } from "../model";
 })
 export class ModelSearchAutocompleteComponent<T extends Model> {
     searchControl = input.required<ModelSearchControl<T>>();
+    disabledOptions = input<ModelRef<T>[]>([]);
+    _disabledOptionIds = computed(() => this.disabledOptions().map(m => modelId(m)));
 
     readonly modelOptions$ = toObservable(this.searchControl).pipe(
         switchMap(control => control.modelOptions$)

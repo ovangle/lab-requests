@@ -1,3 +1,3 @@
-__all__ = ("LabDetail", "LabIndex", "LabIndexPage")
+__all__ = ("LabDetail", "LabIndexPage")
 
-from .lab import LabDetail, LabIndex, LabIndexPage
+from .lab import LabDetail, LabIndexPage

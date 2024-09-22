@@ -5,13 +5,15 @@ from sqlalchemy import select
 
 from db import local_object_session
 from db.models.base import model_id
+from db.models.lab.lab import query_labs
+from db.models.research.plan import query_research_plans
 from db.models.user import User
 from db.models.lab import Lab
 
 from .user import UserDetail
 
-from ..lab.lab import LabIndex, LabIndexPage
-from ..research.plan import ResearchPlanIndex, ResearchPlanIndexPage
+from ..lab.lab import LabDetail, LabIndexPage
+from ..research.plan import ResearchPlanDetail, ResearchPlanIndexPage
 
 
 class CurrentUserDetail(UserDetail):
@@ -26,10 +28,16 @@ class CurrentUserDetail(UserDetail):
     async def from_model(cls, model: User) -> CurrentUserDetail:
         db = local_object_session(model)
 
-        lab_index = LabIndex(supervised_by=model.id)
-        supervised_labs = await lab_index.load_page(db)
+        supervised_labs = await LabIndexPage.from_selection(
+            db,
+            query_labs(supervised_by=model.id),
+            item_from_model=LabDetail.from_model
+        )
 
-        plan_index = ResearchPlanIndex(coordinator=model_id(model))
-        plans = await plan_index.load_page(db)
+        plans = await ResearchPlanIndexPage.from_selection(
+            db,
+            query_research_plans(coordinator=model_id(model)),
+            item_from_model=ResearchPlanDetail.from_model
+        )
 
         return await super()._from_user(model, supervised_labs=supervised_labs, plans=plans)

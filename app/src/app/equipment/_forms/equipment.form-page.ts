@@ -11,8 +11,8 @@ import { MatInputModule } from "@angular/material/input";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { EquipmentInstallationFormComponent, EquipmentInstallationFormGroup, equipmentInstallationFormGroupFactory } from "../installation/equipment-installation-form.component";
-import { EquipmentFormComponent } from "../equipment-form.component";
-import { Router } from "@angular/router";
+import { EquipmentFormComponent, EquipmentFormGroup } from "../equipment-form.component";
+import { ActivatedRoute, Router } from "@angular/router";
 import { Equipment, EquipmentCreateRequest, EquipmentService } from "../equipment";
 import { ScaffoldFormPaneControl } from "src/app/scaffold/form-pane/form-pane-control";
 import { EquipmentNameUniqueValidator } from "../equipment-name-unique-validator";
@@ -20,6 +20,8 @@ import { EquipmentTrainingDescriptionsFieldHint, EquipmentTrainingDescriptionsIn
 import { UniDisciplineSelect } from "src/app/uni/discipline/discipline-select.component";
 import { UniCampusSelect } from "src/app/uni/campus/campus-select.component";
 import { Discipline } from "src/app/uni/discipline/discipline";
+import { map, of, shareReplay, switchMap } from "rxjs";
+import { EquipmentContext } from "../equipment-context";
 
 /**
  * Create an entirely new piece of equipment, and declare any
@@ -39,7 +41,11 @@ import { Discipline } from "src/app/uni/discipline/discipline";
     ],
     template: `
     <h3>Create equipment</h3>
-    <equipment-form (submit)="_onEquipmentFormSubmit($event)"
+
+    @let equipment = this.equipment$ | async;
+
+    <equipment-form [equipment]="equipment"
+                    (submit)="_onEquipmentFormSubmit($event)"
                     (cancel)="_closeFormPane()" />
     `,
     styles: `
@@ -52,16 +58,49 @@ import { Discipline } from "src/app/uni/discipline/discipline";
         float: right;
     }
     `,
+    providers: [
+        EquipmentContext
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class EquipmentCreateFormPage {
+export class EquipmentFormPage {
     readonly router = inject(Router);
+    route = inject(ActivatedRoute);
     readonly _formPane = inject(ScaffoldFormPaneControl);
     readonly _equipmentService = inject(EquipmentService);
 
-    _onEquipmentFormSubmit(createReq: EquipmentCreateRequest) {
-        this._equipmentService.create(createReq).subscribe((equipment) => {
-            this.router.navigate(['/equipment', equipment.id]);
+    readonly equipment$ = this.route.paramMap.pipe(
+        map(params => params.get('equipment')),
+        switchMap(equipmentId => {
+            if (equipmentId) {
+                return this._equipmentService.fetch(equipmentId);
+            }
+            return of(null);
+        }),
+        shareReplay(1)
+    );
+
+    _onEquipmentFormSubmit(value: EquipmentFormGroup['value']) {
+        const request: EquipmentCreateRequest = {
+            name: value!.name!,
+            description: value!.description,
+            trainingDescriptions: value!.trainingDescriptions,
+            installations: value.installations!.map(
+                installation => ({
+                    modelName: installation.modelName!,
+                    lab: installation.lab!.id,
+                    numInstalled: installation.numInstalled!,
+                })
+            )
+        };
+
+        this._equipmentService.create(request).subscribe((equipment) => {
+            this.router.navigate(['/', {
+                outlets: {
+                    default: ['equipment', equipment.id],
+                    form: null
+                }
+            }]);
         });
     }
 

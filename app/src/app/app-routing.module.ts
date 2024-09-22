@@ -22,13 +22,14 @@ const routes: Routes = [
       },
       {
         path: 'equipment',
+        outlet: 'default',
         loadChildren: async () => {
           const module = await import('./equipment/equipment.routes');
           return module.EQUIPMENT_ROUTES;
         }
       },
       {
-        path: 'equipment-forms',
+        path: 'equipment',
         outlet: 'form',
         loadChildren: async () => {
           const module = await import('./equipment/equipment.routes');
@@ -37,16 +38,34 @@ const routes: Routes = [
       },
       {
         path: 'software',
+        outlet: 'default',
         loadChildren: async () => {
           const module = await import('./software/software.routes')
           return module.SOFTWARE_ROUTES
         }
       },
       {
-        path: 'research/plans',
+        path: 'software',
+        outlet: 'form',
         loadChildren: async () => {
-          const module = await import('./research/_features/research-plan.routes');
-          return module.RESEARCH_PLAN_ROUTES
+          const m = await import('./software/software.routes');
+          return m.SOFTWARE_FORM_ROUTES;
+        }
+      },
+      {
+        path: 'research',
+        outlet: 'default',
+        loadChildren: async () => {
+          const module = await import('./research/research.routes');
+          return module.RESEARCH_ROUTES
+        }
+      },
+      {
+        path: 'research',
+        outlet: 'form',
+        loadChildren: async () => {
+          const module = await import('./research/research.routes');
+          return module.RESEARCH_FORM_ROUTES;
         }
       },
       {
@@ -56,35 +75,6 @@ const routes: Routes = [
           return module.USER_ROUTES;
         }
       },
-      /*
-      {
-        path: '',
-        outlet: 'form',
-        children: [
-          {
-            path: 'equipment',
-            loadChildren: async () => {
-              const m = await import('./equipment/equipment.routes')
-              return m.EQUIPMENT_FORM_ROUTES;
-            }
-          },
-          {
-            path: 'software',
-            loadChildren: async () => {
-              const m = await import('./software/software.routes')
-              return m.SOFTWARE_FORM_ROUTES;
-            }
-          },
-          {
-            path: 'material',
-            loadChildren: async () => {
-              const m = await import('./material/material.routes')
-              return m.MATERIAL_FORM_ROUTES;
-            }
-          }
-        ],
-      },
-      */
     ]
   },
   {
@@ -129,7 +119,7 @@ const routes: Routes = [
 
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes, { enableTracing: true })],
+  imports: [RouterModule.forRoot(routes, { enableTracing: false })],
   exports: [RouterModule],
 })
 export class AppRoutingModule { }

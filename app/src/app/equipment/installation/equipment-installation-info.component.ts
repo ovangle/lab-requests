@@ -7,6 +7,7 @@ import { AsyncPipe } from "@angular/common";
 import { toObservable } from "@angular/core/rxjs-interop";
 import { map, switchMap } from "rxjs";
 import { coerceBooleanProperty } from "@angular/cdk/coercion";
+import { LabInstallableService } from "src/app/lab/common/installable/installable";
 
 export type EquipmentInstallationInfoDisplay
   = 'list-item'
@@ -35,14 +36,17 @@ export type EquipmentInstallationInfoDisplay
     </div>
 
   </lab-installation-info>
-  `
+  `,
+  providers: [
+    { provide: LabInstallableService, useExisting: EquipmentService }
+  ]
 })
 export class EquipmentInstallationInfoComponent {
 
   installation = input.required<EquipmentInstallation>();
   display = input<EquipmentInstallationInfoDisplay>('list-item')
 
-  hideProvisions = input(false, {transform: coerceBooleanProperty});
+  hideProvisions = input(false, { transform: coerceBooleanProperty });
 
   protected readonly _equipmentService = inject(EquipmentService);
   equipment$ = toObservable(this.installation).pipe(
