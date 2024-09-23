@@ -36,7 +36,6 @@ class CurrentUserDetail(UserDetail):
         plans = await ResearchPlanIndexPage.from_selection(
             db,
             query_research_plans(coordinator=model_id(model)),
-            item_from_model=ResearchPlanDetail.from_model
         )
 
         return await super()._from_user(model, supervised_labs=supervised_labs, plans=plans)

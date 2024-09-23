@@ -344,7 +344,7 @@ export interface LabProvisionCreateRequest<
 > extends ModelCreateRequest<TProvision> {
     readonly type: string;
     readonly note: string;
-    readonly lab: ModelRef<Lab>;
+    readonly lab?: ModelRef<Lab>;
     readonly purchaseOrder?: CreatePurchaseOrder;
 }
 
@@ -357,7 +357,7 @@ export function labProvisionCreateRequestToJsonObject<
     return {
         type: request.type,
         note: request.note,
-        lab: modelId(request.lab),
+        lab: request.lab ? modelId(request.lab) : undefined,
         purchaseOrder: request.purchaseOrder ? createPurchaseOrderToJsonObject(request.purchaseOrder) : undefined
     };
 }

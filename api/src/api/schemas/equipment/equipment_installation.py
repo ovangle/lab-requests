@@ -5,7 +5,7 @@ from uuid import UUID
 
 from api.schemas.base import ModelDetail
 from api.schemas.equipment.equipment import EquipmentCreateRequest, EquipmentDetail
-from api.schemas.lab.lab_provision import LabProvisionApproval, LabProvisionCancel, LabProvisionComplete, LabProvisionDenial, LabProvisionDetail, LabProvisionPurchase, LabProvisionRejection, register_provision_detail_cls
+from api.schemas.lab.lab_provision import LabProvisionApprovalRequest, LabProvisionCancelRequest, LabProvisionCompleteRequest, LabProvisionDenialRequest, LabProvisionDetail, LabProvisionPurchaseRequest, LabProvisionRejectionRequest, register_provision_detail_cls
 from db import LocalSession, local_object_session
 from db.models.equipment import (
     EquipmentInstallation,

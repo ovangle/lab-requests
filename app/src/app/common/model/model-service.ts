@@ -181,8 +181,8 @@ export abstract class RestfulService<
     return urlJoin(this._apiBaseUrl, this.path, id);
   }
 
-  modelUrl(model: T) {
-    return of(this.resourceUrl(model.id));
+  modelUrl(model: ModelRef<T>) {
+    return of(this.resourceUrl(modelId(model)));
   }
 
   /**

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from datetime import datetime
-from typing import Any, Generic, TypeVar, override
+from typing import Any, Generic, Literal, TypeVar, Union, override
 from uuid import UUID
 
 from fastapi import Depends
@@ -220,8 +220,22 @@ class LabProvisionCreateRequest(
             **kwargs
         )
 
-class LabProvisionRejection(ModelUpdateRequest[LabProvision]):
-    provision_id: UUID
+    # Resubmit the request
+    async def do_update(
+        self, provision: LabProvision[TProvisionable, TParams], current_user: User | None = None
+    ) -> LabProvision[TProvisionable, TParams]:
+        if not current_user:
+            raise ModelRequestContextError("Expected authenticated request context")
+
+        return await provision.resubmit(
+            by=current_user,
+            note=self.note
+        )
+
+
+
+class LabProvisionRejectionRequest(ModelUpdateRequest[LabProvision]):
+    method: Literal['reject']
     note: str
 
     async def do_update(
@@ -229,11 +243,11 @@ class LabProvisionRejection(ModelUpdateRequest[LabProvision]):
     ) -> LabProvision:
         if not current_user:
             raise ModelRequestContextError("Expected authenticated request context")
-        return await model.approve(by=current_user, note=self.note)
+        return await model.reject(by=current_user, note=self.note)
 
 
-class LabProvisionDenial(ModelUpdateRequest[LabProvision]):
-    provision_id: UUID
+class LabProvisionDenialRequest(ModelUpdateRequest[LabProvision]):
+    method: Literal['deny']
     note: str
 
     async def do_update(
@@ -244,8 +258,8 @@ class LabProvisionDenial(ModelUpdateRequest[LabProvision]):
         return await model.deny(by=current_user, note=self.note)
 
 
-class LabProvisionApproval(ModelUpdateRequest[LabProvision]):
-    provision_id: UUID
+class LabProvisionApprovalRequest(ModelUpdateRequest[LabProvision]):
+    method: Literal['approve']
     note: str
 
     async def do_update(
@@ -257,8 +271,8 @@ class LabProvisionApproval(ModelUpdateRequest[LabProvision]):
         return await model.approve(current_user, note=self.note)
 
 
-class LabProvisionPurchase(ModelUpdateRequest[LabProvision]):
-    provision_id: UUID
+class LabProvisionPurchaseRequest(ModelUpdateRequest[LabProvision]):
+    method: Literal['purchase']
     note: str
 
     async def do_update(
@@ -270,8 +284,8 @@ class LabProvisionPurchase(ModelUpdateRequest[LabProvision]):
         return await model.mark_as_purchased(by=current_user, note=self.note)
 
 
-class LabProvisionComplete(ModelUpdateRequest[LabProvision]):
-    provision_id: UUID
+class LabProvisionCompleteRequest(ModelUpdateRequest[LabProvision]):
+    method: Literal['complete']
     note: str
 
     async def do_update(
@@ -281,8 +295,8 @@ class LabProvisionComplete(ModelUpdateRequest[LabProvision]):
             raise ModelRequestContextError("Expected authenticated request context")
         return await model.complete(current_user, note=self.note)
 
-class LabProvisionCancel(ModelUpdateRequest[LabProvision]):
-    provision_id: UUID
+class LabProvisionCancelRequest(ModelUpdateRequest[LabProvision]):
+    method: Literal['cancel']
     note: str
 
     async def do_update(
@@ -291,3 +305,12 @@ class LabProvisionCancel(ModelUpdateRequest[LabProvision]):
         if not current_user:
             raise ModelRequestContextError("Expected authenticated request context")
         return await model.cancel(current_user, cancelled_note=self.note)
+
+LabProvisionRequest = Union[
+    LabProvisionCreateRequest, # Resubmission
+    LabProvisionRejectionRequest,
+    LabProvisionDenialRequest,
+    LabProvisionPurchaseRequest,
+    LabProvisionCompleteRequest,
+    LabProvisionCancelRequest
+]

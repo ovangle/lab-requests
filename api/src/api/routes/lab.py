@@ -1,8 +1,11 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends
 
+from api.auth.context import get_current_authenticated_user
+from api.schemas.lab.lab_provision import LabProvisionDetail, LabProvisionIndexPage, LabProvisionRequest
 from db import get_db
 from db.models.lab.lab import Lab, query_labs
+from db.models.lab.provisionable.lab_provision import LabProvision, query_lab_provisions
 from db.models.uni.campus import Campus
 from db.models.uni.discipline import Discipline
 
@@ -50,3 +53,38 @@ async def index_labs(
 async def lab_detail(lab_id: UUID, db=Depends(get_db)) -> LabDetail:
     lab = await Lab.get_for_id(db, lab_id)
     return await LabDetail.from_model(lab)
+
+
+@labs.get("/provision")
+async def index_lab_provisions(
+    type: str | None = None,
+    provisionable: UUID | None = None,
+    action: str | None = None,
+    only_pending: bool = False,
+    db=Depends(get_db)
+):
+    return await LabProvisionIndexPage.from_selection(
+        db,
+        query_lab_provisions(
+            provisionable_type=type,
+            provisionable_id=provisionable,
+            action=action,
+            only_pending=only_pending
+        )
+    )
+
+@labs.get("/provision/{provision_id}")
+async def read_lab_provision(provision_id: UUID, db=Depends(get_db)):
+    provision = await LabProvision.get_by_id(db, provision_id)
+    return await LabProvisionDetail.from_model(provision)
+
+@labs.put("/provision/{provision_id}")
+async def update_lab_provision(
+    provision_id: UUID,
+    request: LabProvisionRequest,
+    db=Depends(get_db),
+    current_user=Depends(get_current_authenticated_user)
+):
+    provision = await LabProvision.get_by_id(db, provision_id)
+    provision = await request.do_update(provision, current_user=current_user)
+    return LabProvisionDetail.from_model(provision)

@@ -7,7 +7,7 @@ from datetime import datetime, timezone, tzinfo
 from typing import TYPE_CHECKING, Any, Awaitable, ClassVar, Collection, Generic, Iterable, Self, TypeVar, TypedDict
 from uuid import UUID, uuid4
 
-from sqlalchemy import ForeignKey, insert
+from sqlalchemy import ForeignKey, Select, insert, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects import postgresql as psql
 
@@ -162,6 +162,10 @@ class LabProvision(
         return super().__init__()
 
     @property
+    def initial_request(self) -> ProvisionTransition:
+        return self.all_requests[0]
+
+    @property
     def request(self) -> ProvisionTransition:
         return ProvisionTransition(
             status=ProvisionStatus.REQUESTED,
@@ -210,11 +214,22 @@ class LabProvision(
             raise ProvisionStatusError(
                 self.status,
                 ProvisionStatus.REJECTED,
-                "can only reject a re-submitted request",
+                "can only reject a submitted request",
             )
         rejection = self.__mk_status_metadata(ProvisionStatus.REJECTED, by, note=note)
         self.all_rejections.insert(0, rejection)
 
+        return await self.__save()
+
+    async def resubmit(self, by: User, note: str) -> Self:
+        if self.status not in {ProvisionStatus.REJECTED, ProvisionStatus.APPROVED}:
+            raise ProvisionStatusError(
+                self.status,
+                ProvisionStatus.REQUESTED,
+                "can only resubmit a rejected provision"
+            )
+
+        self._set_request(by, note=note, initial=False)
         return await self.__save()
 
     approval: Mapped[ProvisionTransition | None] = mapped_column(
@@ -256,6 +271,7 @@ class LabProvision(
             )
 
         return await self.__save()
+
 
     denial: Mapped[ProvisionTransition | None] = mapped_column(
         PROVISION_STATUS_TRANSITION(ProvisionStatus.DENIED)
@@ -447,3 +463,33 @@ class LabProvision(
         db.add(self)
         await db.commit()
         return self
+
+def query_lab_provisions(
+    provisionable_type: str | None = None,
+    provisionable_id: UUID | None = None,
+    action: str | None = None,
+    only_pending: bool = False
+) -> Select[tuple[LabProvision[Any, Any]]]:
+    where_clauses = []
+
+    if provisionable_type:
+        where_clauses.append(
+            LabProvision.provisionable_type == provisionable_type
+        )
+
+    if provisionable_id:
+        where_clauses.append(
+            LabProvision.provisionable_id == provisionable_id
+        )
+
+    if action:
+        where_clauses.append(
+            LabProvision.action == action
+        )
+
+    if only_pending:
+        where_clauses.append(
+            LabProvision.status.in_([s for s in ProvisionStatus if not s.is_final])
+        )
+
+    return select(LabProvision).where(*where_clauses).order_by(LabProvision.created_at, 'reversed')

@@ -3,16 +3,17 @@ import { validate as validateIsUUID } from 'uuid';
 import { ModelQuery, modelId, ModelRef, isModelRef, ModelUpdateRequest } from "src/app/common/model/model";
 import { JsonObject } from "src/app/utils/is-json-object";
 import { Lab } from '../../lab/lab';
-import { NEVER, Observable, of, race, switchMap, timer } from 'rxjs';
+import { map, NEVER, Observable, of, race, switchMap, tap, timer } from 'rxjs';
 import { inject, Injectable, } from '@angular/core';
 import { Equipment, EquipmentCreateRequest, EquipmentService, equipmentCreateRequestToJsonObject } from '../equipment';
 import { HttpParams } from '@angular/common/http';
 import { LabInstallation, LabInstallationQuery, setLabInstallationQueryParams } from 'src/app/lab/common/installable/installation';
-import { EquipmentProvision, EquipmentProvisionService, EquipmentTransferRequest, NewEquipmentRequest } from '../provision/equipment-provision';
+import { EquipmentProvision, EquipmentProvisionService, EquipmentTransferRequest, NewEquipmentRequest, newEquipmentRequestToJsonObject, transferEquipmentRequestToJsonObject } from '../provision/equipment-provision';
 import { ProvisionableCreateRequest } from 'src/app/lab/common/provisionable/provisionable';
 import { EquipmentLease } from '../lease/equipment-lease';
 import { isUUID } from 'src/app/utils/is-uuid';
 import { RestfulService } from 'src/app/common/model/model-service';
+import urlJoin from 'url-join';
 
 export class EquipmentInstallation
     extends LabInstallation<Equipment, EquipmentProvision> {
@@ -135,16 +136,48 @@ export class EquipmentInstallationService extends RestfulService<EquipmentInstal
         );
     }
 
-    _createProvision(request: EquipmentInstallationProvisionRequest) {
-
+    /**
+     * Posts the provision creation request to the appropriate endpoint.
+     * @param installation
+     * @param provisionAction
+     * @param requestBody
+     * @returns
+     */
+    _createInstallationProvision(installation: ModelRef<EquipmentInstallation>, provisionAction: string, requestBody: JsonObject): Observable<EquipmentInstallation> {
+        return this.modelUrl(installation).pipe(
+            switchMap(
+                modelUrl => this._httpClient.post<JsonObject>(urlJoin(modelUrl, provisionAction), requestBody)
+            ),
+            map<JsonObject, EquipmentInstallation>((response: JsonObject) => this.modelFromJsonObject(response)),
+            this._cacheOne
+        );
     }
 
 
-    newEquipment(request: NewEquipmentRequest) {
-        return this._provisionService.newEquipment(request);
+    /**
+     * Create a provision to add new equipment instances to the installation
+     * @param installation
+     * @param request
+     * @returns
+     */
+    newEquipment(installation: ModelRef<EquipmentInstallation>, request: NewEquipmentRequest) {
+        return this._createInstallationProvision(
+            installation,
+            'new_equipment',
+            newEquipmentRequestToJsonObject(request)
+        );
     }
 
-    transferEquipment(request: EquipmentTransferRequest) {
-        return this._provisionService.transferEquipment(request);
+    /**
+     * Create a provision to transfer equipment instances from the specified installation
+     * @param request
+     * @returns
+     */
+    transferEquipment(installation: ModelRef<EquipmentInstallation>, request: EquipmentTransferRequest) {
+        return this._createInstallationProvision(
+            installation,
+            'transfer_equipment',
+            transferEquipmentRequestToJsonObject(request)
+        );
     }
 }

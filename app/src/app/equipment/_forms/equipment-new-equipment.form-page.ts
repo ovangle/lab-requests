@@ -120,12 +120,10 @@ export class EquipmentNewEquipmentFormPage {
     );
 
     async _onSubmit(value: NewEquipmentFormGroup['value']) {
-        const equipment = await firstValueFrom(this.equipment$);
         const lab = await firstValueFrom(this.lab$);
 
         const request: NewEquipmentRequest = {
             type: 'new_equipment',
-            equipment,
             lab,
             numRequired: value.numRequired!,
             note: value.note!

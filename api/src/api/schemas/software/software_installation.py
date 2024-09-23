@@ -24,7 +24,7 @@ from ..base import (
     ModelRequestContextError,
 )
 from ..lab.lab_installation import LabInstallationCreateRequest, LabInstallationDetail, LabInstallationProvisionCreateRequest, LabInstallationProvisionDetail
-from ..lab.lab_provision import LabProvisionApproval, LabProvisionCancel, LabProvisionComplete, LabProvisionDenial, LabProvisionPurchase, LabProvisionRejection, register_provision_detail_cls
+from ..lab.lab_provision import LabProvisionApprovalRequest, LabProvisionCancelRequest, LabProvisionCompleteRequest, LabProvisionDenialRequest, LabProvisionPurchaseRequest, LabProvisionRejectionRequest, register_provision_detail_cls
 
 
 class SoftwareInstallationDetail(LabInstallationDetail[SoftwareInstallation]):
@@ -90,7 +90,11 @@ class SoftwareInstallationCreateRequest(LabInstallationCreateRequest[SoftwareIns
         return software_installation
 
 
-SoftwareInstallationIndexPage = ModelIndexPage[SoftwareInstallation, SoftwareInstallationDetail]
+class SoftwareInstallationIndexPage(ModelIndexPage[SoftwareInstallation, SoftwareInstallationDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: SoftwareInstallation):
+        return await SoftwareInstallationDetail.from_model(item)
 
 
 TParams = TypeVar('TParams', bound=SoftwareInstallationProvisionParams)

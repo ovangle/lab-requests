@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
+from typing import override
 from uuid import UUID, uuid4
 
 from fastapi import HTTPException
@@ -53,6 +54,7 @@ class CreateTemporaryUserRequest(ModelCreateRequest[User]):
     base_campus: CampusLookup | UUID
     discipline: Discipline
 
+    @override
     async def do_create(self, db: LocalSession, **kwargs):
         base_campus = await lookup_campus(db, self.base_campus)
 
@@ -104,6 +106,7 @@ class FinalizeTemporaryUserRequest(ModelUpdateRequest[User]):
     token: str
     password: str
 
+    @override
     async def do_update(self, model: User, **kwargs) -> User:
         # This is handled in view.
         raise NotImplemented

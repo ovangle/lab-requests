@@ -1,13 +1,13 @@
 import { HttpParams } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
-import { ModelIndexPage, ModelRef, modelId, modelRefFromJson, resolveRef } from "src/app/common/model/model";
+import { ModelIndexPage, ModelRef, isModelRef, modelId, modelRefFromJson, resolveRef } from "src/app/common/model/model";
 import { LabProvision, LabProvisionApprovalRequest, LabProvisionCreateRequest, LabProvisionInstallRequest, LabProvisionPurchaseRequest, LabProvisionQuery, LabProvisionService, labProvisionApprovalRequestToJsonObject, labProvisionCreateRequestToJsonObject, labProvisionInstallRequestToJsonObject, labProvisionPurchaseRequestToJsonObject, setLabProvisionQueryParams } from "src/app/lab/common/provisionable/provision";
 import { CreatePurchaseOrder } from "src/app/research/budget/research-budget";
 import { JsonObject } from "src/app/utils/is-json-object";
 import { Lab } from "../../lab/lab";
 import { Equipment, EquipmentService } from "../equipment";
-import { EquipmentInstallation, EquipmentInstallationQuery, EquipmentInstallationService } from "../installation/equipment-installation";
+import { EquipmentInstallation, equipmentInstallationCreateRequestToJsonObject, EquipmentInstallationQuery, EquipmentInstallationRequest, EquipmentInstallationService } from "../installation/equipment-installation";
 
 export type EquipmentProvisionType
     = 'new_equipment'
@@ -60,16 +60,28 @@ interface _EquipmentInstallationProvisionCreateRequest extends LabProvisionCreat
  */
 export interface NewEquipmentRequest extends _EquipmentInstallationProvisionCreateRequest {
     readonly type: 'new_equipment';
-    equipment: Equipment | string;
+
+    /**
+     * Must be included if submitted on an equipment where there is no current installation
+     * in the target lab.
+     */
+    installation?: EquipmentInstallation | EquipmentInstallationRequest;
     numRequired: number;
 }
 
 export function newEquipmentRequestToJsonObject(request: NewEquipmentRequest): JsonObject {
+    let installation = undefined;
+    if (isModelRef(request.installation)) {
+        installation = modelId(request.installation);
+    } else if (request.installation) {
+        installation = equipmentInstallationCreateRequestToJsonObject(request.installation);
+    }
+
     return {
         ...labProvisionCreateRequestToJsonObject(
             request
         ),
-        equipment: modelId(request.equipment),
+        installation,
         numRequired: request.numRequired,
     };
 }
@@ -80,12 +92,8 @@ export function newEquipmentRequestToJsonObject(request: NewEquipmentRequest): J
  */
 export interface EquipmentTransferRequest extends _EquipmentInstallationProvisionCreateRequest {
     readonly type: 'equipment_transfer';
-    equipment: Equipment | string;
-    /**
-     * The source of the transfer
-    */
-    lab: Lab | string;
-    destinationLab: Lab | string;
+
+    destination: Lab | string;
     numTransferred: number;
     /*
      * Covers the cost of transportation, if any
@@ -98,8 +106,7 @@ export function transferEquipmentRequestToJsonObject(request: EquipmentTransferR
         ...labProvisionCreateRequestToJsonObject(
             request,
         ),
-        equipment: modelId(request.equipment),
-        targetLab: modelId(request.destinationLab),
+        destination: modelId(request.destination),
         numTransferred: request.numTransferred,
     }
 }

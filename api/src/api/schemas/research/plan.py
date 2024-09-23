@@ -269,7 +269,6 @@ async def lookup_research_plan(db: LocalSession, lookup: ResearchPlanLookup | UU
     return await lookup.get(db)
 
 
-# TODO: PEP 695
 class ResearchPlanIndexPage(ModelIndexPage[ResearchPlan, ResearchPlanDetail]):
     @classmethod
     @override
@@ -374,6 +373,7 @@ class ResearchPlanUpdateRequest(ModelUpdateRequest[ResearchPlan]):
     description: str
     tasks: list[ResearchPlanTaskSlice]
 
+    @override
     async def do_update(self, model: ResearchPlan, **kwargs) -> ResearchPlan:
         db = local_object_session(model)
 

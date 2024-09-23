@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 from uuid import UUID, uuid4
 
 from pydantic import Field
@@ -33,7 +33,6 @@ class SoftwareDetail(ModelDetail[Software]):
         installations = SoftwareInstallationIndexPage.from_selection(
             db,
             query_software_installations(software=model),
-            item_from_model=SoftwareInstallationDetail.from_model
         )
 
         return cls._from_base(
@@ -46,7 +45,11 @@ class SoftwareDetail(ModelDetail[Software]):
             is_paid_software=model.is_paid_software
         )
 
-SoftwareIndexPage = ModelIndexPage[Software, SoftwareDetail]
+class SoftwareIndexPage(ModelIndexPage[Software, SoftwareDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: Software):
+        return await SoftwareDetail.from_model(item)
 
 class SoftwareCreateRequest(ModelCreateRequest[Software]):
     name: str
@@ -55,6 +58,7 @@ class SoftwareCreateRequest(ModelCreateRequest[Software]):
     requires_license: bool = False
     is_paid_software: bool = False
 
+    @override
     async def do_create(self, db: LocalSession, current_user: User | None = None, **kwargs):
         if not current_user:
             raise ModelRequestContextError("No current user")
@@ -77,14 +81,19 @@ class SoftwareUpdateRequest(ModelUpdateRequest[Software]):
     tags: list[str] | None = None
     training_descriptions: list[str] | None = None
 
-    async def apply(self, software: Software, current_user: User | None = None, **kwargs):
+    @override
+    async def do_update(self, software: Software, current_user: User | None = None, **kwargs):
+        db = local_object_session(software)
+
         if not current_user:
             raise ModelRequestContextError("No current user")
         if self.description:
             software.description = self.description
         if self.tags:
             software.tags = self.tags
-        if self.training_descriptions:
-            software.training_descriptions = self.training_descriptions
+        # if self.training_descriptions:
+        #    software.training_descriptions = self.training_descriptions
 
-        return await software.save()
+        db.add(software)
+        await db.commit()
+        return software

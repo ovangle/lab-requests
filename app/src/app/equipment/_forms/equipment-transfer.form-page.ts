@@ -64,7 +64,7 @@ export class EquipmentTransferFormPage {
             type: 'equipment_transfer',
             equipment: installation.equipmentId,
             lab: installation.labId,
-            destinationLab: value.destination!,
+            destination: value.destination!,
             numTransferred: value.numTransferred!,
             purchaseOrder: purchaseOrderRequestFromFormValue(
                 budget,
