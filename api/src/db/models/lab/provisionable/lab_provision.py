@@ -4,7 +4,7 @@ from abc import abstractmethod
 import collections
 import dataclasses
 from datetime import datetime, timezone, tzinfo
-from typing import TYPE_CHECKING, Any, Awaitable, ClassVar, Collection, Generic, Iterable, Self, TypeVar
+from typing import TYPE_CHECKING, Any, Awaitable, ClassVar, Collection, Generic, Iterable, Self, TypeVar, TypedDict
 from uuid import UUID, uuid4
 
 from sqlalchemy import ForeignKey, insert
@@ -27,7 +27,7 @@ from .errors import (
     UnapprovedProvision,
     UnpurchasedProvision,
 )
-from .provisionable import Provisionable
+from .provisionable import Provisionable, get_provisionable_type
 from .provision_status import (
     PROVISION_STATUS_ENUM,
     PROVISION_STATUS_TRANSITION,
@@ -38,15 +38,9 @@ from .provision_status import (
     ProvisionStatus,
 )
 
-TProvisionable = TypeVar("TProvisionable", bound=Provisionable, covariant=True)
 
-@dataclasses.dataclass()
 class ProvisionType:
     name: str
-
-    dataclasses.KW_ONLY
-
-    actions: set[str] = dataclasses.field(default_factory=set)
 
 __provision_types__: dict[str, ProvisionType] = {}
 
@@ -70,11 +64,14 @@ class ProvisionActionError(ModelException):
         super().__init__(f'Unrecognised action for provision type {self.type.name} {action}')
 
 
+TProvisionable = TypeVar("TProvisionable", bound=Provisionable, covariant=True)
+TParams = TypeVar("TParams")
+
 class LabProvision(
     ResearchPurchaseOrder,
     LabWorkOrder,
     Base,
-    Generic[TProvisionable]
+    Generic[TProvisionable, TParams]
 ):
     """
     A lab provision represents a plan to change some part of the
@@ -82,53 +79,33 @@ class LabProvision(
     """
 
     __tablename__ = "lab_provision"
-    __provision_type__: ClassVar[ProvisionType]
-    __auto_approve__: ClassVar[bool] = False
-
-    def __init_subclass__(cls, **kw: Any) -> None:
-        if not hasattr(cls, "__provision_type__"):
-            is_abstract = getattr(cls, "__abstract__", False)
-            if not is_abstract:
-                raise TypeError(
-                    "LabProvision subclass must declare a __provision_type__"
-                )
-        else:
-            provision_type = getattr(cls, '__provision_type__')
-            if provision_type.name in __provision_types__:
-                raise ModelException("Name must be unique amongst provision types")
-            setattr(cls, '__purchase_order_type__', provision_type.name)
-
-            if not hasattr(cls, "__mapper_args__"):
-                setattr(cls, "__mapper_args__", {})
-
-            cls.__mapper_args__.update(
-                polymorphic_on="type", polymorphic_identity=cls.__provision_type__.name
-            )
-
-        return super().__init_subclass__(**kw)
-
     id: Mapped[uuid_pk] = mapped_column()
 
-    # Polymorphic type of this provision. Different provisionables have different provision types. Maps to a unique python type
-    type: Mapped[str] = mapped_column(psql.VARCHAR(64))
     # The action being performed by this provision.
-    # Discriminates between provisions with the same type.
     action: Mapped[str] = mapped_column(psql.VARCHAR(64))
+    # A json object containing parameters for this provision
+    action_params_json: Mapped[dict[str, Any]] = mapped_column(psql.JSON, server_default="{}")
 
-    # A map of action dependent parameters for this provision
-    action_params: Mapped[dict[str, Any]] = mapped_column(psql.JSON, server_default="{}")
+    @property
+    def action_params(self) -> TParams:
+        p_type = get_provisionable_type(self.provisionable_type)
+        action = p_type.actions[self.action]
+        return action.from_json(self.action_params_json)
 
     status: Mapped[ProvisionStatus] = mapped_column(PROVISION_STATUS_ENUM)
 
     # The target of the provision. Can be any Provisionable
-
     lab_id: Mapped[UUID] = mapped_column(ForeignKey("lab.id"))
 
     lab: Mapped[Lab] = relationship()
 
-    @property
-    @abstractmethod
-    def target_id(self) -> UUID: ...
+    provisionable_type: Mapped[str] = mapped_column(psql.VARCHAR(64))
+    provisionable_id: Mapped[UUID] = mapped_column(psql.UUID)
+
+    async def get_provisionable(self):
+        db = local_object_session(self)
+        py_type = get_provisionable_type(self.provisionable_type).py_type
+        return await py_type.get_by_id(db, self.provisionable_id)
 
     previous_requests: Mapped[list[ProvisionTransition]] = mapped_column(
         PROVISION_STATUS_TRANSITION(ProvisionStatus.REQUESTED, repeatable=True)
@@ -140,8 +117,10 @@ class LabProvision(
 
     def __init__(
         self,
-        action: str,
+        provisionable: TProvisionable,
         *,
+        action: str,
+        action_params: TParams,
         lab: Lab | UUID,
         budget: ResearchBudget,
         estimated_cost: float,
@@ -150,20 +129,24 @@ class LabProvision(
 
         note: str,
         requested_by: User,
-        **kwargs
     ):
         from db.models.lab.work import LabWork
         from db.models.research.funding import ResearchPurchase
 
-        provision_type = type(self).__provision_type__
-        self.type = provision_type.name
-
         self.id = uuid4()
         self.status = ProvisionStatus.REQUESTED
 
-        if action not in provision_type.actions:
-            raise ProvisionActionError(provision_type, action)
+        p_type = get_provisionable_type(provisionable)
+        self.provisionable_type = p_type.name
+        self.provisionable_id = provisionable.id
+
+        try:
+            action_type = p_type.actions[action]
+        except KeyError:
+            raise ProvisionActionError(p_type.name, action)
+
         self.action = action
+        self.action_params_json = action_type.to_json(action_params)
         self.lab_id = model_id(lab)
 
         if budget.lab_id != self.lab_id:
@@ -176,7 +159,7 @@ class LabProvision(
 
         self._set_request(requested_by, note=note, initial=True)
 
-        return super().__init__(**kwargs)
+        return super().__init__()
 
     @property
     def request(self) -> ProvisionTransition:

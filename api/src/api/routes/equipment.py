@@ -38,7 +38,6 @@ async def index_equipments(
             name_eq=name,
             has_tags=tags_,
         ),
-        EquipmentDetail.from_model,
         page_index=page_index
     )
 

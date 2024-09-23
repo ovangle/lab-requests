@@ -1,3 +1,4 @@
+from typing import override
 from uuid import UUID
 from sqlalchemy import select
 from db import local_object_session
@@ -36,7 +37,11 @@ class LabStorageContainerDetail(ModelDetail[LabStorageContainer]):
             storage_id=model.storage_id
         )
 
-LabStorageContainerIndexPage = ModelIndexPage[LabStorageContainer, LabStorageContainerDetail]
+class LabStorageContainerIndexPage(ModelIndexPage[LabStorageContainer, LabStorageContainerDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: LabStorageContainer):
+        return LabStorageContainerDetail.from_model(item)
 
 class LabStorageDetail(ModelDetail[LabStorage]):
     lab_id: UUID
@@ -53,7 +58,6 @@ class LabStorageDetail(ModelDetail[LabStorage]):
         items = await LabStorageContainerIndexPage.from_selection(
             db,
             query_lab_storage_containers(storage=model_id(model)),
-            LabStorageContainerDetail.from_model
         )
 
         return await cls._from_base(
@@ -63,4 +67,8 @@ class LabStorageDetail(ModelDetail[LabStorage]):
             items=items
         )
 
-LabStorageIndexPage = ModelIndexPage[LabStorage, LabStorageDetail]
+class LabStorageIndexPage(ModelIndexPage[LabStorage, LabStorageDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: LabStorage):
+        return await LabStorageDetail.from_model(item)

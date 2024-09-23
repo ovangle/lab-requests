@@ -64,7 +64,6 @@ async def index_users(
     return await UserIndexPage.from_selection(
         db,
         selection,
-        item_from_model = UserDetail.from_model,
         page_index=page_index
     )
 

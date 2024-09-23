@@ -1,4 +1,5 @@
 
+from typing import override
 from uuid import UUID
 from sqlalchemy import select
 from db.models.lab.disposable import LabDisposal, DisposalStrategy, query_lab_disposals
@@ -37,4 +38,8 @@ class LabDisposalDetail(ModelDetail[LabDisposal]):
 
 
 
-LabDisposalIndexPage = ModelIndexPage[LabDisposal, LabDisposalDetail]
+class LabDisposalIndexPage(ModelIndexPage[LabDisposal, LabDisposalDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: LabDisposal):
+        return await LabDisposalDetail.from_model(item)

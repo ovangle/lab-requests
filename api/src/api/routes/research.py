@@ -34,10 +34,8 @@ async def index_research_fundings(
     return await ResearchFundingIndexPage.from_selection(
         db,
         selection,
-        ResearchFundingDetail.from_model,
         page_index=page_index
     )
-
 
 @research.get("/funding/{funding_id}")
 async def get_research_funding(
@@ -71,7 +69,6 @@ async def index_budgets(
     return await ResearchBudgetIndexPage.from_selection(
         db,
         selection,
-        item_from_model=ResearchBudgetDetail.from_model,
         page_index=page_index
     )
 
@@ -90,7 +87,6 @@ async def index_plans(
             researcher=researcher,
             coordinator=coordinator
         ),
-        ResearchPlanDetail.from_model,
         page_index=page_index
     )
 

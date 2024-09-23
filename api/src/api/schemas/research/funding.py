@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional, Self
+from typing import Optional, Self, override
 from uuid import UUID, uuid4
 
 from sqlalchemy import Select, select
@@ -55,9 +55,11 @@ class ResearchFundingLookup(ModelLookup[ResearchFunding]):
         raise ValueError("Either id or name must be provided")
 
 
-# TODO: PEP 695
-ResearchFundingIndexPage = ModelIndexPage[ResearchFunding, ResearchFundingDetail]
-
+class ResearchFundingIndexPage(ModelIndexPage[ResearchFunding, ResearchFundingDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: ResearchFunding):
+        return await ResearchFundingDetail.from_model(item)
 
 class ResearchFundingUpdateRequest(ModelUpdateRequest[ResearchFunding]):
     description: str
@@ -150,7 +152,11 @@ class ResearchPurchaseDetail(ModelDetail[ResearchPurchase]):
         )
 
 
-ResearchPurchaseIndexPage = ModelIndexPage[ResearchPurchase, ResearchPurchaseDetail]
+class ResearchPurchaseIndexPage(ModelIndexPage[ResearchPurchase, ResearchPurchaseDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: ResearchPurchase):
+        return await ResearchPurchaseDetail.from_model(item)
 
 
 class ResearchBudgetSummary(ModelDetail[ResearchBudget]):
@@ -189,7 +195,6 @@ class ResearchBudgetDetail(ResearchBudgetSummary):
         purchases = await ResearchPurchaseIndexPage.from_selection(
             db,
             query_research_purchases(budget=model),
-            item_from_model=ResearchPurchaseDetail.from_model
         )
 
         return await super()._from_research_budget(
@@ -197,7 +202,11 @@ class ResearchBudgetDetail(ResearchBudgetSummary):
             purchases=purchases
         )
 
-ResearchBudgetIndexPage = ModelIndexPage[ResearchBudget, ResearchBudgetDetail]
+class ResearchBudgetIndexPage(ModelIndexPage[ResearchBudget, ResearchBudgetDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: ResearchBudget):
+        return await ResearchBudgetDetail.from_model(item)
 
 
 class ResearchPurchaseOrderDetail(ModelDetail[ResearchPurchaseOrder]):

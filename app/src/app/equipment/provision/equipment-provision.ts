@@ -51,14 +51,14 @@ function setEquipmentProvisionQueryParams(params: HttpParams, query: EquipmentPr
     return params;
 }
 
-interface _EquipmentProvisionCreateRequest extends LabProvisionCreateRequest<EquipmentInstallation, EquipmentProvision> {
+interface _EquipmentInstallationProvisionCreateRequest extends LabProvisionCreateRequest<EquipmentInstallation, EquipmentProvision> {
     readonly type: EquipmentProvisionType;
 }
 
 /**
  * Add new equipment to the lab.
  */
-export interface NewEquipmentRequest extends _EquipmentProvisionCreateRequest {
+export interface NewEquipmentRequest extends _EquipmentInstallationProvisionCreateRequest {
     readonly type: 'new_equipment';
     equipment: Equipment | string;
     numRequired: number;
@@ -78,7 +78,7 @@ export function newEquipmentRequestToJsonObject(request: NewEquipmentRequest): J
  * Creates a provision to transfer equipment currently installed in the source
  * lab to the destination lab.
  */
-export interface EquipmentTransferRequest extends _EquipmentProvisionCreateRequest {
+export interface EquipmentTransferRequest extends _EquipmentInstallationProvisionCreateRequest {
     readonly type: 'equipment_transfer';
     equipment: Equipment | string;
     /**
@@ -135,7 +135,6 @@ export function equipmentProvisionInstallRequestToJsonObject(request: EquipmentP
 
 @Injectable({ providedIn: 'root' })
 export class EquipmentProvisionService extends LabProvisionService<EquipmentInstallation, EquipmentProvision, EquipmentProvisionQuery> {
-
     override readonly provisionableQueryParam: string = 'equipment';
     override readonly path: string = '/equipment-provisions';
     override readonly model = EquipmentProvision;

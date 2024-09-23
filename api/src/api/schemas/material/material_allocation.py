@@ -1,3 +1,4 @@
+from typing import override
 from uuid import UUID
 
 from api.schemas.base import ModelDetail, ModelIndexPage
@@ -23,7 +24,11 @@ class MaterialProductionDetail(ModelDetail[MaterialProduction]):
         )
 
 
-MaterialProductionIndexPage = ModelIndexPage[MaterialProduction, MaterialProductionDetail]
+class MaterialProductionIndexPage(ModelIndexPage[MaterialProduction, MaterialProductionDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: MaterialProduction):
+        return await MaterialProductionDetail.from_model(item)
 
 
 class MaterialConsumptionDetail(ModelDetail[MaterialConsumption]):
@@ -41,7 +46,11 @@ class MaterialConsumptionDetail(ModelDetail[MaterialConsumption]):
         )
 
 
-MaterialConsumptionIndexPage = ModelIndexPage[MaterialConsumption, MaterialConsumptionDetail]
+class MaterialConsumptionIndexPage(ModelIndexPage[MaterialConsumption, MaterialConsumptionDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: MaterialConsumption):
+        return await MaterialConsumptionDetail.from_model(item)
 
 
 class MaterialAllocationDetail(LabAllocationDetail[MaterialAllocation]):
@@ -63,12 +72,10 @@ class MaterialAllocationDetail(LabAllocationDetail[MaterialAllocation]):
         productions = await MaterialProductionIndexPage.from_selection(
             db,
             query_material_productions(output_material=model.id),
-            MaterialProductionDetail.from_model
         )
         consumptions = await MaterialConsumptionIndexPage.from_selection(
             db,
             query_material_consumptions(input_material=model.id),
-            MaterialConsumptionDetail.from_model
         )
 
         return await cls._from_lab_allocation(
@@ -83,4 +90,8 @@ class MaterialAllocationDetail(LabAllocationDetail[MaterialAllocation]):
         )
 
 
-MaterialAllocationIndexPage = ModelIndexPage[MaterialAllocation, MaterialAllocationDetail]
+class MaterialAllocationIndexPage(ModelIndexPage[MaterialAllocation, MaterialAllocationDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: MaterialAllocation):
+        return await MaterialAllocationDetail.from_model(item)

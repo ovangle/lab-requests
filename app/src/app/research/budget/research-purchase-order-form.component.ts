@@ -17,7 +17,7 @@ export function researchPurchaseOrderFormGroupFactory() {
     return () => fb.group({
         estimatedCost: fb.control<number>(0, { nonNullable: true }),
         purchaseUrl: fb.control<string>('', { nonNullable: true }),
-        note: fb.control<string>('', { nonNullable: true })
+        purchaseInstructions: fb.control<string>('', { nonNullable: true })
 
     });
 }
@@ -34,7 +34,7 @@ export function purchaseOrderRequestFromFormValue(
         budget,
         estimatedCost: value.estimatedCost!,
         purchaseUrl: value.purchaseUrl!,
-        note: value.note!
+        purchaseInstructions: value.purchaseInstructions!
     };
 
 }

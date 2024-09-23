@@ -1,5 +1,6 @@
 from __future__ import annotations
 import asyncio
+from typing import override
 from uuid import UUID
 
 from pydantic import Field
@@ -42,18 +43,15 @@ class LabDetail(ModelDetail[Lab]):
         supervisors = await UserIndexPage.from_selection(
             db,
             query_users(supervises_lab=model),
-            item_from_model=UserDetail.from_model,
         )
 
         lab_storages = await LabStorageIndexPage.from_selection(
             db,
             query_lab_storages(lab=model),
-            LabStorageDetail.from_model,
         )
         lab_disposals = await LabDisposalIndexPage.from_selection(
             db,
             query_lab_disposals(lab=model),
-            LabDisposalDetail.from_model
         )
 
 
@@ -82,8 +80,11 @@ async def lookup_lab(db: LocalSession, ref: LabLookup | UUID):
     return await ref.get(db)
 
 
-# TODO: PEP 695 type
-LabIndexPage = ModelIndexPage[Lab, LabDetail]
+class LabIndexPage(ModelIndexPage[Lab, LabDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: Lab):
+        return await LabDetail.from_model(item)
 
 
 # class LabProfileView(LabView):

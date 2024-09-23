@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from abc import abstractmethod
 from datetime import datetime
-from typing import Generic, TypeVar, override
+from typing import Any, Generic, TypeVar, override
 from uuid import UUID
 
 from fastapi import Depends
@@ -25,20 +27,30 @@ from ..research.funding import ResearchPurchaseDetail, ResearchPurchaseOrderCrea
 from ..base import (
     ModelCreateRequest,
     ModelDetail,
+    ModelIndexPage,
     ModelRequestContextError,
     ModelUpdateRequest,
 )
 
-TProvision = TypeVar("TProvision", bound=LabProvision)
+TProvisionable = TypeVar('TProvisionable', bound=Provisionable)
+TParams = TypeVar("TParams")
 
 
-class LabProvisionDetail(ResearchPurchaseOrderDetail, Generic[TProvision]):
-    type: str
+__provision_detail_types: dict[str, type[LabProvisionDetail]] = {}
+
+def register_provision_detail_cls(action_name: str, impl: type[LabProvisionDetail]):
+    if action_name in __provision_detail_types:
+        raise TypeError(f"{action_name} provision detail already registered")
+    __provision_detail_types[action_name] = impl
+
+
+class LabProvisionDetail(ResearchPurchaseOrderDetail, Generic[TProvisionable, TParams]):
     action: str
     status: ProvisionStatus
 
     lab_id: UUID
-    target_id: UUID
+    provisionable_type: str
+    provisionable_id: UUID
 
     budget_id: UUID | None
     purchase: ResearchPurchaseDetail | None
@@ -81,16 +93,22 @@ class LabProvisionDetail(ResearchPurchaseOrderDetail, Generic[TProvision]):
     finalised_by_id: UUID | None
 
     @classmethod
-    async def _from_lab_provision(cls, lab_provision: LabProvision, **kwargs):
+    async def _from_lab_provision(
+        cls,
+        lab_provision: LabProvision[TProvisionable, TParams],
+        action: str,
+        action_params: TParams,
+        **kwargs
+    ):
         purchase = await ResearchPurchaseDetail.from_model(await lab_provision.awaitable_attrs.purchase)
 
         return await cls._from_base(
             lab_provision,
-            type=lab_provision.type,
+            provisionable_type=lab_provision.provisionable_type,
+            provisionable_id=lab_provision.provisionable_id,
             action=lab_provision.action,
             status=lab_provision.status,
             lab_id=lab_provision.lab_id,
-            target_id=lab_provision.target_id,
 
             budget_id=lab_provision.budget_id,
             purchase=purchase,
@@ -128,10 +146,30 @@ class LabProvisionDetail(ResearchPurchaseOrderDetail, Generic[TProvision]):
             **kwargs
         )
 
+    @classmethod
+    async def from_model(cls, model: LabProvision):
+        try:
+            detail_cls = __provision_detail_types[model.action]
+        except KeyError:
+            raise TypeError(f"provision {model.action} has no registered detail type")
+
+        return await detail_cls._from_lab_provision(
+            model,
+            action=model.action,
+            action_params=model.action_params
+        )
+
+
+class LabProvisionIndexPage(ModelIndexPage[LabProvision, LabProvisionDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: LabProvision):
+        return await LabProvisionDetail.from_model(item)
+
 
 class LabProvisionCreateRequest(
-    ModelCreateRequest[TProvision],
-    Generic[TProvision],
+    ModelCreateRequest[LabProvision[TProvisionable, TParams]],
+    Generic[TProvisionable, TParams],
 ):
     __deps__ = {
         "db": Depends(get_db),
@@ -158,11 +196,11 @@ class LabProvisionCreateRequest(
         current_user: User,
         note: str,
         **kwargs
-    ) -> TProvision: ...
+    ) -> LabProvision[TProvisionable, Any]: ...
 
     async def do_create(
         self, db: LocalSession, current_user: User | None = None, **kwargs
-    ) -> TProvision:
+    ) -> LabProvision[TProvisionable, TParams]:
         if not current_user:
             raise ModelRequestContextError("Expected authenticated request context")
 
@@ -182,73 +220,73 @@ class LabProvisionCreateRequest(
             **kwargs
         )
 
-class LabProvisionRejection(ModelUpdateRequest[TProvision], Generic[TProvision]):
+class LabProvisionRejection(ModelUpdateRequest[LabProvision]):
     provision_id: UUID
     note: str
 
     async def do_update(
-        self, model: TProvision, current_user: User | None = None, **kwargs
-    ) -> TProvision:
+        self, model: LabProvision, current_user: User | None = None, **kwargs
+    ) -> LabProvision:
         if not current_user:
             raise ModelRequestContextError("Expected authenticated request context")
         return await model.approve(by=current_user, note=self.note)
 
 
-class LabProvisionDenial(ModelUpdateRequest[TProvision], Generic[TProvision]):
+class LabProvisionDenial(ModelUpdateRequest[LabProvision]):
     provision_id: UUID
     note: str
 
     async def do_update(
-        self, model: TProvision, current_user: User | None = None, **kwargs
-    ) -> TProvision:
+        self, model: LabProvision, current_user: User | None = None, **kwargs
+    ) -> LabProvision:
         if not current_user:
             raise ModelRequestContextError("Expected authenticated request context")
         return await model.deny(by=current_user, note=self.note)
 
 
-class LabProvisionApproval(ModelUpdateRequest[TProvision], Generic[TProvision]):
+class LabProvisionApproval(ModelUpdateRequest[LabProvision]):
     provision_id: UUID
     note: str
 
     async def do_update(
-        self, model: TProvision, current_user: User | None = None, **kwargs
-    ) -> TProvision:
+        self, model: LabProvision, current_user: User | None = None, **kwargs
+    ) -> LabProvision:
 
         if not current_user:
             raise ModelRequestContextError("Expected authenticated request context")
         return await model.approve(current_user, note=self.note)
 
 
-class LabProvisionPurchase(ModelUpdateRequest[TProvision], Generic[TProvision]):
+class LabProvisionPurchase(ModelUpdateRequest[LabProvision]):
     provision_id: UUID
     note: str
 
     async def do_update(
-        self, model: TProvision, current_user: User | None = None, **kwargs
-    ) -> TProvision:
+        self, model: LabProvision, current_user: User | None = None, **kwargs
+    ) -> LabProvision:
 
         if not current_user:
             raise ModelRequestContextError("Expected authenticated request context")
         return await model.mark_as_purchased(by=current_user, note=self.note)
 
 
-class LabProvisionComplete(ModelUpdateRequest[TProvision], Generic[TProvision]):
+class LabProvisionComplete(ModelUpdateRequest[LabProvision]):
     provision_id: UUID
     note: str
 
     async def do_update(
-        self, model: TProvision, current_user: User | None = None, **kwargs
-    ) -> TProvision:
+        self, model: LabProvision, current_user: User | None = None, **kwargs
+    ) -> LabProvision:
         if not current_user:
             raise ModelRequestContextError("Expected authenticated request context")
         return await model.complete(current_user, note=self.note)
 
-class LabProvisionCancel(ModelUpdateRequest[TProvision], Generic[TProvision]):
+class LabProvisionCancel(ModelUpdateRequest[LabProvision]):
     provision_id: UUID
     note: str
 
     async def do_update(
-        self, model: TProvision, current_user: User | None = None, **kwargs
+        self, model: LabProvision, current_user: User | None = None, **kwargs
     ):
         if not current_user:
             raise ModelRequestContextError("Expected authenticated request context")

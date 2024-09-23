@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, Awaitable, ClassVar, Generic, Self, TypeVar
+from typing import Any, Awaitable, ClassVar, Generic, Self, TypeVar, TypedDict
 from urllib import request
 from uuid import UUID, uuid4
 
@@ -27,6 +27,9 @@ from .installable import Installable
 
 
 TInstallable = TypeVar("TInstallable", bound=Installable)
+
+class LabInstallationProvisionParams(TypedDict):
+    installation_id: UUID
 
 
 class LabInstallation(Allocatable, Provisionable, Base, Generic[TInstallable]):
@@ -90,41 +93,3 @@ class LabInstallation(Allocatable, Provisionable, Base, Generic[TInstallable]):
 
 
 TInstallation = TypeVar("TInstallation", bound=LabInstallation, covariant=True)
-
-
-class LabInstallationProvision(LabProvision[TInstallation], Generic[TInstallation]):
-    """
-    Base class for a provision which modifies a lab installation.
-    """
-
-    __abstract__ = True
-    id: Mapped[UUID] = mapped_column(ForeignKey("lab_provision.id"), primary_key=True)
-
-    installation_id: Mapped[UUID]
-    installation: Mapped[TInstallation]
-
-    def __init__(
-        self,
-        action: str,
-        installation: TInstallation,
-        *,
-        action_params: dict[str, Any],
-        budget: ResearchBudget,
-        estimated_cost: float,
-        purchase_url: str | None,
-        purchase_instructions: str,
-        requested_by: User,
-        note: str,
-        **kwargs
-    ):
-        super().__init__(
-            action,
-            action_params=action_params,
-            lab=installation.lab_id,
-            budget=budget,
-            estimated_cost=estimated_cost,
-            purchase_url=purchase_url,
-            purchase_instructions=purchase_instructions,
-            requested_by=requested_by,
-            note=note
-        )

@@ -12,7 +12,6 @@ export class EquipmentInstallationContext extends ModelContext<EquipmentInstalla
         let installation = await firstValueFrom(this.committed$);
         const provision = await firstValueFrom(this.service.transferEquipment(request));
 
-        installation = installation.addActiveProvision(provision);
         this.nextCommitted(installation);
     }
 }

@@ -2,7 +2,7 @@ from __future__ import annotations
 import asyncio
 from datetime import date
 
-from typing import TYPE_CHECKING, Any, Coroutine, Optional
+from typing import TYPE_CHECKING, Any, Coroutine, Optional, override
 from uuid import UUID, uuid4
 
 from pydantic import Field
@@ -63,7 +63,7 @@ class ResearchPlanTaskDetail(ModelDetail[ResearchPlanTask]):
     supervisor_id: UUID | None
 
     @classmethod
-    async def from_base(cls, model: ResearchPlanTask, **kwargs):
+    async def from_model(cls, model: ResearchPlanTask, **kwargs):
         return cls(
             plan_id=model.plan_id,
             id=model.id,
@@ -78,7 +78,11 @@ class ResearchPlanTaskDetail(ModelDetail[ResearchPlanTask]):
         )
 
 
-ResearchPlanTaskIndexPage = ModelIndexPage[ResearchPlanTask, ResearchPlanTaskDetail]
+class ResearchPlanTaskIndexPage(ModelIndexPage[ResearchPlanTask, ResearchPlanTaskDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: ResearchPlanTask):
+        return await ResearchPlanTaskDetail.from_model(item)
 
 
 
@@ -167,7 +171,11 @@ class ResearchPlanAttachmentDetail(ModelDetail[ResearchPlanAttachment]):
             updated_at=model.updated_at,
         )
 
-ResearchPlanAttachmentIndexPage = ModelIndexPage[ResearchPlanAttachment, ResearchPlanAttachmentDetail]
+class ResearchPlanAttachmentIndexPage(ModelIndexPage[ResearchPlanAttachment, ResearchPlanAttachmentDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: ResearchPlanAttachment):
+        return await ResearchPlanAttachmentDetail.from_model(item)
 
 class ResearchPlanDetail(ModelDetail[ResearchPlan]):
     title: str = Field(max_length=256)
@@ -203,34 +211,28 @@ class ResearchPlanDetail(ModelDetail[ResearchPlan]):
         tasks = await ResearchPlanTaskIndexPage.from_selection(
             db,
             query_research_plan_tasks(plan=model),
-            ResearchPlanTaskDetail.from_model
         )
         attachments = await ResearchPlanAttachmentIndexPage.from_selection(
             db,
             query_research_plan_attachments(plan=model.id),
-            item_from_model=ResearchPlanAttachmentDetail.from_model
         )
 
         equipment_leases = await EquipmentLeaseIndexPage.from_selection(
             db,
             query_equipment_leases(consumer=model),
-            EquipmentLeaseDetail.from_model
         )
         software_leases = await SoftwareLeaseIndexPage.from_selection(
             db,
             query_software_leases(consumer=model),
-            SoftwareLeaseDetail.from_model
         )
 
         input_materials = await MaterialAllocationIndexPage.from_selection(
             db,
             query_material_allocations(consumer=model, only_inputs=True),
-            MaterialAllocationDetail.from_model
         )
         output_materials = await MaterialAllocationIndexPage.from_selection(
             db,
             query_material_allocations(consumer=model, only_inputs=True),
-            MaterialAllocationDetail.from_model
         )
 
         return await super()._from_base(
@@ -268,7 +270,11 @@ async def lookup_research_plan(db: LocalSession, lookup: ResearchPlanLookup | UU
 
 
 # TODO: PEP 695
-ResearchPlanIndexPage = ModelIndexPage[ResearchPlan, ResearchPlanDetail]
+class ResearchPlanIndexPage(ModelIndexPage[ResearchPlan, ResearchPlanDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: ResearchPlan):
+        return await ResearchPlanDetail.from_model(item)
 
 
 class ResearchPlanCreateRequest(ModelCreateRequest[ResearchPlan]):

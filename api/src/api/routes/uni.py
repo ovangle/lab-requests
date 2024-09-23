@@ -28,7 +28,6 @@ async def index_campuses(
     return await CampusIndexPage.from_selection(
         db,
         selection,
-        CampusDetail.from_model,
         page_index=page_index
     )
 

@@ -2,7 +2,6 @@ __all__ = (
     "LabInstallationDoesNotExist",
     "Installable",
     "LabInstallation",
-    "LabInstallationProvision",
 )
 
 from .errors import (
@@ -10,4 +9,4 @@ from .errors import (
 )
 from .installable import Installable
 
-from .lab_installation import LabInstallation, LabInstallationProvision
+from .lab_installation import LabInstallation

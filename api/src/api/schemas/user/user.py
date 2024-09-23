@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any
+from typing import Any, override
 
 from uuid import UUID
 
@@ -77,7 +77,11 @@ async def lookup_user(db: LocalSession, ref: UserRef):
 
 
 # TODO: PEP 695
-UserIndexPage = ModelIndexPage[User, UserDetail]
+class UserIndexPage(ModelIndexPage[User, UserDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: User):
+        return await UserDetail.from_model(item)
 
 
 class AlterPasswordRequest(ModelUpdateRequest[User]):

@@ -95,7 +95,7 @@ export class EquipmentInstallationService extends RestfulService<EquipmentInstal
     override readonly model = EquipmentInstallation;
     override readonly setModelQueryParams = setEquipmentInstallationQueryParams;
 
-    readonly provisionService = inject(EquipmentProvisionService);
+    readonly _provisionService = inject(EquipmentProvisionService);
 
     fetchForLabEquipment(lab: Lab | string, equipment: Equipment | string): Observable<EquipmentInstallation | null> {
         const labId = modelId(lab);
@@ -135,11 +135,16 @@ export class EquipmentInstallationService extends RestfulService<EquipmentInstal
         );
     }
 
+    _createProvision(request: EquipmentInstallationProvisionRequest) {
+
+    }
+
+
     newEquipment(request: NewEquipmentRequest) {
-        return this.provisionService.newEquipment(request);
+        return this._provisionService.newEquipment(request);
     }
 
     transferEquipment(request: EquipmentTransferRequest) {
-        return this.provisionService.transferEquipment(request);
+        return this._provisionService.transferEquipment(request);
     }
 }

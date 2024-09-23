@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import override
 from uuid import UUID
 
 from db import LocalSession
@@ -49,7 +50,11 @@ async def lookup_campus(db: LocalSession, ref: CampusLookup | UUID):
     return await ref.get(db)
 
 
-CampusIndexPage = ModelIndexPage[Campus, CampusDetail]
+class CampusIndexPage(ModelIndexPage[Campus, CampusDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: Campus):
+        return await CampusDetail.from_model(item)
 
 
 class CampusUpdateRequest(ModelUpdateRequest[Campus]):

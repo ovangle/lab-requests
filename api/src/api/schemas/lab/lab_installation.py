@@ -3,24 +3,25 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import Any, Awaitable, Callable, Generic, Self, TypeVar, override
 from uuid import UUID
+
+from sqlalchemy import Select
 from db import LocalSession, local_object_session
 from db.models.lab.allocatable import LabAllocation
 from db.models.lab.installable import (
     Installable,
     LabInstallation,
-    LabInstallationProvision,
 )
+from db.models.lab.installable.lab_installation import LabInstallationProvisionParams
 from db.models.lab.lab import Lab
 from db.models.lab.provisionable import LabProvision
 from db.models.research.funding.research_budget import ResearchBudget
 from db.models.user import User
 from ..base import ModelCreateRequest, ModelDetail, ModelIndexPage
 
-from .lab_provision import LabProvisionCreateRequest, LabProvisionDetail
+from .lab_provision import LabProvisionCreateRequest, LabProvisionDetail, LabProvisionIndexPage
 from .lab_allocation import LabAllocationDetail
 
 TInstallation = TypeVar("TInstallation", bound=LabInstallation)
-TProvision= TypeVar("TProvision", bound=LabProvision)
 TAllocation = TypeVar("TAllocation", bound=LabAllocation)
 
 
@@ -29,7 +30,7 @@ class LabInstallationDetail(ModelDetail[TInstallation], Generic[TInstallation]):
     lab_id: UUID
 
     provision_type: str
-    active_provisions: ModelIndexPage[LabInstallation, Any]
+    active_provisions: LabProvisionIndexPage
     allocation_type: str
     active_allocations: ModelIndexPage[LabAllocation, Any]
 
@@ -40,7 +41,7 @@ class LabInstallationDetail(ModelDetail[TInstallation], Generic[TInstallation]):
 
     @classmethod
     @abstractmethod
-    def _provision_index_from_installation(cls, installation: LabInstallation[Any]) -> Callable[[LocalSession], Awaitable[ModelIndexPage[Any, Any]]]:
+    def _select_provisions(cls, installation: LabInstallation[Any]) -> Select[tuple[LabProvision[TInstallation, Any]]]:
         ...
 
     @classmethod
@@ -49,16 +50,18 @@ class LabInstallationDetail(ModelDetail[TInstallation], Generic[TInstallation]):
     ) -> Self:
         db = local_object_session(lab_installation)
 
-        provision_index = cls._allocation_index_from_installation(lab_installation)
-        allocation_index = cls._provision_index_from_installation(lab_installation)
+        allocation_index = cls._allocation_index_from_installation(lab_installation)
+        active_provisions = await LabProvisionIndexPage.from_selection(
+            db,
+            cls._select_provisions(lab_installation)
+        )
 
         return await cls._from_base(
             lab_installation,
             type=lab_installation.type,
             lab_id=lab_installation.lab_id,
 
-            provision_type=lab_installation.provision_type,
-            active_provisions=await provision_index(db),
+            active_provisions=active_provisions,
 
             allocation_type = lab_installation.allocation_type,
             active_allocations=await allocation_index(db),
@@ -70,31 +73,35 @@ class LabInstallationDetail(ModelDetail[TInstallation], Generic[TInstallation]):
 class LabInstallationCreateRequest(ModelCreateRequest[TInstallation], Generic[TInstallation]):
     lab: UUID
 
+TProvisionable = TypeVar("TProvisionable", bound=LabInstallation)
+TParams = TypeVar("TParams", bound=LabInstallationProvisionParams)
 
-
-TInstallationProvision = TypeVar(
-    "TInstallationProvision", bound=LabInstallationProvision[Any]
-)
-
-
-class LabInstallationProvisionDetail(
-    LabProvisionDetail[TInstallationProvision], Generic[TInstallationProvision]
-):
+class LabInstallationProvisionDetail(LabProvisionDetail[TInstallation, TParams], Generic[TInstallation, TParams]):
     installation_id: UUID
 
     @classmethod
-    async def _from_lab_installation_provision(
-        cls, provision: LabInstallationProvision, **kwargs
+    @override
+    async def _from_lab_provision(
+        cls,
+        provision: LabProvision[TInstallation, TParams],
+        action: str,
+        action_params: TParams,
+        **kwargs
     ):
-        return await cls._from_lab_provision(
-            provision, installation_id=provision.installation_id, **kwargs
+        return await super()._from_lab_provision(
+            provision,
+            action=action,
+            action_params=action_params,
+            installation_id=action_params["installation_id"],
+            **kwargs
         )
+
 
 TInstallationCreate = TypeVar('TInstallationCreate', bound=LabInstallationCreateRequest)
 
 class LabInstallationProvisionCreateRequest(
-    LabProvisionCreateRequest[TInstallationProvision],
-    Generic[TInstallationProvision, TInstallationCreate]
+    LabProvisionCreateRequest[TProvisionable, Any],
+    Generic[TProvisionable, TInstallationCreate]
 ):
     __can_create_installation__ = False
 
@@ -111,7 +118,6 @@ class LabInstallationProvisionCreateRequest(
     async def _do_create_lab_installation_provision(
         self,
         db: LocalSession,
-        type: str,
         installation: LabInstallation,
         *,
         budget: ResearchBudget,
@@ -121,13 +127,12 @@ class LabInstallationProvisionCreateRequest(
         current_user: User,
         note: str
 
-    ) -> TInstallationProvision: ...
+    ) -> LabProvision[TProvisionable, Any]: ...
 
     @override
     async def _do_create_lab_provision(
         self,
         db: LocalSession,
-        type: str,
         *,
         lab: Lab,
         budget: ResearchBudget,
@@ -146,7 +151,6 @@ class LabInstallationProvisionCreateRequest(
 
         return await self._do_create_lab_installation_provision(
             db,
-            type,
             installation,
             budget=budget,
             estimated_cost=estimated_cost,

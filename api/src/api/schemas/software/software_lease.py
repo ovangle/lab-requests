@@ -1,3 +1,4 @@
+from typing import override
 from ..base import ModelDetail, ModelIndexPage
 
 from db.models.software import SoftwareLease, query_software_leases
@@ -19,4 +20,8 @@ class SoftwareLeaseDetail(LabAllocationDetail[SoftwareLease]):
             installation=installation_detail
         )
 
-SoftwareLeaseIndexPage = ModelIndexPage[SoftwareLease, SoftwareLeaseDetail]
+class SoftwareLeaseIndexPage(ModelIndexPage[SoftwareLease, SoftwareLeaseDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, model: SoftwareLease):
+        return await SoftwareLeaseDetail.from_model(model)

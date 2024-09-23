@@ -27,13 +27,13 @@ class SoftwareDetail(ModelDetail[Software]):
 
     @classmethod
     async def from_model(cls, model: Software):
-        from .software_installation import SoftwareInstallationIndexPage, SoftwareDetail
+        from .software_installation import SoftwareInstallationIndexPage, SoftwareInstallationDetail
         db = local_object_session(model)
 
         installations = SoftwareInstallationIndexPage.from_selection(
             db,
             query_software_installations(software=model),
-            item_from_model=SoftwareDetail.from_model
+            item_from_model=SoftwareInstallationDetail.from_model
         )
 
         return cls._from_base(

@@ -1,22 +1,22 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, override
+from typing import TYPE_CHECKING, Any, Generic, Literal, TypeVar, override
 from uuid import UUID
 
 from api.schemas.base import ModelDetail
 from api.schemas.equipment.equipment import EquipmentCreateRequest, EquipmentDetail
-from api.schemas.lab.lab_provision import LabProvisionApproval, LabProvisionCancel, LabProvisionComplete, LabProvisionDenial, LabProvisionPurchase, LabProvisionRejection
+from api.schemas.lab.lab_provision import LabProvisionApproval, LabProvisionCancel, LabProvisionComplete, LabProvisionDenial, LabProvisionDetail, LabProvisionPurchase, LabProvisionRejection, register_provision_detail_cls
 from db import LocalSession, local_object_session
 from db.models.equipment import (
     EquipmentInstallation,
-    EquipmentInstallationProvision,
     query_equipment_installations,
 )
 from db.models.equipment.equipment import Equipment
-from db.models.equipment.equipment_installation import query_equipment_installation_provisions
+from db.models.equipment.equipment_installation import EquipmentProvisionParams, NewEquipmentProvisionParams, TransferEquipmentParams, query_equipment_installation_provisions
 from db.models.equipment.equipment_lease import query_equipment_leases
 from db.models.lab import Lab
 from db.models.lab.installable.lab_installation import LabInstallation
+from db.models.lab.provisionable.lab_provision import LabProvision
 from db.models.research.funding import ResearchFunding
 from db.models.research.funding.research_budget import ResearchBudget
 from db.models.user import User
@@ -32,16 +32,73 @@ from ..lab.lab_installation import LabInstallationCreateRequest, LabInstallation
 if TYPE_CHECKING:
     from .equipment_lease import EquipmentLeaseDetail
 
+TParams = TypeVar("TParams", bound=EquipmentProvisionParams)
 
-class EquipmentInstallationProvisionDetail(LabInstallationProvisionDetail[EquipmentInstallationProvision]):
+
+class EquipmentInstallationProvisionDetail(LabInstallationProvisionDetail[EquipmentInstallation, TParams], Generic[TParams]):
     @classmethod
-    async def from_model(cls, model: EquipmentInstallationProvision):
-        return await cls._from_lab_installation_provision(model)
+    @override
+    async def _from_lab_provision(
+        cls,
+        provision: LabProvision[EquipmentInstallation, TParams],
+        *,
+        action: str,
+        action_params: TParams,
+        **kwargs
+    ):
+        return await super()._from_lab_provision(
+            provision,
+            action,
+            action_params,
+            equipment_id=action_params["equipment_id"],
+            **kwargs
+        )
 
 
+class NewEquipmentProvisionDetail(EquipmentInstallationProvisionDetail[NewEquipmentProvisionParams]):
+    num_required: int
 
-EquipmentInstallationProvisionIndexPage = ModelIndexPage[EquipmentInstallationProvision, EquipmentInstallationProvisionDetail]
+    @classmethod
+    @override
+    async def _from_lab_provision(
+        cls,
+        provision: LabProvision[EquipmentInstallation, NewEquipmentProvisionParams],
+        *,
+        action: str,
+        action_params: NewEquipmentProvisionParams
+    ):
+        return await super()._from_lab_provision(
+            provision,
+            action=action,
+            action_params=action_params,
+            num_required=action_params["num_required"],
+        )
 
+register_provision_detail_cls("new_equipment", NewEquipmentProvisionDetail)
+
+
+class TransferEquipmentProvisionDetail(EquipmentInstallationProvisionDetail[TransferEquipmentParams]):
+    destination_lab_id: UUID
+    num_transferred: int
+
+    @classmethod
+    @override
+    async def _from_lab_provision(
+        cls,
+        provision: LabProvision[EquipmentInstallation, TransferEquipmentParams],
+        *,
+        action: str,
+        action_params: TransferEquipmentParams
+    ):
+        return await super()._from_lab_provision(
+            provision,
+            action=action,
+            action_params=action_params,
+            destination_lab_id=action_params["destination_lab_id"],
+            num_transferred=action_params["num_transferred"]
+        )
+
+register_provision_detail_cls("transfer_equipment", TransferEquipmentProvisionDetail)
 
 class CreateEquipmentInstallationRequest(LabInstallationCreateRequest[EquipmentInstallation]):
     """
@@ -78,7 +135,7 @@ class CreateEquipmentInstallationRequest(LabInstallationCreateRequest[EquipmentI
         return installation
 
 class UpdateEquipmentInstallationReqeust(ModelUpdateRequest[EquipmentInstallation]):
-    model_name: str | None = None
+    installed_model_name: str | None = None
     num_installed: int
 
     async def do_update(self, model: EquipmentInstallation, current_user: User | None = None, **kwargs) -> EquipmentInstallation:
@@ -90,8 +147,8 @@ class UpdateEquipmentInstallationReqeust(ModelUpdateRequest[EquipmentInstallatio
         if self.num_installed != model.num_installed:
             model.num_installed = self.num_installed
 
-        if self.model_name and self.model_name != model.installed_model_name:
-            model.installed_model_name = self.model_name
+        if self.installed_model_name and self.installed_model_name != model.installed_model_name:
+            model.installed_model_name = self.installed_model_name
 
         model.updated_by_id = current_user.id
         db.add(model)
@@ -101,8 +158,9 @@ class UpdateEquipmentInstallationReqeust(ModelUpdateRequest[EquipmentInstallatio
 EquipmentCreateRequest.model_rebuild()
 
 
-class EquipmentInstallationProvisionCreateRequest(LabInstallationProvisionCreateRequest[EquipmentInstallationProvision, CreateEquipmentInstallationRequest]):
+class EquipmentInstallationProvisionCreateRequest(LabInstallationProvisionCreateRequest[EquipmentInstallation, CreateEquipmentInstallationRequest]):
     pass
+
 
 
 class NewEquipmentRequest(EquipmentInstallationProvisionCreateRequest):
@@ -128,13 +186,11 @@ class NewEquipmentRequest(EquipmentInstallationProvisionCreateRequest):
         purchase_instructions: str,
         current_user: User,
         note: str
-    ) -> EquipmentInstallationProvision:
+    ) -> LabProvision[EquipmentInstallation, Any]:
         if not isinstance(installation, EquipmentInstallation):
             raise TypeError("Expected an equipment installation")
 
-        return await EquipmentInstallationProvision.new_equipment(
-            db,
-            installation,
+        return await installation.new_equipment(
             num_required=self.num_required,
             budget=budget,
             estimated_cost=estimated_cost,
@@ -168,10 +224,8 @@ class TransferEquipmentRequest(EquipmentInstallationProvisionCreateRequest):
 
         destination_lab = await Lab.get_by_id(db, self.destination_lab)
 
-        return await EquipmentInstallationProvision.transfer_equipment(
-            db,
-            installation,
-            destination_lab,
+        return await installation.transfer_equipment(
+            destination_lab=destination_lab,
             budget=budget,
             num_transferred=self.num_transferred,
             estimated_cost=estimated_cost,
@@ -182,23 +236,11 @@ class TransferEquipmentRequest(EquipmentInstallationProvisionCreateRequest):
         )
 
 
-
-
-
-
-EquipmentProvisionApproval = LabProvisionApproval[EquipmentInstallationProvision]
-EquipmentProvisionRejection = LabProvisionRejection[EquipmentInstallationProvision]
-EquipmentProvisionDenial = LabProvisionDenial[EquipmentInstallationProvision]
-EquipmentProvisionPurchase = LabProvisionPurchase[EquipmentInstallationProvision]
-EquipmentProvisionComplete = LabProvisionComplete[EquipmentInstallationProvision]
-EquipmentProvisionCancel = LabProvisionCancel[EquipmentInstallationProvision]
-
-
 class EquipmentInstallationDetail(LabInstallationDetail[EquipmentInstallation]):
     equipment_id: UUID
     equipment_name: str
 
-    model_name: str
+    installed_model_name: str
     num_installed: int
 
     @classmethod
@@ -211,25 +253,17 @@ class EquipmentInstallationDetail(LabInstallationDetail[EquipmentInstallation]):
             return await EquipmentLeaseIndexPage.from_selection(
                 db,
                 query_equipment_leases(installation=installation.id, only_pending=True),
-                EquipmentLeaseDetail.from_model
             )
         return index
 
 
     @classmethod
-    def _provision_index_from_installation(cls, installation: LabInstallation[Any]):
-        from .equipment_installation import EquipmentInstallationProvisionIndexPage, EquipmentInstallationProvisionDetail
+    @override
+    def _select_provisions(cls, installation: LabInstallation[Any]):
         if not isinstance(installation, EquipmentInstallation):
             raise TypeError("Expected an EquipmentInstallation")
+        return query_equipment_installation_provisions(installation=installation, only_pending=True),
 
-        async def index(db: LocalSession):
-            return await EquipmentInstallationProvisionIndexPage.from_selection(
-                db,
-                query_equipment_installation_provisions(installation=installation, only_pending=True),
-                EquipmentInstallationProvisionDetail.from_model
-            )
-
-        return index
 
 
     @classmethod
@@ -248,6 +282,10 @@ class EquipmentInstallationDetail(LabInstallationDetail[EquipmentInstallation]):
         )
 
 
-EquipmentInstallationIndexPage = ModelIndexPage[EquipmentInstallation, EquipmentInstallationDetail]
+class EquipmentInstallationIndexPage(ModelIndexPage[EquipmentInstallation, EquipmentInstallationDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: EquipmentInstallation):
+        return await EquipmentInstallationDetail.from_model(item)
 
 EquipmentDetail.model_rebuild()

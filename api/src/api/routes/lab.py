@@ -42,7 +42,6 @@ async def index_labs(
     return await LabIndexPage.from_selection(
         db,
         query_labs(campus=campus_model, discipline=discipline, search=search, id_in=id_in),
-        LabDetail.from_model,
         page_index=1
     )
 

@@ -24,6 +24,9 @@ export function equipmentTransferFormGroupFactory(sourceInstall: Observable<Equi
         destination: fb.control<Lab | null>(null, {
             validators: [Validators.required]
         }),
+        note: fb.control<string>('', {
+            nonNullable: true
+        }),
         numTransferred: fb.control<number>(1, {
             validators: [
                 Validators.required,
@@ -81,6 +84,12 @@ export type EquipmentTransferFormGroup = ReturnType<ReturnType<typeof equipmentT
         </mat-form-field>
 
         <mat-form-field>
+            <mat-label>Reason</mat-label>
+            <textarea matInput formControlName="note"
+                      cdkTextareaAutosize></textarea>
+        </mat-form-field>
+
+        <mat-form-field>
             <mat-label>Number to transfer</mat-label>
             <input matInput type="number" formControlName="numTransferred"/>
 
@@ -97,7 +106,6 @@ export type EquipmentTransferFormGroup = ReturnType<ReturnType<typeof equipmentT
             @if (numTransferred.errors && numTransferred.errors['max']) {
                 <mat-error>Cannot transfer more items than exist in the source lab</mat-error>
             }
-
         </mat-form-field>
 
         <research-purchase-order-form formGroupName="purchase">

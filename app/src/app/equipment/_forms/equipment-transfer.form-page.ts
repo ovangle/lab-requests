@@ -69,8 +69,9 @@ export class EquipmentTransferFormPage {
             purchaseOrder: purchaseOrderRequestFromFormValue(
                 budget,
                 'transfer_equipment',
-                value['purchase']
-            )
+                value['purchase']!
+            ),
+            note: value.note!
         };
 
         await this._installationContext.transferEquipment(request);

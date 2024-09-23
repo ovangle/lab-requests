@@ -3,7 +3,7 @@ import asyncio
 from datetime import datetime
 from http import HTTPStatus
 
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, Optional, cast, override
 from pydantic import Field
 from uuid import UUID, uuid4
 from fastapi import HTTPException
@@ -18,8 +18,6 @@ from db.models.lab import Lab
 from db.models.lab.provisionable import ProvisionStatus
 from db.models.equipment import (
     Equipment,
-    EquipmentInstallation,
-    EquipmentInstallationProvision,
 )
 from db.models.uni.campus import Campus
 from db.models.uni.discipline import Discipline
@@ -60,7 +58,6 @@ class EquipmentDetail(ModelDetail[Equipment]):
         installations = await EquipmentInstallationIndexPage.from_selection(
             db,
             query_equipment_installations(equipment=model),
-            EquipmentInstallationDetail.from_model
         )
 
         return cls(
@@ -77,7 +74,11 @@ class EquipmentDetail(ModelDetail[Equipment]):
         )
 
 
-EquipmentIndexPage = ModelIndexPage[Equipment, EquipmentDetail]
+class EquipmentIndexPage(ModelIndexPage[Equipment, EquipmentDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: Equipment):
+        return await EquipmentDetail.from_model(item)
 
 
 class EquipmentLookup(ModelLookup[Equipment]):

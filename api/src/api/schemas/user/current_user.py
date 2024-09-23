@@ -31,7 +31,6 @@ class CurrentUserDetail(UserDetail):
         supervised_labs = await LabIndexPage.from_selection(
             db,
             query_labs(supervised_by=model.id),
-            item_from_model=LabDetail.from_model
         )
 
         plans = await ResearchPlanIndexPage.from_selection(

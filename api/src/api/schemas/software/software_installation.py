@@ -1,18 +1,20 @@
-from typing import Any, cast
+from typing import Any, Generic, TypeVar, cast, override
 from uuid import UUID
 
 from api.schemas.software.software import SoftwareCreateRequest
 from db import LocalSession
 from db.models.lab.installable.lab_installation import LabInstallation
+from db.models.lab.provisionable.lab_provision import LabProvision
+from db.models.research.funding.research_budget import ResearchBudget
 from db.models.software import (
     Software,
     SoftwareInstallation,
     query_software_installations,
-    SoftwareInstallationProvision,
     query_software_installation_provisions
 )
 from db.models.lab import Lab
 from db.models.research.funding import ResearchFunding
+from db.models.software.software_installation import NewSoftwareParams, SoftwareInstallationProvisionParams, UpgradeSoftwareParams
 from db.models.software.software_lease import query_software_leases
 from db.models.user import User
 from ..base import (
@@ -22,7 +24,7 @@ from ..base import (
     ModelRequestContextError,
 )
 from ..lab.lab_installation import LabInstallationCreateRequest, LabInstallationDetail, LabInstallationProvisionCreateRequest, LabInstallationProvisionDetail
-from ..lab.lab_provision import LabProvisionApproval, LabProvisionCancel, LabProvisionComplete, LabProvisionDenial, LabProvisionPurchase, LabProvisionRejection
+from ..lab.lab_provision import LabProvisionApproval, LabProvisionCancel, LabProvisionComplete, LabProvisionDenial, LabProvisionPurchase, LabProvisionRejection, register_provision_detail_cls
 
 
 class SoftwareInstallationDetail(LabInstallationDetail[SoftwareInstallation]):
@@ -38,20 +40,13 @@ class SoftwareInstallationDetail(LabInstallationDetail[SoftwareInstallation]):
             return await SoftwareLeaseIndexPage.from_selection(
                 db,
                 query_software_leases(installation=cast(SoftwareInstallation, installation), only_pending=True),
-                SoftwareLeaseDetail.from_model
             )
         return index
 
     @classmethod
-    def _provision_index_from_installation(cls, installation: LabInstallation[Any]):
-        from .software_installation import SoftwareInstallationProvisionDetail, SoftwareInstallationProvisionIndexPage
-
-        async def index(db: LocalSession):
-            return await SoftwareInstallationProvisionIndexPage.from_selection(
-                db,
-                query_software_installation_provisions(installation=cast(SoftwareInstallation, installation), only_pending=True),
-                SoftwareInstallationProvisionDetail.from_model
-            )
+    @override
+    def _select_provisions(cls, installation: LabInstallation[Any]):
+            return query_software_installation_provisions(installation=cast(SoftwareInstallation, installation), only_pending=True),
 
     @classmethod
     async def from_model(
@@ -98,62 +93,133 @@ class SoftwareInstallationCreateRequest(LabInstallationCreateRequest[SoftwareIns
 SoftwareInstallationIndexPage = ModelIndexPage[SoftwareInstallation, SoftwareInstallationDetail]
 
 
-class SoftwareInstallationProvisionDetail(LabInstallationProvisionDetail[SoftwareInstallationProvision]):
-    software_id: UUID
-    min_version: str
+TParams = TypeVar('TParams', bound=SoftwareInstallationProvisionParams)
 
-    requires_license: bool
-    is_paid_software: bool
+
+class SoftwareInstallationProvisionDetail(LabInstallationProvisionDetail[SoftwareInstallation, TParams], Generic[TParams]):
+    software_id: UUID
 
     @classmethod
-    async def from_model(cls, model: SoftwareInstallationProvision):
-        return await cls._from_lab_installation_provision(
-            model,
-            software_id=model.software_id,
-            min_version=model.min_version,
-            requires_license=model.requires_license,
-            is_paid_software=model.is_paid_software
+    @override
+    async def _from_lab_provision(
+        cls,
+        provision: LabProvision[SoftwareInstallation, TParams],
+        action: str,
+        action_params: TParams,
+        **kwargs
+    ):
+        return await super()._from_lab_provision(
+            provision,
+            action,
+            action_params,
+            software_id=action_params["software_id"],
+            **kwargs
         )
 
 
-SoftwareInstallationProvisionIndexPage = ModelIndexPage[SoftwareInstallationProvision, SoftwareInstallationProvisionDetail]
+class NewSoftwareProvisionDetail(SoftwareInstallationProvisionDetail[NewSoftwareParams]):
+    min_version: str
+    requires_license: bool
+    is_free_software: bool
 
-class SoftwareInstallationProvisionCreateRequest(LabInstallationProvisionCreateRequest[SoftwareInstallationProvision, SoftwareInstallationCreateRequest]):
-    async def get_installation(self, db: LocalSession):
-        return await SoftwareInstallation.get_by_id(db, self.installation_id)
+    @classmethod
+    @override
+    async def _from_lab_provision(
+        cls,
+        provision: LabProvision[SoftwareInstallation, NewSoftwareParams],
+        action: str,
+        action_params: NewSoftwareParams,
+        **kwargs
+    ):
+        return await super()._from_lab_provision(
+            provision,
+            action,
+            action_params,
+            min_version=action_params["min_version"],
+            requires_license=action_params["requires_license"],
+            is_free_software=action_params["is_free_software"]
+        )
 
-class NewSoftwareRequest(SoftwareInstallationProvisionCreateRequest):
+register_provision_detail_cls("new_software", NewSoftwareProvisionDetail)
+
+class UpgradeSoftwareProvisionDetail(SoftwareInstallationProvisionDetail[UpgradeSoftwareParams]):
     min_version: str
 
-    async def do_create_lab_provision(self, db: LocalSession, type: str, *, lab: Lab, funding: ResearchFunding | None, current_user: User, note: str) -> SoftwareInstallationProvision:
-        installation = await self.get_installation(db)
+    @classmethod
+    @override
+    async def _from_lab_provision(
+        cls,
+        provision: LabProvision[SoftwareInstallation, UpgradeSoftwareParams],
+        action: str,
+        action_params: UpgradeSoftwareParams,
+        **kwargs,
+    ):
+        return await super()._from_lab_provision(
+            provision,
+            action,
+            action_params,
+            min_version=action_params["min_version"],
+            **kwargs,
+        )
 
-        return await SoftwareInstallationProvision.new_software(
-            db,
-            installation,
-            min_version=self.min_version,
+register_provision_detail_cls("upgrade_software", UpgradeSoftwareProvisionDetail)
+
+
+class _SoftwareInstallationProvisionCreateRequest(LabInstallationProvisionCreateRequest[SoftwareInstallation, SoftwareInstallationCreateRequest]):
+    pass
+
+class NewSoftwareRequest(_SoftwareInstallationProvisionCreateRequest):
+    min_version: str
+
+    @override
+    async def _do_create_lab_installation_provision(
+        self,
+        db: LocalSession,
+        installation: LabInstallation,
+        *,
+        budget: ResearchBudget,
+        estimated_cost: float,
+        purchase_url: str,
+        purchase_instructions: str,
+        current_user: User,
+        note: str
+    ) -> LabProvision[SoftwareInstallation, Any]:
+        if not isinstance(installation, SoftwareInstallation):
+            raise TypeError("Expected a software installation")
+        return await installation.new_software(
+            budget=budget,
+            estimated_cost=estimated_cost,
+            purchase_url=purchase_url,
+            purchase_instructions=purchase_instructions,
             requested_by=current_user,
             note=note
         )
 
-
-class UpgradeSoftwareRequest(SoftwareInstallationProvisionCreateRequest):
+class UpgradeSoftwareRequest(_SoftwareInstallationProvisionCreateRequest):
     min_version: str
 
-    async def do_create_lab_provision(self, db: LocalSession, type: str, *, lab: Lab, funding: ResearchFunding | None, current_user: User, note: str) -> SoftwareInstallationProvision:
-        installation = await self.get_installation(db)
+    @override
+    async def _do_create_lab_installation_provision(
+        self,
+        db: LocalSession,
+        installation: LabInstallation,
+        *,
+        budget: ResearchBudget,
+        estimated_cost: float,
+        purchase_url: str,
+        purchase_instructions: str,
+        current_user: User,
+        note: str
+    ):
+        if not isinstance(installation, SoftwareInstallation):
+            raise TypeError(f"Expected a software installation")
 
-        return await SoftwareInstallationProvision.upgrade_software(
-            db,
-            installation,
+        return await installation.upgrade_software(
+            budget=budget,
+            estimated_cost=estimated_cost,
+            purchase_url=purchase_url,
+            purchase_instructions=purchase_instructions,
             min_version=self.min_version,
             requested_by=current_user,
             note=note
         )
-
-SoftwareProvisionApproval = LabProvisionApproval[SoftwareInstallationProvision]
-SoftwareProvisionRejection = LabProvisionRejection[SoftwareInstallationProvision]
-SoftareProvisionDenial = LabProvisionDenial[SoftwareInstallationProvision]
-SoftwareProvisionPurchase = LabProvisionPurchase[SoftwareInstallationProvision]
-SoftwareProvisionComplete = LabProvisionComplete[SoftwareInstallationProvision]
-SoftwareProvisionCancel = LabProvisionCancel[SoftwareInstallationProvision]

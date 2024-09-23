@@ -1,3 +1,4 @@
+from typing import override
 from uuid import UUID
 from ..base import ModelDetail, ModelIndexPage
 
@@ -21,4 +22,8 @@ class EquipmentLeaseDetail(LabAllocationDetail[EquipmentLease]):
         )
 
 
-EquipmentLeaseIndexPage = ModelIndexPage[EquipmentLease, EquipmentLeaseDetail]
+class EquipmentLeaseIndexPage(ModelIndexPage[EquipmentLease, EquipmentLeaseDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, item: EquipmentLease):
+        return await EquipmentLeaseDetail.from_model(item)
