@@ -3,13 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Generic, Literal, TypeVar, override
 from uuid import UUID
 
-from api.schemas.base import ModelDetail
-from api.schemas.equipment.equipment import EquipmentCreateRequest, EquipmentDetail
-from api.schemas.lab.lab_provision import LabProvisionApprovalRequest, LabProvisionCancelRequest, LabProvisionCompleteRequest, LabProvisionDenialRequest, LabProvisionDetail, LabProvisionPurchaseRequest, LabProvisionRejectionRequest, register_provision_detail_cls
 from db import LocalSession, local_object_session
 from db.models.equipment import (
     EquipmentInstallation,
-    query_equipment_installations,
 )
 from db.models.equipment.equipment import Equipment
 from db.models.equipment.equipment_installation import EquipmentProvisionParams, NewEquipmentProvisionParams, TransferEquipmentParams, query_equipment_installation_provisions
@@ -17,20 +13,26 @@ from db.models.equipment.equipment_lease import query_equipment_leases
 from db.models.lab import Lab
 from db.models.lab.installable.lab_installation import LabInstallation
 from db.models.lab.provisionable.lab_provision import LabProvision
-from db.models.research.funding import ResearchFunding
-from db.models.research.funding.research_budget import ResearchBudget
+from db.models.uni.funding import Budget
 from db.models.user import User
 
-from ..base import (
-    ModelCreateRequest,
+from ..base_schemas import (
     ModelIndexPage,
     ModelRequestContextError,
     ModelUpdateRequest,
 )
-from ..lab.lab_installation import LabInstallationCreateRequest, LabInstallationDetail, LabInstallationProvisionCreateRequest, LabInstallationProvisionDetail
+from api.schemas.equipment import EquipmentCreateRequest, EquipmentDetail
+from api.schemas.lab import (
+    LabInstallationCreateRequest,
+    LabInstallationUpdateRequest,
+    LabInstallationDetail,
+    LabInstallationProvisionCreateRequest,
+    LabInstallationProvisionDetail,
+    register_provision_detail_cls
+)
 
 if TYPE_CHECKING:
-    from .equipment_lease import EquipmentLeaseDetail, EquipmentLeaseIndexPage
+    from .equipment_lease_schemas import EquipmentLeaseDetail, EquipmentLeaseIndexPage
 
 TParams = TypeVar("TParams", bound=EquipmentProvisionParams)
 
@@ -134,7 +136,7 @@ class CreateEquipmentInstallationRequest(LabInstallationCreateRequest[EquipmentI
         await db.commit()
         return installation
 
-class UpdateEquipmentInstallationRequest(ModelUpdateRequest[EquipmentInstallation]):
+class EquipmentInstallationUpdateRequest(LabInstallationUpdateRequest[EquipmentInstallation]):
     installed_model_name: str | None = None
     num_installed: int
 
@@ -191,7 +193,7 @@ class NewEquipmentRequest(EquipmentInstallationProvisionCreateRequest):
         db: LocalSession,
         installation: LabInstallation,
         *,
-        budget: ResearchBudget,
+        budget: Budget,
         estimated_cost: float,
         purchase_url: str | None,
         purchase_instructions: str,
@@ -215,7 +217,7 @@ class NewEquipmentRequest(EquipmentInstallationProvisionCreateRequest):
 class TransferEquipmentRequest(EquipmentInstallationProvisionCreateRequest):
     action: Literal['equipment_transfer']
     num_transferred: int
-    destination_lab_id: UUID
+    destination_lab: UUID
 
     @override
     async def _do_create_lab_installation_provision(
@@ -223,7 +225,7 @@ class TransferEquipmentRequest(EquipmentInstallationProvisionCreateRequest):
         db: LocalSession,
         installation: LabInstallation,
         *,
-        budget: ResearchBudget,
+        budget: Budget,
         estimated_cost: float,
         purchase_url: str | None,
         purchase_instructions: str,
@@ -256,7 +258,7 @@ class EquipmentInstallationDetail(LabInstallationDetail[EquipmentInstallation]):
 
     @classmethod
     def _allocation_index_from_installation(cls, installation: LabInstallation[Any]):
-        from .equipment_lease import EquipmentLeaseIndexPage, EquipmentLeaseDetail
+        from .equipment_lease_schemas import EquipmentLeaseIndexPage, EquipmentLeaseDetail
         if not isinstance(installation, EquipmentInstallation):
             raise TypeError('Expected an EquipmentInstallation')
 

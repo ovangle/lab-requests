@@ -10,9 +10,9 @@ from db.models.uni.discipline import Discipline
 
 from db.models.user import TemporaryAccessToken, User, UserDoesNotExist, UserDomain
 
-from ..base import ModelCreateRequest, ModelUpdateRequest, BaseModel
-from ..uni.campus import CampusLookup, lookup_campus
-from .user import UserDetail
+from api.schemas.uni import CampusLookup, lookup_campus
+from ..base_schemas import ModelCreateRequest, ModelUpdateRequest, BaseModel
+from .user_schemas import UserDetail
 
 
 class TemporaryUserDetail(UserDetail):

@@ -19,7 +19,7 @@ from db.models.user import User
 from .software import Software
 
 if TYPE_CHECKING:
-    from db.models.research.funding.research_budget import ResearchBudget
+    from db.models.uni.funding import Budget
 
 class SoftwareInstallationProvisionParams(LabInstallationProvisionParams):
     software_id: UUID
@@ -73,6 +73,7 @@ def _upgrade_software_params_from_json(json: dict[str, Any]) -> UpgradeSoftwareP
 
 def query_software_installation_provisions(
     installation: SoftwareInstallation | UUID | None = None,
+    action: Literal["new_software", "upgrade_software"] | None = None,
     only_pending: bool=False
 ) -> Select[tuple[LabProvision]]:
     where_clauses: list = [
@@ -81,6 +82,11 @@ def query_software_installation_provisions(
     if installation:
         where_clauses.append(
             LabProvision.provisionable_id == model_id(installation)
+        )
+
+    if action:
+        where_clauses.append(
+            LabProvision.action == action
         )
 
     if only_pending:
@@ -112,7 +118,7 @@ class SoftwareInstallation(LabInstallation[Software]):
     async def new_software(
         self,
         *,
-        budget: ResearchBudget,
+        budget: Budget,
         estimated_cost: float = 0.0,
         purchase_url: str | None = None,
         purchase_instructions: str = '',
@@ -149,7 +155,7 @@ class SoftwareInstallation(LabInstallation[Software]):
     async def upgrade_software(
         self,
         *,
-        budget: ResearchBudget,
+        budget: Budget,
         estimated_cost: float = 0.0,
         purchase_url: str | None = None,
         purchase_instructions: str = '',

@@ -1,10 +1,11 @@
 from typing import override
-from ..base import ModelDetail, ModelIndexPage
 
 from db.models.software import SoftwareLease, query_software_leases
 
-from api.schemas.lab.lab_allocation import LabAllocationDetail
-from .software_installation import SoftwareInstallationDetail
+from api.schemas.lab import LabAllocationDetail
+
+from ..base_schemas import ModelDetail, ModelIndexPage
+from .software_installation_schemas import SoftwareInstallationDetail
 
 
 class SoftwareLeaseDetail(LabAllocationDetail[SoftwareLease]):

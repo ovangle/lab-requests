@@ -15,13 +15,13 @@ from db.models.lab import Lab
 from db.models.uni.campus import Campus
 from db.models.user import User, query_users
 
-from ..base import ModelLookup, ModelIndexPage, ModelDetail
 
-from ..user.user import UserDetail, UserIndexPage
-from ..uni.campus import CampusDetail
+from api.schemas.user import UserDetail, UserIndexPage
+from api.schemas.uni import CampusDetail
 
-from .lab_storage import LabStorageDetail, LabStorageIndexPage
-from .lab_disposal import LabDisposalDetail, LabDisposalIndexPage
+from ..base_schemas import ModelLookup, ModelIndexPage, ModelDetail
+from .lab_storage_schemas import LabStorageIndexPage
+from .lab_disposal_schemas import LabDisposalIndexPage
 
 
 class LabDetail(ModelDetail[Lab]):

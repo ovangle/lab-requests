@@ -10,10 +10,11 @@ from db.models.research.plan import query_research_plans
 from db.models.user import User
 from db.models.lab import Lab
 
-from .user import UserDetail
+from api.schemas.lab import LabDetail, LabIndexPage
+from api.schemas.research import ResearchPlanDetail, ResearchPlanIndexPage
 
-from ..lab.lab import LabDetail, LabIndexPage
-from ..research.plan import ResearchPlanDetail, ResearchPlanIndexPage
+from .user_schemas import UserDetail
+
 
 
 class CurrentUserDetail(UserDetail):

@@ -1,11 +1,11 @@
 from typing import override
 from uuid import UUID
-from ..base import ModelDetail, ModelIndexPage
 
 from db.models.equipment import EquipmentLease, query_equipment_leases
 
-from ..lab.lab_allocation import LabAllocationDetail
-from .equipment_installation import EquipmentInstallationDetail
+from api.schemas.base_schemas import ModelIndexPage
+from api.schemas.lab import LabAllocationDetail
+from .equipment_installation_schemas import EquipmentInstallationDetail
 
 
 class EquipmentLeaseDetail(LabAllocationDetail[EquipmentLease]):

@@ -23,7 +23,7 @@ from db.models.uni.campus import Campus
 from db.models.uni.discipline import Discipline
 from db.models.user import User
 
-from ..base import (
+from ..base_schemas import (
     ModelCreateRequest,
     ModelIndexPage,
     ModelRequest,
@@ -33,10 +33,10 @@ from ..base import (
     ModelLookup,
 )
 
-from api.schemas.software.software import SoftwareDetail
+from api.schemas.software import SoftwareDetail
 
 if TYPE_CHECKING:
-    from .equipment_installation import CreateEquipmentInstallationRequest, EquipmentInstallationIndexPage
+    from .equipment_installation_schemas import CreateEquipmentInstallationRequest, EquipmentInstallationIndexPage
 
 
 class EquipmentDetail(ModelDetail[Equipment]):
@@ -56,7 +56,7 @@ class EquipmentDetail(ModelDetail[Equipment]):
 
     @classmethod
     async def from_model(cls, model: Equipment):
-        from .equipment_installation import EquipmentInstallationIndexPage, EquipmentInstallationDetail
+        from .equipment_installation_schemas import EquipmentInstallationIndexPage, EquipmentInstallationDetail
         db = local_object_session(model)
 
         installations = await EquipmentInstallationIndexPage.from_selection(

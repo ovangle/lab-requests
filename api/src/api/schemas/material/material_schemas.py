@@ -1,10 +1,12 @@
 
+from typing import override
 from db import local_object_session
 from db.models.material import Material, query_materials
+from db.models.material.material_inventory import query_material_inventories
 
-from ..base import ModelDetail, ModelIndex
 
-from .material_inventory import MaterialInventoryIndex, MaterialInventoryIndexPage
+from ..base_schemas import ModelDetail, ModelIndexPage
+from .material_inventory_schemas import MaterialInventoryIndexPage, MaterialInventoryIndexPage
 
 
 class MaterialDetail(ModelDetail[Material]):
@@ -16,18 +18,20 @@ class MaterialDetail(ModelDetail[Material]):
     @classmethod
     async def from_model(cls, model: Material):
         db = local_object_session(model)
-        inventory_index = MaterialInventoryIndex(material=model.id)
+        inventories = MaterialInventoryIndexPage.from_selection(
+            db,
+            query_material_inventories(material=model.id)
+        )
 
         return cls._from_base(
             model,
             name=model.name,
             unit_of_measurement=model.unit_of_measurement,
-            inventories=await inventory_index.load_page(db)
+            inventories=inventories
         )
 
-class MaterialIndex(ModelIndex[Material]):
-    def item_from_model(self, model):
-        return MaterialDetail.from_model(model)
-
-    def get_selection(self):
-        return query_materials()
+class MaterialIndexPage(ModelIndexPage[Material, MaterialDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, model: Material):
+        return await MaterialDetail.from_model(model)

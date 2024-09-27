@@ -65,17 +65,21 @@ app.add_middleware(
 def api_router():
     from api.auth.views import oauth
 
-    from api.routes.user import users
-    from api.routes.uni import uni
-    from api.routes.lab import labs
-    from api.routes.equipment import equipments
-    from api.routes.research import research
+    from api.routes.user_routes import users
+    from api.routes.uni_routes import uni
+    from api.routes.lab_routes import labs
+    from api.routes.equipment_routes import equipments
+    from api.routes.software_routes import softwares
+    from api.routes.material_routes import materials
+    from api.routes.research_routes import research
 
     api_router = APIRouter(prefix="/api", tags=["api"])
     api_router.include_router(oauth)
     api_router.include_router(users)
     api_router.include_router(uni)
     api_router.include_router(equipments)
+    api_router.include_router(softwares)
+    api_router.include_router(materials)
     api_router.include_router(labs)
 
     # from api.lab.equipment.views import lab_equipments, lab_equipment_tags

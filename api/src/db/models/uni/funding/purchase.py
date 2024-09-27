@@ -16,17 +16,17 @@ from db.models.fields import uuid_pk
 from db.models.user import User
 
 from .purchase_status import PURCHASE_STATUS_TRANSITION, PurchaseStatus, PURCHASE_STATUS_ENUM, PurchaseStatusError, PurchaseStatusTransition
-from .research_funding import ResearchFunding
+from .funding import Funding
 
 if TYPE_CHECKING:
-    from .research_budget import ResearchBudget
+    from .budget import Budget
 
-_purchase_order_types: dict[str, type[ResearchPurchaseOrder]] = {}
+_purchase_order_types: dict[str, type[PurchaseOrder]] = {}
 
 class PurchaseTypeError(TypeError):
     pass
 
-class ResearchPurchaseOrder(Base):
+class PurchaseOrder(Base):
     __abstract__ = True
     __purchase_order_type__: ClassVar[str]
 
@@ -46,25 +46,25 @@ class ResearchPurchaseOrder(Base):
             _purchase_order_types[purchase_order_type] = cls
         super().__init_subclass__(**kwargs)
 
-    budget_id: Mapped[UUID] = mapped_column(ForeignKey("research_budget.id"), default=None)
+    budget_id: Mapped[UUID] = mapped_column(ForeignKey("uni_budget.id"), default=None)
 
     @declared_attr
-    def budget(cls) -> Mapped[ResearchBudget | None]:
+    def budget(cls) -> Mapped[Budget | None]:
         return relationship()
 
 
     @declared_attr
-    def funding(cls) -> Mapped[ResearchFunding | None]:
+    def funding(cls) -> Mapped[Funding | None]:
         return relationship(
-            secondary="research_budget",
+            secondary="uni_budget",
             viewonly=True
         )
 
-    purchase_id: Mapped[UUID | None] = mapped_column(ForeignKey("research_purchase.id"), nullable=True, default=None)
+    purchase_id: Mapped[UUID | None] = mapped_column(ForeignKey("uni_purchase.id"), nullable=True, default=None)
 
     @declared_attr
-    def purchase(self) -> Mapped[ResearchPurchase | None]:
-        return relationship(ResearchPurchase)
+    def purchase(self) -> Mapped[Purchase | None]:
+        return relationship(Purchase)
 
     created_by_id: Mapped[UUID] = mapped_column(ForeignKey('user.id'))
     estimated_cost: Mapped[float] = mapped_column(postgresql.FLOAT, default=0.0)
@@ -72,8 +72,8 @@ class ResearchPurchaseOrder(Base):
     purchase_url: Mapped[str | None] = mapped_column(postgresql.VARCHAR(1024), default=None)
     purchase_instructions: Mapped[str] = mapped_column(postgresql.TEXT, default='')
 
-    async def get_or_create_purchase(self) -> ResearchPurchase:
-        budget: ResearchBudget | None = await self.awaitable_attrs.budget
+    async def get_or_create_purchase(self) -> Purchase:
+        budget: Budget | None = await self.awaitable_attrs.budget
         if budget:
             if not self.purchase_id:
                 purchase = await budget.append_purchase(self)
@@ -91,8 +91,8 @@ async def get_purchase_order_for_type_and_id(db: LocalSession, type: str, id: UU
     except KeyError:
         raise PurchaseTypeError('Purchase type unknown')
 
-class ResearchPurchase(Base):
-    __tablename__ = "research_purchase"
+class Purchase(Base):
+    __tablename__ = "uni_purchase"
     __table_args__ = (
         UniqueConstraint('purchase_order_type', 'purchase_order_id'),
     )
@@ -100,11 +100,11 @@ class ResearchPurchase(Base):
     id: Mapped[uuid_pk] = mapped_column()
 
     @classmethod
-    async def get_for_budget_index(cls, db: LocalSession, budget: ResearchBudget | UUID, index: int) -> ResearchPurchase:
+    async def get_for_budget_index(cls, db: LocalSession, budget: Budget | UUID, index: int) -> Purchase:
         result = await db.scalar(
-            select(ResearchPurchase).where(
-                ResearchPurchase.budget_id == model_id(budget),
-                ResearchPurchase.index == index
+            select(Purchase).where(
+                Purchase.budget_id == model_id(budget),
+                Purchase.index == index
             )
         )
         if result is None:
@@ -115,17 +115,17 @@ class ResearchPurchase(Base):
     purchase_order_id: Mapped[UUID] = mapped_column(postgresql.UUID)
 
     @property
-    async def purchase_order(self) -> ResearchPurchaseOrder:
+    async def purchase_order(self) -> PurchaseOrder:
         db = local_object_session(self)
         return await get_purchase_order_for_type_and_id(db, self.purchase_order_type, self.purchase_order_id)
 
-    funding: Mapped[ResearchFunding] = relationship(
-        secondary='research_budget',
+    funding: Mapped[Funding] = relationship(
+        secondary='uni_budget',
         viewonly=True
     )
 
-    budget_id: Mapped[UUID] = mapped_column(ForeignKey("research_budget.id"), index=True)
-    budget: Mapped[ResearchBudget] = relationship()
+    budget_id: Mapped[UUID] = mapped_column(ForeignKey("uni_budget.id"), index=True)
+    budget: Mapped[Budget] = relationship()
     index: Mapped[int] = mapped_column(postgresql.INTEGER, index=True)
 
     estimated_cost: Mapped[float] = mapped_column(postgresql.FLOAT, default=0.0)
@@ -147,7 +147,7 @@ class ResearchPurchase(Base):
     def ordered_at(self):
         return self._order_mark["at"]
 
-    def __init__(self, purchase_order: ResearchPurchaseOrder, budget: ResearchBudget, index: int, *, estimated_cost: float, **kwargs):
+    def __init__(self, purchase_order: PurchaseOrder, budget: Budget, index: int, *, estimated_cost: float, **kwargs):
         self.purchase_order_type = purchase_order.__purchase_order_type__
         self.purchase_order_id = purchase_order.id
 
@@ -272,14 +272,14 @@ class ResearchPurchase(Base):
         return self
 
 
-def query_research_purchases(
-    budget: ResearchBudget | UUID | None = None
+def query_purchases(
+    budget: Budget | UUID | None = None
 ):
     where_clauses = []
 
     if budget:
         where_clauses.append(
-            ResearchPurchase.budget_id == model_id(budget)
+            Purchase.budget_id == model_id(budget)
         )
 
-    return select(ResearchPurchase).where(*where_clauses)
+    return select(Purchase).where(*where_clauses)

@@ -14,12 +14,12 @@ from db.models.lab.installable import (
 from db.models.lab.installable.lab_installation import LabInstallationProvisionParams
 from db.models.lab.lab import Lab
 from db.models.lab.provisionable import LabProvision
-from db.models.research.funding.research_budget import ResearchBudget
+from db.models.uni.funding import Budget
 from db.models.user import User
-from ..base import ModelCreateRequest, ModelDetail, ModelIndexPage, ModelRequestContextError
 
-from .lab_provision import LabProvisionCreateRequest, LabProvisionDetail, LabProvisionIndexPage
-from .lab_allocation import LabAllocationDetail
+from ..base_schemas import ModelCreateRequest, ModelDetail, ModelIndexPage, ModelRequestContextError, ModelUpdateRequest
+from .lab_provision_schemas import LabProvisionCreateRequest, LabProvisionDetail, LabProvisionIndexPage
+from .lab_allocation_schemas import LabAllocationDetail
 
 TInstallation = TypeVar("TInstallation", bound=LabInstallation)
 TAllocation = TypeVar("TAllocation", bound=LabAllocation)
@@ -73,6 +73,9 @@ class LabInstallationDetail(ModelDetail[TInstallation], Generic[TInstallation]):
 class LabInstallationCreateRequest(ModelCreateRequest[TInstallation], Generic[TInstallation]):
     lab: UUID
 
+class LabInstallationUpdateRequest(ModelUpdateRequest[TInstallation], Generic[TInstallation]):
+    pass
+
 TProvisionable = TypeVar("TProvisionable", bound=LabInstallation)
 TParams = TypeVar("TParams", bound=LabInstallationProvisionParams)
 
@@ -121,7 +124,7 @@ class LabInstallationProvisionCreateRequest(
         db: LocalSession,
         installation: LabInstallation,
         *,
-        budget: ResearchBudget,
+        budget: Budget,
         estimated_cost: float,
         purchase_url: str,
         purchase_note: str,
@@ -135,7 +138,7 @@ class LabInstallationProvisionCreateRequest(
         db: LocalSession,
         *,
         lab: Lab,
-        budget: ResearchBudget,
+        budget: Budget,
         estimated_cost: float,
         purchase_url: str,
         purchase_instructions: str,

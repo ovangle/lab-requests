@@ -4,7 +4,7 @@ from uuid import UUID
 
 from db.models.lab.allocatable import Allocatable, LabAllocation, AllocationStatus, AllocationStatusTransition
 
-from ..base import BaseModel, ModelDetail
+from ..base_schemas import BaseModel, ModelDetail
 
 TAllocation = TypeVar("TAllocation", bound=LabAllocation)
 

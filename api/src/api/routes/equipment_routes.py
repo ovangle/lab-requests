@@ -3,20 +3,25 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from api.auth.context import get_current_authenticated_user
-from api.schemas.equipment.equipment import (
-    EquipmentCreateRequest,
-    EquipmentDetail,
-    EquipmentIndexPage,
-)
+
 from db import get_db
 from db.models.equipment.equipment import Equipment, query_equipments
 from db.models.equipment.equipment_installation import EquipmentInstallation, query_equipment_installation_provisions, query_equipment_installations
 from db.models.equipment.equipment_lease import query_equipment_leases
 from db.models.lab.provisionable.lab_provision import LabProvision
 
-from api.schemas.equipment.equipment_installation import CreateEquipmentInstallationRequest, EquipmentInstallationDetail, EquipmentInstallationIndexPage, EquipmentInstallationProvisionDetail, NewEquipmentRequest, TransferEquipmentRequest, UpdateEquipmentInstallationRequest
-from api.schemas.equipment.equipment_lease import EquipmentLeaseIndexPage
-from api.schemas.lab.lab_provision import LabProvisionDetail, LabProvisionIndexPage
+from api.schemas.lab import LabProvisionDetail, LabProvisionIndexPage
+from api.schemas.equipment import (
+    EquipmentCreateRequest,
+    EquipmentDetail,
+    EquipmentIndexPage,
+    CreateEquipmentInstallationRequest,
+    EquipmentInstallationDetail,
+    EquipmentInstallationIndexPage,
+    EquipmentInstallationProvisionDetail, NewEquipmentRequest, TransferEquipmentRequest, EquipmentInstallationUpdateRequest,
+    EquipmentLeaseDetail,
+    EquipmentLeaseIndexPage
+)
 
 equipments = APIRouter(prefix="/equipments")
 
@@ -94,13 +99,13 @@ async def read_equipment_installation(
 @equipments.put("/installation/{installation_id}")
 async def update_equipment_installation(
     installation_id: UUID,
-    update_req: UpdateEquipmentInstallationRequest | NewEquipmentRequest | TransferEquipmentRequest,
+    update_req: EquipmentInstallationUpdateRequest | NewEquipmentRequest | TransferEquipmentRequest,
     db=Depends(get_db),
     current_user=Depends(get_current_authenticated_user)
 ):
     installation = await EquipmentInstallation.get_by_id(db, installation_id)
 
-    if isinstance(update_req, UpdateEquipmentInstallationRequest):
+    if isinstance(update_req, EquipmentInstallationUpdateRequest):
         installation = await update_req.do_update(installation, current_user=current_user)
     else:
         lab = await installation.awaitable_attrs.lab

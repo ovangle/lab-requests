@@ -1,8 +1,6 @@
 from sqlalchemy import select
 from db import LocalSession
 from db.models.lab.lab import Lab
-from db.models.research import ResearchFunding
-from db.models.research.funding.research_budget import ResearchBudget
 
 
 async def seed_research_fundings(db: LocalSession):

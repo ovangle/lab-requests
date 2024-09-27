@@ -11,7 +11,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import func
 
-from db.models.research.funding.research_funding import ResearchFunding
+from db.models.uni.funding import Funding
 
 
 # revision identifiers, used by Alembic.
@@ -24,9 +24,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
 
     op.execute(
-        sa.update(ResearchFunding).values(
-            name = func.lower(ResearchFunding.name)
-        )
+        sa.update(Funding).values(name = func.lower(Funding.name))
     )
 
 

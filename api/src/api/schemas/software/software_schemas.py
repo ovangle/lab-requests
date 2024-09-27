@@ -9,10 +9,10 @@ from db.models.equipment.equipment import Equipment
 from db.models.software import Software, query_softwares
 from db.models.software.software_installation import query_software_installations
 from db.models.user import User
-from ..base import ModelCreateRequest, ModelDetail, ModelIndexPage, ModelRequestContextError, ModelUpdateRequest
+from ..base_schemas import ModelCreateRequest, ModelDetail, ModelIndexPage, ModelRequestContextError, ModelUpdateRequest
 
 if TYPE_CHECKING:
-    from .software_installation import SoftwareInstallationIndexPage
+    from .software_installation_schemas import SoftwareInstallationIndexPage
 
 
 class SoftwareDetail(ModelDetail[Software]):
@@ -27,7 +27,7 @@ class SoftwareDetail(ModelDetail[Software]):
 
     @classmethod
     async def from_model(cls, model: Software):
-        from .software_installation import SoftwareInstallationIndexPage, SoftwareInstallationDetail
+        from .software_installation_schemas import SoftwareInstallationIndexPage, SoftwareInstallationDetail
         db = local_object_session(model)
 
         installations = SoftwareInstallationIndexPage.from_selection(
@@ -35,7 +35,7 @@ class SoftwareDetail(ModelDetail[Software]):
             query_software_installations(software=model),
         )
 
-        return cls._from_base(
+        return await cls._from_base(
             model,
             name=model.name,
             description=model.description,

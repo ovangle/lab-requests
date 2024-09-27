@@ -10,7 +10,6 @@ from fastapi import Depends
 from api.auth.context import (
     get_current_authenticated_user,
 )
-from api.schemas.lab.lab_work import LabWorkDetail
 from db import LocalSession, get_db
 from db.models.lab.lab import Lab
 from db.models.lab.provisionable import (
@@ -19,12 +18,12 @@ from db.models.lab.provisionable import (
     ProvisionStatus,
     ProvisionTransition,
 )
-from db.models.research.funding import ResearchFunding
-from db.models.research.funding.research_budget import ResearchBudget
 from db.models.user import User
+from db.models.uni.funding import Budget
 
-from ..research.funding import ResearchPurchaseDetail, ResearchPurchaseOrderCreate, ResearchPurchaseOrderDetail
-from ..base import (
+from .lab_work_schemas import LabWorkDetail
+from api.schemas.uni import PurchaseDetail, PurchaseOrderCreate, PurchaseOrderDetail
+from ..base_schemas import (
     ModelCreateRequest,
     ModelDetail,
     ModelIndexPage,
@@ -44,7 +43,7 @@ def register_provision_detail_cls(action_name: str, impl: type[LabProvisionDetai
     __provision_detail_types[action_name] = impl
 
 
-class LabProvisionDetail(ResearchPurchaseOrderDetail, Generic[TProvisionable, TParams]):
+class LabProvisionDetail(PurchaseOrderDetail, Generic[TProvisionable, TParams]):
     action: str
     status: ProvisionStatus
 
@@ -53,7 +52,7 @@ class LabProvisionDetail(ResearchPurchaseOrderDetail, Generic[TProvisionable, TP
     provisionable_id: UUID
 
     budget_id: UUID | None
-    purchase: ResearchPurchaseDetail | None
+    purchase: PurchaseDetail | None
 
     work: LabWorkDetail | None
 
@@ -100,7 +99,7 @@ class LabProvisionDetail(ResearchPurchaseOrderDetail, Generic[TProvisionable, TP
         action_params: TParams,
         **kwargs
     ):
-        purchase = await ResearchPurchaseDetail.from_model(await lab_provision.awaitable_attrs.purchase)
+        purchase = await PurchaseDetail.from_model(await lab_provision.awaitable_attrs.purchase)
 
         return await cls._from_base(
             lab_provision,
@@ -182,7 +181,7 @@ class LabProvisionCreateRequest(
     action: str
     lab: UUID
 
-    purchase: ResearchPurchaseOrderCreate
+    purchase: PurchaseOrderCreate
     note: str
 
     @abstractmethod
@@ -192,7 +191,7 @@ class LabProvisionCreateRequest(
         action: str,
         *,
         lab: Lab,
-        budget: ResearchBudget | None,
+        budget: Budget | None,
         estimated_cost: float,
         purchase_url: str | None,
         purchase_instructions: str,
@@ -212,7 +211,7 @@ class LabProvisionCreateRequest(
             return await self.do_update(provision, current_user=current_user, **kwargs)
 
         lab = await Lab.get_by_id(db, self.lab)
-        budget = await ResearchBudget.get_by_id(db, self.purchase.budget)
+        budget = await Budget.get_by_id(db, self.purchase.budget)
 
         return await self._do_create_lab_provision(
             db,

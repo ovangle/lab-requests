@@ -1,8 +1,9 @@
 
+from typing import override
 from uuid import UUID
 from db.models.material import Material, MaterialInventory, query_material_inventories
 
-from ..base import ModelDetail, ModelIndex, ModelIndexPage
+from ..base_schemas import ModelDetail, ModelIndexPage, ModelIndexPage
 
 class MaterialInventoryDetail(ModelDetail[MaterialInventory]):
     material_id: UUID
@@ -22,15 +23,8 @@ class MaterialInventoryDetail(ModelDetail[MaterialInventory]):
         )
 
 
-class MaterialInventoryIndex(ModelIndex[MaterialInventory]):
-    lab: UUID | None = None
-
-    async def item_from_model(self, model: MaterialInventory) -> ModelDetail[MaterialInventory]:
+class MaterialInventoryIndexPage(ModelIndexPage[MaterialInventory, MaterialInventoryDetail]):
+    @classmethod
+    @override
+    async def item_from_model(cls, model: MaterialInventory):
         return await MaterialInventoryDetail.from_model(model)
-
-    def get_selection(self):
-        return query_material_inventories(
-            lab=self.lab
-        )
-
-MaterialInventoryIndexPage = ModelIndexPage[MaterialInventory, MaterialInventoryDetail]

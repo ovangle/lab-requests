@@ -17,7 +17,7 @@ class PurchaseStatus(Enum):
     REVIEWED = "reviewed"
 
 PURCHASE_STATUS_ENUM = postgresql.ENUM(
-    PurchaseStatus, name="research_purchase_status", create_type=False
+    PurchaseStatus, name="uni_purchase_status", create_type=False
 )
 
 class PurchaseStatusTransition(TransitionMeta[PurchaseStatus]):

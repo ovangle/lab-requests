@@ -3,16 +3,29 @@ __all__ = (
     'SoftwareIndexPage',
     'SoftwareCreateRequest',
     'SoftwareInstallationDetail',
-    'SoftwareInstallationIndexPage'
+    'SoftwareInstallationIndexPage',
+    "SoftwareLeaseDetail",
+    "SoftwareLeaseIndexPage",
+    "NewSoftwareRequest",
+    "SoftwareInstallationCreateRequest",
+    "UpgradeSoftwareRequest",
 )
 
-from .software import (
+from .software_schemas import (
     SoftwareDetail,
     SoftwareIndexPage,
     SoftwareCreateRequest,
 )
 
-from .software_installation import (
+from .software_installation_schemas import (
     SoftwareInstallationDetail,
-    SoftwareInstallationIndexPage
+    SoftwareInstallationIndexPage,
+    NewSoftwareRequest,
+    UpgradeSoftwareRequest,
+    SoftwareInstallationCreateRequest,
+    SoftwareInstallationUpdateRequest
+)
+from .software_lease_schemas import (
+    SoftwareLeaseDetail,
+    SoftwareLeaseIndexPage,
 )

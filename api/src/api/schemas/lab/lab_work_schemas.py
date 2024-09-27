@@ -1,7 +1,7 @@
 
 from db.models.lab import LabWork, LabWorkOrder
 
-from ..base import ModelDetail
+from ..base_schemas import ModelDetail
 
 class LabWorkOrderDetail(ModelDetail[LabWorkOrder]):
     pass

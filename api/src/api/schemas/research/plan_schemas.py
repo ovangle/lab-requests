@@ -17,36 +17,32 @@ from db.models.material.material_allocation import query_material_allocations
 from db.models.research.plan import ResearchPlanAttachment, query_research_plan_attachments, query_research_plan_tasks, query_research_plans
 from db.models.software.software_lease import query_software_leases
 from db.models.uni import Discipline
+from db.models.uni.funding import Funding
 from db.models.user import User
-from db.models.research.funding import ResearchFunding
 from db.models.research.plan import (
     ResearchPlan,
     ResearchPlanTask,
     ResearchPlanTaskAttrs,
 )
 
-from ..base import (
+from api.schemas.user import UserLookup, UserDetail
+from ..base_schemas import (
     ModelIndexPage,
     ModelDetail,
     ModelCreateRequest,
     ModelUpdateRequest,
     ModelLookup,
 )
-from ..user.user import UserLookup, UserDetail, lookup_user
-from ..lab.lab import LabLookup
 
-from ..equipment.equipment_lease import EquipmentLeaseDetail, EquipmentLeaseIndexPage
-from ..software.software_lease import SoftwareLeaseDetail, SoftwareLeaseIndexPage
-from ..material.material_allocation import MaterialAllocationDetail, MaterialAllocationIndexPage
-
-
-from .funding import (
-    ResearchFundingCreateRequest,
-    ResearchFundingLookup,
-    ResearchFundingDetail,
-    lookup_or_create_research_funding,
-    lookup_research_funding,
+from api.schemas.uni import (
+    FundingDetail,
 )
+
+from api.schemas.equipment import EquipmentLeaseIndexPage
+from api.schemas.software import SoftwareLeaseIndexPage
+from api.schemas.material import MaterialAllocationIndexPage
+
+
 
 
 class ResearchPlanTaskDetail(ModelDetail[ResearchPlanTask]):
@@ -91,8 +87,8 @@ class ResearchPlanTaskCreateRequest(ModelCreateRequest[ResearchPlanTask]):
     Creates a task as the last task in the current tasks for a plan
     """
 
-    lab: LabLookup | UUID
-    supervisor: UserLookup | UUID
+    lab: UUID | None = None
+    supervisor: UUID | None = None
 
     description: str
     start_date: date | None = None
@@ -108,7 +104,6 @@ class ResearchPlanTaskCreateRequest(ModelCreateRequest[ResearchPlanTask]):
         default_supervisor: User | None = None,
         **kwargs,
     ):
-        from ..lab.lab import lookup_lab
 
         if plan is None:
             raise ValueError("Plan must be provided")
@@ -135,24 +130,23 @@ class ResearchPlanTaskCreateRequest(ModelCreateRequest[ResearchPlanTask]):
         default_lab: Lab | None = None,
         default_supervisor: User | None = None,
     ) -> ResearchPlanTaskAttrs:
-        from ..lab.lab import lookup_lab
-
         assert default_lab is not None
-        if self.lab == (default_lab and default_lab.id):
-            lab = default_lab
-        else:
-            lab = await lookup_lab(db, self.lab)
-
         assert default_supervisor is not None
-        if self.supervisor == default_supervisor.id:
-            supervisor_id = default_supervisor.id
+
+        if self.lab:
+            lab = await Lab.get_by_id(db, self.lab)
         else:
-            supervisor_id = (await lookup_user(db, self.supervisor)).id
+            lab = default_lab
+
+        if self.supervisor:
+            supervisor = await User.get_by_id(db, self.supervisor)
+        else:
+            supervisor = default_supervisor
 
         return {
             "description": self.description,
             "lab_id": lab.id,
-            "supervisor_id": supervisor_id,
+            "supervisor_id": supervisor.id,
             "start_date": self.start_date,
             "end_date": self.end_date,
         }
@@ -182,7 +176,7 @@ class ResearchPlanDetail(ModelDetail[ResearchPlan]):
     description: str
     discipline: Discipline
 
-    funding: ResearchFundingDetail
+    funding: FundingDetail
 
     researcher: UserDetail
     coordinator: UserDetail
@@ -200,7 +194,7 @@ class ResearchPlanDetail(ModelDetail[ResearchPlan]):
     async def from_model(cls, model: ResearchPlan) -> ResearchPlanDetail:
         db = local_object_session(model)
 
-        funding = await ResearchFundingDetail.from_model(
+        funding = await FundingDetail.from_model(
             await model.awaitable_attrs.funding
         )
         researcher = await UserDetail.from_model(await model.awaitable_attrs.researcher)
@@ -281,15 +275,15 @@ class ResearchPlanCreateRequest(ModelCreateRequest[ResearchPlan]):
     title: str
     description: str
 
-    funding: ResearchFundingLookup | UUID
-    researcher: UserLookup | UUID
-    coordinator: UserLookup | UUID
+    funding: UUID
+    researcher: UUID
+    coordinator: UUID
 
     tasks: list[ResearchPlanTaskCreateRequest]
 
     async def do_create(self, db: LocalSession, **kwargs) -> ResearchPlan:
-        researcher = await lookup_user(db, self.researcher)
-        coordinator = await lookup_user(db, self.coordinator)
+        researcher = await User.get_by_id(db, self.researcher)
+        coordinator = await User.get_by_id(db, self.coordinator)
 
         if not researcher.primary_discipline:
             raise ValueError(
@@ -310,10 +304,12 @@ class ResearchPlanCreateRequest(ModelCreateRequest[ResearchPlan]):
             for task in self.tasks
         ]
 
+        funding = await Funding.get_by_id(db, self.funding)
+
         plan = ResearchPlan(
             self.title,
             self.description,
-            funding=(await lookup_research_funding(db, self.funding)),
+            funding=funding,
             researcher=researcher.id,
             coordinator=coordinator.id,
             lab=default_lab,

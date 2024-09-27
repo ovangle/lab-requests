@@ -16,8 +16,6 @@ from db.models.base import Base
 from db.models.lab.lab import Lab
 from db.models.lab.provisionable.provisionable import Provisionable
 from db.models.lab.allocatable import Allocatable
-from db.models.research.funding import ResearchFunding
-from db.models.research.funding.research_budget import ResearchBudget
 from db.models.user import User
 
 from ..provisionable import LabProvision

@@ -10,24 +10,23 @@ from db.models.base import Base
 from db.models.base.base import model_id
 from db.models.base.errors import ModelException
 from db.models.fields import uuid_pk
-from db.models.research.funding.purchase import ResearchPurchaseOrder
 from db.models.user import User
 
-from .research_funding import ResearchFunding
+from .funding import Funding
 
-from .purchase import ResearchPurchase
+from .purchase import Purchase, PurchaseOrder
 
 if TYPE_CHECKING:
     from db.models.lab import Lab
-    from ..plan import ResearchPlan
+    from db.models.research.plan import ResearchPlan
 
-class ResearchBudget(Base):
-    __tablename__ = "research_budget"
+class Budget(Base):
+    __tablename__ = "uni_budget"
 
     id: Mapped[uuid_pk] = mapped_column()
 
-    funding_id: Mapped[UUID] = mapped_column(ForeignKey("research_funding.id"))
-    funding: Mapped[ResearchFunding] = relationship()
+    funding_id: Mapped[UUID] = mapped_column(ForeignKey("uni_funding.id"))
+    funding: Mapped[Funding] = relationship()
 
     lab_id: Mapped[UUID] = mapped_column(ForeignKey("lab.id"))
     # lab: Mapped[Lab] = relationship()
@@ -39,7 +38,7 @@ class ResearchBudget(Base):
     def is_lab_budget(self):
         return self.research_plan_id is None
 
-    def __init__(self, funding: ResearchFunding, lab: Lab | None = None, research: ResearchPlan | None = None, **kwargs):
+    def __init__(self, funding: Funding, lab: Lab | None = None, research: ResearchPlan | None = None, **kwargs):
         self.funding_id = funding.id
 
         if research:
@@ -61,18 +60,18 @@ class ResearchBudget(Base):
         super().__init__(**kwargs)
 
 
-    items: Mapped[list[ResearchPurchase]] = relationship(
+    items: Mapped[list[Purchase]] = relationship(
         back_populates="budget",
-        order_by=ResearchPurchase.index,
+        order_by=Purchase.index,
         cascade="all, delete-orphan",
     )
 
     async def item_count(self) -> int:
         using = local_object_session(self)
         result = await using.scalar(
-            select(func.count(ResearchPurchase.id))
-            .select_from(ResearchBudget, ResearchPurchase)
-            .where(ResearchBudget.id == self.id)
+            select(func.count(Purchase.id))
+            .select_from(Budget, Purchase)
+            .where(Budget.id == self.id)
         )
         if result is None:
             raise ModelException('No value returned from count')
@@ -80,12 +79,12 @@ class ResearchBudget(Base):
 
     async def append_purchase(
         self,
-        order: ResearchPurchaseOrder,
-    ) -> ResearchPurchase:
+        order: PurchaseOrder,
+    ) -> Purchase:
         using = local_object_session(self)
         ordered_by = await order.awaitable_attrs.created_by
 
-        item = ResearchPurchase(
+        item = Purchase(
             order,
             budget=self,
             index=await self.item_count(),
@@ -96,32 +95,32 @@ class ResearchBudget(Base):
         await using.commit()
         return item
 
-def query_research_budgets(
-    funding: Select[tuple[ResearchFunding]] | ResearchFunding | UUID | None = None,
+def query_budgets(
+    funding: Select[tuple[Funding]] | Funding | UUID | None = None,
     lab: Lab | UUID | None = None,
     research_plan: ResearchPlan | UUID | None = None
-) -> Select[tuple[ResearchBudget]]:
+) -> Select[tuple[Budget]]:
     where_clauses = []
 
     if isinstance(funding, Select):
         subquery = select(funding.c.id)
 
         where_clauses.append(
-            ResearchBudget.funding_id.in_(subquery)
+            Budget.funding_id.in_(subquery)
         )
     elif funding is not None:
         where_clauses.append(
-            ResearchBudget.funding_id == model_id(funding)
+            Budget.funding_id == model_id(funding)
         )
 
     if lab:
         where_clauses.append(
-            ResearchBudget.lab_id == model_id(lab)
+            Budget.lab_id == model_id(lab)
         )
 
     if research_plan:
         where_clauses.append(
-            ResearchBudget.research_plan_id == model_id(research_plan)
+            Budget.research_plan_id == model_id(research_plan)
         )
 
-    return select(ResearchBudget).where(*where_clauses)
+    return select(Budget).where(*where_clauses)

@@ -17,7 +17,7 @@ from db.models.base.errors import ModelException
 from db.models.fields import uuid_pk
 
 from db.models.user import User
-from db.models.research.funding import ResearchFunding, ResearchBudget, ResearchPurchase, ResearchPurchaseOrder
+from db.models.uni.funding import Funding, Budget, Purchase, PurchaseOrder
 
 from ..lab import Lab
 from ..work import LabWork, LabWorkOrder
@@ -37,7 +37,6 @@ from .provision_status import (
     _provision_transition_to_json,
     ProvisionStatus,
 )
-
 
 class ProvisionType:
     name: str
@@ -68,7 +67,7 @@ TProvisionable = TypeVar("TProvisionable", bound=Provisionable, covariant=True)
 TParams = TypeVar("TParams")
 
 class LabProvision(
-    ResearchPurchaseOrder,
+    PurchaseOrder,
     LabWorkOrder,
     Base,
     Generic[TProvisionable, TParams]
@@ -122,7 +121,7 @@ class LabProvision(
         action: str,
         action_params: TParams,
         lab: Lab | UUID,
-        budget: ResearchBudget,
+        budget: Budget,
         estimated_cost: float,
         purchase_url: str | None,
         purchase_instructions: str,
@@ -131,7 +130,6 @@ class LabProvision(
         requested_by: User,
     ):
         from db.models.lab.work import LabWork
-        from db.models.research.funding import ResearchPurchase
 
         self.id = uuid4()
         self.status = ProvisionStatus.REQUESTED
@@ -309,7 +307,7 @@ class LabProvision(
         return self.purchase_id is not None
 
     async def has_pending_purchase(self):
-        purchase: ResearchPurchase | None = await self.awaitable_attrs.purchase
+        purchase: Purchase | None = await self.awaitable_attrs.purchase
         return bool(purchase) and not purchase.is_pending
 
     @property

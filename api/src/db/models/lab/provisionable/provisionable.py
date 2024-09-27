@@ -10,10 +10,10 @@ from sqlalchemy.orm import Mapped
 from db import LocalSession, local_object_session
 from db.models.base import Base
 from db.models.lab.lab import Lab
+from db.models.uni.funding import Budget
 from db.models.user import User
 
 if TYPE_CHECKING:
-    from db.models.research.funding import ResearchBudget
     from .lab_provision import LabProvision
 
 class Provisionable(Base):
@@ -49,7 +49,7 @@ class Provisionable(Base):
         *,
         params: Any,
         lab: Lab,
-        budget: ResearchBudget,
+        budget: Budget,
         estimated_cost: float = 0.0,
         purchase_url: str | None,
         purchase_instructions: str,

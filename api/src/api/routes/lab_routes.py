@@ -2,16 +2,20 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from api.auth.context import get_current_authenticated_user
-from api.schemas.lab.lab_provision import LabProvisionDetail, LabProvisionIndexPage, LabProvisionRequest
 from db import get_db
 from db.models.lab.lab import Lab, query_labs
 from db.models.lab.provisionable.lab_provision import LabProvision, query_lab_provisions
 from db.models.uni.campus import Campus
 from db.models.uni.discipline import Discipline
 
-from api.schemas.lab import LabIndexPage, LabDetail
-from api.schemas.uni.campus import CampusLookup, lookup_campus
-from api.schemas.lab import LabDetail
+from api.schemas.uni import CampusLookup, lookup_campus
+from api.schemas.lab import (
+    LabIndexPage,
+    LabDetail,
+    LabProvisionDetail,
+    LabProvisionIndexPage,
+    LabProvisionRequest
+)
 
 labs = APIRouter(prefix="/labs", tags=["labs"])
 

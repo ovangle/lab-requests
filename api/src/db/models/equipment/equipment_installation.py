@@ -13,7 +13,7 @@ from db.models.lab.installable.lab_installation import LabInstallation, LabInsta
 from db.models.lab.lab import Lab, query_labs
 from db.models.lab.provisionable import LabProvision, ProvisionStatus, provisionable_action
 from db.models.lab.provisionable.provision_status import ProvisionStatus
-from db.models.research.funding.research_budget import ResearchBudget
+from db.models.uni.funding import Budget
 from db.models.uni.campus import Campus
 from db.models.uni.discipline import Discipline
 from db.models.user import User
@@ -108,7 +108,7 @@ class EquipmentInstallation(LabInstallation[Equipment], Base):
         self,
         *,
         num_required: int = 1,
-        budget: ResearchBudget,
+        budget: Budget,
         estimated_cost: float = 0.0,
         purchase_url: str | None = None,
         purchase_instructions: str  = '',
@@ -142,7 +142,7 @@ class EquipmentInstallation(LabInstallation[Equipment], Base):
         *,
         destination_lab: Lab,
         num_transferred: int = 1,
-        budget: ResearchBudget,
+        budget: Budget,
         estimated_cost: float = 0.0,
         purchase_url: str | None = None,
         purchase_instructions: str  = '',

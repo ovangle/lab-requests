@@ -8,18 +8,18 @@ from db import LocalSession
 from db.models.base import Base, DoesNotExist
 from db.models.fields import uuid_pk
 
-class ResearchFundingDoesNotExist(DoesNotExist):
+class FundingDoesNotExist(DoesNotExist):
     def __init__(self, *, for_name: str | None = None, for_id: UUID | None = None):
         if for_name:
-            msg = f"No research funding with name {for_name}"
+            msg = f"No funding with name {for_name}"
             return super().__init__(msg)
         if for_id:
             return super().__init__("ResearchFunding", for_id=for_id)
         raise ValueError("Either for_id or for_name must be provided")
 
 
-class ResearchFunding(Base):
-    __tablename__ = "research_funding"
+class Funding(Base):
+    __tablename__ = "uni_funding"
 
     id: Mapped[uuid_pk] = mapped_column()
 
@@ -28,19 +28,19 @@ class ResearchFunding(Base):
 
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID):
-        instance = await db.get(ResearchFunding, id)
+        instance = await db.get(Funding, id)
         if not instance:
-            raise ResearchFundingDoesNotExist(for_id=id)
+            raise FundingDoesNotExist(for_id=id)
 
         return instance
 
     @classmethod
     async def get_for_name(cls, db: LocalSession, name: str):
         instance = await db.scalar(
-            select(ResearchFunding).where(ResearchFunding.name == name)
+            select(Funding).where(Funding.name == name)
         )
         if not instance:
-            raise ResearchFundingDoesNotExist(for_name=name)
+            raise FundingDoesNotExist(for_name=name)
         return instance
 
     @property
@@ -48,20 +48,20 @@ class ResearchFunding(Base):
         return self.name == 'lab'
 
 
-def query_research_fundings(
+def query_fundings(
     name_eq: str | None = None, text: str | None = None
-) -> Select[tuple[ResearchFunding]]:
+) -> Select[tuple[Funding]]:
     clauses: list = []
 
     if name_eq is not None:
-        clauses.append(ResearchFunding.name.ilike(name_eq))
+        clauses.append(Funding.name.ilike(name_eq))
 
     if text is not None:
         clauses.append(
             or_(
-                ResearchFunding.name.ilike(f"%{text}%"),
-                ResearchFunding.description.ilike(f"%{text}%"),
+                Funding.name.ilike(f"%{text}%"),
+                Funding.description.ilike(f"%{text}%"),
             )
         )
 
-    return select(ResearchFunding).where(*clauses)
+    return select(Funding).where(*clauses)

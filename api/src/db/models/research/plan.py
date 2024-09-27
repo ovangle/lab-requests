@@ -37,7 +37,7 @@ from db.models.uni.discipline import DISCIPLINE_ENUM, Discipline
 from ..base import Base, DoesNotExist
 
 from db.models.user import User
-from .funding import ResearchFunding
+from db.models.uni.funding import Funding
 
 if TYPE_CHECKING:
     from db.models.equipment import EquipmentLease
@@ -251,8 +251,8 @@ class ResearchPlan(LabAllocationConsumer, Base):
     researcher: Mapped[User] = relationship(foreign_keys=[researcher_id])
 
     # The funding that is applicable to this plan
-    funding_id: Mapped[UUID] = mapped_column(ForeignKey("research_funding.id"))
-    funding: Mapped[ResearchFunding] = relationship()
+    funding_id: Mapped[UUID] = mapped_column(ForeignKey("uni_funding.id"))
+    funding: Mapped[Funding] = relationship()
 
     # The lab tech who is responsible for allocating the tasks associated with this plan
     coordinator_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
@@ -323,7 +323,7 @@ class ResearchPlan(LabAllocationConsumer, Base):
         researcher: User | UUID,
         coordinator: User | UUID,
         lab: Lab | UUID,
-        funding: ResearchFunding | UUID | None,
+        funding: Funding | UUID | None,
         tasks: list[ResearchPlanTaskAttrs],
     ):
         super().__init__(
@@ -334,7 +334,7 @@ class ResearchPlan(LabAllocationConsumer, Base):
             coordinator_id=(
                 coordinator.id if isinstance(coordinator, User) else coordinator
             ),
-            funding_id=funding.id if isinstance(funding, ResearchFunding) else funding,
+            funding_id=funding.id if isinstance(funding, Funding) else funding,
             lab=lab,
         )
 

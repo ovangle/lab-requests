@@ -70,7 +70,7 @@ async def create_type(connection: AsyncConnection, enum_type: postgresql.ENUM):
 
 async def create_db_types(db_binding):
     from db.models.uni.discipline import DISCIPLINE_ENUM
-    from db.models.research.funding import PURCHASE_STATUS_ENUM
+    from db.models.uni.funding import PURCHASE_STATUS_ENUM
 
     from db.models.lab.allocatable import ALLOCATION_STATUS_ENUM
     from db.models.lab.provisionable import PROVISION_STATUS_ENUM
@@ -92,13 +92,13 @@ async def create_db_types(db_binding):
     await do_create(MATERIAL_INVENTORY_EXPORT_TYPE_ENUM)
 
 def _import_models():
+    import db.models.uni
+    import db.models.uni.funding
     import db.models.user
     import db.models.lab
     import db.models.material
-    import db.models.research.funding
     import db.models.research.plan
     import db.models.software
-    import db.models.uni
     import db.models.equipment
 
 async def init_db():

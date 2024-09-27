@@ -7,19 +7,32 @@ __all__ = (
     "EquipmentInstallationIndexPage",
     "EquipmentInstallationProvisionCreateRequest",
     "NewEquipmentRequest",
-    "CreateEquipmentInstallationRequest"
+    "CreateEquipmentInstallationRequest",
+    "EquipmentInstallationProvisionDetail",
+    "TransferEquipmentRequest",
+    "EquipmentInstallationUpdateRequest",
+    "EquipmentLeaseDetail",
+    "EquipmentLeaseIndexPage"
 )
 
-from .equipment import (
+from .equipment_schemas import (
     EquipmentDetail,
     EquipmentIndexPage,
     EquipmentCreateRequest,
     EquipmentUpdateRequest,
 )
-from .equipment_installation import (
+from .equipment_installation_schemas import (
     EquipmentInstallationDetail,
     EquipmentInstallationIndexPage,
     EquipmentInstallationProvisionCreateRequest,
     NewEquipmentRequest,
-    CreateEquipmentInstallationRequest
+    CreateEquipmentInstallationRequest,
+    EquipmentInstallationProvisionDetail,
+    TransferEquipmentRequest,
+    EquipmentInstallationUpdateRequest
+)
+
+from .equipment_lease_schemas import (
+    EquipmentLeaseDetail,
+    EquipmentLeaseIndexPage,
 )

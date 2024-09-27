@@ -1,13 +1,13 @@
 from typing import override
 from uuid import UUID
 
-from api.schemas.base import ModelDetail, ModelIndexPage
 from db import local_object_session
 from db.models.material import MaterialAllocation, Material, MaterialInventory, MaterialProduction, MaterialConsumption
 
-from api.schemas.lab.lab_allocation import LabAllocationDetail
 from db.models.material.material_allocation import query_material_allocations, query_material_consumptions, query_material_productions
 
+from api.schemas.lab import LabAllocationDetail
+from ..base_schemas import ModelDetail, ModelIndexPage
 
 class MaterialProductionDetail(ModelDetail[MaterialProduction]):
     output_material_id: UUID

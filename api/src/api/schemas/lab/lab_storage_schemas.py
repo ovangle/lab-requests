@@ -11,7 +11,7 @@ from db.models.lab.storable import (
     query_lab_storage_containers,
 )
 
-from ..base import ModelDetail, ModelIndexPage
+from ..base_schemas import ModelDetail, ModelIndexPage
 
 
 class LabStorageStrategyDetail(ModelDetail[LabStorageStrategy]):

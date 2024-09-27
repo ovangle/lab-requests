@@ -5,9 +5,8 @@ from uuid import UUID
 
 from db import LocalSession
 from db.models.uni import Campus
-from db.models.uni.campus import query_campuses
 
-from ..base import (
+from ..base_schemas import (
     ModelDetail,
     ModelLookup,
     ModelCreateRequest,

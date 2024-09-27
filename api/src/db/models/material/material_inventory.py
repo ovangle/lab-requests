@@ -12,14 +12,14 @@ from sqlalchemy.dialects import postgresql
 
 from db import LocalSession, local_object_session
 from db.models.base import Base, model_id, DoesNotExist
+from db.models.base.errors import ModelException
 from db.models.fields import uuid_pk
 
 from db.models.lab.allocatable import Allocatable
 from db.models.lab.disposable.lab_disposal import LabDisposal
 from db.models.lab.lab import Lab
 from db.models.lab.storable import LabStorageContainer
-from db.models.research.funding.purchase import ResearchPurchase
-from db.models.research.funding.research_budget import ResearchBudget
+from db.models.uni.funding import Purchase, Budget
 from db.models.user import User
 
 from .material import Material
@@ -102,11 +102,11 @@ class MaterialInventory(Allocatable, Base):
             )
         )
 
-    async def procurements_since_last_measured(self) -> ScalarResult[MaterialInventoryProcurement]:
-        return await self.imports_since_last_measured(MaterialInventoryImportType.PROCUREMENT)
+    # async def procurements_since_last_measured(self) -> ScalarResult[MaterialInventoryProcurement]:
+    #    return await self.imports_since_last_measured(MaterialInventoryImportType.PROCUREMENT)
 
-    async def productions_since_last_measured(self) -> ScalarResult[MaterialProduction]:
-        return await self.imports_since_last_measured(MaterialInventoryImportType.PRODUCTION)
+    # async def productions_since_last_measured(self) -> ScalarResult[MaterialProduction]:
+    #     return await self.imports_since_last_measured(MaterialInventoryImportType.PRODUCTION)
 
     exports: Mapped[list[MaterialInventoryExport]] = relationship(back_populates="inventory")
 
@@ -127,11 +127,12 @@ class MaterialInventory(Allocatable, Base):
             )
         )
 
-    async def dispositions_since_last_measured(self) -> ScalarResult[MaterialInventoryDisposition]:
-        return await self.exports_since_last_measured(MaterialInventoryExportType.DISPOSITION)
+    # async def dispositions_since_last_measured(self) -> ScalarResult[MaterialInventoryDisposition]:
+    #    return await self.exports_since_last_measured(MaterialInventoryExportType.DISPOSITION)
 
-    async def consumtpions_since_last_measured(self) -> ScalarResult[MaterialInventoryDisposition]:
-        return await self.exports_since_last_measured(MaterialInventoryExportType.DISPOSITION)
+    # async def consumtpions_since_last_measured(self) -> ScalarResult[MaterialInventoryDisposition]:
+    #    return await self.exports_since_last_measured(MaterialInventoryExportType.DISPOSITION)
+
     last_measured_quantity: Mapped[float] = mapped_column(postgresql.FLOAT, default=0.0)
     last_measured_at: Mapped[datetime] = mapped_column(postgresql.TIMESTAMP)
     last_measured_by_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
@@ -218,18 +219,18 @@ class MaterialInventory(Allocatable, Base):
         self, quantity: float, by: User, note: str
     ) -> InventoryMeasurement:
         self._set_last_measurement(quantity, by, note, previous=self.last_measurement)
-        await self.save()
+        await self.__save()
         return self.last_measurement
 
 
-    async def record_procurement(self, purchase: ResearchPurchase, quantity: float) -> MaterialInventoryProcurement:
+    async def record_procurement(self, purchase: Purchase, quantity: float) -> MaterialInventoryProcurement:
         db = local_object_session(self)
         procurement = MaterialInventoryProcurement(self, purchase, quantity=quantity)
         db.add(procurement)
         await db.commit()
         return procurement
 
-    async def record_disposition(self, quantity: float) -> MaterialInventoryDisposition:
+    async def record_disposition(self, quantity: float, recorded_by: User) -> MaterialInventoryDisposition:
         db = local_object_session(self)
 
         material: Material = await self.awaitable_attrs.material
@@ -237,24 +238,32 @@ class MaterialInventory(Allocatable, Base):
 
         lab_disposal = cast(LabDisposal, None)
 
-        disposition = MaterialInventoryDisposition(self, lab_disposal, quantity=quantity)
+        disposition = MaterialInventoryDisposition(self, lab_disposal, quantity=quantity, recorded_by=recorded_by)
         db.add(disposition)
         await db.commit()
         return disposition
 
     @override
-    async def save(self):
+    async def __save(self):
+        db = local_object_session(self)
         del self.previous_inventory_measurements
-        return await super().save()
+        db.add(self)
+        await db.commit()
+        return self
+
 
 
 def query_material_inventories(
-    lab: Lab | UUID | None = None
+    lab: Lab | UUID | None = None,
+    material: Material | UUID | None = None,
 ) -> Select[tuple[MaterialInventory]]:
     where_clauses: list = []
 
     if lab:
         where_clauses.append(MaterialInventory.lab_id == model_id(lab))
+
+    if material:
+        where_clauses.append(MaterialInventory.material_id == model_id(material))
 
     return select(MaterialInventory).where(*where_clauses)
 
@@ -309,11 +318,15 @@ class MaterialInventoryProcurement(MaterialInventoryImport):
 
     id: Mapped[UUID] = mapped_column(ForeignKey("material_inventory_import.id"), primary_key=True)
 
-    purchase_id: Mapped[UUID] = mapped_column(ForeignKey("research_purchase.id"))
-    purchase: Mapped[ResearchPurchase] = relationship()
+    purchase_id: Mapped[UUID] = mapped_column(ForeignKey("uni_purchase.id"))
+    purchase: Mapped[Purchase] = relationship()
 
-    def __init__(self, inventory: MaterialInventory | UUID, purchase: ResearchPurchase, quantity: float, **kw):
+    def __init__(self, inventory: MaterialInventory | UUID, purchase: Purchase, quantity: float, **kw):
         self.puchase_id = model_id(purchase)
+
+        if not purchase.paid_by_id:
+            raise ModelException(f"Purchase {purchase.id} not yet paid")
+
         super().__init__(
             inventory,
             recorded_by=purchase.paid_by_id,

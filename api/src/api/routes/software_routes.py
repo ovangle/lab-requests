@@ -3,25 +3,26 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 
 from api.auth.context import get_current_authenticated_user
-from api.schemas.equipment.equipment import (
-    EquipmentCreateRequest,
-    EquipmentDetail,
-    EquipmentIndexPage,
-)
-from api.schemas.software.software import SoftwareCreateRequest, SoftwareDetail, SoftwareIndexPage
-from api.schemas.software.software_installation import NewSoftwareRequest, SoftwareInstallationCreateRequest, SoftwareInstallationDetail, SoftwareInstallationIndexPage
-from api.schemas.software.software_lease import SoftwareLeaseIndexPage
-from db import get_db
-from db.models.equipment.equipment import Equipment, query_equipments
-from db.models.equipment.equipment_installation import EquipmentInstallation, query_equipment_installation_provisions, query_equipment_installations
-from db.models.equipment.equipment_lease import query_equipment_leases
-from db.models.lab.provisionable.lab_provision import LabProvision
 
-from api.schemas.equipment.equipment_installation import CreateEquipmentInstallationRequest, EquipmentInstallationDetail, EquipmentInstallationIndexPage, EquipmentInstallationProvisionDetail, NewEquipmentRequest, TransferEquipmentRequest, UpdateEquipmentInstallationRequest
-from api.schemas.equipment.equipment_lease import EquipmentLeaseIndexPage
-from api.schemas.lab.lab_provision import LabProvisionDetail, LabProvisionIndexPage
-from db.models.software.software import Software, query_softwares
-from db.models.software.software_installation import SoftwareInstallation, query_software_installation_provisions
+from db import get_db
+from db.models.lab.provisionable.lab_provision import LabProvision
+from db.models.software import Software, query_softwares, SoftwareInstallation, query_software_installation_provisions
+from db.models.software.software_installation import SoftwareInstallation, query_software_installation_provisions, query_software_installations
+
+from api.schemas.lab import LabProvisionDetail, LabProvisionIndexPage
+from api.schemas.software import (
+    SoftwareCreateRequest,
+    SoftwareDetail,
+    SoftwareIndexPage,
+    NewSoftwareRequest,
+    SoftwareInstallationCreateRequest,
+    SoftwareInstallationDetail,
+    SoftwareInstallationIndexPage,
+    SoftwareLeaseIndexPage,
+    SoftwareInstallationUpdateRequest,
+    UpgradeSoftwareRequest
+)
+from db.models.software.software_lease import query_software_leases
 
 softwares = APIRouter(prefix="/softwares")
 
@@ -60,19 +61,19 @@ async def create_software(create_req: SoftwareCreateRequest, db=Depends(get_db),
 
 @softwares.get("/software/{software_id}")
 async def read_equipment(software_id: UUID, db=Depends(get_db)) -> SoftwareDetail:
-    equipment = await Software.get_for_id(db, software_id)
+    equipment = await Software.get_by_id(db, software_id)
     return await SoftwareDetail.from_model(equipment)
 
 @softwares.get("/installation")
 async def index_equipment_installations(
     lab: UUID | None = None,
-    equipment: UUID | None = None,
+    software: UUID | None = None,
     page_index: int = 1,
     db=Depends(get_db)
 ):
     return await SoftwareInstallationIndexPage.from_selection(
         db,
-        query_equipment_installations(lab=lab, equipment=equipment),
+        query_software_installations(lab=lab, software=software),
         page_index=page_index
     )
 
@@ -80,13 +81,13 @@ async def index_equipment_installations(
 async def create_installation(
     create_req: SoftwareInstallationCreateRequest,
     db=Depends(get_db), current_user=Depends(get_current_authenticated_user)
-) -> EquipmentInstallationDetail:
+) -> SoftwareInstallationDetail:
 
     installation_or_provision = await create_req.do_create(db, current_user=current_user)
     if isinstance(installation_or_provision, LabProvision):
-        installation = await EquipmentInstallation.get_by_id(db, installation_or_provision.action_params["installation_id"])
+        installation = await SoftwareInstallation.get_by_id(db, installation_or_provision.action_params["installation_id"])
 
-    return await EquipmentInstallationDetail.from_model(installation)
+    return await SoftwareInstallationDetail.from_model(installation)
 
 @softwares.post("/installation/new")
 async def new_software_installation(
@@ -100,9 +101,9 @@ async def new_software_installation(
 @softwares.get("/installation/{installation_id}")
 async def read_software_installation(
     installation_id: UUID, db=Depends(get_db)
-) -> EquipmentInstallationDetail:
+) -> SoftwareInstallationDetail:
     software_installation = await SoftwareInstallation.get_by_id(db, installation_id)
-    return await EquipmentInstallationDetail.from_model(software_installation)
+    return await SoftwareInstallationDetail.from_model(software_installation)
 
 @softwares.put("/installation/{installation_id}")
 async def update_equipment_installation(
@@ -158,9 +159,9 @@ async def create_installation_provision(
 
 @softwares.get("/installation/{installation_id}/lease")
 async def index_installation_leases(installation_id: UUID, db=Depends(get_db)) -> SoftwareLeaseIndexPage:
-    return await EquipmentLeaseIndexPage.from_selection(
+    return await SoftwareLeaseIndexPage.from_selection(
         db,
-        query_equipment_leases(
+        query_software_leases(
             installation=installation_id
         )
     )
@@ -168,14 +169,12 @@ async def index_installation_leases(installation_id: UUID, db=Depends(get_db)) -
 @softwares.get("/software/provision")
 @softwares.get("/softwares/provision/{action_name}")
 async def index_software_provisions(
-    action_name: Literal["new_software", "upgrade_software"] | None = None,
+    action: Literal["new_software", "upgrade_software"] | None = None,
     page_index: int = 1,
     db = Depends(get_db)
 ):
     return await LabProvisionIndexPage.from_selection(
         db,
-        query_software_installation_provisions(
-            action_name=action_name
-        ),
+        query_software_installation_provisions(action=action),
         page_index=page_index
     )

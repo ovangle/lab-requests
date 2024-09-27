@@ -9,13 +9,12 @@ from db.models.uni.discipline import Discipline
 from db.models.user import User, UserDomain
 
 
-from ..base import (
+from ..base_schemas import (
     ModelLookup,
     ModelDetail,
     ModelUpdateRequest,
     ModelIndexPage,
 )
-from ..uni.campus import CampusLookup
 
 
 class UserDetail(ModelDetail[User]):

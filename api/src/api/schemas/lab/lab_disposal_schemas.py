@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy import select
 from db.models.lab.disposable import LabDisposal, DisposalStrategy, query_lab_disposals
 
-from ..base import ModelDetail, ModelIndexPage
+from ..base_schemas import ModelDetail, ModelIndexPage
 
 class DisposalStrategyDetail(ModelDetail[DisposalStrategy]):
     name: str

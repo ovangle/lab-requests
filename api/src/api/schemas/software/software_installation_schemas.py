@@ -4,7 +4,7 @@ from uuid import UUID
 from db import LocalSession
 from db.models.lab.installable.lab_installation import LabInstallation
 from db.models.lab.provisionable.lab_provision import LabProvision
-from db.models.research.funding.research_budget import ResearchBudget
+from db.models.uni.funding import Budget
 from db.models.software import (
     Software,
     SoftwareInstallation,
@@ -12,19 +12,24 @@ from db.models.software import (
     query_software_installation_provisions
 )
 from db.models.lab import Lab
-from db.models.research.funding import ResearchFunding
 from db.models.software.software_installation import NewSoftwareParams, SoftwareInstallationProvisionParams, UpgradeSoftwareParams
 from db.models.software.software_lease import query_software_leases
 from db.models.user import User
-from ..base import (
+
+
+from api.schemas.lab import (
+    LabInstallationCreateRequest, LabInstallationDetail, LabInstallationProvisionCreateRequest, LabInstallationProvisionDetail,
+    LabInstallationUpdateRequest,
+    register_provision_detail_cls
+)
+
+from ..base_schemas import (
     ModelIndexPage,
     ModelRequestContextError,
 )
-from ..lab.lab_installation import LabInstallationCreateRequest, LabInstallationDetail, LabInstallationProvisionCreateRequest, LabInstallationProvisionDetail
-from ..lab.lab_provision import LabProvisionApprovalRequest, LabProvisionCancelRequest, LabProvisionCompleteRequest, LabProvisionDenialRequest, LabProvisionPurchaseRequest, LabProvisionRejectionRequest, register_provision_detail_cls
 
 from api.schemas.software import SoftwareCreateRequest
-from .software import SoftwareDetail
+from .software_schemas import SoftwareDetail
 
 class SoftwareInstallationDetail(LabInstallationDetail[SoftwareInstallation]):
     software_id: UUID
@@ -33,7 +38,7 @@ class SoftwareInstallationDetail(LabInstallationDetail[SoftwareInstallation]):
 
     @classmethod
     def _allocation_index_from_installation(cls, installation: LabInstallation[Any]):
-        from .software_lease import SoftwareLeaseDetail, SoftwareLeaseIndexPage
+        from .software_lease_schemas import SoftwareLeaseIndexPage
 
         async def index(db: LocalSession):
             return await SoftwareLeaseIndexPage.from_selection(
@@ -88,6 +93,11 @@ class SoftwareInstallationCreateRequest(LabInstallationCreateRequest[SoftwareIns
         await db.commit()
         return software_installation
 
+class SoftwareInstallationUpdateRequest(LabInstallationUpdateRequest[SoftwareInstallation]):
+    async def do_update(self, model: SoftwareInstallation, current_user: User | None = None, **kwargs):
+        if not current_user:
+            raise ModelRequestContextError("No current user")
+        raise NotImplementedError
 
 class SoftwareInstallationIndexPage(ModelIndexPage[SoftwareInstallation, SoftwareInstallationDetail]):
     @classmethod
@@ -181,7 +191,7 @@ class NewSoftwareRequest(_SoftwareInstallationProvisionCreateRequest):
         db: LocalSession,
         installation: LabInstallation,
         *,
-        budget: ResearchBudget,
+        budget: Budget,
         estimated_cost: float,
         purchase_url: str,
         purchase_instructions: str,
@@ -208,7 +218,7 @@ class UpgradeSoftwareRequest(_SoftwareInstallationProvisionCreateRequest):
         db: LocalSession,
         installation: LabInstallation,
         *,
-        budget: ResearchBudget,
+        budget: Budget,
         estimated_cost: float,
         purchase_url: str,
         purchase_instructions: str,

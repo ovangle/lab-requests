@@ -47,7 +47,7 @@ TMeta = TypeVar("TMeta", bound=TransitionMeta)
 class StatusTransitionTypeDecorator(TypeDecorator, Generic[TStatus, TMeta]):
     impl = postgresql.JSONB
 
-    def __init__(self, status: TStatus, repeatable: bool = False):
+    def __init__(self, status: TStatus, repeatable: bool = False, **kwargs):
         """
         status: The target status of the transition that was performed.
         repeatable:
@@ -59,7 +59,7 @@ class StatusTransitionTypeDecorator(TypeDecorator, Generic[TStatus, TMeta]):
         """
         self.status = status
         self.repeatable = repeatable
-        super().__init__()
+        super().__init__(**kwargs)
 
     @abstractmethod
     def transition_from_json(self, json: dict[str, Any]) -> TransitionMeta[TStatus]:

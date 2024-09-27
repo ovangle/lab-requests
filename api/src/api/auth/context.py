@@ -4,12 +4,12 @@ from typing import Annotated, TypeVar
 
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from api.schemas.base import ModelRequest
 from db import LocalSession, get_db
 
 from db.models.base.base import Base
 from db.models.user import User, UserDoesNotExist, UserDomain, NativeUserCredentials
 
+from api.schemas.base_schemas import ModelRequest
 from .schemas import Token, parse_user_email_from_token, invalid_credentials_error
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
