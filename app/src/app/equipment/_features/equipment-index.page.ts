@@ -43,7 +43,7 @@ import { MatCardModule } from '@angular/material/card';
     <h2>Equipment</h2>
 
     <div class="equipment-controls">
-      <a mat-button [routerLink]="['/', {outlets: { form: 'equipment/equipment' }}]">
+      <a mat-button [routerLink]="['/', {outlets: { form: ['equipment/equipment'] }}]">
         Add equipment
       </a>
     </div>

@@ -21,7 +21,7 @@ import { UniDisciplineSelect } from "src/app/uni/discipline/discipline-select.co
 import { UniCampusSelect } from "src/app/uni/campus/campus-select.component";
 import { Discipline } from "src/app/uni/discipline/discipline";
 import { map, of, shareReplay, switchMap } from "rxjs";
-import { EquipmentContext } from "../equipment-context";
+import { EquipmentContext, provideEquipmentContextFromRoute } from "../equipment-context";
 
 /**
  * Create an entirely new piece of equipment, and declare any
@@ -59,7 +59,7 @@ import { EquipmentContext } from "../equipment-context";
     }
     `,
     providers: [
-        EquipmentContext
+        provideEquipmentContextFromRoute({isOptionalParam: true})
     ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -68,17 +68,9 @@ export class EquipmentFormPage {
     route = inject(ActivatedRoute);
     readonly _formPane = inject(ScaffoldFormPaneControl);
     readonly _equipmentService = inject(EquipmentService);
+    readonly _equipmentContext = inject(EquipmentContext);
 
-    readonly equipment$ = this.route.paramMap.pipe(
-        map(params => params.get('equipment')),
-        switchMap(equipmentId => {
-            if (equipmentId) {
-                return this._equipmentService.fetch(equipmentId);
-            }
-            return of(null);
-        }),
-        shareReplay(1)
-    );
+    readonly equipment$ = this._equipmentContext.mCommitted$;
 
     _onEquipmentFormSubmit(value: EquipmentFormGroup['value']) {
         const request: EquipmentCreateRequest = {

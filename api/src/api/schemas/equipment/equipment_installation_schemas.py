@@ -30,7 +30,7 @@ from ..base import (
 from ..lab.lab_installation import LabInstallationCreateRequest, LabInstallationDetail, LabInstallationProvisionCreateRequest, LabInstallationProvisionDetail
 
 if TYPE_CHECKING:
-    from .equipment_lease import EquipmentLeaseDetail
+    from .equipment_lease import EquipmentLeaseDetail, EquipmentLeaseIndexPage
 
 TParams = TypeVar("TParams", bound=EquipmentProvisionParams)
 
@@ -273,7 +273,7 @@ class EquipmentInstallationDetail(LabInstallationDetail[EquipmentInstallation]):
     def _select_provisions(cls, installation: LabInstallation[Any]):
         if not isinstance(installation, EquipmentInstallation):
             raise TypeError("Expected an EquipmentInstallation")
-        return query_equipment_installation_provisions(installation=installation, only_pending=True),
+        return query_equipment_installation_provisions(installation=installation, only_pending=True)
 
 
 
@@ -288,7 +288,7 @@ class EquipmentInstallationDetail(LabInstallationDetail[EquipmentInstallation]):
             model,
             equipment_id=equipment_.id,
             equipment_name=equipment_.name,
-            model_name=model.installed_model_name,
+            installed_model_name=model.installed_model_name,
             num_installed=model.num_installed,
         )
 

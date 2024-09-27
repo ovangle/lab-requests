@@ -9,6 +9,7 @@ import { EquipmentInstallationInfoComponent } from "../installation/equipment-in
 import { EquipmentContext, provideEquipmentContextFromRoute } from "../equipment-context";
 import { ScaffoldFormPaneControl } from "src/app/scaffold/form-pane/form-pane-control";
 import { EquipmentInstallationContext, provideEquipmentInstallationContext } from "../installation/equipment-installation-context";
+import { LabService } from "src/app/lab/lab";
 
 @Component({
     standalone: true,
@@ -20,7 +21,10 @@ import { EquipmentInstallationContext, provideEquipmentInstallationContext } fro
     template: `
     <div class="page-header">
         @if (equipmentInstallation$ | async; as installation) {
-            <h4>Update <equipment-installation-info [installation]="installation" /></h4>
+            <h4>Update <equipment-installation-info
+                            [installation]="installation"
+                            display="title"
+                       /></h4>
 
             <p><b>note:</b>
             <i>
@@ -37,8 +41,10 @@ import { EquipmentInstallationContext, provideEquipmentInstallationContext } fro
     </div>
 
     @if (equipment$ | async; as equipment) {
+        @let installation = equipmentInstallation$ | async;
         <equipment-installation-form
-            [installation]="equipmentInstallation$ | async"
+            [installation]="installation"
+            [lab]="installation?.labId"
             [equipment]="equipment"
             (submit)="_onSubmit($event)"
             (cancel)="_onCancel()" />

@@ -1,7 +1,6 @@
 from typing import Any, Generic, TypeVar, cast, override
 from uuid import UUID
 
-from api.schemas.software.software import SoftwareCreateRequest
 from db import LocalSession
 from db.models.lab.installable.lab_installation import LabInstallation
 from db.models.lab.provisionable.lab_provision import LabProvision
@@ -18,14 +17,14 @@ from db.models.software.software_installation import NewSoftwareParams, Software
 from db.models.software.software_lease import query_software_leases
 from db.models.user import User
 from ..base import (
-    ModelCreateRequest,
-    ModelDetail,
     ModelIndexPage,
     ModelRequestContextError,
 )
 from ..lab.lab_installation import LabInstallationCreateRequest, LabInstallationDetail, LabInstallationProvisionCreateRequest, LabInstallationProvisionDetail
 from ..lab.lab_provision import LabProvisionApprovalRequest, LabProvisionCancelRequest, LabProvisionCompleteRequest, LabProvisionDenialRequest, LabProvisionPurchaseRequest, LabProvisionRejectionRequest, register_provision_detail_cls
 
+from api.schemas.software import SoftwareCreateRequest
+from .software import SoftwareDetail
 
 class SoftwareInstallationDetail(LabInstallationDetail[SoftwareInstallation]):
     software_id: UUID
@@ -96,6 +95,7 @@ class SoftwareInstallationIndexPage(ModelIndexPage[SoftwareInstallation, Softwar
     async def item_from_model(cls, item: SoftwareInstallation):
         return await SoftwareInstallationDetail.from_model(item)
 
+SoftwareDetail.model_rebuild()
 
 TParams = TypeVar('TParams', bound=SoftwareInstallationProvisionParams)
 

@@ -83,7 +83,7 @@ export class UniDisciplineSelect implements MatFormFieldControl<Discipline[] | D
   }
 
   get disabled() {
-    return this._matSelect().disabled;
+    return this.ngControl.disabled || false;
   }
 
   get errorState() {

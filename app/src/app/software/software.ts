@@ -78,9 +78,16 @@ export class Software extends Model implements Installable<SoftwareInstallation>
 }
 
 
-export interface SoftwareQuery extends ModelQuery<Software> { }
+export interface SoftwareQuery extends ModelQuery<Software> {
+    name: string;
+}
 function setSoftwareQueryParams(params: HttpParams, query: Partial<SoftwareQuery>) {
     params = setModelQueryParams(params, query);
+
+    if (query.name) {
+        params = params.set('name', query.name);
+    }
+
     return params;
 }
 

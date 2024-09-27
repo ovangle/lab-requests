@@ -23,7 +23,6 @@ export abstract class LabInstallation<
     readonly type: string;
     readonly labId: string;
 
-    readonly provisionType: string;
     readonly activeProvisions: ModelIndexPage<TProvision>;
 
     readonly allocationType: string;
@@ -44,10 +43,6 @@ export abstract class LabInstallation<
         }
         this.labId = json['labId'];
 
-        if (typeof json['provisionType'] !== 'string') {
-            throw new Error(`Expected a string 'provisionType'`);
-        }
-        this.provisionType = json['provisionType'];
         if (!isJsonObject(json['activeProvisions'])) {
             throw new Error(`Expected a json object 'currentProvisions'`);
         }

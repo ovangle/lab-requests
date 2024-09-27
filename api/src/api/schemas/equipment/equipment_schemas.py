@@ -33,6 +33,8 @@ from ..base import (
     ModelLookup,
 )
 
+from api.schemas.software.software import SoftwareDetail
+
 if TYPE_CHECKING:
     from .equipment_installation import CreateEquipmentInstallationRequest, EquipmentInstallationIndexPage
 
@@ -49,6 +51,8 @@ class EquipmentDetail(ModelDetail[Equipment]):
 
     installations: EquipmentInstallationIndexPage
 
+    packaged_software: SoftwareDetail | None
+
 
     @classmethod
     async def from_model(cls, model: Equipment):
@@ -60,6 +64,12 @@ class EquipmentDetail(ModelDetail[Equipment]):
             query_equipment_installations(equipment=model),
         )
 
+        software_model = await model.awaitable_attrs.packaged_software
+        if software_model:
+            packaged_software = await SoftwareDetail.from_model(software_model)
+        else:
+            packaged_software = None
+
         return cls(
             id=cast(UUID, model.id),
             name=model.name,
@@ -68,6 +78,8 @@ class EquipmentDetail(ModelDetail[Equipment]):
             tags=set(model.tags),
             installations=installations,
             disciplines=model.disciplines,
+
+            packaged_software=packaged_software,
 
             created_at=model.created_at,
             updated_at=model.updated_at,

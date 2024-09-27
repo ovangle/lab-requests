@@ -10,7 +10,7 @@ import { coerceBooleanProperty } from "@angular/cdk/coercion";
 import { LabInstallableService } from "src/app/lab/common/installable/installable";
 
 export type EquipmentInstallationInfoDisplay
-  = 'list-item'
+  = 'list-item' | 'title'
 
 
 @Component({

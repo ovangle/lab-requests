@@ -13,7 +13,11 @@ import { firstValueFrom, map, Observable, of } from "rxjs";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { EquipmentContext } from "../equipment-context";
-import { modelId } from "src/app/common/model/model";
+import { modelId, ModelRef } from "src/app/common/model/model";
+import { AbstractModelForm, ModelFormActionsComponent } from "src/app/common/model/forms/abstract-model-form.component";
+import { EquipmentFormGroup } from "../equipment-form.component";
+import { Discipline } from "src/app/uni/discipline/discipline";
+import { toObservable } from "@angular/core/rxjs-interop";
 
 export type EquipmentInstallationFormGroup = FormGroup<{
     equipment: FormControl<Equipment | null>;
@@ -24,32 +28,6 @@ export type EquipmentInstallationFormGroup = FormGroup<{
 
 export function equipmentInstallationFormGroupFactory() {
     const fb = inject(FormBuilder);
-    const equipmentContext = inject(EquipmentContext, { optional: true });
-
-    const validateLabUnique = async (control: AbstractControl): Promise<ValidationErrors | null> => {
-        const lab = control.value as Lab | null;
-        if (lab == null) {
-            return null;
-        }
-        const labId = modelId(lab);
-
-        console.log('labId', labId);
-        const existingInstallations = await firstValueFrom(
-            equipmentContext ? equipmentContext.committed$.pipe(
-                map(equipment => equipment.installations.items),
-            ) : of([])
-        );
-        console.log('existing installs', existingInstallations);
-
-        for (const install of existingInstallations) {
-            if (install.labId == labId) {
-                return { notUnique: true };
-            }
-        }
-        return null;
-    };
-
-
     return (): EquipmentInstallationFormGroup => {
         return fb.group({
             equipment: fb.control<Equipment | null>(null),
@@ -57,9 +35,6 @@ export function equipmentInstallationFormGroupFactory() {
                 validators: [
                     Validators.required,
                 ],
-                asyncValidators: [
-                    validateLabUnique
-                ]
             }),
             modelName: fb.control<string>('', { nonNullable: true }),
             numInstalled: fb.control<number>(1, { nonNullable: true, validators: [Validators.required, Validators.min(1)] })
@@ -83,106 +58,97 @@ export function equipmentInstallationFormGroupFactory() {
         MatInputModule,
 
         LabInfoComponent,
-        LabSearchComponent
+        LabSearchComponent,
+        ModelFormActionsComponent
     ],
     template: `
-        <form [formGroup]="form" (ngSubmit)="_onSubmit()">
-            @if (lab(); as lab) {
-                <lab-info [lab]="lab" />
-            } @else {
-                <mat-form-field>
-                    <mat-label>Lab</mat-label>
-                    <lab-search required formControlName="lab"
-                                [discipline]="labDisciplines()"
-                                [disabledLabs]="equipment().installedLabIds"/>
-
-
-                    <button mat-icon-button matSuffix (click)="form.patchValue({lab: null})">
-                        <mat-icon>cancel</mat-icon>
-                    </button>
-
-                    @if (labErrors && labErrors['required']) {
-                        <mat-error>A value is required</mat-error>
-                    }
-
-                    @if (labErrors && labErrors['notUnique']) {
-                        <mat-error>An installation already exists for this lab</mat-error>
-                    }
-                </mat-form-field>
-            }
-
+    <form [formGroup]="form">
+        @if (lab(); as lab) {
+            Installed in: <lab-info [lab]="lab" />
+        } @else {
             <mat-form-field>
-                <mat-label>Model name</mat-label>
+                <mat-label>Lab</mat-label>
+                <lab-search required formControlName="lab"
+                            [discipline]="labDisciplines()"
+                            [disabledLabs]="equipmentInstalledLabs()"/>
 
-                <input matInput formControlName="modelName" />
-            </mat-form-field>
 
-            <mat-form-field>
-                <mat-label>Number installed</mat-label>
-                <input matInput type="number" formControlName="numInstalled" />
+                <button mat-icon-button matSuffix (click)="form.patchValue({lab: null})">
+                    <mat-icon>cancel</mat-icon>
+                </button>
 
-                @if (numInstalledErrors && numInstalledErrors['required']) {
+                @if (labErrors && labErrors['required']) {
                     <mat-error>A value is required</mat-error>
                 }
 
-                @if (numInstalledErrors && numInstalledErrors['min']) {
-                    <mat-error>Installation must contain at least one instance of the equiment</mat-error>
+                @if (labErrors && labErrors['notUnique']) {
+                    <mat-error>An installation already exists for this lab</mat-error>
                 }
             </mat-form-field>
+        }
 
-            @if (_standaloneForm) {
-                <div class="form-actions">
-                    <button mat-raised-button type="submit" [disabled]="!form.valid">
-                        <mat-icon>save</mat-icon>SAVE
-                    </button>
+        <mat-form-field>
+            <mat-label>Model name</mat-label>
 
-                    <button mat-button (click)="_onCancelButtonClick()">
-                        <mat-icon>cancel</mat-icon> CLOSE
-                    </button>
-                </div>
+            <input matInput formControlName="modelName" />
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-label>Number installed</mat-label>
+            <input matInput type="number" formControlName="numInstalled" />
+
+            @if (numInstalledErrors && numInstalledErrors['required']) {
+                <mat-error>A value is required</mat-error>
             }
-        </form>
+
+            @if (numInstalledErrors && numInstalledErrors['min']) {
+                <mat-error>Installation must contain at least one instance of the equiment</mat-error>
+            }
+        </mat-form-field>
+
+        <model-form-actions />
+    </form>
     `,
     styles: `
     .form-actions {
         float: right
     }
     `,
+    providers: [
+        { provide: AbstractModelForm, useExisting: EquipmentInstallationFormComponent }
+    ],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class EquipmentInstallationFormComponent {
-    controlContainer = inject(ControlContainer, { self: true, optional: true });
+export class EquipmentInstallationFormComponent extends AbstractModelForm<EquipmentInstallationFormGroup> {
     _cd = inject(ChangeDetectorRef);
 
-    _standaloneFormFactory = equipmentInstallationFormGroupFactory();
-    _standaloneForm: EquipmentInstallationFormGroup | undefined;
+    override readonly _createStandaloneForm = equipmentInstallationFormGroupFactory();
 
-    get form(): EquipmentInstallationFormGroup {
-        if (this.controlContainer) {
-            return this.controlContainer.control as EquipmentInstallationFormGroup;
-        } else {
-            if (this._standaloneForm == null) {
-                this._standaloneForm = this._standaloneFormFactory();
-            }
-            return this._standaloneForm!;
-        }
-    }
-
-    equipment = input.required<Equipment>();
+    equipment = input.required<Equipment | EquipmentFormGroup['value']>();
     installation = input<EquipmentInstallation | null>();
+
+    lab = input<ModelRef<Lab> | null>();
 
     labDisciplines = computed(() => {
         const equipment = this.equipment();
-        return equipment?.disciplines;
+        if (equipment instanceof Equipment) {
+            return equipment.disciplines;
+        } else {
+            if (equipment.isAnyDiscipline) {
+                return 'any';
+            }
+            return equipment.disciplines as Discipline[];
+        }
     })
-    lab = input<Lab | null>();
-
-    @Output()
-    submit = new EventEmitter<EquipmentInstallationFormGroup['value']>();
-
-    @Output()
-    cancel = new EventEmitter<undefined>();
-
+    equipmentInstalledLabs = computed(() => {
+        const equipment = this.equipment();
+        if (equipment instanceof Equipment) {
+            return equipment.installations.items.map(install => install.labId);
+        } else {
+            const installations = equipment.installations;
+            return installations!.map(install => install.lab?.id).filter(l => l != null) as ModelRef<Lab>[];
+        }
+    })
 
     get labErrors() {
         return this.form!.controls.lab.errors;
@@ -190,24 +156,6 @@ export class EquipmentInstallationFormComponent {
 
     get numInstalledErrors() {
         return this.form.controls.numInstalled.errors;
-    }
-
-    constructor() {
-        effect(() => {
-            const lab = this.lab();
-            if (lab) {
-                this.form.patchValue({ lab });
-            }
-        });
-
-        this.form.statusChanges.subscribe(() => {
-            for (const [name, control] of Object.entries(this.form.controls)) {
-                console.log(name, control.errors);
-            }
-            console.log('form status', this.form.status);
-            console.log('form errors', this.form.errors);
-            console.log('isValid', this.form.valid)
-        })
     }
 
     _onSubmit() {

@@ -14,7 +14,7 @@ import { SoftwareLease } from "../lease/software-lease";
 import { isUUID } from "src/app/utils/is-uuid";
 
 
-export class SoftwareInstallation extends LabInstallation<Software, SoftwareInstallationProvision> {
+export class SoftwareInstallation extends LabInstallation<Software, SoftwareInstallationProvision, SoftwareLease> {
     softwareId: string;
     get installableId() { return this.softwareId }
 

@@ -87,7 +87,6 @@ class ModelIndexPage(BaseModel, Generic[TModel, TDetail]):
     page_size: int
 
     @classmethod
-    @abstractmethod
     async def item_from_model(cls, item: TModel):
         raise NotImplementedError
 

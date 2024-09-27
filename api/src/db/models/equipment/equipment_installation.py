@@ -265,7 +265,7 @@ def query_equipment_installation_provisions(
         )
     elif installation is not None:
         where_clauses.append(
-            LabProvision.action_params_json["installation_id"] == model_id(installation)
+            LabProvision.action_params_json["installation_id"].astext == str(model_id(installation))
         )
 
     if action:

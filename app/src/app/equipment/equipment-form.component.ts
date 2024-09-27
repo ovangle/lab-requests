@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   DestroyRef,
   EventEmitter,
@@ -42,14 +43,17 @@ import { TextFieldModule } from '@angular/cdk/text-field';
 import { Discipline } from '../uni/discipline/discipline';
 import { UniDisciplineSelect } from '../uni/discipline/discipline-select.component';
 import { EquipmentNameUniqueValidator } from './equipment-name-unique-validator';
-import { EquipmentInstallationFormGroup, equipmentInstallationFormGroupFactory } from './installation/equipment-installation-form.component';
+import { EquipmentInstallationFormComponent, EquipmentInstallationFormGroup, equipmentInstallationFormGroupFactory } from './installation/equipment-installation-form.component';
 import { toObservable } from '@angular/core/rxjs-interop';
-import { firstValueFrom, switchMap } from 'rxjs';
+import { firstValueFrom, startWith, switchMap } from 'rxjs';
 import { EquipmentInstallation } from './installation/equipment-installation';
 import { LabService } from '../lab/lab';
 import { ThisReceiver } from '@angular/compiler';
 import { modelId } from '../common/model/model';
 import { coerceBooleanProperty } from '@angular/cdk/coercion';
+import { AbstractModelForm, ModelFormActionsComponent } from '../common/model/forms/abstract-model-form.component';
+import { MatCardModule } from '@angular/material/card';
+import { SoftwareFormComponent } from '../software/software-form.component';
 
 function equipmentFormGroupFactory() {
   const fb = inject(FormBuilder);
@@ -61,10 +65,12 @@ function equipmentFormGroupFactory() {
       asyncValidators: [(c) => equipmentNameUnique.validate(c)]
     }),
     description: fb.control<string>('', { nonNullable: true }),
+    isAnyDiscipline: fb.control<boolean>(false, { nonNullable: true}),
     disciplines: fb.control<string[]>([], { nonNullable: true }),
     tags: fb.control<string[]>([], { nonNullable: true }),
     trainingDescriptions: fb.control<string[]>([], { nonNullable: true }),
-    installations: fb.array<EquipmentInstallationFormGroup>([])
+    installations: fb.array<EquipmentInstallationFormGroup>([]),
+    hasPackagedSoftware: fb.control<boolean>(false, { nonNullable: true})
   });
 }
 
@@ -80,23 +86,26 @@ export type EquipmentFormGroup = ReturnType<ReturnType<typeof equipmentFormGroup
     CommonModule,
     RouterModule,
     ReactiveFormsModule,
-
     TextFieldModule,
-
     MatButtonModule,
+    MatCardModule,
     MatCheckboxModule,
     MatIconModule,
     MatFormFieldModule,
     MatInputModule,
-
     UniDisciplineSelect,
     EquipmentSearchComponent,
     EquipmentTagInputComponent,
     EquipmentTrainingDescriptionsInputComponent,
-    EquipmentTrainingDescriptionsFieldHint
-  ],
+    EquipmentTrainingDescriptionsFieldHint,
+
+    EquipmentInstallationFormComponent,
+    ModelFormActionsComponent,
+
+    SoftwareFormComponent
+],
   template: `
-    <form [formGroup]="form" (ngSubmit)="_onFormSubmit()">
+    <form [formGroup]="form">
         <div class="equipment-form">
             <h4>General</h4>
             <mat-form-field>
@@ -119,13 +128,16 @@ export type EquipmentFormGroup = ReturnType<ReturnType<typeof equipmentFormGroup
                 </textarea>
             </mat-form-field>
 
+            <div class="any-discipline">
+            </div>
+
+            <div class="any-discipline-check">
+              <mat-checkbox formControlName="isAnyDiscipline">Equipment can be used by labs from any discipline</mat-checkbox>
+            </div>
+
             <mat-form-field>
-                <mat-label>Disciplines</mat-label>
-                <uni-discipline-select multiple formControlName="disciplines"/>
-                <mat-hint>
-                <i>Only</i> used in research/teaching in the given discipline.
-                Multiple disciplines can be selected.
-                </mat-hint>
+              <mat-label>Disciplines</mat-label>
+              <uni-discipline-select multiple formControlName="disciplines"/>
             </mat-form-field>
 
             <mat-form-field>
@@ -140,6 +152,18 @@ export type EquipmentFormGroup = ReturnType<ReturnType<typeof equipmentFormGroup
                     <equipment-training-descriptions-hint />
                 </mat-hint>
             </mat-form-field>
+
+            <div class="has-packaged-software">
+              <mat-checkbox formControlName="hasPackagedSoftware">
+                This equipment comes with packaged software
+              </mat-checkbox>
+            </div>
+
+            @if (form.value.hasPackagedSoftware) {
+              <h4>Packaged software</h4>
+              <software-form formGroupName="packagedSoftware"
+                             [software]="equipment()?.packagedSoftware" />
+            }
         </div>
 
         @if (!hideInstallations()) {
@@ -147,7 +171,7 @@ export type EquipmentFormGroup = ReturnType<ReturnType<typeof equipmentFormGroup
               <div class="installations-header">
                   <h4>Installations</h4>
 
-                  <button mat-icon-button (click)="addInstallationForm()">
+                  <button mat-icon-button (click)="_onAddInstallationButtonClick($event)">
                       <mat-icon>add</mat-icon>
                   </button>
               </div>
@@ -157,23 +181,19 @@ export type EquipmentFormGroup = ReturnType<ReturnType<typeof equipmentFormGroup
               @if (formArray.length == 0) {
                   No installations
               } @else {
-                  @for (form of formArray.controls; track form) {
-                      <equipment-installation-form [formGroup]="form" />
+                  @for (installForm of formArray.controls; track installForm) {
+                    <mat-card>
+                      <mat-card-content>
+                        <equipment-installation-form [formGroup]="installForm"
+                                                     [equipment]="equipment() || form['value']"/>
+                      </mat-card-content>
+                    </mat-card>
                   }
               }
           </div>
         }
 
-        @if (_standaloneForm) {
-          <div class="form-controls">
-              <button mat-raised-button type="submit" [disabled]="!form.valid">
-                  <mat-icon>save</mat-icon> SAVE
-              </button>
-              <button mat-button (click)="_onCancelButtonClick()">
-                  <mat-icon>cancel</mat-icon> CANCEL
-              </button>
-          </div>
-        }
+        <model-form-actions />
     </form>
   `,
   styles:
@@ -181,28 +201,26 @@ export type EquipmentFormGroup = ReturnType<ReturnType<typeof equipmentFormGroup
     .form-actions button {
       float: right;
     }
+
+    .installations-header {
+      display: flex;
+      justify-content: space-between;
+    }
   `,
+  viewProviders: [
+    {provide: AbstractModelForm, useExisting: EquipmentFormComponent}
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class EquipmentFormComponent {
+export class EquipmentFormComponent extends AbstractModelForm<EquipmentFormGroup> {
+  protected readonly _cd  = inject(ChangeDetectorRef);
   readonly equipmentService = inject(EquipmentService);
   readonly labService = inject(LabService);
 
+
   readonly controlContainer = inject(ControlContainer, { self: true, optional: true });
-  readonly _createEquipmentFormGroup = equipmentFormGroupFactory();
+  readonly _createStandaloneForm = equipmentFormGroupFactory();
   readonly _createEquipmentInstallationFormGroup = equipmentInstallationFormGroupFactory()
-
-  _standaloneForm: EquipmentFormGroup | undefined;
-  get form(): EquipmentFormGroup {
-    if (this.controlContainer) {
-      return this.controlContainer.control as EquipmentFormGroup;
-    }
-    if (this._standaloneForm === undefined) {
-      this._standaloneForm = this._createEquipmentFormGroup();
-    }
-    return this._standaloneForm!;
-
-  }
 
   readonly equipment = input<Equipment | null>();
   readonly isUpdateForm = computed(() => this.equipment() != null);
@@ -215,12 +233,8 @@ export class EquipmentFormComponent {
     return directHideInstallations || isUpdate;
   })
 
-  @Output()
-  readonly submit = new EventEmitter<EquipmentFormGroup['value']>();
-  @Output()
-  readonly cancel = new EventEmitter<void>();
-
   constructor() {
+    super();
     const syncFormValue = toObservable(this.equipment).pipe(
       switchMap(async equipment => {
         if (equipment) {
@@ -228,7 +242,8 @@ export class EquipmentFormComponent {
             name: equipment.name,
             description: equipment.description,
             trainingDescriptions: equipment.trainingDescriptions,
-            disciplines: equipment.disciplines,
+            isAnyDiscipline: equipment.disciplines === 'any',
+            disciplines: equipment.disciplines === 'any' ? [] : equipment.disciplines,
             tags: equipment.tags,
           });
 
@@ -286,8 +301,21 @@ export class EquipmentFormComponent {
       })
     ).subscribe();
 
+    const syncDisciplines = this.form.controls.isAnyDiscipline.valueChanges.pipe(
+      startWith(this.form.value.isAnyDiscipline)
+    ). subscribe(isAnyDiscipline => {
+      const disciplines = this.form.controls.disciplines;
+      if (isAnyDiscipline) {
+        disciplines.disable();
+      } else {
+        disciplines.enable();
+      }
+    })
+
+
     inject(DestroyRef).onDestroy(() => {
       syncFormValue.unsubscribe();
+      syncDisciplines.unsubscribe();
     })
 
   }
@@ -300,19 +328,12 @@ export class EquipmentFormComponent {
     const formArr = this.form.controls.installations;
     const form = this._createEquipmentInstallationFormGroup();
     formArr.push(form);
+    this._cd.detectChanges();
     return form;
   }
 
-  _onAddInstallationButtonClick() {
+  _onAddInstallationButtonClick(event: Event) {
+    event.preventDefault();
     this.addInstallationForm();
-  }
-
-
-  _onFormSubmit() {
-    this.submit.emit(this.form.value);
-  }
-
-  _onCancelButtonClick() {
-    this.cancel.emit(undefined);
   }
 }

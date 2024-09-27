@@ -20,6 +20,7 @@ import { Installable } from '../lab/common/installable/installable';
 import { firstValueFrom } from 'rxjs';
 import { Discipline, isDiscipline } from '../uni/discipline/discipline';
 import { Campus } from '../uni/campus/campus';
+import { Software } from '../software/software';
 
 
 export class Equipment extends Model implements Installable<EquipmentInstallation> {
@@ -28,9 +29,8 @@ export class Equipment extends Model implements Installable<EquipmentInstallatio
 
   /**
    * The discipline types which would typically use this equipment.
-   *
    */
-  disciplines: Discipline[];
+  disciplines: Discipline[] | 'any';
 
   get isAnyDiscipline() {
     return this.disciplines.length === 0;
@@ -41,6 +41,8 @@ export class Equipment extends Model implements Installable<EquipmentInstallatio
   trainingDescriptions: string[];
 
   installations: ModelIndexPage<EquipmentInstallation>;
+
+  packagedSoftware: Software | null;
 
   constructor(json: JsonObject) {
     super(json);
@@ -70,10 +72,11 @@ export class Equipment extends Model implements Installable<EquipmentInstallatio
     }
     this.trainingDescriptions = json['trainingDescriptions'];
 
-    if (
-      !Array.isArray(json['disciplines'])
-      || !json['disciplines'].every(isDiscipline)
-    ) {
+    if (json['disciplines'] === 'any') {
+      this.disciplines = 'any';
+    } else if (Array.isArray(json['disciplines']) && json['disciplines'].every(isDiscipline)) {
+      this.disciplines = json['disciplines'];
+    } else {
       throw new Error("Expected an array of disciplines 'disciplines'")
     }
     this.disciplines = json['disciplines'];
@@ -86,6 +89,15 @@ export class Equipment extends Model implements Installable<EquipmentInstallatio
       EquipmentInstallation,
       json['installations']
     );
+
+    if (isJsonObject(json['packagedSoftware'])) {
+      this.packagedSoftware = new Software(json['packagedSoftware']);
+
+    } else if (json['packagedSoftware'] == null) {
+      this.packagedSoftware = null;
+    } else {
+      throw new Error(`Expected a json object or null 'packagedSoftware'`);
+    }
   }
 
   get installedLabIds(): ModelRef<Lab>[] {

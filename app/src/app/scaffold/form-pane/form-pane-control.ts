@@ -43,12 +43,23 @@ export class ScaffoldFormPaneControl {
     }]);
   }
 
-  async close(): Promise<boolean> {
+  /**
+   *
+   * @param redirectTo
+   * Redirects the default path on closing the form
+   * @returns
+   */
+  async close(redirectTo?: any[]): Promise<boolean> {
     if (this._context) {
       await this._context.refresh();
     }
 
-    return this._router.navigate([{ outlets: { form: null } }]);
+    const outlets: any = { form: null };
+    if (redirectTo) {
+      outlets.default = redirectTo;
+    }
+
+    return this._router.navigate([{ outlets }]);
   }
 
   get isOpen(): boolean {

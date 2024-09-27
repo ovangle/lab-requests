@@ -63,7 +63,7 @@ export class LabSearchComponent extends ModelSearchComponent<Lab> {
     }
 
     campus = input<ModelRef<Campus> | ModelRef<Campus>[]>();
-    discipline = input<Discipline | Discipline[] | null>();
+    discipline = input<Discipline | Discipline[] | 'any'>();
 
     // Omit options from the returned query set because they cannot be selected
     disabledLabs = input<ModelRef<Lab>[]>([]);

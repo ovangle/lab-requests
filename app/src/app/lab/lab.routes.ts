@@ -44,3 +44,5 @@ export const LAB_ROUTES: Routes = [
     ]
   }
 ];
+
+export const LAB_FORM_ROUTES: Routes = []

@@ -12,7 +12,7 @@ export const EQUIPMENT_FORM_ROUTES: Routes = [
     path: 'installation',
     children: [
       {
-        path: 'edit',
+        path: '',
         pathMatch: 'full',
         loadComponent: async () => {
           const m = await import('./_forms/equipment-installation.form-page');

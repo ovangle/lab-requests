@@ -15,10 +15,19 @@ const routes: Routes = [
     children: [
       {
         path: 'lab',
+        outlet: 'default',
         loadChildren: () =>
           import('./lab/lab.routes').then(
             (module) => module.LAB_ROUTES,
           ),
+      },
+      {
+        path: 'lab',
+        outlet: 'form',
+        loadChildren: async () => {
+          const m = await import('./lab/lab.routes');
+          return m.LAB_FORM_ROUTES;
+        }
       },
       {
         path: 'equipment',

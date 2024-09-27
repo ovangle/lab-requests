@@ -4,13 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.auth.context import get_current_authenticated_user
-from api.schemas.user.current_user import CurrentUserDetail
-from api.schemas.user.temporary_access_user import (
-    CreateTemporaryUserRequest,
-    CreateTemporaryUserResponse,
-    FinalizeTemporaryUserRequest,
-    TemporaryUserDetail,
-)
+
 from db import LocalSession, get_db
 from db.models.uni.discipline import Discipline
 from db.models.user import (
@@ -21,8 +15,16 @@ from db.models.user import (
     query_users,
 )
 
-from api.schemas.user import UserDetail, UserIndexPage, AlterPasswordRequest
-
+from api.schemas.user import (
+    AlterPasswordRequest,
+    UserDetail,
+    UserIndexPage,
+    CurrentUserDetail,
+    CreateTemporaryUserRequest,
+    CreateTemporaryUserResponse,
+    FinalizeTemporaryUserRequest,
+    TemporaryUserDetail,
+)
 
 
 users = APIRouter(prefix="/users", tags=["users"])

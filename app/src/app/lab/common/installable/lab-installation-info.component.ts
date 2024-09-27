@@ -12,7 +12,7 @@ import { MatListModule } from "@angular/material/list";
 import { LabInfoComponent } from "../../lab-info.component";
 import { coerceBooleanProperty } from "@angular/cdk/coercion";
 
-export type LabInstallationInfoDisplay = 'list-item';
+export type LabInstallationInfoDisplay = 'list-item' | 'title';
 
 
 @Component({

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Select, select, or_
+from sqlalchemy import ForeignKey, Select, select, or_
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects import postgresql as psql
 
@@ -11,9 +11,9 @@ from db import LocalSession, local_object_session
 from db.models.base import Base
 from db.models.base.base import model_id
 from db.models.fields import uuid_pk
-from db.models.lab import Lab
+from db.models.lab import Lab, query_labs
 from db.models.lab.installable import LabInstallation, Installable
-from db.models.lab.lab import query_labs
+from db.models.software import Software
 from db.models.uni.campus import Campus
 from db.models.uni.discipline import DISCIPLINE_ENUM, Discipline
 
@@ -40,6 +40,9 @@ class Equipment(Installable, Base):
     equipment_installations: Mapped[list[EquipmentInstallation]] = relationship(
         back_populates="equipment"
     )
+
+    packaged_software_id: Mapped[UUID | None] = mapped_column(ForeignKey("software.id"), nullable=True)
+    packaged_software: Mapped[Software] = relationship()
 
     @classmethod
     async def get_for_id(cls, db: LocalSession, id: UUID):

@@ -54,12 +54,7 @@ export abstract class ModelContext<T extends Model, TService extends ModelServic
   readonly committedSubject = new ReplaySubject<T | null>(1);
   readonly mCommitted$ = this.committedSubject.asObservable();
   readonly committed$ = this.mCommitted$.pipe(
-    map((m) => {
-      if (m == null) {
-        throw new Error(`Expected a value in context (use mCommitted$ if value might not be committed)`);
-      }
-      return m;
-    })
+    filter((m): m is T => m != null)
   );
 
   readonly url$ = this.committed$.pipe(
