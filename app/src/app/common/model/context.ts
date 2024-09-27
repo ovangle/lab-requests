@@ -45,7 +45,7 @@ export interface ReadOnlyModelContext<T extends Model> {
   readonly committed$: Observable<T>;
 }
 
-export const MODEL_CONTEXT_SERVICE = new InjectionToken<ModelService<any>>('ROUTE_SERVICE');
+export const MODEL_CONTEXT_SERVICE = new InjectionToken<ModelService<any>>('MODEL_CONTEXT_SERVICE');
 export const MODEL_CONTEXT_SOURCE = new InjectionToken<Observable<any>>('MODEL_CONTEXT_SOURCE');
 
 
@@ -54,7 +54,12 @@ export abstract class ModelContext<T extends Model, TService extends ModelServic
   readonly committedSubject = new ReplaySubject<T | null>(1);
   readonly mCommitted$ = this.committedSubject.asObservable();
   readonly committed$ = this.mCommitted$.pipe(
-    filter((m): m is T => m != null)
+    map((m) => {
+      if (m == null) {
+        throw new Error(`Expected a value in context (use mCommitted$ if value might not be committed)`);
+      }
+      return m;
+    })
   );
 
   readonly url$ = this.committed$.pipe(

@@ -7,7 +7,7 @@ import { Injectable, inject } from "@angular/core";
 import { ModelService, RestfulService } from "src/app/common/model/model-service";
 import { Installable } from "./installable";
 import { ModelContext } from "src/app/common/model/context";
-import { Provisionable } from "../provisionable/provisionable";
+import { Provisionable, ProvisionableModelService } from "../provisionable/provisionable";
 import { LabProvision } from "../provisionable/provision";
 import { isUUID } from "src/app/utils/is-uuid";
 import { Allocatable, LabAllocation } from "../allocatable/lab-allocation";
@@ -87,12 +87,26 @@ export function setLabInstallationQueryParams(params: HttpParams, query: Partial
     return params;
 }
 
+export class LabInstallationProvision<TInstallation extends LabInstallation<any>> extends LabProvision<TInstallation> {
+    installationId: string;
+    constructor(json: JsonObject) {
+        super(json);
+
+        if (!isUUID(json['installationId'])) {
+            throw new Error(`Expected a uuid 'installationId'`);
+        }
+        this.installationId = json['installationId'];
+
+    }
+}
+
+
 @Injectable()
 export abstract class LabInstallationService<
     TInstallable extends Installable<TInstallation>,
     TInstallation extends LabInstallation<TInstallable, any>,
     TInstallationQuery extends LabInstallationQuery<TInstallable, TInstallation> = LabInstallationQuery<TInstallable, TInstallation>
-> extends RestfulService<TInstallation, TInstallationQuery> {
+> extends ProvisionableModelService<TInstallation, TInstallationQuery> {
     labService = inject(LabService);
 
     fetchForInstallableLab(installable: TInstallable | string, lab: Lab | string): Observable<TInstallation | null> {

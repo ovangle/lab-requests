@@ -162,8 +162,12 @@ export type ModelOf<T> = T extends ModelRef<infer U> ?
   (U extends T ? U : never)
   : never;
 
-export function isModelRef(obj: unknown): obj is ModelRef<any> {
-  return (typeof obj === 'string' && validateIsUUID(obj)) || obj instanceof Model;
+export function isModelRef(obj: unknown): obj is ModelRef<any>;
+export function isModelRef<T extends Model>(obj: unknown, model: Type<T>): obj is ModelRef<T>;
+
+export function isModelRef<T extends Model = any>(obj: unknown, model?: Type<T>): obj is ModelRef<T> {
+  return (typeof obj === 'string' && validateIsUUID(obj))
+    || obj instanceof (model !== undefined ? model : Model);
 }
 
 export function isEqualModelRefs<T extends Model>(a: ModelRef<T> | null, b: ModelRef<T> | null): boolean {

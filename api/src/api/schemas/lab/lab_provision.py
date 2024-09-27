@@ -176,6 +176,9 @@ class LabProvisionCreateRequest(
         "current_user": Depends(get_current_authenticated_user),
     }
 
+    # The ID of the provision, if resubmission is posted to the original endpoint.
+    provision_id: UUID | None = None
+
     action: str
     lab: UUID
 
@@ -203,6 +206,10 @@ class LabProvisionCreateRequest(
     ) -> LabProvision[TProvisionable, TParams]:
         if not current_user:
             raise ModelRequestContextError("Expected authenticated request context")
+
+        if self.provision_id is not None:
+            provision = await LabProvision.get_by_id(db, self.provision_id)
+            return await self.do_update(provision, current_user=current_user, **kwargs)
 
         lab = await Lab.get_by_id(db, self.lab)
         budget = await ResearchBudget.get_by_id(db, self.purchase.budget)

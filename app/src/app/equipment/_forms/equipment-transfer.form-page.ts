@@ -61,14 +61,11 @@ export class EquipmentTransferFormPage {
         const budget = await firstValueFrom(this.labBudget$);
 
         const request: EquipmentTransferRequest = {
-            type: 'equipment_transfer',
-            equipment: installation.equipmentId,
             lab: installation.labId,
             destination: value.destination!,
             numTransferred: value.numTransferred!,
             purchaseOrder: purchaseOrderRequestFromFormValue(
                 budget,
-                'transfer_equipment',
                 value['purchase']!
             ),
             note: value.note!

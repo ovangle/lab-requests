@@ -7,37 +7,30 @@ import { CreatePurchaseOrder } from "src/app/research/budget/research-budget";
 import { JsonObject } from "src/app/utils/is-json-object";
 import { Lab } from "../../lab/lab";
 import { Equipment, EquipmentService } from "../equipment";
-import { EquipmentInstallation, equipmentInstallationCreateRequestToJsonObject, EquipmentInstallationQuery, EquipmentInstallationRequest, EquipmentInstallationService } from "../installation/equipment-installation";
+import { EquipmentInstallation, equipmentInstallationCreateRequestToJsonObject, EquipmentInstallationProvisionAction, EquipmentInstallationQuery, EquipmentInstallationRequest, EquipmentInstallationService } from "../installation/equipment-installation";
+import { LabInstallationProvision } from "src/app/lab/common/installable/installation";
+import { isUUID } from "src/app/utils/is-uuid";
 
-export type EquipmentProvisionType
-    = 'new_equipment'
-    | 'equipment_transfer';
 
-export class EquipmentProvision extends LabProvision<EquipmentInstallation> {
-    equipmentInstallation: ModelRef<EquipmentInstallation>;
+
+export class EquipmentInstallationProvision extends LabInstallationProvision<EquipmentInstallation> {
     equipment: ModelRef<Equipment>;
 
     constructor(json: JsonObject) {
-        super(EquipmentInstallation, json);
+        super(json);
 
-        this.equipment = modelRefFromJson('equipment', Equipment, json);
-        this.equipmentInstallation = modelRefFromJson('equipmentInstallation', EquipmentInstallation, json);
+        if (!isUUID(json['equipment'])) {
+            throw new Error(`Expected a uuid 'equipment'`);
+        }
+        this.equipment = json['equipment'];
     }
 
     get isActive() {
         return !['installed', 'cancelled'].includes(this.status);
     }
-
-    resolveEquipmentInstallation(using: EquipmentInstallationService) {
-        return this.resolveTarget(using);
-    }
-
-    async resolveEquipment(using: EquipmentService) {
-        return resolveRef(this.equipment, using);
-    }
 }
 
-export interface EquipmentProvisionQuery extends LabProvisionQuery<EquipmentInstallation, EquipmentProvision, EquipmentInstallationQuery> {
+export interface EquipmentProvisionQuery extends LabProvisionQuery<EquipmentInstallation, EquipmentInstallationProvision, EquipmentInstallationQuery> {
     installation: EquipmentInstallation | string;
 }
 
@@ -51,16 +44,26 @@ function setEquipmentProvisionQueryParams(params: HttpParams, query: EquipmentPr
     return params;
 }
 
-interface _EquipmentInstallationProvisionCreateRequest extends LabProvisionCreateRequest<EquipmentInstallation, EquipmentProvision> {
-    readonly type: EquipmentProvisionType;
+interface _EquipmentInstallationProvisionCreateRequest extends LabProvisionCreateRequest<EquipmentInstallation, EquipmentInstallationProvision> { }
+
+export class NewEquipmentProvision extends EquipmentInstallationProvision {
+    numRequired: number;
+
+    constructor(json: JsonObject) {
+        super(json);
+
+        if (typeof json['numRequired'] !== 'number') {
+            throw new Error(`Expected a number 'numRequired'`)
+        }
+        this.numRequired = json['numRequired']
+    }
 }
+
 
 /**
  * Add new equipment to the lab.
  */
 export interface NewEquipmentRequest extends _EquipmentInstallationProvisionCreateRequest {
-    readonly type: 'new_equipment';
-
     /**
      * Must be included if submitted on an equipment where there is no current installation
      * in the target lab.
@@ -86,13 +89,29 @@ export function newEquipmentRequestToJsonObject(request: NewEquipmentRequest): J
     };
 }
 
+export class EquipmentTransferProvision extends EquipmentInstallationProvision {
+    destinationLabId: string;
+    numTransferred: number;
+
+    constructor(json: JsonObject) {
+        super(json);
+        if (!isUUID(json['destinationLabId'])) {
+            throw new Error(`Expected a uuid 'destinationLabId`);
+        }
+        this.destinationLabId = json['destinationLabId'];
+
+        if (typeof json['numTransferred'] !== 'number') {
+            throw new Error(`Expected a number 'numTransferred'`);
+        }
+        this.numTransferred = json['numTransferred'];
+    }
+}
+
 /**
  * Creates a provision to transfer equipment currently installed in the source
  * lab to the destination lab.
  */
 export interface EquipmentTransferRequest extends _EquipmentInstallationProvisionCreateRequest {
-    readonly type: 'equipment_transfer';
-
     destination: Lab | string;
     numTransferred: number;
     /*
@@ -115,7 +134,7 @@ export type EquipmentProvisionCreateRequest
     = NewEquipmentRequest
     | EquipmentTransferRequest
 
-export interface EquipmentProvisionApprovalRequest extends LabProvisionApprovalRequest<EquipmentInstallation, EquipmentProvision> {
+export interface EquipmentProvisionApprovalRequest extends LabProvisionApprovalRequest<EquipmentInstallation, EquipmentInstallationProvision> {
 }
 
 export function equipmentProvisionApprovalRequestToJsonObject(request: EquipmentProvisionApprovalRequest) {
@@ -124,7 +143,7 @@ export function equipmentProvisionApprovalRequestToJsonObject(request: Equipment
     );
 }
 
-export interface EquipmentProvisionPurchasedRequest extends LabProvisionPurchaseRequest<EquipmentInstallation, EquipmentProvision> {
+export interface EquipmentProvisionPurchasedRequest extends LabProvisionPurchaseRequest<EquipmentInstallation, EquipmentInstallationProvision> {
 }
 
 export function equipmentProvisionPurchasedRequestToJsonObject(request: EquipmentProvisionPurchasedRequest) {
@@ -133,7 +152,7 @@ export function equipmentProvisionPurchasedRequestToJsonObject(request: Equipmen
     );
 }
 
-export interface EquipmentProvisionInstallRequest extends LabProvisionInstallRequest<EquipmentInstallation, EquipmentProvision> {
+export interface EquipmentProvisionInstallRequest extends LabProvisionInstallRequest<EquipmentInstallation, EquipmentInstallationProvision> {
 }
 
 export function equipmentProvisionInstallRequestToJsonObject(request: EquipmentProvisionInstallRequest) {
@@ -141,17 +160,17 @@ export function equipmentProvisionInstallRequestToJsonObject(request: EquipmentP
 }
 
 @Injectable({ providedIn: 'root' })
-export class EquipmentProvisionService extends LabProvisionService<EquipmentInstallation, EquipmentProvision, EquipmentProvisionQuery> {
+export class EquipmentProvisionService extends LabProvisionService<EquipmentInstallation, EquipmentInstallationProvision, EquipmentProvisionQuery> {
     override readonly provisionableQueryParam: string = 'equipment';
     override readonly path: string = '/equipment-provisions';
-    override readonly model = EquipmentProvision;
+    override readonly model = EquipmentInstallationProvision;
     override readonly setModelQueryParams = setEquipmentProvisionQueryParams;
 
     protected override readonly _provisionApprovalRequestToJsonObject = equipmentProvisionApprovalRequestToJsonObject;
     protected override readonly _provisionPurchaseRequestToJsonObject = equipmentProvisionPurchasedRequestToJsonObject;
     protected override readonly _provisionInstallRequestToJsonObject = equipmentProvisionInstallRequestToJsonObject;
 
-    getActiveProvisionsPage(installation: EquipmentInstallation | string): Observable<ModelIndexPage<EquipmentProvision>> {
+    getActiveProvisionsPage(installation: EquipmentInstallation | string): Observable<ModelIndexPage<EquipmentInstallationProvision>> {
         return this.queryPage({
             installation: installation
         });

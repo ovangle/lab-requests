@@ -23,7 +23,6 @@ import { ResearchFunding } from '../funding/research-funding';
 export const FUNDING_MODEL_NAMES = ['student_project'];
 
 export interface ResearchPurchaseOrder extends Model {
-  type: string;
   budget: ResearchBudget;
   orderedById: string;
   estimatedCost: number;
@@ -31,7 +30,6 @@ export interface ResearchPurchaseOrder extends Model {
 }
 
 export interface CreatePurchaseOrder extends ModelCreateRequest<ResearchPurchaseOrder> {
-  type: string;
   budget: ResearchBudget | string;
   estimatedCost: number;
   purchaseUrl: string;
@@ -40,7 +38,6 @@ export interface CreatePurchaseOrder extends ModelCreateRequest<ResearchPurchase
 
 export function createPurchaseOrderToJsonObject(request: CreatePurchaseOrder) {
   return {
-    type: request.type,
     budget: modelId(request.budget),
     estimatedCost: request.estimatedCost,
     purchaseInstructions: request.purchaseInstructions

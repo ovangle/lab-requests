@@ -1,3 +1,4 @@
+from typing import Any, Literal
 from uuid import UUID
 from fastapi import APIRouter, Depends
 
@@ -7,11 +8,15 @@ from api.schemas.equipment.equipment import (
     EquipmentDetail,
     EquipmentIndexPage,
 )
-from api.schemas.equipment.equipment_installation import CreateEquipmentInstallationRequest, EquipmentInstallationDetail, EquipmentInstallationIndexPage, EquipmentInstallationProvisionDetail, NewEquipmentRequest, UpdateEquipmentInstallationReqeust
 from db import get_db
 from db.models.equipment.equipment import Equipment, query_equipments
-from db.models.equipment.equipment_installation import EquipmentInstallation, query_equipment_installations
+from db.models.equipment.equipment_installation import EquipmentInstallation, query_equipment_installation_provisions, query_equipment_installations
+from db.models.equipment.equipment_lease import query_equipment_leases
+from db.models.lab.provisionable.lab_provision import LabProvision
 
+from api.schemas.equipment.equipment_installation import CreateEquipmentInstallationRequest, EquipmentInstallationDetail, EquipmentInstallationIndexPage, EquipmentInstallationProvisionDetail, NewEquipmentRequest, TransferEquipmentRequest, UpdateEquipmentInstallationRequest
+from api.schemas.equipment.equipment_lease import EquipmentLeaseIndexPage
+from api.schemas.lab.lab_provision import LabProvisionDetail, LabProvisionIndexPage
 
 equipments = APIRouter(prefix="/equipments")
 
@@ -63,17 +68,20 @@ async def index_equipment_installations(
     return await EquipmentInstallationIndexPage.from_selection(
         db,
         query_equipment_installations(lab=lab, equipment=equipment),
-        EquipmentInstallationDetail.from_model,
         page_index=page_index
     )
 
 @equipments.post("/installation")
-async def create_installation(create_req: CreateEquipmentInstallationRequest | NewEquipmentRequest, db=Depends(get_db), current_user=Depends(get_current_authenticated_user)):
-    installation = await create_req.do_create(db, current_user=current_user)
-    if isinstance(installation, EquipmentInstallation):
-        return await EquipmentInstallationDetail.from_model(installation)
-    else:
-        return await EquipmentInstallationProvisionDetail.from_model(installation)
+async def create_installation(
+    create_req: CreateEquipmentInstallationRequest | NewEquipmentRequest,
+    db=Depends(get_db), current_user=Depends(get_current_authenticated_user)
+) -> EquipmentInstallationDetail:
+
+    installation_or_provision = await create_req.do_create(db, current_user=current_user)
+    if isinstance(installation_or_provision, LabProvision):
+        installation = await EquipmentInstallation.get_by_id(db, installation_or_provision.action_params["installation_id"])
+
+    return await EquipmentInstallationDetail.from_model(installation)
 
 
 @equipments.get("/installation/{installation_id}")
@@ -86,19 +94,73 @@ async def read_equipment_installation(
 @equipments.put("/installation/{installation_id}")
 async def update_equipment_installation(
     installation_id: UUID,
-    update_req: UpdateEquipmentInstallationReqeust | NewEquipmentRequest,
-    db = Depends(get_db),
+    update_req: UpdateEquipmentInstallationRequest | NewEquipmentRequest | TransferEquipmentRequest,
+    db=Depends(get_db),
     current_user=Depends(get_current_authenticated_user)
 ):
     installation = await EquipmentInstallation.get_by_id(db, installation_id)
 
-    if isinstance(update_req, UpdateEquipmentInstallationReqeust):
+    if isinstance(update_req, UpdateEquipmentInstallationRequest):
         installation = await update_req.do_update(installation, current_user=current_user)
     else:
         lab = await installation.awaitable_attrs.lab
-        await update_req.do_create(
-            db,
-            lab=lab
-        )
+        provision = await update_req.do_create(db, )
+
 
     return await EquipmentInstallationDetail.from_model(installation)
+
+@equipments.get("/installation/{installation}/provision")
+@equipments.get("/installation/{installation}/provision/{action_name}")
+async def index_installation_provisions(
+    installation: UUID,
+    action_name: Literal["new_equipment", "transfer_equipment"] | None = None,
+    only_pending: bool = False,
+    db=Depends(get_db)
+) -> LabProvisionIndexPage:
+    return await LabProvisionIndexPage.from_selection(
+        db,
+        query_equipment_installation_provisions(
+            installation=installation,
+            action=action_name,
+            only_pending=only_pending
+        )
+    )
+
+
+@equipments.put("/installation/{installation_id}/provision/{action_name}")
+async def create_installation_provision(
+    installation_id: UUID,
+    action_name: Literal['new_equipment', 'transfer_equipment'],
+    request: NewEquipmentRequest | TransferEquipmentRequest,
+    db = Depends(get_db),
+    current_user=Depends(get_current_authenticated_user)
+) -> LabProvisionDetail[EquipmentInstallation, Any]:
+    installation = await EquipmentInstallation.get_by_id(db, installation_id)
+
+    if action_name != request.action:
+        raise ValueError(f'Expected an {action_name} request')
+
+    provision = await request.do_create(db, installation=installation, current_user=current_user)
+    return await LabProvisionDetail.from_model(provision)
+
+@equipments.get("/installation/{installation_id}/lease")
+async def index_installation_leases(installation_id: UUID, db=Depends(get_db)) -> EquipmentLeaseIndexPage:
+    return await EquipmentLeaseIndexPage.from_selection(
+        db,
+        query_equipment_leases(
+            installation=installation_id
+        )
+    )
+
+
+@equipments.get("/provision/")
+async def index_equipment_provisions(
+    equipment: UUID | None = None,
+    db = Depends(get_db)
+) -> LabProvisionIndexPage:
+    return await LabProvisionIndexPage.from_selection(
+        db,
+        query_equipment_installation_provisions(
+            equipment=equipment
+        )
+    )

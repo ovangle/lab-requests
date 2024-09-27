@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output, computed, inject, input, signal } from "@angular/core";
-import { EquipmentProvision } from "./equipment-provision";
+import { EquipmentInstallationProvision, EquipmentTransferProvision as TransferEquipmentProvision, NewEquipmentProvision } from "./equipment-provision";
 import { BehaviorSubject, switchMap } from "rxjs";
 import { CommonModule } from "@angular/common";
 import { EquipmentProvisionInstallFormComponent } from "./equipment-provision-install.form";
@@ -16,22 +16,60 @@ import { EquipmentInfoComponent } from "../equipment-info.component";
 import { EquipmentInstallationInfoComponent } from "../installation/equipment-installation-info.component";
 import { EquipmentProvisionTypePipe } from "./equipment-provision-type.pipe";
 
+type ProvisionDisplayStyle = 'one-line';
+
+@Component({
+  selector: 'equipment-provision-info--new-equipment-provision',
+  standalone: true,
+  imports: [
+    CommonModule,
+    EquipmentInfoComponent
+  ],
+  template: `
+  <equipment-info [equipment]="provision().equipment" />
+  {{provision().numRequired}}
+  `
+})
+export class EquipmentProvisionInfo__NewEquipmentProvision {
+  provision = input.required<NewEquipmentProvision>();
+  display = input<ProvisionDisplayStyle>('one-line');
+}
+
+@Component({
+  selector: 'equipment-provision-info--transfer-equipment-provision',
+  standalone: true,
+  template: `
+  `
+})
+export class EquipmentProvisionInfo__TransferEquipmentProvision {
+  provision = input.required<TransferEquipmentProvision>();
+  display = input<ProvisionDisplayStyle>('one-line');
+}
+
 @Component({
   selector: 'equipment-provision-info',
   standalone: true,
   imports: [
     CommonModule,
 
-    LabProvisionInfoComponent,
-    EquipmentProvisionTypePipe,
-    EquipmentInfoComponent,
-    EquipmentInstallationInfoComponent,
-
-    EquipmentProvisionApprovalFormComponent,
-    EquipmentProvisionInstallFormComponent,
-    EquipmentProvisionPurchaseFormComponent
+    EquipmentProvisionInfo__NewEquipmentProvision,
+    EquipmentProvisionInfo__TransferEquipmentProvision
   ],
   template: `
+  @switch (provisionAction()) {
+    @case ('new_equipment') {
+      <equipment-provision-info--new-equipment-provision
+        [provision]="_newEquipmentProvision()"
+        [display]="display()" />
+    }
+    @case ('transfer_equipment') {
+      <equipment-provision-info--transfer-equipment-provision
+        [provision]="_transferEquipmentProvision()"
+        [display]="display()" />
+    }
+  }
+
+  <!--
   <lab-provision-info
     [provision]="provision()">
     <div #provisionTypeInfo>
@@ -52,21 +90,21 @@ import { EquipmentProvisionTypePipe } from "./equipment-provision-type.pipe";
       }
     </div>
 
-    <div #provisionForm> 
+    <div #provisionForm>
       @switch (nextStatus()) {
         @case ('approved') {
           <equipment-provision-approval-form
-            [equipmentProvision]="provision()" 
+            [equipmentProvision]="provision()"
             (save)="onProvisionFormSaved($event)" />
         }
         @case ('purchased') {
           <equipment-provision-purchase-form
-            [equipmentProvision]="provision()" 
+            [equipmentProvision]="provision()"
             (save)="onProvisionFormSaved($event)" />
         }
         @case ('installed') {
           <equipment-provision-install-form
-            [equipmentProvision]="provision()" 
+            [equipmentProvision]="provision()"
             (save)="onProvisionFormSaved($event)" />
         }
       }
@@ -86,20 +124,27 @@ import { EquipmentProvisionTypePipe } from "./equipment-provision-type.pipe";
       }
     </div>
   </lab-provision-info>
+  -->
   `
 })
 export class EquipmentProvisionInfoComponent {
-  provision = input.required<EquipmentProvision>();
+  provision = input.required<EquipmentInstallationProvision>();
 
+  provisionAction = computed(() => this.provision().action);
+  _newEquipmentProvision = computed(() => this.provision() as NewEquipmentProvision);
+  _transferEquipmentProvision = computed(() => this.provision() as TransferEquipmentProvision);
+
+  display = input<ProvisionDisplayStyle>('one-line');
+
+  /*
   @Output()
-  provisionSave = new EventEmitter<EquipmentProvision>();
+  provisionSave = new EventEmitter<EquipmentInstallationProvision>();
 
-  provisionType = computed(() => this.provision().type);
   provisionStatus = computed(() => this.provision().status);
 
   _equipmentInstallationService = inject(EquipmentInstallationService);
   readonly equipmentInstallation$ = toObservable(this.provision).pipe(
-    switchMap(provision => provision.resolveEquipmentInstallation(this._equipmentInstallationService))
+    switchMap(provision => this._equipmentInstallationService.nextCommitted(provision.prov))
   );
   hideEquipmentInstallationInfo = input(false, { transform: coerceBooleanProperty })
 
@@ -109,7 +154,7 @@ export class EquipmentProvisionInfoComponent {
   )
   hideEquipmentInfo = input(false, { transform: coerceBooleanProperty })
 
-  // The next status of the form which is meant to be 
+  // The next status of the form which is meant to be
   // displayed.
   nextStatus = signal<ProvisionStatus | null>(null);
 
@@ -125,7 +170,8 @@ export class EquipmentProvisionInfoComponent {
     this.nextStatus.set('installed');
   }
 
-  onProvisionFormSaved(provision: EquipmentProvision) {
+  onProvisionFormSaved(provision: EquipmentInstallationProvision) {
     this.provisionSave.next(provision);
   }
+    */
 }

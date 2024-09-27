@@ -83,7 +83,6 @@ export class LabProvisionInfoComponent<
     hideQuantityInfo = input(false, { transform: coerceBooleanProperty });
     hidePurchaseInfo = input(false, { transform: coerceBooleanProperty });
 
-    provisionType = computed(() => this.provision().type);
     provisionStatus = computed(() => this.provision().status);
 
     isApproved = computed(() => this.provision().isApproved);

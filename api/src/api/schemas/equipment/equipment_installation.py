@@ -134,7 +134,7 @@ class CreateEquipmentInstallationRequest(LabInstallationCreateRequest[EquipmentI
         await db.commit()
         return installation
 
-class UpdateEquipmentInstallationReqeust(ModelUpdateRequest[EquipmentInstallation]):
+class UpdateEquipmentInstallationRequest(ModelUpdateRequest[EquipmentInstallation]):
     installed_model_name: str | None = None
     num_installed: int
 
@@ -159,7 +159,21 @@ EquipmentCreateRequest.model_rebuild()
 
 
 class EquipmentInstallationProvisionCreateRequest(LabInstallationProvisionCreateRequest[EquipmentInstallation, CreateEquipmentInstallationRequest]):
-    pass
+    @override
+    async def get_or_create_installation(
+        self,
+        db: LocalSession,
+        installation: LabInstallation | CreateEquipmentInstallationRequest | UUID,
+        current_user: User | None = None,
+        **kwargs
+    ):
+        if isinstance(installation, UUID):
+            return await EquipmentInstallation.get_by_id(db, installation)
+        elif isinstance(installation, LabInstallation):
+            return installation
+
+        return await installation.do_create(db, current_user=current_user, **kwargs)
+
 
 
 
@@ -168,16 +182,13 @@ class NewEquipmentRequest(EquipmentInstallationProvisionCreateRequest):
     Creates a provision, which, when completed will result in a new installation
     of the specified equipment.
     """
-    __can_create_installation__ = True
-
     action: Literal['new_equipment']
     num_required: int
 
     @override
     async def _do_create_lab_installation_provision(
-         self,
+        self,
         db: LocalSession,
-        type: str,
         installation: LabInstallation,
         *,
         budget: ResearchBudget,
@@ -202,9 +213,9 @@ class NewEquipmentRequest(EquipmentInstallationProvisionCreateRequest):
 
 
 class TransferEquipmentRequest(EquipmentInstallationProvisionCreateRequest):
-    type: Literal['equipment_transfer']
+    action: Literal['equipment_transfer']
     num_transferred: int
-    destination_lab: UUID
+    destination_lab_id: UUID
 
     @override
     async def _do_create_lab_installation_provision(

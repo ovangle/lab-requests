@@ -50,10 +50,8 @@ function provisionEventFromJsonObject(json: JsonObject): ProvisionEvent {
 export abstract class LabProvision<
     TProvisionable extends Provisionable<any>,
 > extends Model implements ResearchPurchaseOrder {
-    readonly type: string;
     readonly action: string;
     readonly status: ProvisionStatus;
-    readonly targetId: string;
     readonly labId: string;
 
     readonly budget: ResearchBudget;
@@ -101,32 +99,19 @@ export abstract class LabProvision<
     readonly finalisedAt: Date | null;
     readonly finalisedById: string | null;
 
-    constructor(targetModel: ModelFactory<TProvisionable>, json: JsonObject) {
+    constructor(json: JsonObject) {
         super(json);
-
-        if (typeof json['type'] !== 'string') {
-            throw new Error("Expected a provision type 'type'")
-        }
-        this.type = json['type'];
 
         if (!isProvisionStatus(json['status'])) {
             throw new Error("Expected a provision status 'status'");
         }
-
         this.status = json['status'];
-        if (typeof json['type'] !== 'string') {
-            throw new Error("Expected a string 'type'");
-        }
-        this.type = json['type'];
+
         if (typeof json['action'] !== 'string') {
             throw new Error("Expected a string 'action'");
         }
         this.action = json['action'];
 
-        if (!isUUID(json['targetId'])) {
-            throw new Error("Expected a uuid 'targetId'");
-        }
-        this.targetId = json['targetId'];
         if (!isUUID(json['labId'])) {
             throw new Error("Epxected a uuid 'labId'")
         }
@@ -309,10 +294,6 @@ export abstract class LabProvision<
         }
     }
 
-    async resolveTarget(service: ModelService<TProvisionable>): Promise<TProvisionable> {
-        return firstValueFrom(service.fetch(this.targetId));
-    }
-
     resolveLab(service: ModelService<Lab>): Promise<Lab> {
         return firstValueFrom(service.fetch(this.labId));
     }
@@ -342,7 +323,7 @@ export interface LabProvisionCreateRequest<
     TProvisionable extends Provisionable<any>,
     TProvision extends LabProvision<TProvisionable>
 > extends ModelCreateRequest<TProvision> {
-    readonly type: string;
+    readonly provisionId?: ModelRef<TProvision>; // resubmission
     readonly note: string;
     readonly lab?: ModelRef<Lab>;
     readonly purchaseOrder?: CreatePurchaseOrder;
@@ -355,7 +336,6 @@ export function labProvisionCreateRequestToJsonObject<
     request: TCreate
 ): JsonObject {
     return {
-        type: request.type,
         note: request.note,
         lab: request.lab ? modelId(request.lab) : undefined,
         purchaseOrder: request.purchaseOrder ? createPurchaseOrderToJsonObject(request.purchaseOrder) : undefined

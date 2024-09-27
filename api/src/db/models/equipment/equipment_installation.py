@@ -245,15 +245,32 @@ def query_equipment_installations(
 
 
 def query_equipment_installation_provisions(
-    installation: EquipmentInstallation | UUID | None = None,
+    equipment: Equipment | UUID | None = None,
+    installation: Select[tuple[EquipmentInstallation]] | EquipmentInstallation | UUID | None = None,
+    action: str | None = None,
     only_pending: bool=False
 ) -> Select[tuple[LabProvision]]:
     where_clauses: list = [
         LabProvision.provisionable_type == "equipment_installation"
     ]
-    if installation:
+
+    if equipment:
+        installation = query_equipment_installations(equipment=equipment)
+
+    if isinstance(installation, Select):
+        where_clauses.append(
+            LabProvision.action_params_json["installation_id"].in_(
+                select(installation.c.id)
+            )
+        )
+    elif installation is not None:
         where_clauses.append(
             LabProvision.action_params_json["installation_id"] == model_id(installation)
+        )
+
+    if action:
+        where_clauses.append(
+            LabProvision.action == action
         )
 
     if only_pending:

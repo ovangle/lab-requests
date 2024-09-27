@@ -26,11 +26,9 @@ export type ResearchPurchaseOrderFormGroup = ReturnType<ReturnType<typeof resear
 
 export function purchaseOrderRequestFromFormValue(
     budget: ResearchBudget | string,
-    purchaseOrderType: string,
     value: ResearchPurchaseOrderFormGroup['value']
 ): CreatePurchaseOrder {
     return {
-        type: purchaseOrderType,
         budget,
         estimatedCost: value.estimatedCost!,
         purchaseUrl: value.purchaseUrl!,

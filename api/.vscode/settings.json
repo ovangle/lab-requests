@@ -1,5 +1,6 @@
 {
     "mypy-type-checker.args": [
         "--config-file mypy.ini"
-    ]
+    ],
+    "workbench.colorTheme": "Visual Studio Light"
 }

@@ -9,46 +9,25 @@ import { Observable, firstValueFrom } from "rxjs";
 import { Lab } from "src/app/lab/lab";
 import { User } from "src/app/user/user";
 import { isUUID } from "src/app/utils/is-uuid";
+import { LabInstallationProvision } from "src/app/lab/common/installable/installation";
 
 export type SoftwareProvisionType
     = 'new_software'
     | 'upgrade_software';
 
-export class SoftwareInstallationProvision extends LabProvision<SoftwareInstallation> {
+export class SoftwareInstallationProvision extends LabInstallationProvision<SoftwareInstallation> {
     softwareId: string;
 
-    minVersion: string;
-    requiresLicense: boolean;
-    isPaidSoftware: boolean;
-
     constructor(json: JsonObject) {
-        super(SoftwareInstallation, json);
+        super(json);
 
         if (!isUUID(json['softwareId'])) {
             throw new Error(`Expected a uuid 'softwareId'`);
         }
         this.softwareId = json['softwareId'];
-
-        if (typeof json['minVersion'] !== 'string') {
-            throw new Error('Expected a string `minVersion`');
-        }
-        this.minVersion = json['minVersion'];
-
-        if (typeof json['requiresLicense'] !== 'boolean') {
-            throw new Error("Expected a boolean 'requiresLicense'");
-        }
-        this.requiresLicense = json['requiresLicense'];
-        if (typeof json['isPaidSoftware'] !== 'boolean') {
-            throw new Error("Expected a boolean 'isPaidSoftware'");
-        }
-        this.isPaidSoftware = json['isPaidSoftware'];
-    }
-
-
-    async resolveSoftware(service: SoftwareService) {
-        return await firstValueFrom(service.fetch(this.softwareId));
     }
 }
+
 
 export interface SoftwareProvisionQuery extends LabProvisionQuery<SoftwareInstallation, SoftwareInstallationProvision, SoftwareInstallationQuery> {
     software?: ModelRef<Software>;
@@ -69,6 +48,31 @@ interface _SoftwareProvisionCreateRequest extends LabProvisionCreateRequest<Soft
     readonly type: SoftwareProvisionType;
 }
 
+export class NewSoftwareProvision extends SoftwareInstallationProvision {
+    minVersion: string;
+    requiresLicense: boolean;
+    isPaidSoftware: boolean;
+
+    constructor(json: JsonObject) {
+        super(json);
+
+        if (typeof json['minVersion'] !== 'string') {
+            throw new Error('Expected a string `minVersion`');
+        }
+        this.minVersion = json['minVersion'];
+
+        if (typeof json['requiresLicense'] !== 'boolean') {
+            throw new Error("Expected a boolean 'requiresLicense'");
+        }
+        this.requiresLicense = json['requiresLicense'];
+        if (typeof json['isPaidSoftware'] !== 'boolean') {
+            throw new Error("Expected a boolean 'isPaidSoftware'");
+        }
+        this.isPaidSoftware = json['isPaidSoftware'];
+
+    }
+}
+
 export interface NewSoftwareRequest extends _SoftwareProvisionCreateRequest {
     readonly type: 'new_software';
 
@@ -82,6 +86,19 @@ function newSoftwareRequestToJsonObject(request: NewSoftwareRequest): JsonObject
             request
         ),
         minVersion: request.minVersion,
+    }
+}
+
+export class UpgradeSoftwareProvision extends SoftwareInstallationProvision {
+    minVersion: string;
+
+    constructor(json: JsonObject) {
+        super(json);
+
+        if (typeof json['minVersion'] !== 'string') {
+            throw new Error(`Expected a string 'minVersion'`);
+        }
+        this.minVersion = json['minVersion'];
     }
 }
 
@@ -100,6 +117,7 @@ function upgradeSoftwareVersionRequestToJsonObject(request: UpgradeSoftwareVersi
         minVersion: request.minVersion
     };
 }
+
 
 export type SoftwareProvisionCreateRequest
     = NewSoftwareRequest

@@ -1,18 +1,24 @@
-import { Component, inject, input } from "@angular/core";
+import { Component, DestroyRef, inject, input } from "@angular/core";
 import { Equipment, EquipmentService } from "../equipment";
 import { EquipmentInstallation, EquipmentInstallationService } from "../installation/equipment-installation";
-import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from "@angular/forms";
+import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { Lab, LabService } from "src/app/lab/lab";
 import { ActivatedRoute, Router } from "@angular/router";
 import { Q } from "@angular/cdk/keycodes";
-import { combineLatest, filter, firstValueFrom, map, merge, NEVER, Observable, of, shareReplay, switchMap } from "rxjs";
+import { AsyncSubject, combineLatest, filter, firstValueFrom, map, merge, NEVER, Observable, of, shareReplay, switchMap } from "rxjs";
 import { ResearchPurchaseOrderFormComponent, researchPurchaseOrderFormGroupFactory } from "src/app/research/budget/research-purchase-order-form.component";
-import { NewEquipmentFormComponent, NewEquipmentFormGroup } from "../installation/provisions/equipment-new-equipment-form.component";
+import { NewEquipmentFormComponent, NewEquipmentFormGroup, newEquipmentFormGroupFactory } from "../installation/provisions/equipment-new-equipment-form.component";
 import { CommonModule } from "@angular/common";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { LabSearchComponent } from "src/app/lab/lab-search.component";
 import { LabInfoComponent } from "src/app/lab/lab-info.component";
-import { NewEquipmentRequest } from "../provision/equipment-provision";
+import { NewEquipmentProvision, NewEquipmentRequest } from "../provision/equipment-provision";
+import { AbstractModelForm } from "src/app/common/model/forms/abstract-model-form.component";
+import { EquipmentInstallationContext, provideEquipmentInstallationContext } from "../installation/equipment-installation-context";
+import { EquipmentContext, provideEquipmentContextFromRoute } from "../equipment-context";
+import { EquipmentProvisionInfo__NewEquipmentProvision } from "../provision/equipment-provision-info.component";
+import { MatButtonModule } from "@angular/material/button";
+import { ScaffoldFormPaneControl } from "src/app/scaffold/form-pane/form-pane-control";
 
 
 @Component({
@@ -21,92 +27,90 @@ import { NewEquipmentRequest } from "../provision/equipment-provision";
         CommonModule,
         ReactiveFormsModule,
 
+        MatButtonModule,
         MatFormFieldModule,
 
         LabInfoComponent,
         LabSearchComponent,
-        NewEquipmentFormComponent
+        NewEquipmentFormComponent,
+
+        EquipmentProvisionInfo__NewEquipmentProvision
     ],
     template: `
-    @if (equipment$ | async; as equipment) {
-        <div class="purchase-new-equipment">
-            <h4>Purchase new equipment</h4>
 
-            <p>Creates a provision for purchasing new equipment</p>
+    @if (_createdProvision) {
+        <h4>Created provision</h4>
+        <equipment-provision-info--new-equipment-provision [provision]="_createdProvision" />
 
-            @let install = equipmentInstallation$ | async;
+        <button mat-button (click)="closeFormPane()">OK</button>
+    } @else {
 
-            @if (install == null) {
-            <mat-form-field>
-                <mat-label>Lab</mat-label>
-                <lab-search required
-                            [formControl]="labSearchControl"
-                            [discipline]="equipment.disciplines" />
-            </mat-form-field>
-            } @else {
-                <lab-info [lab]="install.labId" />
-            }
+        @if (equipment$ | async; as equipment) {
+            <div class="purchase-new-equipment">
+                <h4>Purchase new equipment</h4>
 
-            @if (lab$ | async; as lab) {
-                <equipment-new-equipment-form [equipment]="equipment"
-                                              [lab]="lab"
-                                              (submit)="_onSubmit($event)"
-                                              (cancel)="_onCancel()" />
-            }
-        </div>
+                <p>Creates a provision for purchasing new equipment</p>
+
+                @let install = equipmentInstallation$ | async;
+
+                @if (install == null) {
+                <mat-form-field>
+                    <mat-label>Lab</mat-label>
+                    <lab-search required
+                                [formControl]="labSearchControl"
+                                [discipline]="equipment.disciplines" />
+                </mat-form-field>
+                } @else {
+                    <lab-info [lab]="install.labId" />
+                }
+
+                @if (lab$ | async; as lab) {
+                    <equipment-new-equipment-form [equipment]="equipment"
+                                                [lab]="lab"
+                                                (submit)="_onSubmit($event)"
+                                                (cancel)="_onCancel()" />
+                }
+            </div>
+        }
     }
-
-    `
+    `,
+    providers: [
+        provideEquipmentContextFromRoute({ isOptionalParam: true }),
+        provideEquipmentInstallationContext({ isOptionalParam: true }),
+    ]
 
 })
-export class EquipmentNewEquipmentFormPage {
-    route = inject(ActivatedRoute);
-    router = inject(Router);
-    labService = inject(LabService);
-    equipmentService = inject(EquipmentService);
-    equipmentInstallationService = inject(EquipmentInstallationService);
+export class EquipmentNewEquipmentFormPage extends AbstractModelForm<NewEquipmentFormGroup> {
 
+    labService = inject(LabService);
+    readonly equipmentContext = inject(EquipmentContext);
+    readonly equipmentInstallationContext = inject(EquipmentInstallationContext);
+
+    formPane = inject(ScaffoldFormPaneControl);
     fb = inject(FormBuilder);
-    _createPurchaseInfoForm = researchPurchaseOrderFormGroupFactory();
 
     readonly labSearchControl = new FormControl<Lab | null>(null);
+    override _createStandaloneForm = newEquipmentFormGroupFactory();
 
-    form = this.fb.group({
-        lab: this.fb.control<Lab | null>(null, {
-            validators: [Validators.required]
-        }),
-        numRequired: this.fb.control<number>(1, {
-            nonNullable: true,
-            validators: [Validators.min(1)]
-        }),
-        purchaseInfo: this._createPurchaseInfoForm()
-    });
+    equipmentInstallation$ = this.equipmentInstallationContext.mCommitted$;
 
-    equipmentInstallation$ = this.route.paramMap.pipe(
-        map(params => params.get('equipment_installation')),
-        switchMap(installationId => {
-            if (installationId) {
-                return this.equipmentInstallationService.fetch(installationId);
-            } else {
-                return of(null);
-            }
-        }),
-        shareReplay(1)
-    );
+    _createdProvision: NewEquipmentProvision | null = null;
 
-    equipment$: Observable<Equipment> = combineLatest([
-        this.equipmentInstallation$.pipe(map(installation => installation?.equipmentId)),
-        this.route.paramMap.pipe(map(params => params.get('equipment')))
-    ]).pipe(
-        switchMap(([idFromInstall, idFromRoute]) => {
-            const equipmentId = idFromInstall || idFromRoute;
-            if (equipmentId == null) {
-                throw new Error(`Expected either 'equipment_installation' or 'equipment' in query params`)
-            }
-            return this.equipmentService.fetch(equipmentId);
-        }),
-        shareReplay(1)
-    );
+    constructor() {
+        super();
+        const syncEquipment = this.equipmentInstallation$.pipe(
+            map(installation => installation?.equipmentId),
+            filter((equipmentId): equipmentId is string => equipmentId != null)
+        ).subscribe(equipmentId => {
+            this.equipmentContext.nextCommitted(equipmentId);
+        })
+
+        inject(DestroyRef).onDestroy(() => {
+            syncEquipment.unsubscribe();
+        })
+    }
+
+    equipment$ = this.equipmentContext.committed$;
 
     lab$: Observable<Lab> = merge(
         this.labSearchControl.valueChanges.pipe(
@@ -123,15 +127,12 @@ export class EquipmentNewEquipmentFormPage {
         const lab = await firstValueFrom(this.lab$);
 
         const request: NewEquipmentRequest = {
-            type: 'new_equipment',
             lab,
             numRequired: value.numRequired!,
             note: value.note!
         }
 
-        const provision = await this.equipmentInstallationService.newEquipment(
-            request
-        );
+        const provision = await this.equipmentInstallationContext.newEquipment(request);
     }
 
     _onCancel() {
@@ -139,7 +140,7 @@ export class EquipmentNewEquipmentFormPage {
     }
 
     closeFormPane() {
-        this.router.navigate(['/', { outlets: { form: null } }]);
+        this.formPane.close()
     }
 
 }

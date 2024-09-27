@@ -15,7 +15,7 @@ import { User, UserService } from 'src/app/user/user';
 import { Injectable, Type } from '@angular/core';
 import { RestfulService } from '../common/model/model-service';
 import { EquipmentInstallation } from '../equipment/installation/equipment-installation';
-import { EquipmentProvision } from '../equipment/provision/equipment-provision';
+import { EquipmentInstallationProvision } from '../equipment/provision/equipment-provision';
 import { Equipment } from '../equipment/equipment';
 import { HttpParams } from '@angular/common/http';
 import { StorageType, isStorageType } from './storage/lab-storage-type';

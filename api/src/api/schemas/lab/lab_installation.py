@@ -16,7 +16,7 @@ from db.models.lab.lab import Lab
 from db.models.lab.provisionable import LabProvision
 from db.models.research.funding.research_budget import ResearchBudget
 from db.models.user import User
-from ..base import ModelCreateRequest, ModelDetail, ModelIndexPage
+from ..base import ModelCreateRequest, ModelDetail, ModelIndexPage, ModelRequestContextError
 
 from .lab_provision import LabProvisionCreateRequest, LabProvisionDetail, LabProvisionIndexPage
 from .lab_allocation import LabAllocationDetail
@@ -105,14 +105,15 @@ class LabInstallationProvisionCreateRequest(
 ):
     __can_create_installation__ = False
 
-    installation: TInstallationCreate | None = None
+    installation: TInstallationCreate | UUID | None = None
 
-    async def get_or_create_installation(self, db: LocalSession, installation: LabInstallation | None = None, current_user: User | None = None, **kwargs):
-        if isinstance(installation, LabInstallation):
-            return installation
-        elif self.installation is None:
-            raise ValueError('Expected a create request in lab provision body')
-        return await self.installation.do_create(db, current_user=current_user)
+    @abstractmethod
+    async def get_or_create_installation(
+        self,
+        db: LocalSession,
+        installation: LabInstallation | TInstallationCreate | UUID,
+        **kwargs
+    ) -> TProvisionable: ...
 
     @abstractmethod
     async def _do_create_lab_installation_provision(
@@ -126,7 +127,6 @@ class LabInstallationProvisionCreateRequest(
         purchase_note: str,
         current_user: User,
         note: str
-
     ) -> LabProvision[TProvisionable, Any]: ...
 
     @override
@@ -144,7 +144,11 @@ class LabInstallationProvisionCreateRequest(
         installation: LabInstallation | None = None,
         **kwargs
     ):
-        installation = await self.get_or_create_installation(db, installation, current_user=current_user, **kwargs)
+        installation_ = installation or self.installation
+        if installation_ is None:
+            raise ModelRequestContextError("No installation on request")
+
+        installation = await self.get_or_create_installation(db, installation_, current_user=current_user, **kwargs)
 
         if installation.lab_id != lab.id:
             raise ValueError('Installation must be for requested lab')

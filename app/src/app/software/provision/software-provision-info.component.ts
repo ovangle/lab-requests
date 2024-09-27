@@ -1,5 +1,5 @@
 import { Component, computed, inject, input } from "@angular/core";
-import { SoftwareInstallationProvision, SoftwareProvisionType } from "./software-provision";
+import { NewSoftwareProvision, SoftwareInstallationProvision, SoftwareProvisionType, UpgradeSoftwareProvision } from "./software-provision";
 import { LabProvisionInfoComponent } from "src/app/lab/common/provisionable/provision-info.component";
 import { SoftwareInstallationService } from "../installation/software-installation";
 import { toObservable } from "@angular/core/rxjs-interop";
@@ -8,7 +8,7 @@ import { CommonModule } from "@angular/common";
 import { SoftwareProvisionTypePipe } from "./software-provision-type.pipe";
 
 @Component({
-    selector: 'software-provision-info',
+    selector: 'software-provision-info--new-software',
     standalone: true,
     imports: [
         CommonModule,
@@ -22,8 +22,6 @@ import { SoftwareProvisionTypePipe } from "./software-provision-type.pipe";
         hideQuantityInfo
     >
         <div #provisionTypeInfo>
-            {{provisionType() | softwareProvisionType}}
-
         </div>
 
         <div #provisionTargetInfo>
@@ -49,13 +47,51 @@ import { SoftwareProvisionTypePipe } from "./software-provision-type.pipe";
     </lab-provision-info>
     `
 })
-export class SoftwareProvisionInfoComponent {
+export class SoftwareProvisionInfo__NewSoftwareProvision {
     _softwareInstallationService = inject(SoftwareInstallationService);
-    provision = input.required<SoftwareInstallationProvision>();
+    provision = input.required<NewSoftwareProvision>();
 
     softwareInstallation$ = toObservable(this.provision).pipe(
-        switchMap(provision => provision.resolveTarget(this._softwareInstallationService))
+        switchMap(provision => this._softwareInstallationService.fetch(provision.installationId))
     )
+}
 
-    provisionType = computed(() => this.provision().type as SoftwareProvisionType)
+@Component({
+    selector: 'software-provision-info--upgrade-software-provision',
+    standalone: true,
+    imports: [
+        CommonModule
+    ],
+    template: ``
+})
+export class SoftwareProvisionInfo__UpgradeSoftwareProvision {
+    provision = input.required<UpgradeSoftwareProvision>();
+}
+
+@Component({
+    selector: 'software-provision-info',
+    standalone: true,
+    imports: [
+        SoftwareProvisionInfo__NewSoftwareProvision,
+        SoftwareProvisionInfo__UpgradeSoftwareProvision
+    ],
+    template: `
+    @switch (provisionAction()) {
+        @case ('new_software') {
+            <software-provision-info--new-software [provision]="_newSoftwareProvision()" />
+        }
+        @case ('upgrade_software') {
+            <software-provision-info--upgrade-software-provision [provision]="_upgradeSoftwareProvision()" />
+        }
+    }
+    `
+})
+export class SoftwareProvisionInfoComponent {
+    provision = input.required<SoftwareInstallationProvision>();
+
+    provisionAction = computed(() => this.provision().action);
+    _newSoftwareProvision = computed(() => this.provision() as NewSoftwareProvision);
+    _upgradeSoftwareProvision = computed(() => this.provision() as UpgradeSoftwareProvision);
+
+
 }

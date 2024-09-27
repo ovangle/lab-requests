@@ -1,0 +1,33 @@
+
+{
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "debug api server",
+        "type": "debugpy",
+        "request": "attach",
+        "connect": {
+          "host": "127.0.0.1",
+          "port": 8765
+        },
+        "pathMappings": [
+          {"localRoot": "${workspaceFolder}", "remoteRoot": "/srv/api/api"}
+
+        ],
+        "logToFile": true,
+        "justMyCode": false
+      },
+      {
+        "name": "debug db script",
+        "type": "debugpy",
+        "request": "attach",
+        "connect": {
+          "host": "127.0.0.1",
+          "port": 8766
+        },
+        "logToFile": true,
+        "justMyCode": false
+      },
+    ]
+  }

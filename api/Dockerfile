@@ -10,7 +10,7 @@ COPY requirements.txt requirements.txt
 RUN --mount=type=cache,target=/home/api/.cache/pip,uid=1000 \
     pip install -r requirements.txt
 
-COPY . .
+COPY --chown=1000 . .
 ENV PYTHONPATH="/srv/api/src"
 
 EXPOSE 8000

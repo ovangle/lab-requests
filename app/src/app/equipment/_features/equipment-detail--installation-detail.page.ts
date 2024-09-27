@@ -5,7 +5,7 @@ import { EquipmentDetailSubpage, EquipmentDetailStateService } from "./equipment
 import { ActivatedRoute } from "@angular/router";
 import { Observable, combineLatest, map, shareReplay, switchMap, withLatestFrom } from "rxjs";
 import { Lab, LabService } from "src/app/lab/lab";
-import { EquipmentProvision, EquipmentProvisionService } from "../provision/equipment-provision";
+import { EquipmentInstallationProvision, EquipmentProvisionService } from "../provision/equipment-provision";
 import { ProvisionStatusPipe } from "src/app/lab/common/provisionable/provision-status.pipe";
 import { EquipmentProvisionInfoComponent } from "../provision/equipment-provision-info.component";
 import { isEqualModelRefs } from "src/app/common/model/model";
